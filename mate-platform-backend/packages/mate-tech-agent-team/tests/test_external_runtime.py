@@ -42,6 +42,11 @@ _STUB = textwrap.dedent(
     """
     import json, os, sys
 
+    # 桩必须**按 UTF-8 出 stdout**：运行时按 UTF-8 解码 CLI 的输出（真 CLI 就是
+    # 这么出的）。Windows 上 Python 默认 cp936，中文被编成 GBK 再按 UTF-8 解码
+    # 就是乱码 —— 那是**测试桩的编码**问题，不是运行时的问题（Linux/CI 看不出来）。
+    sys.stdout.reconfigure(encoding="utf-8")
+
     argv = sys.argv[1:]
 
     def after(flag):

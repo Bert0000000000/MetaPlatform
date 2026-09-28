@@ -193,6 +193,81 @@ def configured_cancel_wait() -> float:
         return DEFAULT_CANCEL_WAIT_SECONDS
 
 
+#: 人工审批「等租约」的上限（秒）。两位审批人几乎同时到达时，后到的那位等一小会
+#: 就能排到队，而不是被直接拒掉 —— 审批是人对人的操作，不该因为时序把一票丢掉。
+APPROVE_WAIT_ENV = "MATE_AGENT_TEAM_APPROVE_LEASE_WAIT_SECONDS"
+DEFAULT_APPROVE_WAIT_SECONDS = 2.0
+
+
+def configured_approve_wait() -> float:
+    try:
+        return max(0.0, float(os.getenv(APPROVE_WAIT_ENV, str(DEFAULT_APPROVE_WAIT_SECONDS))))
+    except ValueError:
+        return DEFAULT_APPROVE_WAIT_SECONDS
+
+
+class RunLeaseHeld(RuntimeError):
+    """这一轮的活跃租约在**别的副本**手里 —— 本副本不得推进它。
+
+    为什么必须挡在 ``resume`` 的入口：``brain.resume`` 是一段
+    「读闸门 → 记决定 → 评估 → 够票就推进会」的**读-改-写**。两个副本同时进去，
+    会各自读到同一份**旧**闸门，于是：
+
+    * 一方那条决定被后写的一方覆盖 —— **决定丢失**（会签永远凑不齐）；
+    * 或者两边都判定"够票"，各自 ``ainvoke`` 一次 —— **闸门重复推进**（后续节点
+      与本体写入跑两遍）。
+
+    活跃租约是这一轮"谁在写"的唯一裁判，所以进闸门前必须拿到它；拿不到就如实
+    回绝（可重试），而不是"看起来没人拦我那就跑"。
+    """
+
+
+class RunWritePermit:
+    """执行面**发起写操作之前**问的一句话：这一轮此刻还归我写吗（B-7）。
+
+    为什么要有这个面：失租之后图还在跑（硬停会留下半截），但**它已经无权再写**。
+    心跳里那条日志挡不住任何东西 —— 图不会读日志。所以写操作前必须真问一次，
+    而且问到**提交边界**上（工具派发），按**执行代次**把旧副本拒掉：
+
+    * ``lease_lost`` —— 心跳已经确认续不上（快路径，纯内存，不必打库）；
+    * 租约行不存在 / 主人换了 / **epoch 比自己新** —— 提交边界的最终判据。
+      epoch 是"旧副本"的唯一可靠标识：同一个人**重入**（比如接管后又轮到自己跑）
+      时主人名前缀相同，只有代次能把上一手认出来。
+
+    读不动租约表时**拒绝写**（fail-closed）：写一次本体是真实副作用，宁可让这一轮
+    带着"无权写入"的错误收尾，也不要让一个**可能已经被接管**的执行继续写。
+    """
+
+    def __init__(
+        self,
+        *,
+        leases: RunLeases,
+        instance_id: str,
+        live_of: Callable[[str, str], _LiveRun | None],
+    ) -> None:
+        self._leases = leases
+        self._instance_id = instance_id
+        self._live_of = live_of
+
+    async def allowed(self, *, tenant_id: str, run_id: str) -> tuple[bool, str]:
+        """``(能不能写, 不能写的原因)``。原因进回执与日志，方便定位。"""
+        live = self._live_of(tenant_id, run_id)
+        if live is not None and live.lease_lost:
+            return False, "lease_lost"
+        try:
+            lease = await self._leases.get(tenant_id=tenant_id, run_id=run_id)
+        except Exception:
+            return False, "lease_unreadable"
+        if lease is None:
+            return False, "no_lease"
+        if lease.owner_instance != self._instance_id:
+            return False, "lease_taken_over"
+        expected = live.lease_epoch if live is not None else 0
+        if expected and lease.lease_epoch != expected:
+            return False, "superseded_epoch"
+        return True, ""
+
+
 def _cancel_receipt(tenant_id: str, run_id: str, *, status: str) -> dict:
     """取消的**受理**回执（B-3）：202 + 当前观察到的状态。
 
@@ -249,6 +324,10 @@ class _LiveRun:
     finished: asyncio.Event = field(default_factory=asyncio.Event)
     lease_epoch: int = 0
     heartbeat: asyncio.Task[None] | None = None
+    #: **失租信号**（B-7）。心跳一旦确认续不上租约（epoch 对不上 = 已被接管）就置位。
+    #: 语义上它是"不再续租"这件事的**可见形态**：执行面据此拒绝发起新的写操作
+    #: （见 :class:`RunWritePermit`），而图本身**不硬停**——硬停会留下半截。
+    lease_lost: bool = False
     #: 事件记录器（B-2）。**每轮一个**，与订阅方数量无关——这正是"连接数 ×
     #: 每秒 4 次读检查点"被消掉的地方：以前每个 SSE 连接各自轮询检查点，
     #: 现在是记录器一个人写事件日志，订阅方只读日志（且被 NOTIFY 唤醒）。
@@ -320,6 +399,7 @@ class RunControl:
         event_retention: float | None = None,
         event_fallback_poll: float | None = None,
         cancel_wait: float | None = None,
+        approve_wait: float | None = None,
         rescan_interval: float = 0.0,
     ) -> None:
         self._service = service
@@ -361,6 +441,8 @@ class RunControl:
         )
         #: 取消受理后等本进程那一轮停下的上限（B-3）。0 = 立刻回 ``cancelling``。
         self._cancel_wait = cancel_wait if cancel_wait is not None else configured_cancel_wait()
+        #: 审批抢租约的**有界等待**（B-7）。0 = 抢不到立刻回绝。
+        self._approve_wait = approve_wait if approve_wait is not None else configured_approve_wait()
         #: 周期接管扫描的间隔（秒）。0 = 不开（默认）——**显式开**是有意的：
         #: 单进程/测试形态下多一个后台循环只是噪音，而"接管"本来就只有多副本
         #: 才需要。生产由 ``from_env`` 按配置打开（见 :meth:`start_rescanner`）。
@@ -389,6 +471,19 @@ class RunControl:
     def instance_id(self) -> str:
         """本实例标识。多副本压测用它断言"三份租约分属三个实例"。"""
         return self._instance_id
+
+    @property
+    def write_permit(self) -> RunWritePermit:
+        """执行面用的**写许可**面（B-7，见 :class:`RunWritePermit`）。
+
+        装配点在**组合根**（``main.py``）：服务先建（运行时要拿它），控制面后建，
+        所以这一句是**迟绑定**的——执行面每次写操作前才来读它。
+        """
+        return RunWritePermit(
+            leases=self._leases,
+            instance_id=self._instance_id,
+            live_of=lambda tenant_id, run_id: self._live.get((tenant_id, run_id)),
+        )
 
     @classmethod
     def from_env(
@@ -829,10 +924,33 @@ class RunControl:
         approver_roles: Sequence[str] = (),
         comment: str = "",
     ) -> dict:
-        """人工确认后续跑。续跑同样"有请求在等它"，因此同样可被取消。"""
+        """人工确认后续跑。续跑同样"有请求在等它"，因此同样可被取消。
+
+        **没有有效租约就不推进图**（B-7）：``_service.resume`` 是「读闸门 → 记决定
+        → 评估 → 够票就推进会」的读-改-写，租约是这一轮"谁在写"的唯一裁判。
+        此前这里把 ``_claim_lease`` 的返回值丢掉了 —— 拿不到租约照样往下走，
+        两个副本就会同时进那段读-改-写：丢决定，或者各推进一次图。
+
+        抢不到时**有界等一会儿**再回绝（:data:`DEFAULT_APPROVE_WAIT_SECONDS`）：
+        两位审批人几乎同时到达时，后到的那位排一下队就能批上，而不是白跑一趟。
+
+        **本进程已经在驱动这一轮时不覆盖它的 ``_LiveRun``**：`_live` 里那一条属于正在
+        执行（或刚跑到闸门、还在收尾）的那个请求 —— 覆盖它会换掉它的心跳与执行代次
+        语境。所以先**有界等它收尾**（那个窗口只有几个 await），等不到就回绝：与
+        "别的副本拿着租约"是同一类结论，回同一个 409。`submit` 与 `recover` 早就有
+        这道检查，只有这里漏了。
+        """
+        if not await self._await_live_clear(
+            tenant_id=tenant_id, run_id=run_id, budget=self._approve_wait
+        ):
+            raise RunLeaseHeld(run_id)
         live = self._open(tenant_id=tenant_id, run_id=run_id)
         try:
-            await self._claim_lease(tenant_id=tenant_id, run_id=run_id, live=live)
+            lease = await self._claim_lease_waiting(
+                tenant_id=tenant_id, run_id=run_id, live=live, budget=self._approve_wait
+            )
+            if lease is None:
+                raise RunLeaseHeld(run_id)
             return await self._service.resume(
                 tenant_id=tenant_id,
                 run_id=run_id,
@@ -844,6 +962,40 @@ class RunControl:
             )
         finally:
             await self._close(tenant_id=tenant_id, run_id=run_id, live=live)
+
+    async def _await_live_clear(self, *, tenant_id: str, run_id: str, budget: float) -> bool:
+        """等**本进程**这一轮的 live 记录消失（前一个请求收尾）。``True`` = 空出来了。
+
+        窗口很短：图跑完到 ``_close`` 之间只有几个 await，所以正常情况下等一两轮
+        就空。等不到说明那个请求**还在驱动这一轮**（例如图正在跑）——这时本副本
+        不该插进去：插进去会覆盖它的 live 记录、并顶掉它的执行代次（那会让一个
+        正常运行的 run 失去写权限）。
+        """
+        deadline = asyncio.get_running_loop().time() + max(0.0, budget)
+        while (tenant_id, run_id) in self._live:
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                return False
+            await asyncio.sleep(min(0.01, remaining))
+        return True
+
+    async def _claim_lease_waiting(
+        self, *, tenant_id: str, run_id: str, live: _LiveRun, budget: float
+    ) -> RunLease | None:
+        """带**有界等待**地抢这一轮的租约（见 :meth:`resume` 的说明）。
+
+        等待很短（默认 2s）且只在抢不到时才付：正常路径一次就中。等到期仍然抢不到
+        就如实返回 ``None`` —— 那说明另一个副本正在写它，本副本不该插进去。
+        """
+        deadline = asyncio.get_running_loop().time() + max(0.0, budget)
+        while True:
+            lease = await self._claim_lease(tenant_id=tenant_id, run_id=run_id, live=live)
+            if lease is not None:
+                return lease
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                return None
+            await asyncio.sleep(min(0.05, remaining))
 
     def _open(self, *, tenant_id: str, run_id: str) -> _LiveRun:
         live = _LiveRun()
@@ -956,6 +1108,10 @@ class RunControl:
             except Exception:
                 continue  # 数据库抖一下不该让租约永久失效
             if not ok:
+                # **失租**：这一轮已经被别人接管（epoch 对不上）。不再续租，
+                # 并且置位"无权再写"——执行面每次发起写操作前会问这一位
+                # （见 :class:`RunWritePermit`）。图不硬停，但它从这一刻起只能读。
+                live.lease_lost = True
                 logger.warning(
                     "agent_team.run_lease.lost",
                     extra={
@@ -1011,7 +1167,9 @@ class RunControl:
             # 它失败也不影响这一轮——事件只是观察。
             if self._run_events is not None:
                 await self._record_once(tenant_id=tenant_id, run_id=run_id, live=live)
-        self._live.pop((tenant_id, run_id), None)
+        # 只摘**自己那一张**牌：同进程里别人（正在跑的图）的记录不能被我们顺手删掉。
+        if self._live.get((tenant_id, run_id)) is live:
+            self._live.pop((tenant_id, run_id), None)
         if live.lease_epoch:
             # 带着 epoch 释放：**换过手就什么都不做**（见 ``RunLeases.release``）。
             await self._leases.release(
@@ -1277,8 +1435,10 @@ class RunControl:
 
 __all__ = [
     "ADMIN_DSN_ENV",
+    "APPROVE_WAIT_ENV",
     "CANCELLING",
     "CONTROL_DSN_ENV",
+    "DEFAULT_APPROVE_WAIT_SECONDS",
     "DEFAULT_POLL_INTERVAL",
     "DEFAULT_READY_TIMEOUT",
     "DEFAULT_RESCAN_SECONDS",
@@ -1289,6 +1449,9 @@ __all__ = [
     "PgRunIndex",
     "RunControl",
     "RunIndex",
+    "RunLeaseHeld",
+    "RunWritePermit",
+    "configured_approve_wait",
     "configured_rescan_interval",
     "run_id_for",
 ]

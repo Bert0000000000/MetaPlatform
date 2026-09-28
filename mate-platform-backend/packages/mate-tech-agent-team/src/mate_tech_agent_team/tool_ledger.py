@@ -22,16 +22,27 @@
 * ``running`` → **不执行**。进程在跑它的时候死了，我们**无法知道**副作用落没落；
   再执行一次就是把"可能已经发生的一次"变成"可能发生两次"。上限锁在 1。
   代价是这一条可能一次都没发生——**这正是 at-most-once 的定义**，不是妥协。
+* ``indeterminate`` → **不执行**。调用**已经发出去了**，但我们没拿到回执
+  （读超时 / 连接被中途掐断 / 5xx）：远端**可能已经成功**。与 ``running`` 同样
+  锁在 1，但成因不同——``running`` 是"执行方死了"，``indeterminate`` 是
+  "执行方活着，但结果不晓得"。**这一条不许被当成 failed 重试**：那是本模块
+  存在的一半理由（见下）。
+* ``failed`` → **允许重来**。请求**根本没发出去**（连不上 / 本地参数错），
+  所以"这一次没落地"是确定的，重试是应当的。
 * 没有行 → 真执行。
+
+**「明确没执行」与「结果不确定」必须分开**（A-4）：``failed`` 只留给**确定没落地**
+的失败。把一次超时记成 ``failed``，等于给"远端其实已经写成功"的那一次发一张
+重试许可——重放它就是在本体上写第二遍。判据落在 :func:`classify_tool_error`：
+**只有带副作用的工具**才升格成 ``indeterminate``；只读工具（``ont_list_classes`` /
+``kb_search`` …）照旧记 ``failed``——读失败重试没有副作用，没必要为它付"这一条
+永远不再执行"的代价。
 
 **``tool_call_id`` 是算出来的，不是框架给的**：LangChain 那枚 id 由模型这一轮的
 生成决定，重启后重跑会**换一个新的**——拿它当键，账本永远记不中，而本模块存在的
 理由恰恰是跨重启。所以取 ``sha256(工具名 + 规范化参数)``：同一个意图在任何一轮、
 任何进程里都是同一个键。代价如实写在这里：**同一个子任务里两次完全相同的调用会被
 当成同一次**（回放同一份回执）——这是幂等的代价，也是幂等的定义。
-
-**``failed`` 不挡重试**：工具抛错 = 这一次没落地，重试是应当的。它是"这一条没成"，
-不是"这一条已经发生过"。
 """
 
 from __future__ import annotations
@@ -55,6 +66,63 @@ TOOL_INVOCATIONS_TABLE = "tool_invocations"
 RUNNING = "running"
 COMPLETED = "completed"
 FAILED = "failed"
+#: 结果不确定：请求**已经发出去**、但没拿到（或没读懂）回执。远端可能已经成功。
+INDETERMINATE = "indeterminate"
+
+#: 侧写类工具（会改状态）的前缀。**幂等判据按它分流**：只有这些工具在"结果不确定"
+#: 时才升格成 :data:`INDETERMINATE`；只读工具照旧 ``failed``（读可放心重试）。
+#: 本体写路径**只经 Proposal**（``ont_confirm_*`` / ``ont_execute_*`` 由 MCP 中心
+#: 标为不可被 agent 调用）——所以这里是"agent 可能触发的副作用面"，不是"本体写入面"。
+SIDE_EFFECT_PREFIXES: tuple[str, ...] = (
+    "ont_propose",
+    "ont_confirm",
+    "ont_reject",
+    "ont_execute",
+)
+
+
+def has_side_effects(tool_name: str) -> bool:
+    """这个工具会改状态吗（决定"结果不确定"要不要锁掉重试）。"""
+    return any(tool_name.startswith(prefix) for prefix in SIDE_EFFECT_PREFIXES)
+
+
+#: 异常类型名 → **明确没发出去**（请求根本没到远端）。按**类名**判定而不是
+#: ``isinstance``：agent-team 不直接依赖 httpx 的类型层次，而传输换实现时
+#: （langchain-mcp-adapters / ACL 客户端）类名是相对稳定的那一部分。
+_NOT_SENT_ERROR_NAMES: frozenset[str] = frozenset(
+    {
+        "ConnectError",  # 建连失败：请求没发出去
+        "ConnectTimeout",  # 建连超时：同上
+        "PoolTimeout",  # 没拿到连接：同上
+        "InvalidURL",
+        "UnsupportedProtocol",
+        "LocalProtocolError",
+    }
+)
+
+
+def classify_tool_error(exc: BaseException, *, tool_name: str) -> str:
+    """工具异常 → 账本状态：``failed``（明确没执行）或 ``indeterminate``（不确定）。
+
+    三条判据，按"最确定的先说"排：
+
+    1. **只读工具**一律 ``failed``：重试一次读没有副作用，不必为它付
+       "这一条不再执行"的代价。
+    2. **请求没发出去**的异常（建连失败/超时、URL 非法、本地参数错）→ ``failed``：
+       "没落地"是确定的，重试是应当的。
+    3. **其余一律** ``indeterminate``：读超时、传输中断、5xx、以及任何认不出的
+       异常。**认不出就按不确定处理**是刻意的——代价是这一条不再自动重试
+       （要人来核对），收益是不会在本体上写第二遍。
+    """
+    if not has_side_effects(tool_name):
+        return FAILED
+    if type(exc).__name__ in _NOT_SENT_ERROR_NAMES:
+        return FAILED
+    # 本地参数/编码错：连请求体都没组出来
+    if isinstance(exc, (TypeError, ValueError, KeyError)):
+        return FAILED
+    return INDETERMINATE
+
 
 #: 独占租约的默认寿命（秒）。**只用于"另一个副本正在跑它"的判定**，不用于
 #: 决定要不要重跑：`running` 一律不重跑（见模块注释）。到期只影响"谁可以写回执"。
@@ -168,7 +236,16 @@ class ToolLedger(Protocol):
         self, *, tenant_id: str, invocation: ToolInvocation, result: Any
     ) -> None: ...
 
-    async def fail(self, *, tenant_id: str, invocation: ToolInvocation, error: str) -> None: ...
+    async def fail(self, *, tenant_id: str, invocation: ToolInvocation, error: str) -> None:
+        """记为 ``failed``：**确定**这一次没落地（重试是安全的）。"""
+
+    async def indeterminate(
+        self, *, tenant_id: str, invocation: ToolInvocation, error: str
+    ) -> None:
+        """记为 ``indeterminate``：请求已发出、回执没拿到 —— 远端**可能已成功**。
+
+        落成这个状态就等于撤销这一条的重试许可（见 :func:`_admission_for`）。
+        """
 
     async def running_invocations(self, *, tenant_id: str, run_id: str) -> int:
         """这一轮里**还挂着**的 ``running`` 调用数（B-1 接管判定要用）。
@@ -185,14 +262,20 @@ class ToolLedger(Protocol):
 
 
 def _admission_for(existing: ToolInvocation) -> ToolCallAdmission:
-    """已有一行时的结论：**一律不执行**（这就是 at-most-once 的落点）。"""
+    """已有一行时的结论（``completed`` 才回放，其余**一律不执行**）。"""
     if existing.status == COMPLETED:
         return ToolCallAdmission(
             execute=False, reason="already_completed", invocation=existing, reuse=existing.result
         )
     if existing.status == FAILED:
-        # 失败 = 这一次没落地：允许重来（它是"没成"，不是"已经发生过"）。
+        # 失败 = 这一次**确定**没落地：允许重来（它是"没成"，不是"已经发生过"）。
         return ToolCallAdmission(execute=True, reason="retry_after_failure", invocation=existing)
+    if existing.status == INDETERMINATE:
+        # 结果不确定：远端可能已经成功。**不执行**，也不许调用方把它当 failed 重试
+        # ——重放它就是在远端写第二遍（本模块要防的正是这件事）。
+        return ToolCallAdmission(
+            execute=False, reason="indeterminate_result", invocation=existing, reuse=None
+        )
     return ToolCallAdmission(execute=False, reason="in_flight", invocation=existing)
 
 
@@ -244,6 +327,13 @@ class InMemoryToolLedger:
             _failed(invocation, error)
         )
 
+    async def indeterminate(
+        self, *, tenant_id: str, invocation: ToolInvocation, error: str
+    ) -> None:
+        self._rows[(tenant_id, invocation.run_id, invocation.task_id, invocation.tool_call_id)] = (
+            _indeterminate(invocation, error)
+        )
+
     async def rows(self, *, tenant_id: str, run_id: str = "") -> list[ToolInvocation]:
         return [
             row
@@ -271,6 +361,10 @@ def _completed(invocation: ToolInvocation, result: Any) -> ToolInvocation:
 
 def _failed(invocation: ToolInvocation, error: str) -> ToolInvocation:
     return replace(invocation, status=FAILED, error=error, finished_at=time.time())
+
+
+def _indeterminate(invocation: ToolInvocation, error: str) -> ToolInvocation:
+    return replace(invocation, status=INDETERMINATE, error=error, finished_at=time.time())
 
 
 # ── PG 实现 ──────────────────────────────────────────────────────────────
@@ -423,15 +517,35 @@ class PgToolLedger:
         return _row_to_invocation(row) if row else None
 
     async def complete(self, *, tenant_id: str, invocation: ToolInvocation, result: Any) -> None:
-        await self._finish(tenant_id=tenant_id, invocation=invocation, result=result, error="")
+        await self._finish(
+            tenant_id=tenant_id, invocation=invocation, result=result, error="", status=COMPLETED
+        )
 
     async def fail(self, *, tenant_id: str, invocation: ToolInvocation, error: str) -> None:
-        await self._finish(tenant_id=tenant_id, invocation=invocation, result=None, error=error)
+        await self._finish(
+            tenant_id=tenant_id, invocation=invocation, result=None, error=error, status=FAILED
+        )
+
+    async def indeterminate(
+        self, *, tenant_id: str, invocation: ToolInvocation, error: str
+    ) -> None:
+        await self._finish(
+            tenant_id=tenant_id,
+            invocation=invocation,
+            result=None,
+            error=error,
+            status=INDETERMINATE,
+        )
 
     async def _finish(
-        self, *, tenant_id: str, invocation: ToolInvocation, result: Any, error: str
+        self,
+        *,
+        tenant_id: str,
+        invocation: ToolInvocation,
+        result: Any,
+        error: str,
+        status: str,
     ) -> None:
-        status = COMPLETED if not error else FAILED
         async with self._conn(tenant_id) as conn:
             await conn.execute(
                 _UPDATE_SQL,
@@ -501,7 +615,9 @@ __all__ = [
     "COMPLETED",
     "DEFAULT_LEASE_SECONDS",
     "FAILED",
+    "INDETERMINATE",
     "RUNNING",
+    "SIDE_EFFECT_PREFIXES",
     "TOOL_INVOCATIONS_TABLE",
     "InMemoryToolLedger",
     "PgToolLedger",
@@ -510,6 +626,8 @@ __all__ = [
     "ToolLedger",
     "bootstrap_tool_ledger",
     "call_id",
+    "classify_tool_error",
     "digest_result",
+    "has_side_effects",
     "new_lease_owner",
 ]

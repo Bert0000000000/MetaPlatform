@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from mate_kernel.ontology.api import OntologyRepository
-from mate_kernel.ontology.identity import ClassRef, Version
+from mate_kernel.ontology.identity import ClassRef, Version, VersionConflict, definition_checksum
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
 
@@ -41,7 +41,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._link_types: dict[ClassRef, LinkType] = {}
         self._action_types: dict[ClassRef, ActionType] = {}
         self._interfaces: dict[ClassRef, Interface] = {}
-        self._versions: dict[ClassRef, list[Version]] = {}
+        # ONT-VERSION-MECHANISM：全家族版本日志（family = tenant + slug）
+        self._version_log: list[Version] = []
         self._individuals: dict[str, Individual] = {}
         self._link_instances: dict[str, LinkInstance] = {}
         self._axioms: dict[ClassRef, Axiom] = {}
@@ -97,25 +98,99 @@ class InMemoryOntologyRepository(OntologyRepository):
     def resolve_class_ref(self, rid: str) -> ClassRef:
         return ClassRef(rid)
 
+    # ── ONT-VERSION-MECHANISM：不可变版本快照（family = tenant + slug）──
+
+    @staticmethod
+    def _version_slug(rid: str) -> str:
+        """ObjectType rid → 家族 slug（6 段取 [4]，5 段 legacy 取 [3]）。"""
+        parts = rid.split(".")
+        if len(parts) >= 6:
+            return parts[4]
+        return parts[3] if len(parts) >= 4 else rid
+
+    @staticmethod
+    def _definition_of(ot: ObjectType) -> dict[str, Any]:
+        """ObjectType → 定义快照（PG `_ot_to_row` 的核心字段同形子集）。"""
+        return {
+            "rid": ot.rid.rid,
+            "primary_key": [pk.rid for pk in ot.primary_key],
+            "properties": [
+                {
+                    "rid": p.rid.rid,
+                    "type_id": p.type_id,
+                    "nullable": p.nullable,
+                    "primary_key": p.primary_key,
+                    "title": p.title,
+                    "format": p.format.value,
+                }
+                for p in ot.properties
+            ],
+            "interfaces": [i.rid for i in ot.interfaces],
+            "display_name": ot.display_name,
+            "parent_class": ot.parent_class.rid if ot.parent_class is not None else "",
+        }
+
+    @staticmethod
+    def _dependencies_of(definition: dict[str, Any]) -> tuple[str, ...]:
+        deps = {str(p["rid"]) for p in (definition.get("properties") or []) if p.get("rid")}
+        deps.update(str(i) for i in (definition.get("interfaces") or []) if i)
+        if definition.get("parent_class"):
+            deps.add(str(definition["parent_class"]))
+        return tuple(sorted(deps))
+
+    def _family_versions(self, class_rid: ClassRef) -> list[Version]:
+        tenant = class_rid.rid.split(".")[1]
+        slug = self._version_slug(class_rid.rid)
+        return [
+            v
+            for v in self._version_log
+            if v.class_ref.rid.split(".")[1] == tenant
+            and self._version_slug(v.class_ref.rid) == slug
+        ]
+
     def snapshot_version(
-        self, class_rid: ClassRef, author: str, parent: str | None, change_set: tuple[str, ...]
+        self,
+        class_rid: ClassRef,
+        author: str,
+        parent: str | None,
+        change_set: tuple[str, ...] = (),
+        *,
+        expected_checksum: str | None = None,
+        note: str = "",
     ) -> Version:
-        existing = self._versions.get(class_rid, [])
-        n = len(existing) + 1
-        rid = f"ont.{class_rid.rid.split('.')[1]}.ver.{class_rid.rid.split('.')[-1]}.v{n}"
+        """把**当前生效定义**记为不可变版本快照。
+
+        与 PG 实现的差异（如实记录，不假装一致）：in-memory 是测试/演示用的轻量
+        fake，**不做同内容去重**（每次调用追加一条），且类型不存在时 `definition`
+        为空 —— PG 侧该情形是 `KeyError`。冲突判定两边一致（同 `definition_checksum`）。
+        """
+        ot = self._object_types.get(class_rid)
+        definition = self._definition_of(ot) if ot is not None else None
+        checksum = definition_checksum(definition) if definition is not None else ""
+        if expected_checksum and checksum != expected_checksum:
+            raise VersionConflict(
+                f"model {class_rid.rid} changed since {expected_checksum!r} (now {checksum!r})"
+            )
+        history = self._family_versions(class_rid)
+        n = len(history) + 1
+        rid = f"ont.{class_rid.rid.split('.')[1]}.ver.{self._version_slug(class_rid.rid)}.v{n}"
         v = Version(
             rid=rid,
             class_ref=class_rid,
-            parent_rid=parent or (existing[-1].rid if existing else None),
+            parent_rid=parent or (history[-1].rid if history else None),
             created_at=datetime.now(UTC),
             author=author,
             change_set=change_set,
+            definition=definition,
+            checksum=checksum,
+            version_no=n,
+            dependencies=self._dependencies_of(definition) if definition else (),
         )
-        self._versions.setdefault(class_rid, []).append(v)
+        self._version_log.append(v)
         return v
 
     def list_versions(self, class_rid: ClassRef) -> list[Version]:
-        return list(self._versions.get(class_rid, []))
+        return sorted(self._family_versions(class_rid), key=lambda v: v.version_no)
 
     # ───── types ─────
 

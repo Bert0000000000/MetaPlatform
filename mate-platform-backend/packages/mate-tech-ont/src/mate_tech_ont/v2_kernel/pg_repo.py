@@ -20,7 +20,7 @@ import threading
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 from dataclasses import replace as _dc_replace
-from datetime import UTC, datetime
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 from uuid import uuid4
@@ -30,7 +30,12 @@ from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp, QueryRe
 from mate_kernel.objectset.sql_compiler import SQLCompiler
 from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
-from mate_kernel.ontology.identity import ClassRef, Version
+from mate_kernel.ontology.identity import (
+    ClassRef,
+    Version,
+    VersionConflict,
+    definition_checksum,
+)
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
 from mate_kernel.ontology.reasoning import Axiom, Function
@@ -135,6 +140,19 @@ DDL: tuple[str, ...] = (
         note         TEXT NOT NULL DEFAULT ''
     )
     """,
+    # ONT-VERSION-MECHANISM：版本必须携带**不可变定义快照**（此前只有同族 rid 血缘）。
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS class_rid TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS slug TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS definition JSONB",
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS checksum TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS version_no INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS author TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS change_set JSONB",
+    # ONT-VERSION-MECHANISM §3：快照必须自带**必要依赖**（引用的 parent / interface /
+    # property rid）—— 没有它，退役一个属性/接口时无法回答"哪些已发布版本会受影响"。
+    "ALTER TABLE ont_type_version ADD COLUMN IF NOT EXISTS dependencies JSONB",
+    "CREATE INDEX IF NOT EXISTS ix_ont_tv_family ON ont_type_version (tenant_id, slug, version_no)",
     """
     CREATE TABLE IF NOT EXISTS ont_object_type (
         rid          TEXT PRIMARY KEY,
@@ -396,6 +414,10 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_wip_tenant ON ont_schema_wip (tenant_id)",
+    # ONT-VERSION-MECHANISM §5：草稿保存时记下**当时的 live 定义指纹**作为基线。
+    # 应用时基线 != 当前 live → 409（"我编辑期间别人已改过"）——不需要客户端配合，
+    # 因此默认就不可能静默覆盖他人改动。
+    "ALTER TABLE ont_schema_wip ADD COLUMN IF NOT EXISTS base_checksum TEXT NOT NULL DEFAULT ''",
     # G23：Function 版本快照 + 别名
     """
     CREATE TABLE IF NOT EXISTS ont_function_version (
@@ -718,6 +740,62 @@ def _ot_to_row(ot: ObjectType) -> dict[str, Any]:
         "type_group": ot.type_group,
         "render_hints": [list(kv) for kv in ot.render_hints],
     }
+
+
+def _family_of_rid(rid: str) -> tuple[str, str]:
+    """ObjectType rid → (tenant, slug) **版本家族键**。
+
+    6 段 `ont.<t>.obj.<domain>.<slug>.vN` → slug 是第 5 段；5 段 legacy 用第 4 段。
+    家族与版本后缀（`vN`）无关 —— 同族的各版本共享同一 slug。
+    """
+    parts = rid.split(".")
+    tenant = parts[1] if len(parts) >= 2 else ""
+    if len(parts) >= 6:
+        return tenant, parts[4]
+    if len(parts) >= 4:
+        return tenant, parts[3]
+    return tenant, rid
+
+
+def _dependencies_of(row: dict[str, Any]) -> list[str]:
+    """定义 row → **必要依赖**（排序去重的 rid 列表）。
+
+    含：每个 property 的 rid、声明的 interface rid、parent_class rid。
+    用途是影响分析（"退役 X 会影响哪些已发布版本"），不是引用存在性校验 ——
+    属性可以内嵌在类型定义里而不单独注册（见 `ont_property` 与 ObjectType 的关系）。
+    """
+    deps = {str(p["rid"]) for p in (row.get("properties") or []) if p.get("rid")}
+    deps.update(str(i) for i in (row.get("interfaces") or []) if i)
+    if row.get("parent_class"):
+        deps.add(str(row["parent_class"]))
+    return sorted(deps)
+
+
+def _row_to_version(row: dict[str, Any]) -> Version:
+    """ont_type_version 行 → Version（含不可变定义快照 + 必要依赖）。"""
+    class_rid = str(row.get("class_rid") or "")
+    if not class_rid:
+        raise ValueError(
+            f"legacy version row without class_rid/definition: {row.get('rid')!r} "
+            "(pre ONT-VERSION-MECHANISM lineage record; not a real snapshot)"
+        )
+    parent = str(row["parent_rid"]) if row.get("parent_rid") else None
+    if parent and ".ver." not in parent:
+        parent = None  # 旧血缘行存的是 object rid，不属于版本链
+    definition = row.get("definition")
+    return Version(
+        rid=str(row["rid"]),
+        class_ref=ClassRef(class_rid),
+        parent_rid=parent,
+        created_at=row["branched_at"],
+        author=str(row.get("author") or ""),
+        change_set=tuple(row.get("change_set") or ()),
+        definition=(dict(definition) if isinstance(definition, dict) else None),
+        checksum=str(row.get("checksum") or ""),
+        version_no=int(row.get("version_no") or 0),
+        dependencies=tuple(str(d) for d in (row.get("dependencies") or ())),
+        status="published",
+    )
 
 
 def _row_to_ot(row: dict[str, Any]) -> ObjectType:
@@ -1315,28 +1393,236 @@ class PgOntologyRepository(OntologyRepository):
     def resolve_class_ref(self, rid: str) -> ClassRef:
         return ClassRef(rid)
 
-    def snapshot_version(
-        self, class_rid: ClassRef, author: str, parent: str | None, change_set: tuple[str, ...]
-    ) -> Version:
-        existing = self.list_versions(class_rid)
-        n = len(existing) + 1
-        rid = f"ont.{class_rid.rid.split('.')[1]}.ver.{class_rid.rid.split('.')[-1]}.v{n}"
-        return Version(
-            rid=rid,
-            class_ref=class_rid,
-            parent_rid=parent or (existing[-1].rid if existing else None),
-            created_at=datetime.now(UTC),
-            author=author,
-            change_set=change_set,
+    # ───── ONT-VERSION-MECHANISM：不可变版本快照（唯一权威版本来源）─────
+
+    @staticmethod
+    def _definition_checksum(definition: dict[str, Any]) -> str:
+        """定义内容指纹 —— 委托给 kernel 的**唯一实现**（write/read 同源）。"""
+        return definition_checksum(definition)
+
+    def _next_version_no(self, cur: Any, tenant: str, slug: str) -> int:
+        cur.execute(
+            "SELECT COALESCE(MAX(version_no), 0) AS n FROM ont_type_version "
+            "WHERE tenant_id = %s AND slug = %s",
+            (tenant, slug),
         )
+        r = cur.fetchone()
+        return (int(r["n"]) if r else 0) + 1
+
+    def _latest_version_rid(self, cur: Any, tenant: str, slug: str) -> str | None:
+        cur.execute(
+            "SELECT rid FROM ont_type_version WHERE tenant_id = %s AND slug = %s "
+            "ORDER BY version_no DESC LIMIT 1",
+            (tenant, slug),
+        )
+        r = cur.fetchone()
+        return str(r["rid"]) if r else None
+
+    def _insert_version_snapshot(
+        self,
+        cur: Any,
+        *,
+        class_rid: str,
+        definition: dict[str, Any],
+        author: str,
+        note: str,
+        change_set: tuple[str, ...] = (),
+        parent_rid: str | None = None,
+    ) -> str:
+        """**不可变**写入版本快照，返回 version rid。
+
+        - 同族同 `checksum` 已存在 → 复用（同一内容不产生重复历史）；
+        - version rid = `ont.<tenant>.ver.<slug>.v<version_no>`（家族内单调递增）；
+        - `ON CONFLICT DO NOTHING` —— 已存在的 rid **永不覆盖**（不可变）。
+        """
+        tenant, slug = _family_of_rid(class_rid)
+        checksum = self._definition_checksum(definition)
+        cur.execute(
+            "SELECT rid FROM ont_type_version WHERE tenant_id=%s AND slug=%s AND checksum=%s "
+            "ORDER BY version_no DESC LIMIT 1",
+            (tenant, slug, checksum),
+        )
+        same = cur.fetchone()
+        if same is not None:
+            return str(same["rid"])
+        n = self._next_version_no(cur, tenant, slug)
+        version_rid = f"ont.{tenant}.ver.{slug}.v{n}"
+        parent = (
+            parent_rid
+            if (parent_rid and ".ver." in parent_rid)
+            else self._latest_version_rid(cur, tenant, slug)
+        )
+        cur.execute(
+            """INSERT INTO ont_type_version
+               (rid, parent_rid, note, tenant_id, class_rid, slug, definition, checksum,
+                version_no, author, change_set, dependencies)
+               VALUES (%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s::jsonb,%s::jsonb)
+               ON CONFLICT (rid) DO NOTHING""",
+            (
+                version_rid,
+                parent,
+                note,
+                tenant,
+                class_rid,
+                slug,
+                json.dumps(definition, default=str),
+                checksum,
+                n,
+                author,
+                json.dumps(list(change_set)),
+                json.dumps(_dependencies_of(definition)),
+            ),
+        )
+        return version_rid
+
+    def snapshot_version(
+        self,
+        class_rid: ClassRef,
+        author: str,
+        parent: str | None,
+        change_set: tuple[str, ...] = (),
+        *,
+        expected_checksum: str | None = None,
+        note: str = "",
+    ) -> Version:
+        """把**当前生效定义**记为不可变版本快照（同内容幂等）。
+
+        ``expected_checksum``：乐观并发 —— 与当前生效定义不一致 → ``VersionConflict``
+        （API 层 409），**不静默覆盖**他人的改动。
+        """
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_object_type WHERE rid = %s", (class_rid.rid,))
+                row = cur.fetchone()
+                if row is None:
+                    raise KeyError(f"ObjectType not found: {class_rid.rid}")
+                definition = _ot_to_row(_row_to_ot(row))
+                checksum = self._definition_checksum(definition)
+                if expected_checksum and expected_checksum != checksum:
+                    raise VersionConflict(
+                        f"model {class_rid.rid} changed since {expected_checksum!r} "
+                        f"(now {checksum!r})"
+                    )
+                version_rid = self._insert_version_snapshot(
+                    cur,
+                    class_rid=class_rid.rid,
+                    definition=definition,
+                    author=author,
+                    note=note or "snapshot",
+                    change_set=change_set,
+                    parent_rid=parent,
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        return self.get_version(version_rid)
+
+    def resolve_references(self, ot: ObjectType) -> dict[str, Any]:
+        """发布前**引用解析**：分叉定义引用的外部对象在租户内是否已存在。
+
+        只查两类外部引用 —— `parent_class`（ont_object_type）与 `interfaces`
+        （ont_interface）；属性 rid 属定义内嵌，不作为存在性判定。
+        **未解析不算失败**：仓库语义允许"先声明后注册"（见 `_assert_parent_acyclic`
+        与 `_validate_registered_interfaces`），因此这里只如实报告，供发布前提示。
+
+        同时返回 `dependencies`（定义的全部必要依赖 rid，排序去重）。
+        """
+        refs: list[tuple[str, str]] = []
+        if ot.parent_class is not None:
+            refs.append(("ont_object_type", ot.parent_class.rid))
+        refs.extend(("ont_interface", i.rid) for i in ot.interfaces)
+        dependencies = _dependencies_of(_ot_to_row(ot))
+        resolved: list[str] = []
+        unresolved: list[str] = []
+        if refs:
+            self._ensure_schema()
+            conn, _ = self._connect()
+            try:
+                with self._cursor(conn) as cur:
+                    for table, rid in refs:
+                        cur.execute(f"SELECT 1 AS hit FROM {table} WHERE rid = %s", (rid,))
+                        (resolved if cur.fetchone() else unresolved).append(rid)
+            finally:
+                conn.close()
+        return {
+            "resolved": sorted(set(resolved)),
+            "unresolved": sorted(set(unresolved)),
+            "dependencies": dependencies,
+        }
+
+    def definition_checksum(self, class_rid: ClassRef) -> str:
+        """**当前生效定义**的内容指纹（乐观并发探测；无任何写入）。"""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_object_type WHERE rid = %s", (class_rid.rid,))
+                row = cur.fetchone()
+            if row is None:
+                raise KeyError(f"ObjectType not found: {class_rid.rid}")
+            return self._definition_checksum(_ot_to_row(_row_to_ot(row)))
+        finally:
+            conn.close()
+
+    def get_version(self, version_rid: str) -> Version:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_type_version WHERE rid = %s", (version_rid,))
+                row = cur.fetchone()
+            if row is None:
+                raise KeyError(f"Version not found: {version_rid}")
+            return _row_to_version(row)
+        finally:
+            conn.close()
 
     def list_versions(self, class_rid: ClassRef) -> list[Version]:
-        # M1/M2: 版本历史元数据放 PG 不在 MVP 范围；返回空 list 保协议
-        return []
+        """该类**族**的全部不可变版本快照（按 `version_no` 升序）。
+
+        家族键 = (tenant, slug) —— 与 `ont.<t>.obj.<domain>.<slug>.vN` 的版本后缀无关，
+        因此传 `...deal.v1` 与 `...deal.v2` 得到**同一份**历史。
+
+        **唯一权威版本来源**：`ont_type_version` 的定义快照。ONT-VERSION-MECHANISM
+        之前的旧血缘行（只存 parent_rid、无 `class_rid`/`definition`）不是快照，
+        在 SQL 层过滤掉 —— 否则读历史会整段 500。
+        """
+        self._ensure_schema()
+        tenant, slug = _family_of_rid(class_rid.rid)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT * FROM ont_type_version WHERE tenant_id = %s AND slug = %s "
+                    "AND class_rid != '' AND definition IS NOT NULL "
+                    "ORDER BY version_no",
+                    (tenant, slug),
+                )
+                return [_row_to_version(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
 
     # ───── types ─────
 
-    def upsert_object_type(self, ot: ObjectType) -> ObjectType:
+    def upsert_object_type(
+        self,
+        ot: ObjectType,
+        *,
+        supersede_rids: tuple[str, ...] = (),
+        author: str = "",
+        note: str = "",
+    ) -> ObjectType:
+        """写入类型定义（新 rid 或覆盖同 rid）。
+
+        `supersede_rids`：**发布同族新版本**时先下线的旧 rid（如 `deal.v1` → `deal.v2`
+        时传 `("...deal.v1",)`）。下线与写入**同一事务** —— 否则会出现「旧版已下线、
+        新版写失败」的半成品状态。常规增删改一律留空，语义不变。
+
+        ONT-VERSION-MECHANISM §4：一个家族（tenant + slug）在**生效集合**里至多一个
+        类型（`uq_ont_ot_tenant_slug`）；旧版定义已先入不可变快照，因此下线不丢历史。
+        """
         self._ensure_schema()
         row = _ot_to_row(ot)
         # EXP-01：Interface 约束 fail-fast —— 已注册 Interface 的属性签名不符即拒绝
@@ -1350,6 +1636,15 @@ class PgOntologyRepository(OntologyRepository):
             self._assert_parent_acyclic(row["rid"], row["parent_class"])
         conn, _ = self._connect()
         try:
+            # 发布同族新版本：先下线旧 rid（同一事务）。archived 行被 UNIQUE INDEX
+            # 排除 → 同 slug 立刻可再次使用；旧版定义已由下方快照逻辑保留。
+            if supersede_rids:
+                with self._cursor(conn) as cur:
+                    cur.execute(
+                        "UPDATE ont_object_type SET archived = TRUE, updated_at = now() "
+                        "WHERE rid = ANY(%s) AND rid != %s",
+                        (list(supersede_rids), row["rid"]),
+                    )
             # MP-DEDUP-01：先做 (tenant_id, slug) pre-check，命中即抛 SlugConflictError
             # 带 existing_rid 让 API 层返回有意义的 409 hint。空 slug 跳过（兼容旧库）。
             # race window 内仍依赖 UNIQUE INDEX 兜底（见下方 UniqueViolation 捕获）。
@@ -1440,6 +1735,17 @@ class PgOntologyRepository(OntologyRepository):
                 # EXP-01：parent_class → subclass 公理与类型行**同一事务**写入；
                 # 任一失败 → 整体回滚（不得「先提交类型再吞掉公理异常」）。
                 self._sync_parent_axiom(cur, row)
+                # ONT-VERSION-MECHANISM §4：**每次发布都留下该定义自身的不可变快照**，
+                # 与类型行同一事务（失败一起回滚）。家族内 version_no 单调递增，
+                # 因此"当前生效版本" = 快照里 checksum 与 live 行一致的那一条。
+                # 同内容由 _insert_version_snapshot 按 checksum 去重（不产生噪声历史）。
+                self._insert_version_snapshot(
+                    cur,
+                    class_rid=row["rid"],
+                    definition=row,
+                    author=author or "system:publish",
+                    note=note or f"publish {row['rid']}",
+                )
             conn.commit()
             return ot
         except Exception:
@@ -1639,54 +1945,70 @@ class PgOntologyRepository(OntologyRepository):
         new_rid: ClassRef,
         *,
         note: str = "",
+        author: str = "",
     ) -> ObjectType:
-        """以当前定义复制出 new_rid（如 ...v2），记录 lineage。"""
+        """以当前定义复制出 new_rid（如 `...v2`）—— 即"发布新版本"。
+
+        ONT-VERSION-MECHANISM：源与分叉**都**留在家族版本史里 —— 源先入快照（保底），
+        分叉由发布路径写入自己的快照；`parent_rid` 自动指向家族上一版本，
+        因此版本链来自真实定义，不是 RID 血缘。
+
+        **同族发布 vs 异族副本**（按 tenant+slug 判断）：
+        - **同族**（`deal.v1` → `deal.v2`）：这是"发布新版本"——旧 rid 与新版**同一事务**
+          下线（`archived=TRUE`）。家族在生效集合里保持唯一（`uq_ont_ot_tenant_slug`），
+          旧版定义仍可经 `get_object_type(旧 rid)` 与版本快照完整回读。
+        - **异族**（不同 slug，如 `deal` → `deal-ex`）：独立副本，源类型不受影响。
+        """
         ot = self.get_object_type(rid)
         from dataclasses import replace as _replace
 
         branched = _replace(ot, rid=new_rid)
-        # rid 派生租户（to_thread 线程里 _current_tenant() 为 None）
+        # 1) 源定义先入快照（幂等）—— 保证下线前旧版定义已有不可变记录
+        self.snapshot_version(rid, author or "system:branch", None, (), note=note)
+        same_family = _family_of_rid(new_rid.rid) == _family_of_rid(rid.rid)
+        supersede = (rid.rid,) if same_family and new_rid.rid != rid.rid else ()
+        # 2) rid 派生租户（to_thread 线程里 _current_tenant() 为 None）；upsert 顺带
+        #    把分叉定义写入家族版本史（同内容按 checksum 去重）
         with self.tenant_scope(rid.rid.split(".")[1]):
-            self.upsert_object_type(branched)
-        conn, _ = self._connect()
-        try:
-            with self._cursor(conn) as cur:
-                cur.execute(
-                    """INSERT INTO ont_type_version (rid, parent_rid, note)
-                       VALUES (%s, %s, %s)
-                       ON CONFLICT (rid) DO UPDATE SET parent_rid = EXCLUDED.parent_rid""",
-                    (new_rid.rid, rid.rid, note),
-                )
-            conn.commit()
-        finally:
-            conn.close()
+            self.upsert_object_type(
+                branched,
+                supersede_rids=supersede,
+                author=author or "system:branch",
+                note=note or f"publish {new_rid.rid}",
+            )
         return branched
 
+    def _definition_for(self, rid: ClassRef) -> ObjectType:
+        """rid 的定义：`ver` 快照 rid → 取快照不可变定义；否则取当前生效类型。"""
+        if ".ver." in rid.rid:
+            v = self.get_version(rid.rid)
+            if not v.definition:
+                raise ValueError(f"version has no definition snapshot: {rid.rid}")
+            return _row_to_ot(v.definition)
+        return self.get_object_type(rid)
+
     def diff_object_types(self, old_rid: ClassRef, new_rid: ClassRef) -> dict:
+        """两个定义之间的属性级 diff（**可重现**：两侧都能是版本快照 rid）。"""
         from mate_kernel.ontology.versioning_ops import diff_object_types as _diff
 
-        return _diff(self.get_object_type(old_rid), self.get_object_type(new_rid))
+        return _diff(self._definition_for(old_rid), self._definition_for(new_rid))
 
-    def rollback_object_type(self, rid: ClassRef, from_rid: ClassRef) -> ObjectType:
-        """把 rid 的定义恢复为 from_rid（同族旧版本）的定义。"""
-        restored = self.get_object_type(from_rid)
+    def rollback_object_type(
+        self, rid: ClassRef, from_rid: ClassRef, *, author: str = ""
+    ) -> ObjectType:
+        """把 `rid` 的模型定义恢复为 `from_rid`（同族旧版本类型 rid 或 `ver` 快照 rid）。
+
+        **回滚范围（ADR-0080 §6）**：只回滚**模型定义（schema）**。
+        **不**回滚数据（实例 / 关系实例）—— 加字段/改类型的存量数据保持原样；
+        **不**补偿已发生的副作用（Action side effects / 外联写入）。
+        覆盖前的当前定义由发布路径自动记入快照（可再次回滚回来）。
+        """
+        restored = self._definition_for(from_rid)
         from dataclasses import replace as _replace
 
         target = _replace(restored, rid=rid)
         with self.tenant_scope(rid.rid.split(".")[1]):
             self.upsert_object_type(target)
-        conn, _ = self._connect()
-        try:
-            with self._cursor(conn) as cur:
-                cur.execute(
-                    """INSERT INTO ont_type_version (rid, parent_rid, note)
-                       VALUES (%s, %s, %s)
-                       ON CONFLICT (rid) DO UPDATE SET parent_rid = EXCLUDED.parent_rid""",
-                    (rid.rid, from_rid.rid, f"rollback to {from_rid.rid}"),
-                )
-            conn.commit()
-        finally:
-            conn.close()
         return target
 
     def get_object_type(self, rid: ClassRef) -> ObjectType:
@@ -3371,24 +3693,37 @@ class PgOntologyRepository(OntologyRepository):
     def save_schema_wip(
         self, rid: str, payload: dict[str, Any], author: str = ""
     ) -> dict[str, Any]:
+        """暂存草稿，并记下**当时的 live 定义指纹**（冲突基线）。
+
+        类型尚不存在时基线为空串 —— 首次发布不做冲突判定。
+        """
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_object_type WHERE rid = %s", (rid,))
+                live_row = cur.fetchone()
+                base = (
+                    definition_checksum(_ot_to_row(_row_to_ot(live_row)))
+                    if live_row is not None
+                    else ""
+                )
                 cur.execute(
-                    """INSERT INTO ont_schema_wip (rid, tenant_id, author, payload)
-                       VALUES (%s, %s, %s, %s::jsonb)
+                    """INSERT INTO ont_schema_wip (rid, tenant_id, author, payload, base_checksum)
+                       VALUES (%s, %s, %s, %s::jsonb, %s)
                        ON CONFLICT (rid) DO UPDATE SET
                          payload = EXCLUDED.payload, author = EXCLUDED.author,
+                         base_checksum = EXCLUDED.base_checksum,
                          created_at = now()""",
                     (
                         rid,
                         self._current_tenant() or "tenant-default",
                         author,
                         json.dumps(payload, default=str),
+                        base,
                     ),
                 )
             conn.commit()
-            return {"rid": rid, "status": "staged"}
+            return {"rid": rid, "status": "staged", "base_checksum": base}
         finally:
             conn.close()
 
@@ -3398,7 +3733,7 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT rid, author, payload, created_at FROM ont_schema_wip "
+                    "SELECT rid, author, payload, base_checksum, created_at FROM ont_schema_wip "
                     "ORDER BY created_at DESC"
                 )
                 return [dict(r) for r in cur.fetchall()]

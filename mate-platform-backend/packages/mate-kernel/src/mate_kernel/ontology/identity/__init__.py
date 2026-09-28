@@ -4,6 +4,6 @@
 """
 
 from .class_ref import ClassRef
-from .version import Version
+from .version import Version, VersionConflict, definition_checksum
 
-__all__ = ["ClassRef", "Version"]
+__all__ = ["ClassRef", "Version", "VersionConflict", "definition_checksum"]

@@ -16,7 +16,8 @@ import { AlertTriangle, Inbox } from 'lucide-react';
 import { toast } from '@mate/shared';
 import {
   applySchemaWip, discardSchemaWip, errDetailText, extractDestructiveConfirm,
-  listSchemaWip, type DestructiveConfirmDetail, type SchemaWipEntry,
+  listSchemaWip, validateObjectTypeModel,
+  type DestructiveConfirmDetail, type ModelPreflight, type SchemaWipEntry,
 } from '@/api/ont/kernel';
 
 // 按钮 / 输入统一走 mp-onto-* 类（见 pages/ontology/ontology.css）。
@@ -31,6 +32,9 @@ export default function SchemaWipCard() {
   const [confirmRid, setConfirmRid] = useState('');
   const [confirmInfo, setConfirmInfo] = useState<DestructiveConfirmDetail | null>(null);
   const [confirmInput, setConfirmInput] = useState('');
+  // 发布前预检（只读）：静态错误 + 破坏性差异 + 引用解析
+  const [preflightRid, setPreflightRid] = useState('');
+  const [preflight, setPreflight] = useState<ModelPreflight | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -49,6 +53,19 @@ export default function SchemaWipCard() {
     setConfirmRid('');
     setConfirmInfo(null);
     setConfirmInput('');
+  };
+
+  /** 发布前预检（只读，不落库）：先看会报什么错、会不会破坏存量、引用是否解析得到。 */
+  const doPreflight = async (rid: string, payload: Record<string, unknown>) => {
+    setBusyRid(rid); setErr(''); setMsg('');
+    try {
+      setPreflight(await validateObjectTypeModel(payload));
+      setPreflightRid(rid);
+    } catch (e) {
+      setErr(errDetailText(e, `预检失败：${rid}`));
+    } finally {
+      setBusyRid('');
+    }
   };
 
   /** 应用 WIP；confirmName 非空 = 二段确认重发（?confirm_name=...）。 */
@@ -126,6 +143,14 @@ export default function SchemaWipCard() {
                   <div className="mp-flex mp-shrink-0 mp-ml-auto mp-gap-1" >
                     <button
                       type="button"
+                      onClick={() => void doPreflight(w.rid, w.payload)}
+                      disabled={busy}
+                      className="mp-onto-btn mp-onto-btn--xs"
+                    >
+                      预检
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => void doApply(w.rid)}
                       disabled={busy}
                       className="mp-onto-btn mp-onto-btn--xs"
@@ -142,6 +167,39 @@ export default function SchemaWipCard() {
                     </button>
                   </div>
                 </div>
+                {/* 发布前预检结果（只读，仅该行展开） */}
+                {preflightRid === w.rid && preflight && (
+                  <div className="mp-flex-col mp-mt-2 mp-gap-1 mp-pt-2 mp-onto-dashed-top">
+                    <div className="mp-fw-600 mp-text-sm">
+                      发布前预检：
+                      {preflight.valid && preflight.destructive.length === 0
+                        ? '可直接发布'
+                        : '需要处理后再发布'}
+                    </div>
+                    {preflight.errors.length > 0 && (
+                      <div className="mp-flex mp-gap-1 mp-flex-col">
+                        {preflight.errors.map((c, i) => (
+                          <div key={i} className="mp-text-xs mp-text-danger mp-break-all mp-mono">
+                            · 模型错误：{c}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {preflight.destructive.map((c, i) => (
+                      <div key={i} className="mp-text-xs mp-text-warning mp-break-all mp-mono">
+                        · 破坏性：{c}（发布需输入 display_name 确认）
+                      </div>
+                    ))}
+                    {preflight.references.unresolved.map((r, i) => (
+                      <div key={i} className="mp-text-xs mp-text-2 mp-break-all mp-mono">
+                        · 引用未解析（不阻断）：{r}
+                      </div>
+                    ))}
+                    <div className="mp-text-xs mp-text-2">
+                      必要依赖 {preflight.references.dependencies.length} 项 · 随发布写入版本快照
+                    </div>
+                  </div>
+                )}
                 {/* 破坏性 409 二段确认区（仅该行展开） */}
                 {confirmRid === w.rid && confirmInfo && (
                   <div className="mp-flex-col mp-mt-2 mp-gap-2 mp-pt-2 mp-onto-dashed-top">

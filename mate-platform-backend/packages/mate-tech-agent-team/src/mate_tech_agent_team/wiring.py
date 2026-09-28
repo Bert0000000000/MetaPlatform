@@ -492,6 +492,32 @@ def build_tool_ledger() -> PgToolLedger:
     return PgToolLedger(required_dsn(), schema=CHECKPOINT_SCHEMA)
 
 
+class WritePermitHolder:
+    """写许可的**迟绑定壳**（B-7）。
+
+    为什么要有壳：服务先建（运行时在它的 ``runtime_for`` 闭包里），运行控制面后建
+    （它要拿服务当参数）。而写许可的**真身**是控制面（租约在它手里）。组合根
+    （``main.py``）因此先建壳交给服务、建好控制面之后再 :meth:`bind` 进来。
+    执行面**每次写操作前**才读它，所以"先有壳、后有真身"不影响正确性。
+
+    没 bind 时**一律放行**：单进程 / 测试形态没有租约可言，行为与加这一条之前
+    逐字一致（闸门只在真的接了控制面时才起作用）。
+    """
+
+    def __init__(self) -> None:
+        self._inner: Any = None
+
+    def bind(self, permit: Any) -> None:
+        """接上真身（组合根在控制面建好之后调一次）。"""
+        self._inner = permit
+
+    async def allowed(self, *, tenant_id: str, run_id: str) -> tuple[bool, str]:
+        inner = self._inner
+        if inner is None:
+            return True, ""
+        return await inner.allowed(tenant_id=tenant_id, run_id=run_id)
+
+
 def build_run_control(service: BrainService) -> RunControl:
     """运行控制面（B-1 起，租约 / 心跳 / 接管都挂在这里）。
 
@@ -527,12 +553,17 @@ def build_service(
     registry: ProfileRegistry | None = None,
     team_bus: TeamBus | None = None,
     artifacts: PgArtifacts | None = None,
+    write_permit: WritePermitHolder | None = None,
 ) -> BrainService:
     """按环境变量装配。容器启动时调用一次。
 
     ``team_bus`` 必须与 HTTP 面用的是**同一个实例**——投递方往它的 inbox 写、
     员工从它的 inbox 取，两个实例等于两个信箱。``artifacts`` 同理：图往里写、
     接口从它读，两个实例等于两个库。
+
+    ``write_permit``（B-7）：失租后禁止新写。它必须是**壳**（:class:`WritePermitHolder`）
+    ——服务先建、运行控制面后建，执行面每次写操作前才来读它。省略 = 与加这一条
+    之前逐字一致（单进程 / 测试形态不需要租约门禁）。
     """
     registry = registry or build_registry()
     bearer = _bearer()
@@ -668,6 +699,8 @@ def build_service(
             channel=team_bus,
             # A-3：工具调用级幂等账本。工具执行到一半被杀，恢复后不会再执行一次。
             tool_ledger=build_tool_ledger(),
+            # B-7：写许可（迟绑定壳）。失租后执行面据它拒绝发起新的写操作。
+            write_permit=write_permit,
             # C-7：观测记录器（``llm`` / ``tool`` 两层）。**运行期没有第二个开关**：
             # 记录就是一行 JSON 日志，运维按 logger 名决定收不收。
             recorder=LoggingSpanRecorder(),
