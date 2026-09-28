@@ -42,6 +42,8 @@ export interface KernelObjectType {
   status?: string;
   type_group?: string;
   render_hints?: Array<[string, string]>;
+  /** 当前生效定义的指纹 —— 与 versions 列表中 checksum 一致者即"当前生效版本"。 */
+  checksum?: string;
 }
 
 export interface KernelActionType {
@@ -858,11 +860,20 @@ export async function listSchemaWip(): Promise<SchemaWipEntry[]> {
   return list<SchemaWipEntry>('/object-types/wip');
 }
 
-/** 应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁；二段确认 confirm_name 走 query 参数）。 */
-export async function applySchemaWip(rid: string, confirmName = ''): Promise<KernelObjectType> {
+/** 应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁；二段确认 confirm_name 走 query 参数）。
+ *
+ * `expectedChecksum`：乐观并发 —— 与当前生效定义不一致 → 409（不静默覆盖他人改动）。
+ * 传空则不做并发校验。
+ */
+export async function applySchemaWip(
+  rid: string, confirmName = '', expectedChecksum = '',
+): Promise<KernelObjectType> {
+  const params: Record<string, string> = {};
+  if (confirmName) params.confirm_name = confirmName;
+  if (expectedChecksum) params.expected_checksum = expectedChecksum;
   const resp = await apiClient.post(
     v2(`/object-types/wip/${encodeURIComponent(rid)}/apply`), {},
-    { params: confirmName ? { confirm_name: confirmName } : undefined },
+    { params: Object.keys(params).length ? params : undefined },
   );
   return resp.data as KernelObjectType;
 }
@@ -871,6 +882,67 @@ export async function applySchemaWip(rid: string, confirmName = ''): Promise<Ker
 export async function discardSchemaWip(rid: string): Promise<{ rid: string; discarded: boolean }> {
   const resp = await apiClient.delete(v2(`/object-types/wip/${encodeURIComponent(rid)}`));
   return resp.data as { rid: string; discarded: boolean };
+}
+
+// ── ONT-VERSION-MECHANISM：唯一权威版本来源（不可变定义快照）+ 发布前预检 ──
+
+/**
+ * GET /versions/{class_rid} 行 —— 不可变**定义快照**（不是同族 rid 列表）。
+ *
+ * 家族语义：传同族任一 rid（`...deal.v1` / `...deal.v2`）返回同一份历史，
+ * 按 `version_no` 升序。`checksum` 与当前类型（KernelObjectType.checksum）
+ * 一致的那一条 = **当前生效版本**；草稿（ont_schema_wip）不占版本号。
+ */
+export interface KernelVersion {
+  rid: string;
+  class_ref: string;
+  parent_rid: string | null;
+  created_at: string;
+  author: string;
+  change_set: string[];
+  version_no: number;
+  checksum: string;
+  status: string;
+  definition: Record<string, unknown>;
+  /** 必要依赖（property / interface / parent rid）—— 退役对象时反查受影响版本。 */
+  dependencies: string[];
+}
+
+/** 类型家族的不可变版本历史（按 version_no 升序；空数组 = 无已发布版本）。 */
+export async function listVersions(classRid: string): Promise<KernelVersion[]> {
+  return list<KernelVersion>(`/versions/${encodeURIComponent(classRid)}`);
+}
+
+/** POST /versions/{class_rid} 把**当前生效定义**记为版本快照（同内容幂等）。
+ *  `expectedChecksum` 不一致 → 409（乐观并发，不静默覆盖他人改动）。 */
+export async function createVersion(
+  classRid: string, author: string, expectedChecksum = '',
+): Promise<KernelVersion> {
+  const resp = await apiClient.post(v2(`/versions/${encodeURIComponent(classRid)}`), {
+    class_ref: classRid,
+    author,
+    expected_checksum: expectedChecksum,
+  });
+  return resp.data as KernelVersion;
+}
+
+/** 发布前预检结果（POST /object-types/validate，不落库）。 */
+export interface ModelPreflight {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  /** 与当前生效定义的破坏性差异；非空 → 发布必须带 confirm_name == 当前 display_name。 */
+  destructive: string[];
+  references: { resolved: string[]; unresolved: string[]; dependencies: string[] };
+  rid: string;
+}
+
+/** 发布前预检：静态错误 + 破坏性差异 + 引用解析 + 必要依赖。 */
+export async function validateObjectTypeModel(
+  payload: Record<string, unknown>,
+): Promise<ModelPreflight> {
+  const resp = await apiClient.post(v2('/object-types/validate'), payload);
+  return resp.data as ModelPreflight;
 }
 
 // ── SEC-12：行/列级安全策略 ──

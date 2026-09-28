@@ -49,7 +49,7 @@ from mate_kernel.objectset.ir import (
 )
 from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
-from mate_kernel.ontology.identity import ClassRef
+from mate_kernel.ontology.identity import ClassRef, definition_checksum
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
 from mate_kernel.ontology.reasoning import Axiom, AxiomKind, Function, FunctionLanguage
@@ -63,7 +63,12 @@ from mate_kernel.tooling.schema_gen import agent_tool_schemas
 from mate_platform.runtime import is_production_profile, runtime_profile
 from mate_platform.tenancy.guards import require_tenant
 
-from .pg_repo import ModelValidationUnavailable, SlugConflictError  # MP-DEDUP-01: 409 翻译
+from .pg_repo import (  # 409 翻译 + 定义指纹的行形态（版本快照与 live 同源）
+    ModelValidationUnavailable,
+    SlugConflictError,
+    VersionConflict,
+    _ot_to_row,
+)
 from .similarity import search_similar_object_types  # MP-DEDUP-01: precheck 相似扫描
 
 _logger = structlog.get_logger(__name__)
@@ -126,6 +131,9 @@ class ObjectTypeResponse(BaseModel):
     status: str = "active"
     type_group: str = ""
     render_hints: list[tuple[str, str]] = Field(default_factory=list)
+    # ONT-VERSION-MECHANISM：当前生效定义的指纹 —— 前端据此标出"当前生效版本"，
+    # 并在发布时回传 expected_checksum 做乐观并发（同一算法见 kernel definition_checksum）。
+    checksum: str = ""
 
 
 class IndividualCreateDTO(BaseModel):
@@ -263,6 +271,13 @@ class VersionDTO(BaseModel):
     created_at: str
     author: str
     change_set: list[str] = Field(default_factory=list)
+    # ONT-VERSION-MECHANISM：不可变定义快照（旧版可完整回读；Diff 可重现）
+    version_no: int = 0
+    checksum: str = ""
+    status: str = "published"
+    definition: dict[str, Any] = Field(default_factory=dict)
+    # 必要依赖（property/interface/parent rid）—— 退役某对象时反查受影响版本
+    dependencies: list[str] = Field(default_factory=list)
 
 
 class VersionCreateDTO(BaseModel):
@@ -270,6 +285,8 @@ class VersionCreateDTO(BaseModel):
     parent_rid: str | None = None
     author: str
     change_set: list[str] = Field(default_factory=list)
+    # 乐观并发：与当前生效定义不一致 → 409（不静默覆盖他人改动）
+    expected_checksum: str = ""
 
 
 # ─────────────────── helpers ───────────────────
@@ -446,6 +463,7 @@ def _ot_to_dto(ot: ObjectType) -> ObjectTypeResponse:
         status=ot.status,
         type_group=ot.type_group,
         render_hints=[tuple(kv) for kv in ot.render_hints],
+        checksum=definition_checksum(_ot_to_row(ot)),
     )
 
 
@@ -597,6 +615,11 @@ def _version_to_dto(v) -> VersionDTO:
         created_at=v.created_at.isoformat(),
         author=v.author,
         change_set=list(v.change_set),
+        version_no=int(getattr(v, "version_no", 0) or 0),
+        checksum=str(getattr(v, "checksum", "") or ""),
+        status=str(getattr(v, "status", "published") or "published"),
+        definition=dict(getattr(v, "definition", None) or {}),
+        dependencies=[str(d) for d in (getattr(v, "dependencies", None) or ())],
     )
 
 
@@ -1588,14 +1611,45 @@ async def apply_schema_wip(
     rid: str,
     request: Request,
     confirm_name: str = "",
+    expected_checksum: str = "",
 ) -> ObjectTypeResponse:
-    """G33：应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁）。"""
+    """G33：应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁）。
+
+    ONT-VERSION-MECHANISM：
+    - **调用方的显式确认必须抵达最终校验** —— 此前 `del confirm_name` 把合法确认丢弃，
+      破坏性草稿永远发不出去；未确认时仍由门禁 409 拒绝（不放松）。
+    - **并发编辑不静默覆盖**：草稿保存时的基线指纹（`base_checksum`）与当前 live 定义
+      不一致 → 409。客户端可用 ``expected_checksum`` 显式声明"我已看过新状态"来覆盖。
+    """
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
-    del confirm_name
     wip = await _call_scoped(request, "get_schema_wip", rid)
-    dto = ObjectTypeDTO(**wip["payload"])
+    payload = dict(wip["payload"])
+    # 显式确认优先于草稿载荷里的值（草稿可能是旧/空确认）
+    if confirm_name:
+        payload["confirm_name"] = confirm_name
+    dto = ObjectTypeDTO(**payload)
+    # 显式 expected_checksum 优先；否则用草稿基线（自动发现"我编辑期间别人已改过"）
+    declared = expected_checksum or str(wip.get("base_checksum") or "")
+    if declared:
+        try:
+            current = await _call_scoped(request, "definition_checksum", ClassRef(rid))
+        except KeyError:
+            current = ""  # 该类型尚不存在 → 与任何非空声明冲突
+        if current != declared:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "E409_VERSION_CONFLICT",
+                    "message": (
+                        f"草稿基线已过期：模型已被他人改动（当前 {current or '<不存在>'}，"
+                        f"草稿基线 {declared}）；请重新打开并保存草稿后再发布"
+                    ),
+                    "current_checksum": current,
+                    "declared_checksum": declared,
+                },
+            )
     # 复用主 upsert 端点的门禁逻辑：直接调内部实现
     saved = await _upsert_object_type_gated(dto, request, ctx)
     await _call_scoped(request, "delete_schema_wip", rid)
@@ -1615,6 +1669,27 @@ async def discard_schema_wip(rid: str, request: Request) -> dict:
     return {"rid": rid, "discarded": bool(ok)}
 
 
+def _assert_publishable(ot: ObjectType) -> None:
+    """ONT-VERSION-MECHANISM §4：发布前静态校验 —— 模型错误一律 422。
+
+    构造器（ObjectType.__post_init__）已挡住 PK∈properties 这类不变量；这里补上
+    它管不到的（rid 形制、属性 slug 重复、属性 rid 形制），避免坏模型被写进
+    "已发布版本"后永远读不回来。
+    """
+    from mate_kernel.ontology.validation_ops import validate_model
+
+    report = validate_model(ot)
+    if report["errors"]:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "invalid_model",
+                "message": "; ".join(report["errors"]),
+                "errors": report["errors"],
+            },
+        )
+
+
 async def _upsert_object_type_gated(
     payload: ObjectTypeDTO,
     request: Request,
@@ -1624,6 +1699,7 @@ async def _upsert_object_type_gated(
     from mate_kernel.ontology.types.object_type import detect_destructive_changes
 
     ot = _dto_to_ot(payload)
+    _assert_publishable(ot)
     try:
         existing = await _call_scoped(request, "get_object_type", ClassRef(payload.rid))
         destructive = detect_destructive_changes(existing, ot)
@@ -1756,6 +1832,7 @@ async def upsert_object_type(
         # GOVERN-06 第一道防线：外租户前缀 rid 一律拒绝写入
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
     ot = _dto_to_ot(payload)
+    _assert_publishable(ot)
     # G33：破坏性变更门禁 —— 删属性/改 format/改主键/改 parent 须 confirm_name
     from mate_kernel.ontology.types.object_type import detect_destructive_changes
 
@@ -2089,10 +2166,20 @@ async def run_reasoning(request: Request, payload: dict) -> dict:
     operation_id="ontValidateV2Model",
 )
 async def validate_model_endpoint(request: Request, payload: dict) -> dict:
-    """ONT-G17：类型定义静态验证（不落库）。body = ObjectTypeDTO 同构。"""
+    """ONT-G17 + ONT-VERSION-MECHANISM：**发布前预检**（不落库）。body = ObjectTypeDTO 同构。
+
+    在静态校验之上补两件事，回答"这份草稿能不能发、发出去会不会破坏存量"：
+
+    - `destructive`：与**当前生效定义**的破坏性差异清单 —— 非空则发布必须带
+      `confirm_name == 当前 display_name`（与 upsert / wip apply 同一门禁）；
+    - `references`：`parent_class` / `interfaces` 引用的外部对象是否已存在
+      （未解析只提示，不阻断 —— 仓库允许"先声明后注册"）；
+    - `dependencies`：定义的全部必要依赖 rid（排序去重），随发布写入版本快照。
+    """
     _ctx(request)
     from mate_kernel.ontology.validation_ops import validate_model
 
+    rid = str(payload.get("rid", ""))
     try:
         dto = ObjectTypeDTO(**payload)
         ot = _dto_to_ot(dto)
@@ -2102,9 +2189,23 @@ async def validate_model_endpoint(request: Request, payload: dict) -> dict:
             "valid": False,
             "errors": [str(e)],
             "warnings": [],
-            "rid": str(payload.get("rid", "")),
+            "destructive": [],
+            "references": {"resolved": [], "unresolved": [], "dependencies": []},
+            "rid": rid,
         }
-    return validate_model(ot)
+    out = validate_model(ot)
+    from mate_kernel.ontology.types.object_type import detect_destructive_changes
+
+    destructive: list[str] = []
+    try:
+        existing = await _call_scoped(request, "get_object_type", ClassRef(rid))
+    except KeyError:
+        existing = None  # 新类型无破坏性可言
+    if existing is not None:
+        destructive = detect_destructive_changes(existing, ot)
+    out["destructive"] = destructive
+    out["references"] = await _call_scoped(request, "resolve_references", ot)
+    return out
 
 
 @router.post(
@@ -2297,7 +2398,11 @@ async def branch_object_type(
     request: Request,
     payload: dict = None,
 ) -> ObjectTypeResponse:
-    """ONT-G8/G19：以当前定义分支出新版本 rid（body: {new_rid, note?}）。"""
+    """ONT-G8/G19：以当前定义分支出新版本 rid（body: {new_rid, note?}）。
+
+    **同族发布**（new_rid 与 rid 同 tenant+slug）即"发布新版本"：旧 rid 会随本次
+    发布下线（`archived=TRUE`，定义已先入不可变快照），家族在生效集合里保持唯一。
+    """
     ctx = _ctx(request)
     body = payload or {}
     new_rid = str((body or {}).get("new_rid") or "")
@@ -2313,6 +2418,7 @@ async def branch_object_type(
             ClassRef(rid),
             ClassRef(new_rid),
             note=note,
+            author=str(ctx.user_id),  # type: ignore[attr-defined]
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -2352,12 +2458,22 @@ async def rollback_object_type(
     request: Request,
     payload: dict = None,
 ) -> ObjectTypeResponse:
-    """ONT-G8/G19：把 rid 定义回滚为 from_rid（body: {from_rid}）。"""
+    """ONT-G8/G19 + ONT-VERSION-MECHANISM：把 rid 定义回滚为 from_rid 的内容。
+
+    `from_rid` 可以是**同族旧版本类型 rid**，也可以是 `ont.<租户>.ver.<slug>.vN`
+    的**不可变版本快照**（更稳：快照不会被后续 upsert 覆盖）。
+
+    回滚范围（见 ADR-0080 §6）：**只回滚模型定义（schema）**。**不**回滚数据
+    （实例 / 关系实例），**不**补偿已发生的副作用（Action side effects / 外联写入）。
+    """
     ctx = _ctx(request)
     body = payload or {}
     from_rid = str((body or {}).get("from_rid") or "")
-    if not from_rid.startswith(f"ont.{ctx.tenant_id}.obj."):
-        raise HTTPException(status_code=422, detail="from_rid must be a tenant object rid")
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not from_rid.startswith((f"ont.{tenant}.obj.", f"ont.{tenant}.ver.")):
+        raise HTTPException(
+            status_code=422, detail="from_rid must be a tenant object rid or version snapshot rid"
+        )
     try:
         from mate_kernel.ontology.identity.class_ref import ClassRef
 
@@ -5061,14 +5177,23 @@ async def snapshot_version(
     ctx = _ctx(request)
     if not class_rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
-    v = await _call_scoped(
-        request,
-        "snapshot_version",
-        ClassRef(payload.class_ref),
-        payload.author,
-        payload.parent_rid,
-        tuple(payload.change_set),
-    )
+    try:
+        v = await _call_scoped(
+            request,
+            "snapshot_version",
+            ClassRef(payload.class_ref),
+            payload.author,
+            payload.parent_rid,
+            tuple(payload.change_set),
+            expected_checksum=payload.expected_checksum or None,
+        )
+    except VersionConflict as e:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "E409_VERSION_CONFLICT", "message": str(e)},
+        ) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
     return _version_to_dto(v)
 
 

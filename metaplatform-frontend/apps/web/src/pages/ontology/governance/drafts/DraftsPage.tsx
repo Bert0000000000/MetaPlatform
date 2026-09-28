@@ -76,7 +76,11 @@ export default function DraftsPage() {
             dataIndex: '__label__',
             width: 260,
             ellipsis: true,
-            render: (v: string) => <span className="mp-onto-strong">{ridTail(v)}</span>,
+            // 记录里没有该字段 → value 恒为 undefined：短名必须取自 record，
+            // 否则 ridTail(undefined) 崩整页（只要有 1 条草稿就会触发）。
+            render: (_v: string, record: SchemaWipEntry) => (
+              <span className="mp-onto-strong">{ridTail(record?.rid ?? '')}</span>
+            ),
           },
           { title: 'rid', dataIndex: 'rid', width: 320, ellipsis: true },
           { title: '作者', dataIndex: 'author', width: 180, ellipsis: true },
