@@ -16,12 +16,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc && \
 
 # Install all deps via pip with Aliyun mirror (uv sync on this machine stalls
 # indefinitely on the Aliyun mirror; pip is faster and more reliable).
+# sqlalchemy 必须带 [asyncio] extra（greenlet 是硬依赖）——上游新版本把 greenlet
+# 从默认依赖移进了 extra，裸装 `sqlalchemy` 会在 2026-10 后解析出缺 greenlet 的
+# 组合（ontology core e2e 起栈即崩，PR #95 排查结论）。
 RUN pip install --no-cache-dir \
     fastapi 'uvicorn[standard]' pydantic pydantic-settings httpx \
     pyjwt[crypto] redis tenacity structlog python-multipart \
     opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc \
     opentelemetry-instrumentation-fastapi \
-    sqlmodel sqlalchemy asyncpg aiosqlite 'passlib[bcrypt]' bcrypt
+    sqlmodel 'sqlalchemy[asyncio]' asyncpg aiosqlite 'passlib[bcrypt]' bcrypt
 
 COPY services/ services/
 COPY packages/ packages/
