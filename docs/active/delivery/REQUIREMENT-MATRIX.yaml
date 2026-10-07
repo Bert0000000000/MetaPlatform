@@ -2739,6 +2739,19 @@ requirements:
       - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-ONT-RELEASE-MIGRATION:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+      - ontAssessV2Migration
+      - ontRunV2Migration
+      - ontListV2MigrationRuns
+    handler: mate_tech_ont.main:app#ontRunV2Migration
+    tests:
+      - mate-platform-backend/packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-ONT-KERNEL01-EVALUATEOBJECTSET:
     prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
     service: ont
