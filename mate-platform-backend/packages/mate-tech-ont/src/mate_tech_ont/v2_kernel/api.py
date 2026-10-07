@@ -2503,12 +2503,13 @@ async def assess_migration_endpoint(
     request: Request,
     payload: dict = None,
 ) -> dict:
-    """迁移评估（**只读**）：baseline → 当前 live 的分类变更 + 影响计数 + 计划草案。
+    """迁移评估（**只读**）：baseline → 目标定义的分类变更 + 影响计数 + 计划草案。
 
     body::
 
         {
             "baseline": "ont.<t>.ver.<slug>.vN | ont.<t>.obj.<...>",  # 缺省=家族上一条快照
+            "target_payload": {ObjectTypeDTO...},  # 缺省=当前 live；传草稿=发布前预演
             "options": {
                 "rename": {...},
                 "drops": "preserve" | "drop",
@@ -2526,12 +2527,22 @@ async def assess_migration_endpoint(
     body = payload or {}
     baseline = str(body.get("baseline") or "")
     options = body.get("options") or None
+    target_payload = body.get("target_payload")
+    target = None
+    if isinstance(target_payload, dict) and target_payload:
+        try:
+            target = _dto_to_ot(ObjectTypeDTO(**target_payload))
+        except Exception as e:
+            raise HTTPException(
+                status_code=422, detail=f"invalid target_payload (ObjectTypeDTO): {e}"
+            ) from e
     try:
         return await _call_scoped(
             request,
             "assess_migration",
             ClassRef(rid),
             baseline=ClassRef(baseline) if baseline else None,
+            target=target,
             options=options,
         )
     except KeyError as e:

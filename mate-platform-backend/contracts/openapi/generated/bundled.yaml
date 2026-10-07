@@ -12712,9 +12712,10 @@ paths:
         - FR-ONT-RELEASE-MIGRATION
       x-mate-implementation-status: implemented
       description: |
-        ADR-0082：迁移评估（只读）。baseline → 当前 live 的分类变更 + SQL 级
-        影响计数 + 计划草案。baseline 缺省 = 家族上一条与 live 不同的版本快照。
-        body: {baseline?, options? {rename?, drops?, pk_missing?}}；
+        ADR-0082：迁移评估（只读）。baseline → 目标定义的分类变更 + SQL 级
+        影响计数 + 计划草案。baseline 缺省 = 家族上一条与目标不同的版本快照；
+        target_payload（ObjectTypeDTO）缺省 = 当前 live，传草稿 = 发布前预演。
+        body: {baseline?, target_payload?, options? {rename?, drops?, pk_missing?}}；
         返回 {changes, counts, plan, warnings, from_checksum, to_checksum}。
         计数含 reattach_pending（家族旧 rid 残留实例）/ dangling（悬空键）/
         format_coercible·format_kept（无损可转 / 保留）/ pk_conflicts·pk_missing。
@@ -12724,7 +12725,15 @@ paths:
           application/json:
             schema:
               type: object
-              additionalProperties: true
+              properties:
+                baseline:
+                  type: string
+                target_payload:
+                  type: object
+                  additionalProperties: true
+                options:
+                  type: object
+                  additionalProperties: true
       responses:
         '200':
           description: OK

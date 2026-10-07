@@ -2112,11 +2112,14 @@ class PgOntologyRepository(OntologyRepository):
         rid: ClassRef,
         *,
         baseline: ClassRef | None = None,
+        target: ObjectType | None = None,
         options: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """迁移评估（**只读**）：baseline → 当前 live 的分类变更 + SQL 级真实计数 + 计划草案。
+        """迁移评估（**只读**）：baseline → 目标定义的分类变更 + SQL 级真实计数 + 计划草案。
 
-        baseline 缺省 = 家族里**上一条**与 live 不同的版本快照（没有则 live 自身 → 空计划）。
+        baseline 缺省 = 家族里**上一条**与目标不同的版本快照（没有则目标自身 → 空计划）。
+        ``target`` 缺省 = 当前 live；传**草稿定义**（ObjectTypeDTO 转换后）即"发布前预演"
+        —— 计数反映按该定义发布后的存量影响（reattach 计数仍按当前 live rid 口径）。
         """
         from mate_kernel.ontology.migration import build_migration_plan, plan_inverse_loss
         from mate_kernel.ontology.types.object_type import detect_destructive_changes
@@ -2125,19 +2128,20 @@ class PgOntologyRepository(OntologyRepository):
         tenant, slug = _family_of_rid(rid.rid)
         ind_prefix = f"ont.{tenant}.ind.{slug}."
         live = self.get_object_type(rid)
-        to_checksum = self._definition_checksum(_ot_to_row(live))
+        target_def = target if target is not None else live
+        to_checksum = self._definition_checksum(_ot_to_row(target_def))
 
         if baseline is not None:
             base_def = self._definition_for(baseline)
         else:
-            base_def = live
+            base_def = target_def
             for v in reversed(self.list_versions(rid)):
                 if v.checksum != to_checksum and v.definition:
                     base_def = _row_to_ot(v.definition)
                     break
         from_checksum = self._definition_checksum(_ot_to_row(base_def))
 
-        plan = build_migration_plan(base_def, live, options)
+        plan = build_migration_plan(base_def, target_def, options)
         plan["from_checksum"] = from_checksum
 
         conn, _ = self._connect()
@@ -2180,7 +2184,7 @@ class PgOntologyRepository(OntologyRepository):
 
                 # format 变更计数：白名单对分 coercible/kept；白名单外整组 kept
                 old_props = {p.rid.rid: p for p in base_def.properties}
-                new_props = {p.rid.rid: p for p in live.properties}
+                new_props = {p.rid.rid: p for p in target_def.properties}
                 for k in sorted(set(old_props) & set(new_props)):
                     f_old = old_props[k].format.value
                     f_new = new_props[k].format.value
@@ -2254,7 +2258,7 @@ class PgOntologyRepository(OntologyRepository):
             "target_rid": rid.rid,
             "from_checksum": from_checksum,
             "to_checksum": to_checksum,
-            "changes": detect_destructive_changes(base_def, live),
+            "changes": detect_destructive_changes(base_def, target_def),
             "counts": counts,
             "plan": plan,
             "warnings": warnings,

@@ -329,6 +329,18 @@ class TestAssessClassification:
         assert a["counts"]["pk_missing"] == 1
         assert a["plan"]["pk_rederive"]["new_pk"] == [P_CODE]
 
+    def test_assess_with_target_payload_previews_draft(self, repo) -> None:
+        """草稿预演：live 不动，评估按草稿目标定义给存量影响（发布前可见）。"""
+        with repo.tenant_scope(T):
+            repo.upsert_object_type(_ot(OBJ_V1, (P_ID, P_LEGACY), name="deal v1"))
+            repo.create_individual(_ind("d1", OBJ_V1, {P_ID: "d1", P_LEGACY: "x"}))
+            draft = _ot(OBJ_V1, (P_ID,), name="deal draft")  # 草稿：删 legacy
+            a = repo.assess_migration(ClassRef(OBJ_V1), target=draft)
+            live = repo.get_object_type(ClassRef(OBJ_V1))
+        assert a["counts"]["dangling"].get(P_LEGACY) == 1, "草稿目标的影响发布前可见"
+        assert a["changes"], "破坏性差异按草稿目标判定"
+        assert {p.rid.rid for p in live.properties} == {P_ID, P_LEGACY}, "live 未动（评估只读）"
+
     def test_assess_is_read_only(self, repo) -> None:
         _publish_v1_then_v2(
             repo,
