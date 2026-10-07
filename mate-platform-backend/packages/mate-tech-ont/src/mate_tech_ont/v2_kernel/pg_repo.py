@@ -37,6 +37,7 @@ from mate_kernel.ontology.identity import (
     definition_checksum,
 )
 from mate_kernel.ontology.instances import Individual, LinkInstance
+from mate_kernel.ontology.migration import LOSSLESS_FORMAT_PAIRS as _LOSSLESS_PAIRS
 from mate_kernel.ontology.query import ObjectSet
 from mate_kernel.ontology.reasoning import Axiom, Function
 from mate_kernel.ontology.reasoning.axiom import AxiomKind
@@ -85,6 +86,23 @@ class ModelValidationUnavailable(RuntimeError):
     语义：无法确认接口/引用一致性时**不得视为通过**（与「校验没跑=通过」区分）。
     API 层翻译为 503（依赖不可用，可重试），而不是 422（调用方错误）。
     """
+
+
+class MigrationPkMissing(RuntimeError):
+    """ONT-MIGRATION-PLAN：实例缺新主键属性值 → fail-closed 拒执行（API 409）。"""
+
+
+class MigrationPkConflict(RuntimeError):
+    """ONT-MIGRATION-PLAN：新主键派生出重复 rid → fail-closed 拒执行（API 409）。"""
+
+
+# ONT-MIGRATION-PLAN：SQL 侧的无损转换谓词/目标类型（与 kernel migration 的
+# `_INT_RE`/`_NUM_RE`/白名单**同源**——两处不一致时以 kernel 为准修这里）。
+_COERCE_REGEX: dict[str, str] = {
+    "integer": "'^-?[0-9]+$'",
+    "double": "'^-?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?$'",
+}
+_COERCE_SQLTYPE: dict[str, str] = {"integer": "numeric", "double": "double precision"}
 
 
 class SlugConflictError(Exception):
@@ -576,6 +594,28 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_flow_tenant ON ont_flow_definition (tenant_id)",
+    # ONT-MIGRATION-PLAN（ADR-0082 §2.5）：迁移执行记录 —— 幂等回放 + 审计。
+    # 沿 ont_type_version 先例做显式租户过滤（不进 RLS 强制清单）。
+    """
+    CREATE TABLE IF NOT EXISTS ont_migration_run (
+        run_id           TEXT PRIMARY KEY,
+        tenant_id        TEXT NOT NULL,
+        class_rid        TEXT NOT NULL,
+        kind             TEXT NOT NULL,
+        from_checksum    TEXT NOT NULL DEFAULT '',
+        to_checksum      TEXT NOT NULL DEFAULT '',
+        plan             JSONB NOT NULL DEFAULT '{}'::jsonb,
+        status           TEXT NOT NULL DEFAULT 'running',
+        counts           JSONB NOT NULL DEFAULT '{}'::jsonb,
+        author           TEXT NOT NULL DEFAULT '',
+        idempotency_key  TEXT NOT NULL,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_ont_migrun_tenant_key "
+    "ON ont_migration_run (tenant_id, idempotency_key)",
+    "CREATE INDEX IF NOT EXISTS ix_ont_migrun_class "
+    "ON ont_migration_run (tenant_id, class_rid, created_at)",
 )
 
 
@@ -1640,11 +1680,52 @@ class PgOntologyRepository(OntologyRepository):
             # 排除 → 同 slug 立刻可再次使用；旧版定义已由下方快照逻辑保留。
             if supersede_rids:
                 with self._cursor(conn) as cur:
+                    # ONT-MIGRATION-PLAN（ADR-0082 §2.2）：同族发布**自动携带实例** ——
+                    # 旧 rid 上的存量实例重挂到新 rid（同一事务）。实例 rid 按家族 slug
+                    # 构造（不含版本号），只改 class_rid 一列、无 rid 重写风险；不做的话
+                    # 新 rid 下查实例恒 0 行（数据还在、产品面不可见）。
+                    cur.execute(
+                        "SELECT * FROM ont_object_type WHERE rid = ANY(%s) LIMIT 1",
+                        (list(supersede_rids),),
+                    )
+                    prev_row = cur.fetchone()
+                    prev_checksum = (
+                        self._definition_checksum(_ot_to_row(_row_to_ot(prev_row)))
+                        if prev_row is not None
+                        else ""
+                    )
                     cur.execute(
                         "UPDATE ont_object_type SET archived = TRUE, updated_at = now() "
                         "WHERE rid = ANY(%s) AND rid != %s",
                         (list(supersede_rids), row["rid"]),
                     )
+                    cur.execute(
+                        "UPDATE ont_individual SET class_rid = %s, updated_at = now() "
+                        "WHERE class_rid = ANY(%s) AND tenant_id = %s",
+                        (row["rid"], list(supersede_rids), row["tenant_id"]),
+                    )
+                    reattached = cur.rowcount
+                    if reattached:
+                        import uuid as _uuid
+
+                        new_checksum = self._definition_checksum(row)
+                        cur.execute(
+                            "INSERT INTO ont_migration_run "
+                            "(run_id, tenant_id, class_rid, kind, from_checksum, to_checksum,"
+                            " plan, status, counts, author, idempotency_key) "
+                            "VALUES (%s,%s,%s,'reattach',%s,%s,'{}'::jsonb,'completed',"
+                            "%s,%s,%s) ON CONFLICT DO NOTHING",
+                            (
+                                f"migr-{_uuid.uuid4().hex[:12]}",
+                                row["tenant_id"],
+                                row["rid"],
+                                prev_checksum,
+                                new_checksum,
+                                json.dumps({"reattached": reattached}, default=str),
+                                author or "system:publish",
+                                f"reattach:{row['rid']}:{new_checksum}",
+                            ),
+                        )
             # MP-DEDUP-01：先做 (tenant_id, slug) pre-check，命中即抛 SlugConflictError
             # 带 existing_rid 让 API 层返回有意义的 409 hint。空 slug 跳过（兼容旧库）。
             # race window 内仍依赖 UNIQUE INDEX 兜底（见下方 UniqueViolation 捕获）。
@@ -2010,6 +2091,503 @@ class PgOntologyRepository(OntologyRepository):
         with self.tenant_scope(rid.rid.split(".")[1]):
             self.upsert_object_type(target)
         return target
+
+    # ───── ONT-MIGRATION-PLAN（ADR-0082）：评估 / 执行 / 记录 ─────
+
+    @staticmethod
+    def _like_prefix(prefix: str) -> str:
+        """家族 rid 前缀 → 转义后的 LIKE 模式（`_`/`%` 是通配符，必须转义）。"""
+        return prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+    def _family_type_rids(self, cur: Any, tenant: str, slug: str) -> list[str]:
+        """家族全部类型 rid（含 archived）—— reattach / BDS 重映射的范围。"""
+        cur.execute(
+            "SELECT rid FROM ont_object_type WHERE tenant_id = %s AND slug = %s",
+            (tenant, slug),
+        )
+        return [r["rid"] for r in cur.fetchall()]
+
+    def assess_migration(
+        self,
+        rid: ClassRef,
+        *,
+        baseline: ClassRef | None = None,
+        options: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """迁移评估（**只读**）：baseline → 当前 live 的分类变更 + SQL 级真实计数 + 计划草案。
+
+        baseline 缺省 = 家族里**上一条**与 live 不同的版本快照（没有则 live 自身 → 空计划）。
+        """
+        from mate_kernel.ontology.migration import build_migration_plan, plan_inverse_loss
+        from mate_kernel.ontology.types.object_type import detect_destructive_changes
+
+        self._ensure_schema()
+        tenant, slug = _family_of_rid(rid.rid)
+        ind_prefix = f"ont.{tenant}.ind.{slug}."
+        live = self.get_object_type(rid)
+        to_checksum = self._definition_checksum(_ot_to_row(live))
+
+        if baseline is not None:
+            base_def = self._definition_for(baseline)
+        else:
+            base_def = live
+            for v in reversed(self.list_versions(rid)):
+                if v.checksum != to_checksum and v.definition:
+                    base_def = _row_to_ot(v.definition)
+                    break
+        from_checksum = self._definition_checksum(_ot_to_row(base_def))
+
+        plan = build_migration_plan(base_def, live, options)
+        plan["from_checksum"] = from_checksum
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                pat = self._like_prefix(ind_prefix)
+                counts: dict[str, Any] = {
+                    "reattach_pending": 0,
+                    "dangling": {},
+                    "instances_affected": 0,
+                    "format_coercible": {},
+                    "format_kept": {},
+                    "pk_conflicts": 0,
+                    "pk_missing": 0,
+                }
+                cur.execute(
+                    "SELECT count(*) AS n FROM ont_individual "
+                    "WHERE tenant_id = %s AND rid LIKE %s AND class_rid != %s",
+                    (tenant, pat, rid.rid),
+                )
+                counts["reattach_pending"] = int(cur.fetchone()["n"])
+                if counts["reattach_pending"]:
+                    plan["reattach"] = {"to": rid.rid}
+
+                affected_keys = sorted(set(plan["renames"]) | set(plan["drops"]["props"]))
+                if affected_keys:
+                    for k in affected_keys:
+                        cur.execute(
+                            "SELECT count(*) AS n FROM ont_individual "
+                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
+                            (tenant, pat, k),
+                        )
+                        counts["dangling"][k] = int(cur.fetchone()["n"])
+                    cur.execute(
+                        "SELECT count(*) AS n FROM ont_individual "
+                        "WHERE tenant_id = %s AND rid LIKE %s AND props ?| %s",
+                        (tenant, pat, affected_keys),
+                    )
+                    counts["instances_affected"] = int(cur.fetchone()["n"])
+
+                # format 变更计数：白名单对分 coercible/kept；白名单外整组 kept
+                old_props = {p.rid.rid: p for p in base_def.properties}
+                new_props = {p.rid.rid: p for p in live.properties}
+                for k in sorted(set(old_props) & set(new_props)):
+                    f_old = old_props[k].format.value
+                    f_new = new_props[k].format.value
+                    if f_old == f_new:
+                        continue
+                    cur.execute(
+                        "SELECT count(*) AS n FROM ont_individual "
+                        "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
+                        (tenant, pat, k),
+                    )
+                    total = int(cur.fetchone()["n"])
+                    if (f_old, f_new) in _LOSSLESS_PAIRS:
+                        if f_new == "string":
+                            # number → string：数值型存量全部可无损
+                            cond = "jsonb_typeof(props -> %s) = 'number'"
+                            params = (tenant, pat, k, k)
+                        elif f_new == "double":
+                            # string→double（可解析文本）或 integer→double（数值型全可）
+                            cond = (
+                                "(jsonb_typeof(props -> %s) = 'number' "
+                                "OR (jsonb_typeof(props -> %s) = 'string' "
+                                f"AND props ->> %s ~ {_COERCE_REGEX['double']}))"
+                            )
+                            params = (tenant, pat, k, k, k, k)
+                        else:  # → integer：仅可解析文本（string→int）
+                            cond = (
+                                "jsonb_typeof(props -> %s) = 'string' "
+                                f"AND props ->> %s ~ {_COERCE_REGEX[f_new]}"
+                            )
+                            params = (tenant, pat, k, k, k)
+                        cur.execute(
+                            "SELECT count(*) AS n FROM ont_individual "
+                            f"WHERE tenant_id = %s AND rid LIKE %s AND props ? %s "
+                            f"AND {cond}",
+                            params,
+                        )
+                        coercible = int(cur.fetchone()["n"])
+                    else:
+                        # 白名单外的 format 对：一律保留原值（ADR-0082 §2.3，不猜）
+                        coercible = 0
+                    if total:
+                        counts["format_coercible"][k] = coercible
+                        counts["format_kept"][k] = total - coercible
+
+                pk = plan.get("pk_rederive")
+                if pk:
+                    src_of = {v: k for k, v in plan["renames"].items()}
+                    eff = src_of.get(pk["new_pk"][0], pk["new_pk"][0])
+                    cur.execute(
+                        "SELECT count(*) AS n FROM ont_individual "
+                        "WHERE tenant_id = %s AND rid LIKE %s AND (props ->> %s) IS NULL",
+                        (tenant, pat, eff),
+                    )
+                    counts["pk_missing"] = int(cur.fetchone()["n"])
+                    cur.execute(
+                        "SELECT count(*) AS n FROM ("
+                        "  SELECT props ->> %s AS v FROM ont_individual "
+                        "  WHERE tenant_id = %s AND rid LIKE %s "
+                        "    AND (props ->> %s) IS NOT NULL"
+                        "  GROUP BY v HAVING count(*) > 1"
+                        ") dups",
+                        (eff, tenant, pat, eff),
+                    )
+                    counts["pk_conflicts"] = int(cur.fetchone()["n"])
+        finally:
+            conn.close()
+
+        warnings = list(plan.get("warnings") or []) + plan_inverse_loss(plan)
+        return {
+            "baseline_rid": base_def.rid.rid,
+            "target_rid": rid.rid,
+            "from_checksum": from_checksum,
+            "to_checksum": to_checksum,
+            "changes": detect_destructive_changes(base_def, live),
+            "counts": counts,
+            "plan": plan,
+            "warnings": warnings,
+        }
+
+    def run_migration(
+        self,
+        rid: ClassRef,
+        plan: dict[str, Any],
+        *,
+        author: str = "",
+        idempotency_key: str = "",
+        expected_checksum: str = "",
+    ) -> dict[str, Any]:
+        """执行迁移计划（**单事务**：各步骤原子；PK 冲突/缺失 fail-closed 整体回滚）。
+
+        幂等：``(tenant_id, idempotency_key)`` 唯一 —— 同键重放**回放原结果**不重复执行。
+        ``expected_checksum`` 与当前 live 不一致 → ``VersionConflict``（ADR-0080 §2.5 同口径）。
+        """
+        import uuid as _uuid
+
+        self._ensure_schema()
+        tenant, slug = _family_of_rid(rid.rid)
+        ind_prefix = f"ont.{tenant}.ind.{slug}."
+        pat = self._like_prefix(ind_prefix)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_object_type WHERE rid = %s", (rid.rid,))
+                live_row = cur.fetchone()
+                if live_row is None:
+                    raise KeyError(f"ObjectType not found: {rid.rid}")
+                live_ck = self._definition_checksum(_ot_to_row(_row_to_ot(live_row)))
+                if expected_checksum and expected_checksum != live_ck:
+                    raise VersionConflict(
+                        f"live definition changed: expected {expected_checksum}, "
+                        f"current {live_ck} (re-assess before migrating)"
+                    )
+                # 幂等回放：同键已完成 → 原结果返回，不重复执行
+                cur.execute(
+                    "SELECT * FROM ont_migration_run WHERE tenant_id = %s AND idempotency_key = %s",
+                    (tenant, idempotency_key),
+                )
+                prior = cur.fetchone()
+                if prior is not None:
+                    return {
+                        "run_id": prior["run_id"],
+                        "kind": prior["kind"],
+                        "status": prior["status"],
+                        "counts": dict(prior["counts"] or {}),
+                        "from_checksum": prior["from_checksum"],
+                        "to_checksum": prior["to_checksum"],
+                        "replayed": True,
+                    }
+
+                run_id = f"migr-{_uuid.uuid4().hex[:12]}"
+                cur.execute(
+                    "INSERT INTO ont_migration_run "
+                    "(run_id, tenant_id, class_rid, kind, from_checksum, to_checksum,"
+                    " plan, status, counts, author, idempotency_key) "
+                    "VALUES (%s,%s,%s,'plan',%s,%s,%s::jsonb,'running','{}'::jsonb,%s,%s)",
+                    (
+                        run_id,
+                        tenant,
+                        rid.rid,
+                        str(plan.get("from_checksum") or ""),
+                        live_ck,
+                        json.dumps(plan, default=str, ensure_ascii=False),
+                        author,
+                        idempotency_key,
+                    ),
+                )
+
+                counts: dict[str, Any] = {"renamed": {}, "preserved": {}, "dropped": {}}
+                renames: dict[str, str] = dict(plan.get("renames") or {})
+
+                # 1) reattach：家族内挂在旧版本 rid 上的实例 → 当前 live rid
+                cur.execute(
+                    "UPDATE ont_individual SET class_rid = %s, updated_at = now() "
+                    "WHERE tenant_id = %s AND rid LIKE %s AND class_rid != %s",
+                    (rid.rid, tenant, pat, rid.rid),
+                )
+                counts["reattached"] = cur.rowcount
+
+                # 2) renames：props / props_src / overlay / field_mapping 四处同步
+                if renames:
+                    fam_rids = self._family_type_rids(cur, tenant, slug)
+                    for old, new in renames.items():
+                        cur.execute(
+                            "UPDATE ont_individual SET props = props - %s "
+                            "|| jsonb_build_object(%s, props -> %s), updated_at = now() "
+                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
+                            (old, new, old, tenant, pat, old),
+                        )
+                        n_props = cur.rowcount
+                        cur.execute(
+                            "UPDATE ont_individual SET props_src = props_src - %s "
+                            "|| jsonb_build_object(%s, props_src -> %s), updated_at = now() "
+                            "WHERE tenant_id = %s AND rid LIKE %s AND props_src ? %s",
+                            (old, new, old, tenant, pat, old),
+                        )
+                        n_src = cur.rowcount
+                        # overlay 主键 (individual_rid, property_rid)：新旧键并存时
+                        # 先并（删旧留新），再改剩余的旧键行
+                        cur.execute(
+                            "DELETE FROM ont_edit_overlay a USING ont_edit_overlay b "
+                            "WHERE a.individual_rid = b.individual_rid "
+                            "AND a.property_rid = %s AND b.property_rid = %s",
+                            (old, new),
+                        )
+                        cur.execute(
+                            "UPDATE ont_edit_overlay SET property_rid = %s, updated_at = now() "
+                            "WHERE property_rid = %s AND individual_rid LIKE %s",
+                            (new, old, pat),
+                        )
+                        n_overlay = cur.rowcount
+                        n_fm = 0
+                        if fam_rids:
+                            cur.execute(
+                                "UPDATE ont_backing_datasource SET "
+                                "field_mapping = field_mapping - %s "
+                                "|| jsonb_build_object(%s, field_mapping -> %s), "
+                                "updated_at = now() "
+                                "WHERE class_rid = ANY(%s) AND field_mapping ? %s",
+                                (old, new, old, fam_rids, old),
+                            )
+                            n_fm = cur.rowcount
+                        counts["renamed"][old] = {
+                            "props": n_props,
+                            "props_src": n_src,
+                            "overlay": n_overlay,
+                            "field_mapping": n_fm,
+                        }
+
+                # 3) coercions：仅无损白名单（SQL 谓词与 kernel 正则同源）
+                coerced: dict[str, int] = {}
+                coerce_kept: dict[str, int] = {}
+                for c in plan.get("coercions") or []:
+                    k = c["prop_rid"]
+                    f_new = c["to_format"]
+                    cur.execute(
+                        "SELECT count(*) AS n FROM ont_individual "
+                        "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
+                        (tenant, pat, k),
+                    )
+                    total = int(cur.fetchone()["n"])
+                    if f_new in ("integer", "double"):
+                        if f_new == "double":
+                            cond = (
+                                "(jsonb_typeof(props -> %s) = 'number' "
+                                "OR (jsonb_typeof(props -> %s) = 'string' "
+                                f"AND props ->> %s ~ {_COERCE_REGEX['double']}))"
+                            )
+                            cparams = (k, k, k)
+                        else:
+                            cond = (
+                                "jsonb_typeof(props -> %s) = 'string' "
+                                f"AND props ->> %s ~ {_COERCE_REGEX[f_new]}"
+                            )
+                            cparams = (k, k)
+                        cur.execute(
+                            "UPDATE ont_individual SET props = jsonb_set(props, %s, "
+                            f"to_jsonb((props ->> %s)::{_COERCE_SQLTYPE[f_new]})), "
+                            "updated_at = now() "
+                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s "
+                            f"AND {cond}",
+                            ([k], k, tenant, pat, k, *cparams),
+                        )
+                    else:  # → string
+                        cur.execute(
+                            "UPDATE ont_individual SET props = jsonb_set(props, %s, "
+                            "to_jsonb(props ->> %s)), updated_at = now() "
+                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s "
+                            "AND jsonb_typeof(props -> %s) = 'number'",
+                            ([k], k, tenant, pat, k, k),
+                        )
+                    coerced[k] = cur.rowcount
+                    coerce_kept[k] = total - coerced[k]
+                if coerced:
+                    counts["coerced"] = coerced
+                    counts["coerce_kept"] = coerce_kept
+
+                # 4) pk_rederive：从新 pk 属性值重派生 rid（fail-closed / skip）
+                pk = plan.get("pk_rederive")
+                if pk:
+                    if len(pk["new_pk"]) != 1:
+                        raise ValueError(
+                            "composite primary key rederive is not supported (see ADR-0082 §3)"
+                        )
+                    src_of = {v: k for k, v in renames.items()}
+                    eff = src_of.get(pk["new_pk"][0], pk["new_pk"][0])
+                    on_missing = pk.get("on_missing") or "abort"
+                    cur.execute(
+                        "SELECT rid, props ->> %s AS v FROM ont_individual "
+                        "WHERE tenant_id = %s AND rid LIKE %s",
+                        (eff, tenant, pat),
+                    )
+                    rows = cur.fetchall()
+                    targets: dict[str, list[str]] = {}
+                    rederived = 0
+                    skipped: list[str] = []
+                    moves: list[tuple[str, str]] = []
+                    for r in rows:
+                        value = r["v"]
+                        if value is None:
+                            if on_missing == "skip":
+                                skipped.append(r["rid"])
+                                continue
+                            raise MigrationPkMissing(
+                                f"instance {r['rid']} lacks new pk prop {eff}; "
+                                "fix data or pass pk_missing=skip"
+                            )
+                        new_rid = f"{ind_prefix}{value}"
+                        targets.setdefault(new_rid, []).append(r["rid"])
+                        moves.append((r["rid"], new_rid))
+                    dups = {t: olds for t, olds in targets.items() if len(olds) > 1}
+                    if dups:
+                        raise MigrationPkConflict(
+                            "pk rederive conflict — duplicate target rids: "
+                            + "; ".join(f"{t} <- {olds}" for t, olds in sorted(dups.items()))
+                        )
+                    links = 0
+                    for old_rid, new_rid in moves:
+                        if old_rid == new_rid:
+                            continue
+                        cur.execute(
+                            "UPDATE ont_individual SET rid = %s, primary_key = %s, "
+                            "updated_at = now() WHERE rid = %s",
+                            (new_rid, new_rid.rsplit(".", 1)[-1], old_rid),
+                        )
+                        cur.execute(
+                            "UPDATE ont_link_instance SET src = %s, updated_at = now() "
+                            "WHERE src = %s",
+                            (new_rid, old_rid),
+                        )
+                        links += cur.rowcount
+                        cur.execute(
+                            "UPDATE ont_link_instance SET dst = %s, updated_at = now() "
+                            "WHERE dst = %s",
+                            (new_rid, old_rid),
+                        )
+                        links += cur.rowcount
+                        # 覆盖层跟着实例 rid 走
+                        cur.execute(
+                            "UPDATE ont_edit_overlay SET individual_rid = %s, "
+                            "updated_at = now() WHERE individual_rid = %s",
+                            (new_rid, old_rid),
+                        )
+                        rederived += 1
+                    counts["pk_rederived"] = rederived
+                    counts["links_rewritten"] = links
+                    if skipped:
+                        counts["pk_skipped"] = skipped
+
+                # 5) drops：默认 preserve（只计数不删）；显式 drop 才删
+                drop_policy = str((plan.get("drops") or {}).get("policy") or "preserve")
+                for k in (plan.get("drops") or {}).get("props") or []:
+                    if drop_policy == "drop":
+                        cur.execute(
+                            "UPDATE ont_individual SET props = props - %s, "
+                            "props_src = props_src - %s, updated_at = now() "
+                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
+                            (k, k, tenant, pat, k),
+                        )
+                        counts["dropped"][k] = cur.rowcount
+                        cur.execute(
+                            "DELETE FROM ont_edit_overlay WHERE property_rid = %s "
+                            "AND individual_rid LIKE %s",
+                            (k, pat),
+                        )
+                    else:
+                        cur.execute(
+                            "SELECT count(*) AS n FROM ont_individual "
+                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
+                            (tenant, pat, k),
+                        )
+                        counts["preserved"][k] = int(cur.fetchone()["n"])
+
+                cur.execute(
+                    "UPDATE ont_migration_run SET status = 'completed', counts = %s::jsonb "
+                    "WHERE run_id = %s",
+                    (json.dumps(counts, default=str, ensure_ascii=False), run_id),
+                )
+            conn.commit()
+            return {
+                "run_id": run_id,
+                "kind": "plan",
+                "status": "completed",
+                "counts": counts,
+                "from_checksum": str(plan.get("from_checksum") or ""),
+                "to_checksum": live_ck,
+                "replayed": False,
+            }
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def list_migration_runs(self, rid: ClassRef) -> list[dict[str, Any]]:
+        """该类型**家族**的迁移记录（含 archived 旧 rid 上发生过的 reattach）。"""
+        self._ensure_schema()
+        tenant, slug = _family_of_rid(rid.rid)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                fam_rids = self._family_type_rids(cur, tenant, slug)
+                if not fam_rids:
+                    return []
+                cur.execute(
+                    "SELECT * FROM ont_migration_run WHERE tenant_id = %s "
+                    "AND class_rid = ANY(%s) ORDER BY created_at, run_id",
+                    (tenant, fam_rids),
+                )
+                rows = cur.fetchall()
+            return [
+                {
+                    "run_id": r["run_id"],
+                    "tenant_id": r["tenant_id"],
+                    "class_rid": r["class_rid"],
+                    "kind": r["kind"],
+                    "from_checksum": r["from_checksum"],
+                    "to_checksum": r["to_checksum"],
+                    "status": r["status"],
+                    "counts": dict(r["counts"] or {}),
+                    "author": r["author"],
+                    "idempotency_key": r["idempotency_key"],
+                    "created_at": r["created_at"],
+                }
+                for r in rows
+            ]
+        finally:
+            conn.close()
 
     def get_object_type(self, rid: ClassRef) -> ObjectType:
         self._ensure_schema()
@@ -4180,6 +4758,9 @@ class PgOntologyRepository(OntologyRepository):
                     write_src[prop_rid] = {"prio": priority, "src": source}
                 if not write_props:
                     return {"written": 0, "skipped": skipped}
+                # ONT-MIGRATION-PLAN（ADR-0082 §2.2）：同 rid 命中时 class_rid 跟到
+                # 当前版本 —— 实例 rid 家族稳定，不更新的话家族发布后管道同步会把
+                # class_rid 永远停留在旧版本 rid 上。
                 cur.execute(
                     """
                     INSERT INTO ont_individual
@@ -4190,6 +4771,7 @@ class PgOntologyRepository(OntologyRepository):
                         props = ont_individual.props || EXCLUDED.props,
                         props_src = COALESCE(ont_individual.props_src, '{}'::jsonb)
                                     || EXCLUDED.props_src,
+                        class_rid = EXCLUDED.class_rid,
                         updated_at = EXCLUDED.updated_at
                     """,
                     (
@@ -4274,6 +4856,7 @@ class PgOntologyRepository(OntologyRepository):
                             props = ont_individual.props || EXCLUDED.props,
                             props_src = COALESCE(ont_individual.props_src, '{}'::jsonb)
                                         || EXCLUDED.props_src,
+                            class_rid = EXCLUDED.class_rid,
                             updated_at = EXCLUDED.updated_at
                         """,
                         rows,
