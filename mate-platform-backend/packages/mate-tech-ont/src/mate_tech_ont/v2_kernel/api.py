@@ -64,6 +64,8 @@ from mate_platform.runtime import is_production_profile, runtime_profile
 from mate_platform.tenancy.guards import require_tenant
 
 from .pg_repo import (  # 409 翻译 + 定义指纹的行形态（版本快照与 live 同源）
+    MigrationPkConflict,
+    MigrationPkMissing,
     ModelValidationUnavailable,
     SlugConflictError,
     VersionConflict,
@@ -2486,6 +2488,140 @@ async def rollback_object_type(
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _ot_to_dto(out)
+
+
+# ─────────── ONT-MIGRATION-PLAN（ADR-0082）：评估 / 执行 / 记录 ───────────
+
+
+@router.post(
+    "/object-types/{rid:path}/migration/assess",
+    response_model=dict,
+    operation_id="ontAssessV2Migration",
+)
+async def assess_migration_endpoint(
+    rid: str,
+    request: Request,
+    payload: dict = None,
+) -> dict:
+    """迁移评估（**只读**）：baseline → 目标定义的分类变更 + 影响计数 + 计划草案。
+
+    body::
+
+        {
+            "baseline": "ont.<t>.ver.<slug>.vN | ont.<t>.obj.<...>",  # 缺省=家族上一条快照
+            "target_payload": {ObjectTypeDTO...},  # 缺省=当前 live；传草稿=发布前预演
+            "options": {
+                "rename": {...},
+                "drops": "preserve" | "drop",
+                "pk_missing": "abort" | "skip",
+            },
+        }
+
+    返回 ``{changes, counts, plan, warnings, from_checksum, to_checksum}``。
+    """
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant migration assess denied")
+    from mate_kernel.ontology.identity.class_ref import ClassRef
+
+    body = payload or {}
+    baseline = str(body.get("baseline") or "")
+    options = body.get("options") or None
+    target_payload = body.get("target_payload")
+    target = None
+    if isinstance(target_payload, dict) and target_payload:
+        try:
+            target = _dto_to_ot(ObjectTypeDTO(**target_payload))
+        except Exception as e:
+            raise HTTPException(
+                status_code=422, detail=f"invalid target_payload (ObjectTypeDTO): {e}"
+            ) from e
+    try:
+        return await _call_scoped(
+            request,
+            "assess_migration",
+            ClassRef(rid),
+            baseline=ClassRef(baseline) if baseline else None,
+            target=target,
+            options=options,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+@router.post(
+    "/object-types/{rid:path}/migration/run",
+    response_model=dict,
+    operation_id="ontRunV2Migration",
+)
+async def run_migration_endpoint(
+    rid: str,
+    request: Request,
+    payload: dict = None,
+) -> dict:
+    """执行迁移计划（单事务；PK 冲突/缺失 fail-closed 整体回滚）。
+
+    - ``Idempotency-Key`` 头必填（缺 → 400；同键重放回放原结果）；
+    - ``expected_checksum`` 必填且须与当前 live 一致（漂移 → 409 ``E409_VERSION_CONFLICT``，
+      与 ADR-0080 §2.5 同口径 —— 重新 assess 后再执行）。
+    """
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant migration run denied")
+    key = _require_idempotency_key(request)
+    body = payload or {}
+    plan = dict(body.get("plan") or {})
+    expected_checksum = str(body.get("expected_checksum") or "")
+    if not plan:
+        raise HTTPException(status_code=422, detail="plan is required (from assess)")
+    if not expected_checksum:
+        raise HTTPException(status_code=422, detail="expected_checksum is required")
+    from mate_kernel.ontology.identity.class_ref import ClassRef
+
+    try:
+        return await _call_scoped(
+            request,
+            "run_migration",
+            ClassRef(rid),
+            plan,
+            author=str(getattr(ctx, "user_id", "") or ""),
+            idempotency_key=key,
+            expected_checksum=expected_checksum,
+        )
+    except VersionConflict as e:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "E409_VERSION_CONFLICT", "message": str(e)},
+        ) from e
+    except (MigrationPkMissing, MigrationPkConflict) as e:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "E409_MIGRATION_PK", "message": str(e)},
+        ) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+@router.get(
+    "/object-types/{rid:path}/migration/runs",
+    response_model=list[dict],
+    operation_id="ontListV2MigrationRuns",
+)
+async def list_migration_runs_endpoint(rid: str, request: Request) -> list[dict]:
+    """该类型**家族**的迁移记录（reattach 自动携带 + 显式计划执行，均入档）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant migration runs denied")
+    from mate_kernel.ontology.identity.class_ref import ClassRef
+
+    try:
+        return await _call_scoped(request, "list_migration_runs", ClassRef(rid))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.get(

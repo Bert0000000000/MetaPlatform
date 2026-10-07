@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir \
         langchain langchain-core langchain-openai langchain-anthropic \
         openai anthropic \
         redis pybreaker sse-starlette \
-        tiktoken sqlalchemy sqlmodel
+        tiktoken 'sqlalchemy[asyncio]' sqlmodel asyncpg
 
 # Keep the provider source tied to the final image even when BuildKit reuses
 # the broad workspace COPY layer.  This avoids serving an older provider after

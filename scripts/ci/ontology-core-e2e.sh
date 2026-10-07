@@ -64,6 +64,10 @@ SERVICE_CLIENT_SECRET=
 OPENAI_API_KEY=placeholder
 POSTGRES_USER=meta
 POSTGRES_PASSWORD=meta
+# CI 无真实 provider：语义索引用离线确定性 embedder（index-on-write 仍被覆盖，
+# 且 llmgw/Keycloak 网络不再出现在 create_individual 的同步路径里 —— 否则
+# llmgw 降级时 embedding 的 30s httpx 超时会把 Playwright 30s 用例超时拖死）
+ONT_EMBEDDER=hash
 EOF
   # docker-compose.override.yml 引用本地敏感文件；CI 用空文件让内置默认生效
   : > .env.local

@@ -641,6 +641,12 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1propose
   /api/v1/ont/v2/object-types/{rid}:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}
+  /api/v1/ont/v2/object-types/{rid}/migration/assess:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1migration~1assess
+  /api/v1/ont/v2/object-types/{rid}/migration/run:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1migration~1run
+  /api/v1/ont/v2/object-types/{rid}/migration/runs:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1migration~1runs
   /api/v1/ont/v2/object-types/{rid}/properties:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1properties
   /api/v1/ont/v2/proposals/{proposal_id}:

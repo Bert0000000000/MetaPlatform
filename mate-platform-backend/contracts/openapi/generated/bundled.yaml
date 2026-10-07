@@ -12687,6 +12687,175 @@ paths:
           $ref: '#/components/responses/Error404'
         '409':
           description: Delete protection (recent reads / remaining instances)
+  /api/v1/ont/v2/object-types/{rid}/migration/assess:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+        description: ObjectType rid（当前生效定义 = 迁移目标）
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Assess migration impact (read-only)
+      operationId: ontAssessV2Migration
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-RELEASE-MIGRATION
+      x-mate-implementation-status: implemented
+      description: |
+        ADR-0082：迁移评估（只读）。baseline → 目标定义的分类变更 + SQL 级
+        影响计数 + 计划草案。baseline 缺省 = 家族上一条与目标不同的版本快照；
+        target_payload（ObjectTypeDTO）缺省 = 当前 live，传草稿 = 发布前预演。
+        body: {baseline?, target_payload?, options? {rename?, drops?, pk_missing?}}；
+        返回 {changes, counts, plan, warnings, from_checksum, to_checksum}。
+        计数含 reattach_pending（家族旧 rid 残留实例）/ dangling（悬空键）/
+        format_coercible·format_kept（无损可转 / 保留）/ pk_conflicts·pk_missing。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                baseline:
+                  type: string
+                target_payload:
+                  type: object
+                  additionalProperties: true
+                options:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '422':
+          $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/{rid}/migration/run:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Run migration plan (single transaction, idempotent)
+      operationId: ontRunV2Migration
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-RELEASE-MIGRATION
+      x-mate-implementation-status: implemented
+      description: |
+        ADR-0082：执行迁移计划。Idempotency-Key 头必填（同键回放原结果）；
+        expected_checksum 必填且须与当前 live 一致（漂移 → 409 E409_VERSION_CONFLICT，
+        与 ADR-0080 §2.5 同口径）。单事务执行：reattach → renames（props/props_src/
+        overlay/field_mapping 四处）→ coercions（无损白名单）→ pk_rederive
+        （冲突/缺失 fail-closed 整体回滚，pk_missing=skip 可跳过）→ drops
+        （默认 preserve 不丢数据，显式 drop 才删）。每步计数随 run 记录入档。
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - plan
+                - expected_checksum
+              properties:
+                plan:
+                  type: object
+                  additionalProperties: true
+                expected_checksum:
+                  type: string
+      responses:
+        '200':
+          description: OK（replayed=true 表示幂等回放）
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/Error400'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/{rid}/migration/runs:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: List migration runs of the type family
+      operationId: ontListV2MigrationRuns
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-RELEASE-MIGRATION
+      x-mate-implementation-status: implemented
+      description: |
+        ADR-0082：该类型家族的迁移记录（kind=reattach 的自动携带与 kind=plan 的
+        显式执行均入档；跨回滚保留，链条可追溯）。租户隔离（显式过滤）。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Error403'
   /api/v1/ont/v2/object-types/{rid}/properties:
     parameters:
       - in: path
