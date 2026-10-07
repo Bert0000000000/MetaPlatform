@@ -945,6 +945,112 @@ export async function validateObjectTypeModel(
   return resp.data as ModelPreflight;
 }
 
+// ── ONT-MIGRATION-PLAN（ADR-0082）：存量数据迁移（评估 / 执行 / 记录）──
+
+/** assess 的影响计数（SQL 级真实计数，只读）。 */
+export interface MigrationCounts {
+  reattach_pending?: number;
+  dangling?: Record<string, number>;
+  instances_affected?: number;
+  format_coercible?: Record<string, number>;
+  format_kept?: Record<string, number>;
+  pk_conflicts?: number;
+  pk_missing?: number;
+}
+
+/** 声明式迁移计划（后端 assess 产出，UI 可改 drops.policy / pk_rederive.on_missing 后执行）。 */
+export interface MigrationPlan {
+  class_rid: string;
+  from_checksum: string;
+  renames: Record<string, string>;
+  coercions: { prop_rid: string; from_format: string; to_format: string }[];
+  pk_rederive: {
+    old_pk: string[];
+    new_pk: string[];
+    on_missing: 'abort' | 'skip';
+  } | null;
+  drops: { policy: 'preserve' | 'drop'; props: string[] };
+  reattach: { to: string } | null;
+  warnings: string[];
+}
+
+/** 评估结果：baseline → 当前 live 的分类变更 + 计数 + 计划草案。 */
+export interface MigrationAssessment {
+  baseline_rid: string;
+  target_rid: string;
+  from_checksum: string;
+  to_checksum: string;
+  changes: string[];
+  counts: MigrationCounts;
+  plan: MigrationPlan;
+  warnings: string[];
+}
+
+/** 迁移执行记录（reattach 自动携带与 plan 显式执行均入档，跨回滚保留）。 */
+export interface MigrationRun {
+  run_id: string;
+  tenant_id: string;
+  class_rid: string;
+  kind: 'reattach' | 'plan' | string;
+  from_checksum: string;
+  to_checksum: string;
+  status: string;
+  counts: Record<string, unknown>;
+  author: string;
+  idempotency_key: string;
+  created_at: string;
+}
+
+/** 迁移评估（只读）。baseline 缺省 = 家族上一条与 live 不同的版本快照；
+ *  `targetPayload` 传草稿定义（ObjectTypeDTO 形态）= 发布前预演。 */
+export async function assessMigration(
+  classRid: string,
+  opts: {
+    baseline?: string;
+    targetPayload?: Record<string, unknown>;
+    options?: Record<string, unknown>;
+  } = {},
+): Promise<MigrationAssessment> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(classRid)}/migration/assess`),
+    {
+      baseline: opts.baseline ?? '',
+      target_payload: opts.targetPayload ?? null,
+      options: opts.options ?? {},
+    },
+  );
+  return resp.data as MigrationAssessment;
+}
+
+/**
+ * 执行迁移计划（单事务；PK 冲突/缺失 fail-closed 整体回滚）。
+ * `expectedChecksum` 漂移 → 409（重新 assess 后再执行）。幂等键每次执行随机生成；
+ * 网络重试请复用同一 key 由调用方保证。
+ */
+export async function runMigration(
+  classRid: string,
+  plan: MigrationPlan,
+  expectedChecksum: string,
+): Promise<Record<string, unknown>> {
+  const key =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `mig-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(classRid)}/migration/run`),
+    { plan, expected_checksum: expectedChecksum },
+    { headers: { 'Idempotency-Key': key } },
+  );
+  return resp.data as Record<string, unknown>;
+}
+
+/** 该类型家族的迁移记录（按时间升序）。 */
+export async function listMigrationRuns(classRid: string): Promise<MigrationRun[]> {
+  return list<MigrationRun>(
+    `/object-types/${encodeURIComponent(classRid)}/migration/runs`,
+  );
+}
+
 // ── SEC-12：行/列级安全策略 ──
 
 /** GET /security-policies 行（SELECT * 列；value 为 JSONB 反序列化值，markings 为数组）。 */

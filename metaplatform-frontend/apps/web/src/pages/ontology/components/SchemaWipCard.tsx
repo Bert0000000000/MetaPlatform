@@ -15,9 +15,10 @@ import { Card } from '@douyinfe/semi-ui';
 import { AlertTriangle, Inbox } from 'lucide-react';
 import { toast } from '@mate/shared';
 import {
-  applySchemaWip, discardSchemaWip, errDetailText, extractDestructiveConfirm,
-  listSchemaWip, validateObjectTypeModel,
-  type DestructiveConfirmDetail, type ModelPreflight, type SchemaWipEntry,
+  applySchemaWip, assessMigration, discardSchemaWip, errDetailText,
+  extractDestructiveConfirm, listSchemaWip, validateObjectTypeModel,
+  type DestructiveConfirmDetail, type MigrationAssessment, type ModelPreflight,
+  type SchemaWipEntry,
 } from '@/api/ont/kernel';
 
 // 按钮 / 输入统一走 mp-onto-* 类（见 pages/ontology/ontology.css）。
@@ -35,6 +36,8 @@ export default function SchemaWipCard() {
   // 发布前预检（只读）：静态错误 + 破坏性差异 + 引用解析
   const [preflightRid, setPreflightRid] = useState('');
   const [preflight, setPreflight] = useState<ModelPreflight | null>(null);
+  // 存量影响（ADR-0082）：草稿作为目标的迁移预演（失败=类型尚不存在等 → 不阻塞预检）
+  const [migAssess, setMigAssess] = useState<MigrationAssessment | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -58,6 +61,7 @@ export default function SchemaWipCard() {
   /** 发布前预检（只读，不落库）：先看会报什么错、会不会破坏存量、引用是否解析得到。 */
   const doPreflight = async (rid: string, payload: Record<string, unknown>) => {
     setBusyRid(rid); setErr(''); setMsg('');
+    setMigAssess(null);
     try {
       setPreflight(await validateObjectTypeModel(payload));
       setPreflightRid(rid);
@@ -65,6 +69,12 @@ export default function SchemaWipCard() {
       setErr(errDetailText(e, `预检失败：${rid}`));
     } finally {
       setBusyRid('');
+    }
+    // 存量影响预演（草稿为目标）：失败不阻塞预检（新类型/无实例场景无意义）
+    try {
+      setMigAssess(await assessMigration(rid, { targetPayload: payload }));
+    } catch {
+      setMigAssess(null);
     }
   };
 
@@ -198,6 +208,18 @@ export default function SchemaWipCard() {
                     <div className="mp-text-xs mp-text-2">
                       必要依赖 {preflight.references.dependencies.length} 项 · 随发布写入版本快照
                     </div>
+                    {migAssess && (
+                      <div className="mp-text-xs mp-text-2 mp-mt-1">
+                        存量影响（按本草稿发布后）：受影响实例{' '}
+                        <b>{migAssess.counts.instances_affected ?? 0}</b> 条 · 待重挂{' '}
+                        <b>{migAssess.counts.reattach_pending ?? 0}</b> 条
+                        {Object.keys(migAssess.counts.dangling ?? {}).length > 0
+                          && ` · 悬空键 ${Object.keys(migAssess.counts.dangling ?? {}).length} 个属性`}
+                        {(migAssess.counts.pk_conflicts ?? 0) > 0
+                          && ` · PK 冲突 ${migAssess.counts.pk_conflicts}（迁移会拒执行）`}
+                        。发布后可在「版本与发布 → 存量适配」评估并执行迁移。
+                      </div>
+                    )}
                   </div>
                 )}
                 {/* 破坏性 409 二段确认区（仅该行展开） */}

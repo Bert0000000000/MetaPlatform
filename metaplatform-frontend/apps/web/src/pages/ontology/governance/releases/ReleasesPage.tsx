@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Tag } from '@douyinfe/semi-ui';
-import { GitBranch, GitCompare, RefreshCw, Undo2 } from 'lucide-react';
+import { ArrowRightLeft, DatabaseZap, GitBranch, GitCompare, RefreshCw, Undo2 } from 'lucide-react';
 import { toast } from '@mate/shared';
 import {
+  assessMigration,
   branchObjectType,
   diffObjectTypes,
   errDetailText,
   getObjectType,
+  listMigrationRuns,
   listObjectTypes,
   listVersions,
   rollbackObjectType,
+  runMigration,
   type KernelObjectType,
   type KernelVersion,
+  type MigrationAssessment,
+  type MigrationPlan,
+  type MigrationRun,
 } from '@/api/ont/kernel';
 import { EmptyState, PageHeader } from '@/components/skeleton';
 import '../governance.css';
@@ -66,6 +72,10 @@ export default function ReleasesPage() {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  // 存量适配（ADR-0082）：评估结果 + 可编辑计划副本 + 运行历史
+  const [assessment, setAssessment] = useState<MigrationAssessment | null>(null);
+  const [plan, setPlan] = useState<MigrationPlan | null>(null);
+  const [runs, setRuns] = useState<MigrationRun[]>([]);
 
   const reloadTypes = useCallback(async () => {
     try {
@@ -85,13 +95,19 @@ export default function ReleasesPage() {
     if (!rid) {
       setLive(null);
       setVersions([]);
+      setRuns([]);
       return;
     }
     setDetailBusy(true);
     try {
-      const [ot, vs] = await Promise.all([getObjectType(rid), listVersions(rid)]);
+      const [ot, vs, migRuns] = await Promise.all([
+        getObjectType(rid),
+        listVersions(rid),
+        listMigrationRuns(rid).catch(() => [] as MigrationRun[]),
+      ]);
       setLive(ot);
       setVersions(vs);
+      setRuns(migRuns);
     } catch (e) {
       setLive(null);
       setVersions([]);
@@ -112,6 +128,8 @@ export default function ReleasesPage() {
     setMsg('');
     setDiffResult(null);
     setRollbackFrom('');
+    setAssessment(null);
+    setPlan(null);
   };
 
   /** 草稿 page 的 publish 是 POST /object-types/wip/{rid}/apply；此处是**已发布类型**的版本操作。 */
@@ -169,6 +187,56 @@ export default function ReleasesPage() {
       await loadDetail(verRid);
     } catch (e) {
       setErr(errDetailText(e, '回滚失败'));
+    } finally {
+      setBusy('');
+    }
+  };
+
+  /** 存量适配评估（只读）：上一条版本快照 → 当前生效 的真实影响计数 + 计划草案。 */
+  const doAssess = async () => {
+    if (!verRid) { setErr('请先选择类型'); return; }
+    setBusy('assess'); setErr(''); setMsg('');
+    try {
+      const a = await assessMigration(verRid);
+      setAssessment(a);
+      setPlan({ ...a.plan, drops: { ...a.plan.drops }, pk_rederive: a.plan.pk_rederive ? { ...a.plan.pk_rederive } : null });
+      void loadDetail(verRid);
+    } catch (e) {
+      setErr(errDetailText(e, '迁移评估失败'));
+    } finally {
+      setBusy('');
+    }
+  };
+
+  /** 执行存量适配：确认框带摘要（含信息损失警告）；PK 冲突/缺失 fail-closed 由后端拦。 */
+  const doRunMigration = async () => {
+    if (!verRid || !assessment || !plan) return;
+    const c = assessment.counts;
+    const lossNote = plan.drops.policy === 'drop' && plan.drops.props.length > 0
+      ? `\n⚠ 删除策略将物理移除 ${plan.drops.props.length} 个属性的存量键，不可恢复。` : '';
+    if (!window.confirm(
+      `对 ${verRid} 执行存量数据迁移？\n\n`
+      + `重挂实例：${c.reattach_pending ?? 0} 条\n`
+      + `受影响实例：${c.instances_affected ?? 0} 条\n`
+      + `PK 冲突：${c.pk_conflicts ?? 0} · PK 缺失：${c.pk_missing ?? 0}（缺失策略：${plan.pk_rederive?.on_missing ?? '—'}）`
+      + lossNote,
+    )) return;
+    setBusy('migrate'); setErr(''); setMsg('');
+    try {
+      const out = await runMigration(verRid, plan, assessment.to_checksum);
+      const counts = (out.counts ?? {}) as Record<string, unknown>;
+      setMsg(
+        `迁移完成（run ${(out.run_id as string) ?? ''}）：重挂 ${String(counts.reattached ?? 0)} ·`
+        + ` rename ${Object.keys((counts.renamed as Record<string, unknown>) ?? {}).length} 项 ·`
+        + ` PK 重派生 ${String(counts.pk_rederived ?? 0)}`
+        + (out.replayed ? '（幂等回放）' : ''),
+      );
+      toast('迁移完成', 'success');
+      setAssessment(null);
+      setPlan(null);
+      await loadDetail(verRid);
+    } catch (e) {
+      setErr(errDetailText(e, '迁移执行失败'));
     } finally {
       setBusy('');
     }
@@ -394,6 +462,168 @@ export default function ReleasesPage() {
               </span>
             </button>
           </div>
+        </div>
+
+        {/* ⑥ 存量适配（ADR-0082）—— 发布后对存量实例的声明式迁移：评估 → 执行 → 记录 */}
+        <div className="mp-flex mp-border mp-gap-2 mp-py-3 mp-px-3 mp-flex-col mp-rounded">
+          <div className="mp-fw-600 mp-text-sm">存量适配（数据迁移）</div>
+          <div className="mp-text-xs mp-text-2">
+            基线 = 家族上一条版本快照；评估只读、给真实影响计数与计划草案。默认不丢数据：
+            删除属性默认<b>保留键</b>（显式选删除才物理移除，不可恢复）；format 仅无损转换；
+            主键变更冲突/缺失时整单拒执行。
+          </div>
+          <div className="mp-gap-2 mp-flex-center">
+            <button
+              type="button"
+              onClick={() => void doAssess()}
+              disabled={busy === 'assess' || !verRid}
+              className="mp-onto-btn mp-onto-btn--lg"
+            >
+              <span className="mp-inline-flex mp-items-center mp-gap-1">
+                <DatabaseZap className="mp-icon-12" />
+                {busy === 'assess' ? '评估中…' : '评估影响'}
+              </span>
+            </button>
+            {assessment && plan && (
+              <button
+                type="button"
+                onClick={() => void doRunMigration()}
+                disabled={busy === 'migrate'}
+                className="mp-onto-btn mp-onto-btn--lg mp-onto-btn--primary"
+              >
+                <span className="mp-inline-flex mp-items-center mp-gap-1">
+                  <ArrowRightLeft className="mp-icon-12" />
+                  {busy === 'migrate' ? '迁移中…' : '执行迁移'}
+                </span>
+              </button>
+            )}
+          </div>
+
+          {assessment && plan && (
+            <div className="mp-border mp-py-2 mp-px-3 mp-bg-1 mp-rounded mp-flex-col mp-gap-2">
+              <div className="mp-fw-600 mp-text-sm">
+                评估结果
+                <span className="mp-text-xs mp-text-2">
+                  {' '}（{shortRid(assessment.baseline_rid, 18)} → 当前生效）
+                </span>
+              </div>
+              {assessment.changes.length === 0 && (
+                <div className="mp-text-xs mp-text-2">
+                  模型与上一版一致，无破坏性变更；仅当家族内有旧版本残留实例时才需重挂。
+                </div>
+              )}
+              {assessment.changes.length > 0 && (
+                <div className="mp-flex-col mp-gap-1">
+                  {assessment.changes.map((ch) => (
+                    <div key={ch} className="mp-text-xs mp-text-warning mp-break-all">· {ch}</div>
+                  ))}
+                </div>
+              )}
+              <div className="mp-flex mp-gap-3 mp-text-xs mp-flex-wrap">
+                <span>受影响实例 <b>{assessment.counts.instances_affected ?? 0}</b></span>
+                <span>待重挂 <b>{assessment.counts.reattach_pending ?? 0}</b></span>
+                <span>
+                  PK 冲突 <b className="mp-text-danger">{assessment.counts.pk_conflicts ?? 0}</b>
+                  {' · '}缺失 <b className="mp-text-danger">{assessment.counts.pk_missing ?? 0}</b>
+                </span>
+              </div>
+
+              {Object.keys(assessment.counts.dangling ?? {}).length > 0 && (
+                <div className="mp-flex-col mp-gap-1">
+                  <div className="mp-text-xs mp-fw-600">悬空属性键（迁移前仍在实例数据里）</div>
+                  {Object.entries(assessment.counts.dangling ?? {}).map(([rid, n]) => (
+                    <div key={rid} className="mp-flex mp-gap-2 mp-text-xs mp-onto-baseline">
+                      <span className="mp-mono mp-text-2 mp-break-all">{rid}</span>
+                      <span className="mp-text-2 mp-shrink-0">{n} 条实例</span>
+                      {plan.renames[rid] && (
+                        <span className="mp-text-success mp-shrink-0">
+                          → 按同名 slug 重命名到 {shortRid(plan.renames[rid], 16)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(plan.drops.props.length > 0 || plan.pk_rederive) && (
+                <div className="mp-flex mp-gap-2 mp-flex-wrap mp-items-center mp-text-xs">
+                  {plan.drops.props.length > 0 && (
+                    <label className="mp-flex mp-items-center mp-gap-1">
+                      无后继属性处置
+                      <select
+                        className="mp-onto-input"
+                        value={plan.drops.policy}
+                        onChange={(e) => setPlan({
+                          ...plan,
+                          drops: { ...plan.drops, policy: e.target.value as 'preserve' | 'drop' },
+                        })}
+                      >
+                        <option value="preserve">保留键（默认，不丢数据）</option>
+                        <option value="drop">删除键（不可恢复）</option>
+                      </select>
+                    </label>
+                  )}
+                  {plan.pk_rederive && (assessment.counts.pk_missing ?? 0) > 0 && (
+                    <label className="mp-flex mp-items-center mp-gap-1">
+                      PK 缺失实例
+                      <select
+                        className="mp-onto-input"
+                        value={plan.pk_rederive.on_missing}
+                        onChange={(e) => setPlan({
+                          ...plan,
+                          pk_rederive: plan.pk_rederive
+                            ? { ...plan.pk_rederive, on_missing: e.target.value as 'abort' | 'skip' }
+                            : null,
+                        })}
+                      >
+                        <option value="abort">整单中止（默认）</option>
+                        <option value="skip">跳过这些实例并报告</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {plan.drops.policy === 'drop' && plan.drops.props.length > 0 && (
+                <div className="mp-text-xs mp-text-danger">
+                  ⚠ 删除策略将物理移除 {plan.drops.props.length} 个属性的存量键 —— 不可恢复。
+                </div>
+              )}
+              {assessment.warnings.length > 0 && (
+                <div className="mp-flex-col mp-gap-1">
+                  {assessment.warnings.map((w) => (
+                    <div key={w} className="mp-text-xs mp-text-warning mp-break-all">· {w}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {runs.length > 0 && (
+            <div className="mp-flex-col mp-gap-1">
+              <div className="mp-text-xs mp-fw-600">迁移记录（跨回滚保留）</div>
+              {runs.map((r) => (
+                <div key={r.run_id} className="mp-flex mp-gap-2 mp-text-xs mp-onto-baseline">
+                  <Tag size="small" type={r.kind === 'reattach' ? 'light' : 'solid'}>
+                    {r.kind === 'reattach' ? '发布携带' : '计划执行'}
+                  </Tag>
+                  <span className="mp-text-2 mp-shrink-0">
+                    {r.created_at?.slice(0, 19).replace('T', ' ') ?? '—'} · {r.author || '—'}
+                  </span>
+                  <span className="mp-mono mp-text-2 mp-break-all">{shortRid(r.class_rid, 18)}</span>
+                  <span className="mp-text-2 mp-break-all">
+                    {Object.entries(r.counts)
+                      .map(([k, v]) => {
+                        if (Array.isArray(v)) return `${k}×${v.length}`;
+                        if (v !== null && typeof v === 'object') return `${k}×${Object.keys(v).length}`;
+                        return `${k}=${String(v)}`;
+                      })
+                      .join(' · ') || '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {msg && (
