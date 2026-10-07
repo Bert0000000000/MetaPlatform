@@ -926,8 +926,11 @@ services:
       INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       ONT_SEED_DEMO: "1"
-      # B1（D5）：语义检索走 llmgw 平台通道（Keycloak client_credentials 服务认证）
-      ONT_EMBEDDER: llmgw
+      # B1（D5）：语义检索走 llmgw 平台通道（Keycloak client_credentials 服务认证）。
+      # 可注入 `ONT_EMBEDDER=hash`（离线确定性 embedder）——CI 的 ontology e2e 用它
+      # 起栈：CI 无真实 provider，llmgw 通道只可能走失败路径且网络往返在
+      # `create_individual` 的 index-on-write 里同步执行，会把 30s 的用例超时拖死。
+      ONT_EMBEDDER: ${ONT_EMBEDDER:-llmgw}
       # P1-4：数据源周期增量同步（0=禁用；调度器在 ont 进程内 asyncio 跑）
       ONT_SYNC_INTERVAL_SECONDS: ${ONT_SYNC_INTERVAL_SECONDS:-300}
       # 真实源库 DSN（dev = 同实例 PG；生产换业务源库）
