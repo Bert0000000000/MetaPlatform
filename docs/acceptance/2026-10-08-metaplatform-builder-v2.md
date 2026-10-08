@@ -6,7 +6,7 @@
 
 - 已接受输入：[设计](../superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)、[实施计划](../superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)。按用户选择保留七入口，布局参考更新 HTML（其自身为八入口）；全平台布局与现有后端范围为用户已批准范围。原型合成客户、假角色、假同步/发布快照及无契约操作不进入正式业务链。
 - 工作树：`C:/Users/houuu/.codex/worktrees/242e/2026-07-02-MetaPlatform`；分支 `codex/metaplatform-builder-v2`；基线 `9646f018`；当前稳定实施源码 **`f892895200d57312fbb753866271d82f4d52af83`**，tree **`c72290d13930885ca6c2fe990b7c80999d8a9f3f`**。证据提交单独产生，不递归把自身作为实施源码。
-- Task 5 两轮 Important/设置取证修复已分别在 `8df5ba95`、`158ab236` 限定复审 Approved。最终整分支审查 `9646f018..158ab236` 发现两个 Important/P2（命令锁可重置/父子发布命令未协调，跨域/legacy 同 family 当前版本标记）；唯一实施修复 `f8928952` 统一同步命令锁和 canonical tenant+terminal-slug family。唯一限定最终复审 `158ab236..f8928952` 的规格/质量均 Approved，两项 P2 关闭、无新 Critical/Important；控制器已确认。源码审查通过与最终运行退出分开，[review.json](evidence/2026-10-08-metaplatform-builder-v2/review.json) 不认证尚未完成的浏览器/视觉、CI 或部署。
+- Task 5 两轮 Important/设置取证修复已分别在 `8df5ba95`、`158ab236` 限定复审 Approved。最终整分支审查 `9646f018..158ab236` 发现两个 Important/P2（命令锁可重置/父子发布命令未协调，跨域/legacy 同 family 当前版本标记）；唯一实施修复 `f8928952` 统一同步命令锁和 canonical tenant+terminal-slug family。唯一限定最终复审 `158ab236..f8928952` 的规格/质量均 Approved，两项 P2 关闭、无新 Critical/Important；控制器已确认。源码审查通过与最终运行/交付退出分开，[review.json](evidence/2026-10-08-metaplatform-builder-v2/review.json) 源码审查本身不认证浏览器/视觉、CI 或部署；实际本地运行另列。
 - [active 页面清单](../active/acceptance/builder-v2-active-page-coverage.md) 分类 **151 个 active 路由模式、132 个直接解析唯一页面源**（150 条直接解析加 `/ontology` wrapper 人工核对）；123 个 redirect 为兼容声明。清单是源页面/共享 PageHeader、表格、卡片与状态模式采用证据，**不是 151 页面逐一浏览器验收**。query/RID/tab 实例不无限扩展；Apphub 的 15 个 query 子页继续由既有 wrapper 分发。
 - 代表浏览器配置显式选择 IA、Ont Builder、平台 Builder 三个文件，21 个身份；覆盖七入口、常驻 SuperAI、功能组、页面导航、深链、历史、普通 Tab/Escape 和偏好。真实 Ont 与其他服务的 HTTP 替身分别登记。
 
@@ -22,7 +22,7 @@
 | 原 ontology core | 通过 | `f8928952`；公共入口实际 9/9，零 failure/error/skip；2220 源文件前后指纹一致 | [public-core.json](evidence/2026-10-08-metaplatform-builder-v2/public-core.json)；原 helper 身份 fallback 限制仍保留 |
 | 原 migration | 通过 | `f8928952`；修复后公共入口实际 2/2，零 failure/error/skip，canonical auditor exit0 | [public-migration.json](evidence/2026-10-08-metaplatform-builder-v2/public-migration.json)；保留先前公共 parser 身份失败 |
 | Builder / 受影响 IA | 通过 | `f8928952`；原完整 21/21，零 failure/error/skip，128.641s；701 文件指纹一致，21 精确身份核对 exit0 | [builder.json](evidence/2026-10-08-metaplatform-builder-v2/builder.json)；控制器原 runner 实跑，不冒称新公共入口 Builder 已运行 |
-| 四尺寸截图 | 52 named-ready 视图已采集并像素检查；窄屏交互未完成 | Ont20 + 平台代表32；另保留原 Builder gate32 和失败8图 | [清单](evidence/2026-10-08-metaplatform-builder-v2/screenshot-manifest.json)、[像素检查](evidence/2026-10-08-metaplatform-builder-v2/visual-inspection.json)、[未达交互](evidence/2026-10-08-metaplatform-builder-v2/narrow-interaction.json)；不以无整页溢出认证所有局部控件 |
+| 四尺寸截图 | 52 named-ready 视图已像素检查；新增窄屏原生交互通过 | Ont20 + 平台代表32；另保留原 Builder gate32 和失败8图 | [清单](evidence/2026-10-08-metaplatform-builder-v2/screenshot-manifest.json)、[像素检查](evidence/2026-10-08-metaplatform-builder-v2/visual-inspection.json)、[窄屏交互](evidence/2026-10-08-metaplatform-builder-v2/narrow-interaction.json)；不以无整页溢出认证所有局部控件 |
 | 契约工具 | 通过，字节适用当前源 | 控制器在 `158ab236` 实际 contract 7/7、validate_contracts exit 0；`158..f892` backend/contract/gate 未变 | [contracts.json](evidence/2026-10-08-metaplatform-builder-v2/contracts.json)；JUnit 7 项安全投影，validator exit 来源为控制器确认而非本证据 Agent 重跑 |
 | 全分支最终审查 | 源码 findings 已关闭；运行条件保留 | 整分支首审加唯一限定最终修复复审，两 P2 addressed；规格/质量 Approved | [review.json](evidence/2026-10-08-metaplatform-builder-v2/review.json)；合入评估 conditional，未认证最终运行/证据退出 |
 
@@ -30,7 +30,7 @@
 
 PG 先前有预检连接失败、122/123 的 fixture connection error、122/123 的 legacy interface assertion，以及另一 setup case 的 unexpected connection close；[先前失败投影](evidence/2026-10-08-metaplatform-builder-v2/postgres-latest-failed.json) 与完整私有失败尝试均保留。原 focused 查询 1/1 没有替代完整回归。最终同一独立 DB/角色以显式 `sslmode=disable/gssencmode=disable` 运行；之前 prefer/disable 实际连接均 SSL=false，这不是 TLS 降级或 SSL 根因证据。安全检查没有确认服务重启/OOM/PANIC 原因，接口读取错误是否关联 assertion 未证实。Windows 端口转发/传输只是调查方向，**没有确认根因**。Linux container runner 尝试在 ownership inspect 500 前失败，没有创建/执行该 gate；没有重启共享 Docker Desktop/WSL。
 
-外部状态一度恢复，真实 IAM200 后完成当前 core9、migration2、Builder21 与52视图。随后只读窄屏探针两次前 UI provider 失败，最后一次授权 bounded retry 严格登录仍504；停止重试、无服务变更。先前同 CID Keycloak/IAM504 与 CreateProcess policy拒绝JWKS探针保留历史，不证明根因或永久恢复。Task6仍缺实际窄屏交互和最终证据复审，不能宣布全部退出条件完成。
+外部状态一度恢复，真实 IAM200 后完成当前 core9、migration2、Builder21 与52视图。随后只读窄屏探针两次前 UI provider 失败，最后一次授权 bounded retry 严格登录仍504；停止重试、无服务变更。先前同 CID Keycloak/IAM504 与 CreateProcess policy拒绝JWKS探针保留历史，不证明根因或永久恢复。随后实际独立CUA登录200/身份与个人设置匹配产生新provider可用性证据，第5/6次窄屏探针严格前置通过；第6次全项通过。Task6仍待控制器最终证据交接/运行区保留与goal关闭，不宣布全部退出条件完成。
 
 Builder 旧完整 21/21 后曾出现 14 通过/7 失败及 16 通过/5 失败；失败发生在登录前置（504/504/504），未达到产品断言。现有 builder-only helper 对 502/503/504 最多三次尝试并逐项记录 HTTP 状态；401/403/422、缺身份或断言失败不重试成绿色、不 skip。其它错误 selector/DTO 假设和被拒绝的 RID 尝试也保留，正向 fixture 修正不算产品问题已修复。
 
@@ -104,11 +104,15 @@ $pnpm = Join-Path $env:APPDATA 'npm/node_modules/pnpm/bin/pnpm.cjs'
 
 52张只读最终图均为1440×1000、1920×1080、1024×900、390×844，严格一次真实login/UserInfo ID/签名tenant、每页settingsGET匹配与实际light主题，显式API/DOM named-ready；20Ont无HTTP替身，32平台使用相同boundary helper。全部52无pageerror/整页横溢出/写请求；平台503均对应已登记未启动域，KB/Gov显式unavailable。原Builder32图高度均1000，仅原ready/overflow断言，不制造逐帧身份/主题/error元数据，也不被新32替换。第一次平台取图失败后留下8图、无完整metadata，原因未确认；后续同逻辑补私有诊断而未放宽断言，完整32成功。
 
-[逐页四尺寸像素观察](evidence/2026-10-08-metaplatform-builder-v2/visual-inspection.json) 覆盖全部52：窄屏graph Inspector已展开、mapping表/历史在fold下；type390长真实displayName及尾动作初视口裁切、query/explore390对象侧栏占视口但collapse按钮可见、gov390右pane局部裁切、chat390尾工具条初视口外。这些局部视图限制如实保留，未验证的交互可达性不写通过。
+[逐页四尺寸像素观察](evidence/2026-10-08-metaplatform-builder-v2/visual-inspection.json) 覆盖全部52：窄屏graph Inspector已展开、mapping表/历史在fold下；type390长真实displayName及尾动作初视口裁切、query/explore390对象侧栏占视口但collapse按钮可见、gov390右pane局部裁切、chat390尾工具条初视口外。这些初视口限制保留。后续attempt6已实际验证Chat、type尾动作、query/explore与gov局部控制；新增4种窄屏视图，其中query/explore同一路径各留图，共5张成功PNG，另外保留attempt5的4张partial图。新图不替换原52。
 
 尺寸：1440×1000、1920×1080、1024×900、390×844。最终模型图必须真实模型/Inspector ready；类型页完成实际属性/关系/绑定读取；映射页实际类型与 binding/materialization settle；query 页实际结果 settle；release 页实际 WIP/versions 完成、publication/current-live 可见且 draft loader 隐藏。所有页面先核对成功匹配个人设置及应用主题；不能只等 networkidle。每张记录 source、页面/尺寸/ready 判据、真实/HTTP边界、pageerror/API failure 与 document overflow。最终像素检查另记交互，不能把无 document overflow 等同于所有局部控件可操作。
 
-390px SuperAI 真实 native焦点已把 `.mp-chat-columns`（client286/scroll680）从scrollLeft0滚到213，末端“超能”控制在post-native settle后x227.47、trial可操作。最初几何采样时序和第二次CSS状态比较失败属于probe问题，不能计产品bug；随后第三/四次严格provider登录在UI前失败，第四次HTTP504后停止。语义radio checked变化/恢复与Team真实click/恢复仍未通过，type390“审阅与发布”尾部动作nativeTab/trial也未执行。详见 [未达交互](evidence/2026-10-08-metaplatform-builder-v2/narrow-interaction.json)，原失败JSON/PNG/XML/private日志保留，不用第三/四次provider失败替代行为RED。
+390px 窄屏六次探针均保留：1/2分别为几何采样时序/CSS状态比较错误，3/4为严格认证UI前失败（第4次HTTP504停止）；第5次严格真实身份/settings成功且Chat语义模式变更恢复、Team真实click恢复、type尾动作nativeTab/trial及query/explore步骤成功，但整次exit1，gov立即宽度采样在真实180ms过渡结束前为0。只修ignored探针等待pane<1和main>原宽度、恢复原宽度，原断言未放宽。第6次完整 **exit0、1执行/1通过/0fail/error/skip，14.797s**：Chat局部native滚动0→213、末端x227.47/trial与radio checked变化/恢复、Team click/恢复；type尾动作nativeTab/trial x284+106=390，最近可滚动 `.mp-page` native scrollLeft27；query/explore pane63→312、恢复248，gov pane0→288、恢复300，实际控件trial和恢复均通过。无消息发送/设置PUT/DB写/directscrollLeft赋值。第5次失败未改判，分项proof与第6次完整成功分开，见 [交互账本](evidence/2026-10-08-metaplatform-builder-v2/narrow-interaction.json)、[完整回执](evidence/2026-10-08-metaplatform-builder-v2/narrow-completion.json)。本地503调用仍是明确边界；原截图裁切不等于不可达产品bug。
+
+独立 [CUA实际UI登录](evidence/2026-10-08-metaplatform-builder-v2/current-ui-login.json) 为另一证据：本轮IAB59260预填表单真实login200/nonblank UserInfo-backed ID、签名tenant，authenticated-page reload后settingsGET200请求/响应/真实loginID和bearer匹配、实际light。初挂载登录页的SettingsProvider需authenticated-page reload才观察到该settingsGET，是继承限制；profile默认u-1/超级管理员呈现不能用作实际身份/角色授权proof。未拦截copilot上游DNS失败也保留限界，此证据不认证该非Ont服务。CUA没有保存/传输token，不以其代替独立native探针自身的严格前置。
+
+Task6证据增量 `041..b345` 复审Approved，0Critical/0Important/1Minor；唯一README旧“未提交”状态已修正，实际包已提交b345。本次交互补证待控制器限定复审，运行区最终保留与交接/关闭goal仍由控制器完成。
 
 本轮预览 [http://127.0.0.1:59260](http://127.0.0.1:59260) 保留。独立 ports：gateway58110、auth58111、Ont58017、PG55493、Keycloak55389、Redis55387；容器 `codex-242e-builder-v2-*`，goal `01a11b4d-ab28-7ed0-9a89-929e5fae1374`。不使用/重启其它工作树、共享服务或 DB，不释放端口。Docker host source-mount 曾 ENOMEM，仅本轮已确认拥有的 API 尝试停止；当前 native source，不能以旧 image 版本冒称当前源码。
 

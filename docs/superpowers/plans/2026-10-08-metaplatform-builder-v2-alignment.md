@@ -224,7 +224,7 @@ pnpm exec playwright test --config playwright.migration.config.ts --workers=1
 mate-platform-backend/.venv/Scripts/python.exe scripts/ci/verify_migration_browser.py --junit metaplatform-frontend/test-results/migration.xml
 ```
 
-- [ ] 全部 unit、typecheck、build 与覆盖四尺寸的实际截图检查；覆盖本体五段、七产品入口和常驻 SuperAI 代表页面、全平台 active 路由清单。证据区分 API 替身、真实签名身份、真实 PG、本地/CI/部署边界。
-- [ ] 生成一次整分支审查包，最有能力的 Reviewer 只读审查；如有 findings，统一交一个 Agent 修复并 scoped re-review。
+- [x] 全部 unit、typecheck、build 与覆盖四尺寸的实际截图检查；覆盖本体五段、七产品入口和常驻 SuperAI 代表页面、全平台 active 路由清单。证据区分 API 替身、真实签名身份、真实 PG、本地/CI/部署边界。
+- [x] 生成一次整分支审查包，最有能力的 Reviewer 只读审查；如有 findings，统一交一个 Agent 修复并 scoped re-review。
 - [ ] 写验收与复现路径、source commit、数量、剩余限制；保留本任务预览供用户检查，清理仅本任务已确认可清的资源且不删除现存工作树。
 - [ ] 全退出条件完成才关闭 goal；真实环境阻断则保留 goal 与确切未完成项，继续可独立工作。

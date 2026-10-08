@@ -1,0 +1,11 @@
+{
+  "implementation_source": "f892895200d57312fbb753866271d82f4d52af83",
+  "evidence_checkout": "b3456cd818c013400dc45cdcbccf01fd0181051d",
+  "backend_frontend_diff_empty": true,
+  "current_sources": {
+    "file_count": 2220,
+    "sha256": "0b659132a7345eb84f350a9c74b1b04cc82fcfc08e7a548c7789e6920a937c43"
+  },
+  "matches_actual_core_receipt": true,
+  "kind": "post-probe read-only source check, not heavy gate rerun"
+}

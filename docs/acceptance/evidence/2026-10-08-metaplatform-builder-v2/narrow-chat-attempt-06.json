@@ -1,0 +1,209 @@
+{
+  "width": 390,
+  "height": 844,
+  "route": "/superai/chat",
+  "boundary": "real identity/Ont; labelled platform HTTP DTO boundary",
+  "target": "chat-team-mode plus final 超能 configure control",
+  "interaction": "native focus; horizontal wheel only if needed; final-control native focus and click actionability",
+  "before": {
+    "bounds": {
+      "x": 398.765625,
+      "y": 798.5,
+      "width": 96.703125,
+      "height": 30
+    },
+    "ancestors": [
+      {
+        "className": "semi-aiChatInput-footer",
+        "overflowX": "visible",
+        "clientWidth": 244,
+        "scrollWidth": 659,
+        "scrollLeft": 0
+      },
+      {
+        "className": "semi-aiChatInput",
+        "overflowX": "visible",
+        "clientWidth": 284,
+        "scrollWidth": 679,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-split-main",
+        "overflowX": "visible",
+        "clientWidth": 286,
+        "scrollWidth": 680,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-chat-columns",
+        "overflowX": "auto",
+        "clientWidth": 286,
+        "scrollWidth": 680,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-shell semi-layout semi-layout-has-sider",
+        "overflowX": "visible",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-app",
+        "overflowX": "hidden",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      }
+    ],
+    "focused": false,
+    "inViewport": false,
+    "documentOverflow": false
+  },
+  "afterFocus": {
+    "bounds": {
+      "x": 185.765625,
+      "y": 798.5,
+      "width": 96.703125,
+      "height": 30
+    },
+    "ancestors": [
+      {
+        "className": "semi-aiChatInput-footer",
+        "overflowX": "visible",
+        "clientWidth": 244,
+        "scrollWidth": 659,
+        "scrollLeft": 0
+      },
+      {
+        "className": "semi-aiChatInput",
+        "overflowX": "visible",
+        "clientWidth": 284,
+        "scrollWidth": 679,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-split-main",
+        "overflowX": "visible",
+        "clientWidth": 286,
+        "scrollWidth": 680,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-chat-columns",
+        "overflowX": "auto",
+        "clientWidth": 286,
+        "scrollWidth": 680,
+        "scrollLeft": 213
+      },
+      {
+        "className": "mp-shell semi-layout semi-layout-has-sider",
+        "overflowX": "visible",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-app",
+        "overflowX": "hidden",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      }
+    ],
+    "focused": true,
+    "inViewport": true,
+    "documentOverflow": false
+  },
+  "afterInteraction": {
+    "bounds": {
+      "x": 185.765625,
+      "y": 798.5,
+      "width": 96.703125,
+      "height": 30
+    },
+    "ancestors": [
+      {
+        "className": "semi-aiChatInput-footer",
+        "overflowX": "visible",
+        "clientWidth": 244,
+        "scrollWidth": 659,
+        "scrollLeft": 0
+      },
+      {
+        "className": "semi-aiChatInput",
+        "overflowX": "visible",
+        "clientWidth": 284,
+        "scrollWidth": 679,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-split-main",
+        "overflowX": "visible",
+        "clientWidth": 286,
+        "scrollWidth": 680,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-chat-columns",
+        "overflowX": "auto",
+        "clientWidth": 286,
+        "scrollWidth": 680,
+        "scrollLeft": 213
+      },
+      {
+        "className": "mp-shell semi-layout semi-layout-has-sider",
+        "overflowX": "visible",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-app",
+        "overflowX": "hidden",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      }
+    ],
+    "focused": true,
+    "inViewport": true,
+    "documentOverflow": false
+  },
+  "finalControl": {
+    "name": "超能",
+    "beforeLastWheel": {
+      "x": 408.46875,
+      "y": 789.5,
+      "width": 36,
+      "height": 16
+    },
+    "bounds": {
+      "x": 227.46875,
+      "y": 789.5,
+      "width": 36,
+      "height": 16
+    },
+    "nativeClickActionable": true,
+    "reached": true,
+    "actualModeClickAndRestore": "passed"
+  },
+  "identityAndPreference": {
+    "actualUserInfoBackedId": true,
+    "requestHasActualUserId": true,
+    "responseMatchesActualUser": true,
+    "expectedTheme": "light"
+  },
+  "pageErrors": [],
+  "apiFailures": [
+    {
+      "path": "/api/v1/agent-team/runs",
+      "status": 503,
+      "boundary": true
+    }
+  ],
+  "localButtonClickAndRestore": "passed",
+  "interpretation": "Target reached through native browser interaction",
+  "sourceCommit": "f892895200d57312fbb753866271d82f4d52af83",
+  "overallAttemptExitCode": 0
+}

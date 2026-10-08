@@ -1,6 +1,6 @@
 # Builder V2 安全证据
 
-日期：2026-10-09（Asia/Shanghai）；稳定实施 source `f892895200d57312fbb753866271d82f4d52af83`，限定最终修复复审规格/质量 Approved、两 P2 关闭，控制器已确认。这里仅跟踪严格 allowlist 的结果/版本/截图，详细说明见 [验收文档](../../2026-10-08-metaplatform-builder-v2.md)。**当前未完成全部最终 gates。**
+日期：2026-10-09（Asia/Shanghai）；稳定实施 source `f892895200d57312fbb753866271d82f4d52af83`，限定最终修复复审规格/质量 Approved、两 P2 关闭，控制器已确认。这里仅跟踪严格 allowlist 的结果/版本/截图，详细说明见 [验收文档](../../2026-10-08-metaplatform-builder-v2.md)。**当前本地 gates/视觉交互已实际通过；Task6最终交接/关闭仍待控制器。**
 
 | 文件 | 来源与含义 |
 |---|---|
@@ -17,7 +17,7 @@
 | `review.json` | 整分支首审+唯一最终限定复审的安全摘要；两P2关闭，规格/质量Approved；运行条件仍保留 |
 | `public-preflight.json`、`public-preflight-failed-01.json` | 当前实际 preflight exit0、owned PG16/四非特权标志；旧ownership inspect不可用exit2失败另保留 |
 
-当前原core9/原migration2/完整Builder21均真实通过，52个named-ready只读视图均已像素检查；窄屏语义mode点击/恢复及type390尾动作nativeTab仍未达，最后一次授权探针登录504后停止。不得复制 raw JUnit diagnostics、error-context、compose、private-config、environment、tokens、auth-state、HAR/trace/video 或完整原始日志。Failed attempts 在忽略私有区保留，公共投影仅包含 source、测试身份/数量、状态、指纹与已核实原因边界。证据提交与 implementation source 分离。
+当前原core9/原migration2/完整Builder21均真实通过，52个named-ready只读视图均已像素检查；后续第6次完整窄屏原生交互1/1 exit0；前五次失败/分项proof保留。不得复制 raw JUnit diagnostics、error-context、compose、private-config、environment、tokens、auth-state、HAR/trace/video 或完整原始日志。Failed attempts 在忽略私有区保留，公共投影仅包含 source、测试身份/数量、状态、指纹与已核实原因边界。证据提交与 implementation source 分离。
 
 | 新增文件 | 来源与含义 |
 |---|---|
@@ -29,6 +29,15 @@
 | `screenshot-manifest.json`、`screenshots/` | 52最终只读图、原Builder32（height1000）、失败8图，SHA256逐文件；原32无制造的逐帧metadata |
 | `builder-gate-image-inventory.json` | 原32PNG的实际尺寸/指纹，原路径与来源 |
 | `visual-inspection.json` | 实际52像素检视，逐页/尺寸观察与窄屏局部裁切限制 |
-| `narrow-interaction.json` | 四次探针事实、已有native局部滚动/trial证据与未达semantic/type尾动作；不计产品bug或PASS |
+| `narrow-interaction.json` | 六次探针事实；第5次整次exit1/真实partial和第6次完整1/1 exit0分开，不把probe时序当产品bug |
 
-只复制明确PNG/安全JSON allowlist。原private helpers/日志/失败XML保持ignored。Task6仍IN_PROGRESS，fresh证据复审与窄屏退出未完成，未提交此续跑包。
+只复制明确PNG/安全JSON allowlist。原private helpers/日志/失败XML保持ignored。前包已提交 `b3456cd8`，Task6仍IN_PROGRESS；本地窄屏交互已实际通过，最终证据交接/运行区保留与goal关闭待控制器。
+
+| 补证文件 | 来源与含义 |
+|---|---|
+| `narrow-interaction-pre-attempt6.json` | b345时未完成交互原快照，保留历史 |
+| `narrow-attempt-05.json`、`narrow-*-attempt-05.json` | 整次真实exit1及已完成分项；gov过渡前宽度测量失败，不改判 |
+| `narrow-attempt-06.json`、`narrow-*-attempt-06.json`、`narrow-completion.json` | 当前完整native1/1 exit0，实际模式/按钮恢复、type尾Tab/trial、query/explore/gov折叠与控件trial/恢复 |
+| `narrow-source-verification.json` | probe后生产diff为空、当前2220源hash匹配实际core回执；不是重跑heavygate |
+| `current-ui-login.json` | 控制器独立CUA真实UIlogin/settings匹配和继承reload/profile/copilot边界；无token/个人ID/roleclaim |
+| `screenshots/narrow-attempt-05/`、`screenshots/narrow-attempt-06/` | 原failed05四图、成功06五图（四种view，query/explore同实际路径各留）；原52/32/failed8均不替换 |

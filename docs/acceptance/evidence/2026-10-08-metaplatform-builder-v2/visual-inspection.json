@@ -421,5 +421,17 @@
       "observation": "Conversation/input visible; trailing toolbar outside initial view; native scroll partially observed, semantic mode restoration not verified"
     }
   ],
-  "limitation": "No document overflow does not establish local control reachability; pending type390 tail, chat semantic click/restoration and narrow pane interaction are not passed"
+  "limitation": "Initial52pixel observations remain unchanged; no docoverflow=>reachability inference. Later actual native operation/restoration completed separately in attempt6; see narrow-completion.json.",
+  "supplementary_native_pixels": {
+    "attempt": 6,
+    "checked_images": 5,
+    "view_kinds": 4,
+    "query_explore_same_actual_route": true,
+    "observations": [
+      "Chat final toolbar and semantic choices visible after native local scroll; mode/Team restoration asserted separately",
+      "Type review/publish tail entirely inside viewport after nativeTab/trial, long displayName still clipped",
+      "Query and explore each show actual2-row pane after native collapse; same actualpage route, not two distinct business pages",
+      "Gov actual unavailable retry control visible after native collapse; service remains declared503"
+    ]
+  }
 }

@@ -527,6 +527,71 @@
       "width": 390,
       "height": 1000,
       "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/narrow-attempt-05/chat-390-after-interaction.png",
+      "sha256": "d0edb3748e849856fad86656533f8a0a6b03353ec0a5ef876bd3c504eb5f2d88",
+      "width": 390,
+      "height": 844,
+      "kind": "partial step evidence from overall failed attempt5"
+    },
+    {
+      "path": "screenshots/narrow-attempt-05/explore-390-after-native-collapse.png",
+      "sha256": "6d9a4892d53662e8cf032360d1b52d7be87cc588e0231ca23e8ef2eba1c2863e",
+      "width": 390,
+      "height": 844,
+      "kind": "partial step evidence from overall failed attempt5"
+    },
+    {
+      "path": "screenshots/narrow-attempt-05/query-390-after-native-collapse.png",
+      "sha256": "6d9a4892d53662e8cf032360d1b52d7be87cc588e0231ca23e8ef2eba1c2863e",
+      "width": 390,
+      "height": 844,
+      "kind": "partial step evidence from overall failed attempt5"
+    },
+    {
+      "path": "screenshots/narrow-attempt-05/type-390-after-native-tab.png",
+      "sha256": "7a0b917e7ee8fff1de68201fcdb185d57a3e45871175de720dd8aee97814d75e",
+      "width": 390,
+      "height": 844,
+      "kind": "partial step evidence from overall failed attempt5"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/chat-390-after-interaction.png",
+      "sha256": "d0edb3748e849856fad86656533f8a0a6b03353ec0a5ef876bd3c504eb5f2d88",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/explore-390-after-native-collapse.png",
+      "sha256": "18108ca2afaa4e0e0c6cf475db220498d27221f31eaec0df221265035eef8447",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/gov-390-after-native-collapse.png",
+      "sha256": "53effb74397c9aa9b28820cb68f619bfc1de37524fb1a7c392ef83714912768b",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/query-390-after-native-collapse.png",
+      "sha256": "18108ca2afaa4e0e0c6cf475db220498d27221f31eaec0df221265035eef8447",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/type-390-after-native-tab.png",
+      "sha256": "7a0b917e7ee8fff1de68201fcdb185d57a3e45871175de720dd8aee97814d75e",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
     }
-  ]
+  ],
+  "narrow_attempt5_partial_count": 4,
+  "narrow_attempt6_count": 5
 }
