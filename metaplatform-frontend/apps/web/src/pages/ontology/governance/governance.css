@@ -10,3 +10,86 @@
   flex-direction: column;
   gap: var(--mp-space-3);
 }
+/* Publication steps keep real WIP/impact/snapshot state local to the workflow. */
+.mp-publication-toolbar,
+.mp-publication-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mp-publication-toolbar h3 {
+  margin-right: auto;
+}
+.mp-publication-steps {
+  display: flex;
+  list-style: none;
+  margin: 16px 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--semi-color-border);
+  border-bottom: 1px solid var(--semi-color-border);
+  gap: 12px;
+}
+.mp-publication-steps li {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+.mp-publication-steps li span {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--semi-color-border);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+.mp-publication-steps li[aria-current="step"] {
+  color: var(--semi-color-primary);
+  font-weight: 600;
+}
+.mp-publication-steps li[aria-current="step"] span {
+  background: var(--semi-color-primary);
+  color: var(--semi-color-white);
+}
+.mp-publication pre {
+  max-height: 260px;
+  overflow: auto;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mp-publication select {
+  max-width: 100%;
+}
+.mp-publication-actions {
+  margin: 16px 0;
+}
+.mp-publication-review {
+  overflow-x: auto;
+}
+.mp-publication-review table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+}
+.mp-publication-review th,
+.mp-publication-review td {
+  padding: 10px;
+  border-bottom: 1px solid var(--semi-color-border);
+}
+@media (max-width: 600px) {
+  .mp-publication-steps {
+    overflow-x: auto;
+  }
+  .mp-publication-steps li {
+    min-width: 90px;
+  }
+  .mp-publication-toolbar label {
+    max-width: 100%;
+  }
+}

@@ -6,9 +6,17 @@ import { resourceError } from '../hooks/resourceErrors';
 export default function VersionHistory({
   rid,
   currentChecksum,
+  onLoaded,
+  renderActions,
+  refreshKey,
+  onReset,
 }: {
   rid: string;
   currentChecksum?: string;
+  onLoaded?: (rows: KernelVersion[]) => void;
+  renderActions?: (row: KernelVersion) => React.ReactNode;
+  refreshKey?: number;
+  onReset?: () => void;
 }) {
   const [rows, setRows] = useState<KernelVersion[]>([]),
     [loading, setLoading] = useState(true),
@@ -19,15 +27,19 @@ export default function VersionHistory({
     setLoading(true);
     setRows([]);
     setError('');
+    onReset?.();
     try {
       const r = await listVersions(rid);
-      if (n === generation.current) setRows(r);
+      if (n === generation.current) {
+        setRows(r);
+        onLoaded?.(r);
+      }
     } catch (e) {
       if (n === generation.current) setError(resourceError(e));
     } finally {
       if (n === generation.current) setLoading(false);
     }
-  }, [rid]);
+  }, [rid, onLoaded, onReset, refreshKey]);
   useEffect(() => {
     void load();
     return () => {
@@ -69,6 +81,15 @@ export default function VersionHistory({
           render: (v: string[]) => v.join('；'),
         },
         { title: 'Checksum', dataIndex: 'checksum', ellipsis: true },
+        ...(renderActions
+          ? [
+              {
+                title: '操作',
+                key: 'actions',
+                render: (_v: unknown, row: KernelVersion) => renderActions(row),
+              },
+            ]
+          : []),
       ]}
       dataSource={rows}
       rowKey="rid"
