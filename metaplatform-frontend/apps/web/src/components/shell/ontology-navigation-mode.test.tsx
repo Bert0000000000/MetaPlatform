@@ -57,7 +57,7 @@ function renderShell(path: string) {
 }
 
 describe('本体建设工作区导航', () => {
-  it('对象详情深链高亮对象类型，保留上下文且不显示平台 PageTabs', () => {
+  it('对象详情深链高亮对象类型并保留真实上下文', () => {
     renderShell('/ontology/model/object-types/ont.t.obj.customer.v1/properties');
     const nav = screen.getByRole('navigation', { name: '本体工作区导航' });
     expect(within(nav).getByRole('link', { name: '对象类型' })).toHaveAttribute('aria-current', 'page');
@@ -109,7 +109,7 @@ describe('本体建设工作区导航', () => {
     expect(toggle).toHaveFocus();
   });
 
-  it('其他域继续呈现可点击 PageTabs，离开本体清空上下文', async () => {
+  it('其他域呈现真实页面入口，离开本体清空上下文', async () => {
     const router = renderShell('/ontology/model/graph');
     await act(() => router.navigate('/home'));
     expect(screen.getByRole('link', { name: '概览' })).toBeVisible();
@@ -276,5 +276,16 @@ describe('全平台同源功能组与页面导航', () => {
       expect(index.some(entry => entry.path === path), path).toBe(true);
     }
     expect(index.find(entry => entry.path === '/superai/plans/result-summary')?.keywords).toContain('执行计划');
+  });
+
+  it('历史切换到其他组时，已展开菜单内的焦点返回可见按钮', async () => {
+    const router = renderShell('/ontology/data/mappings');
+    await act(() => router.navigate('/ontology/model/graph'));
+    const toggle = screen.getByRole('button', { name: '展开本体导航' });
+    fireEvent.click(toggle);
+    expect(within(screen.getByRole('navigation', { name: '本体工作区导航' })).getByRole('link', { name: '模型工作台' })).toHaveFocus();
+    await act(() => router.navigate(-1));
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
   });
 });

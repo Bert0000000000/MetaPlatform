@@ -2,16 +2,15 @@ import { Avatar, Badge, Breadcrumb, Button, Dropdown, Input, Tabs, Tag } from '@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Layers, LogOut, MessageSquare, Search, Settings, Sparkles } from 'lucide-react';
 import { useAuth } from '@mate/shared';
-import { DOMAINS, primaryDomains, resolveDomain, resolveDomainTab, resolveSubTab } from './domains';
+import { DOMAINS, navigationBreadcrumb, primaryDomains, resolveDomain } from './domains';
 import { useShell } from './ShellContext';
-import { ontologyBreadcrumb } from '@/pages/ontology/navigation';
 
 const ENV_LABEL =
   (import.meta.env.VITE_ENV_LABEL as string | undefined) ?? (import.meta.env.PROD ? 'PRODUCTION' : 'DEV');
 
 /**
  * 顶栏（DESIGN-SPEC §3）：面包屑 ∥ ⌘K 入口 · 环境徽标 · 通知 · 布局切换 · 用户。
- * 顶栏一级导航模式（模式 B）时，8 个域以横向 tab 呈现，rail 隐藏（显隐由 CSS 控制）。
+ * 顶栏一级导航模式时，七入口以横向 tab 呈现，rail 隐藏（显隐由 CSS 控制）。
  */
 export default function TopBar() {
   const navigate = useNavigate();
@@ -20,17 +19,7 @@ export default function TopBar() {
   const { user, logout } = useAuth();
 
   const domain = resolveDomain(location.pathname);
-  const tab = domain ? resolveDomainTab(domain, location.pathname) : undefined;
-  const sub = domain ? resolveSubTab(domain, location.pathname) : undefined;
-
-  const crumbs = [
-    domain ? { name: domain.label, path: domain.path } : { name: 'Mate Platform' },
-    ...(tab && tab.label !== domain?.label ? [{ name: tab.label, path: tab.path }] : []),
-    ...(sub && sub.sub.label !== tab?.label ? [{ name: sub.sub.label }] : []),
-  ];
-  const displayCrumbs = domain?.key === 'ontology'
-    ? [{ name: domain.label, path: domain.path }, ...ontologyBreadcrumb(location.pathname)]
-    : crumbs;
+  const displayCrumbs = navigationBreadcrumb(location.pathname);
 
   const displayName = user?.realName ?? user?.username ?? '当前用户';
 
@@ -53,6 +42,7 @@ export default function TopBar() {
 
       <Breadcrumb
         className="mp-crumbs"
+        aria-label={domain?.key === 'ontology' ? '本体上下文' : '工作区上下文'}
         compact
         routes={displayCrumbs}
         onClick={(item) => {

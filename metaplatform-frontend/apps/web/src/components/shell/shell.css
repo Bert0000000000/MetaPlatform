@@ -6,6 +6,7 @@
 
 /* ---------- 根 ---------- */
 .mp-app {
+  --mp-rail-w: 78px;
   display: flex;
   height: 100vh;
   overflow: hidden;
@@ -43,9 +44,51 @@
 }
 
 .mp-rail-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   height: 100%;
   border-right: none;
   background: transparent;
+}
+.mp-rail-brand {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  margin: var(--mp-space-3) 0 var(--mp-space-5);
+  border: 0;
+  border-radius: var(--semi-border-radius-large);
+  background: var(--semi-color-primary);
+  color: var(--semi-color-primary-on);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mp-rail-entries { flex: 1; min-height: 0; width: 100%; overflow: auto; padding: 0 var(--mp-space-1); box-sizing: border-box; }
+.mp-rail-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mp-space-1);
+  width: 100%;
+  min-height: 60px;
+  margin-bottom: var(--mp-space-1);
+  padding: var(--mp-space-2) var(--mp-space-1);
+  border: 0;
+  border-radius: var(--semi-border-radius-medium);
+  background: transparent;
+  color: var(--semi-color-text-2);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.mp-rail-entry:hover { background: var(--semi-color-fill-0); color: var(--semi-color-text-0); }
+.mp-rail-entry[aria-current='page'] { background: var(--semi-color-primary-light-default); color: var(--semi-color-text-0); }
+.mp-rail-entry:focus-visible, .mp-rail-brand:focus-visible, .mp-rail-icon:focus-visible {
+  outline: 2px solid var(--semi-color-primary); outline-offset: -2px;
 }
 
 .mp-rail-foot {
@@ -54,6 +97,7 @@
   align-items: center;
   gap: var(--mp-space-1);
   width: 100%;
+  padding: var(--mp-space-2) 0;
 }
 
 .mp-rail-icon {
@@ -237,6 +281,46 @@
 }
 
 /* ---------- 内容区 ---------- */
+.mp-workspace { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+.mp-workspace-groupbar {
+  display: flex; align-items: center; flex: none; min-width: 0;
+  min-height: var(--mp-tabbar-h); padding: 0 var(--mp-space-4);
+  border-bottom: 1px solid var(--semi-color-border); background: var(--semi-color-bg-1);
+}
+.mp-workspace-groups { display: flex; flex: 1; min-width: 0; overflow-x: auto; }
+.mp-workspace-groups a {
+  display: inline-flex; flex: none; align-items: center; min-height: var(--mp-tabbar-h);
+  padding: 0 var(--mp-space-3); border-bottom: 2px solid transparent; box-sizing: border-box;
+  color: var(--semi-color-text-2); font-size: 12px; text-decoration: none; white-space: nowrap;
+}
+.mp-workspace-groups a[aria-current='true'] { border-bottom-color: var(--semi-color-primary); color: var(--semi-color-primary); font-weight: 600; }
+.mp-workspace-body { display: flex; position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+.mp-workspace-pages {
+  display: flex; flex-direction: column; flex: none; width: 176px; min-height: 0;
+  border-right: 1px solid var(--semi-color-border); background: var(--semi-color-bg-1); color: var(--semi-color-text-1);
+}
+.mp-workspace-pages-head { display: flex; flex-direction: column; gap: var(--mp-space-2); padding: var(--mp-space-5) var(--mp-space-3) var(--mp-space-3); }
+.mp-workspace-pages-head strong { color: var(--semi-color-text-0); font-size: 13px; }
+.mp-workspace-pages-head span { color: var(--semi-color-text-2); font-size: 11px; }
+.mp-workspace-pages ul { overflow: auto; list-style: none; margin: 0; padding: 0 var(--mp-space-2) var(--mp-space-4); }
+.mp-workspace-pages a { display: flex; align-items: center; min-height: 36px; padding: var(--mp-space-1) var(--mp-space-3); margin-bottom: var(--mp-space-1);
+  border-radius: var(--semi-border-radius-small); color: inherit; text-decoration: none; font-size: 12px; }
+.mp-workspace-pages a[aria-current='page'] { background: var(--semi-color-primary-light-default); color: var(--semi-color-primary); font-weight: 600; }
+.mp-workspace-pages a:hover, .mp-workspace-groups a:hover { color: var(--semi-color-primary); background: var(--semi-color-fill-0); }
+.mp-workspace-pages a:focus-visible, .mp-workspace-groups a:focus-visible, .mp-workspace-nav-toggle:focus-visible { outline: 2px solid var(--semi-color-primary); outline-offset: -2px; }
+.mp-workspace-nav-toggle { display: none; flex: none; align-items: center; justify-content: center; border: 1px solid var(--semi-color-border);
+  padding: var(--mp-space-2); border-radius: var(--semi-border-radius-small); background: var(--semi-color-bg-1); color: var(--semi-color-text-1); cursor: pointer; }
+@media (max-width: 1024px) { .mp-workspace-pages { width: 160px; } }
+@media (max-width: 640px) {
+  .mp-workspace-groupbar { padding: 0 var(--mp-space-2); gap: var(--mp-space-1); }
+  .mp-workspace-nav-toggle { display: inline-flex; }
+  .mp-workspace-pages { display: none; }
+  .mp-workspace[data-nav-open='true'] .mp-workspace-pages {
+    display: flex; position: absolute; left: 0; top: 0; bottom: 0; width: min(260px, 100%); z-index: 15; box-shadow: var(--semi-shadow-elevated);
+  }
+  .mp-workspace-body > .mp-page { padding: var(--mp-space-3); }
+  .mp-workspace-body > .mp-page:has(> .mp-page-full) { padding: 0; }
+}
 /*
  * 与旧 AppLayout.Content 的能力对齐（padding / overflow / flex column），
  * 这样未迁移的旧页面在新壳内保持原有排版，sticky 头部也照旧生效。
@@ -248,6 +332,8 @@
   flex-direction: column;
   overflow: auto;
   padding: var(--mp-space-6);
+  min-width: 0;
+  background: var(--semi-color-bg-0);
 }
 
 /* 未迁移的旧页面自带内边距；这里只兜底给一层横向留白 */

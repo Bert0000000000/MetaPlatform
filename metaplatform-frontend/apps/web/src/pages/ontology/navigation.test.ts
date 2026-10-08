@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { buildNavigationIndex, DOMAINS, resolveDomain } from '@/components/shell/domains';
+import { buildNavigationIndex, DOMAINS, resolveDomain, resolveDomainTab, resolveWorkspaceNavigation } from '@/components/shell/domains';
 import { ontologyBreadcrumb, ontologyPaletteEntries, resolveOntologyNav } from './navigation';
 
 describe('本体导航路径解析', () => {
+  it('全平台工作区不把未知本体路径伪装成概览', () => {
+    expect(resolveWorkspaceNavigation('/ontology/model/object-types-extra')?.page).toBeUndefined();
+    expect(resolveWorkspaceNavigation('/ontology/not-implemented')?.group).toBeUndefined();
+  });
+  it('迁入知识库组的检索测试仍给兼容调用者真实父组', () => {
+    const domain = DOMAINS.find(item => item.key === 'ki')!;
+    expect(resolveDomainTab(domain, '/ki/test')?.key).toBe('kb');
+  });
   it('对象深链匹配最具体入口，映射面包屑可定位所属域', () => {
     expect(resolveOntologyNav('/ontology/model/object-types/ont.t.obj.customer.v1/properties')?.item?.key)
       .toBe('object-types');
