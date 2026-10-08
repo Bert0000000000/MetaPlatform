@@ -24,6 +24,10 @@ on:
       - "metaplatform-frontend/tests/e2e/ontology-loop/**"
       - "metaplatform-frontend/tests/e2e/helpers/**"
       - "metaplatform-frontend/playwright.config.ts"
+      - "metaplatform-frontend/playwright.migration.config.ts"
+      - "metaplatform-frontend/migration-list-reporter.ts"
+      - "metaplatform-frontend/apps/web/tests/e2e/**"
+      - "scripts/ci/verify_migration_browser.py"
       - "metaplatform-frontend/package.json"
       - "mate-platform-backend/packages/mate-tech-ont/**"
       - "mate-platform-backend/services/api-gateway/**"
@@ -84,6 +88,28 @@ jobs:
 
       - name: Run ontology core e2e
         run: bash scripts/ci/ontology-core-e2e.sh test
+
+      - name: Collect both required migration browser cases
+        if: ${{ !cancelled() }}
+        working-directory: metaplatform-frontend
+        run: |
+          mkdir -p test-results
+          pnpm exec playwright test --config playwright.migration.config.ts --list --reporter=./migration-list-reporter.ts
+          python3 ../scripts/ci/verify_migration_browser.py --list test-results/migration-list.json
+
+      - name: Execute both required migration browser cases
+        if: ${{ !cancelled() }}
+        working-directory: metaplatform-frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:9200
+          E2E_GATEWAY_URL: http://127.0.0.1:8100/api/v1
+          E2E_GATEWAY: http://127.0.0.1:8100/api/v1
+          E2E_IAM_LOGIN_URL: http://127.0.0.1:8100/api/v1/iam/auth/login
+        run: pnpm exec playwright test --config playwright.migration.config.ts
+
+      - name: Require executed migration JUnit with zero skips
+        if: ${{ !cancelled() }}
+        run: python3 scripts/ci/verify_migration_browser.py --junit metaplatform-frontend/test-results/migration.xml
 
       - name: Dump container logs
         if: failure()

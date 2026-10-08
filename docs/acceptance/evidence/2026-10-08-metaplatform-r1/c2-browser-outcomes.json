@@ -1,0 +1,44 @@
+[
+  {
+    "artifact": "c2-browser-initial-failure.xml",
+    "tests": 2,
+    "outcomes": {
+      "failure": 2
+    },
+    "cases": [
+      {
+        "classname": "ontology-migration-plan.spec.ts",
+        "name": "Ontology · 存量适配（ADR-0082） › 评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "ontology-migration-plan.spec.ts",
+        "name": "Ontology · 存量适配（ADR-0082） › 无幂等键执行被拒（400）——后端守卫",
+        "nodeid": null,
+        "status": "failure"
+      }
+    ]
+  },
+  {
+    "artifact": "c2-browser-final.xml",
+    "tests": 2,
+    "outcomes": {
+      "passed": 2
+    },
+    "cases": [
+      {
+        "classname": "ontology-migration-plan.spec.ts",
+        "name": "Ontology · 存量适配（ADR-0082） › 评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "ontology-migration-plan.spec.ts",
+        "name": "Ontology · 存量适配（ADR-0082） › 无幂等键执行被拒（400）——后端守卫",
+        "nodeid": null,
+        "status": "passed"
+      }
+    ]
+  }
+]

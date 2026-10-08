@@ -28,7 +28,9 @@ from mate_kernel.ontology.instances.individual import Individual
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
-PG_DSN = os.getenv("VER_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test")
+PG_DSN = os.getenv("VER_PG_DSN") or os.getenv(
+    "PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test"
+)
 T = "verm"
 OBJ = f"ont.{T}.obj.crm.deal.v1"
 OBJ_V2 = f"ont.{T}.obj.crm.deal.v2"

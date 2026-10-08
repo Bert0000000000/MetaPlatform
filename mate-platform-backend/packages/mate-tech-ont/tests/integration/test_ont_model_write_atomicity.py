@@ -29,7 +29,11 @@ from mate_kernel.ontology.types.interface import Interface
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
-PG_DSN = os.getenv("MODEL_AT_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test")
+PG_DSN = (
+    os.getenv("MODEL_AT_PG_DSN")
+    or os.getenv("VER_PG_DSN")
+    or os.getenv("PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test")
+)
 T = "modatomic"
 BASE = f"ont.{T}.obj.base.v1"
 CHILD = f"ont.{T}.obj.child.v1"

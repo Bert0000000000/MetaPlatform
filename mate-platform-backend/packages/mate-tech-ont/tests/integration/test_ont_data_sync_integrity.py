@@ -34,7 +34,11 @@ from mate_tech_ont.v2_kernel.backing_datasources import (
     sync_backing_datasource,
 )
 
-PG_DSN = os.getenv("SYNC_IT_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test")
+PG_DSN = (
+    os.getenv("SYNC_IT_PG_DSN")
+    or os.getenv("VER_PG_DSN")
+    or os.getenv("PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test")
+)
 T = "syncint"
 OBJ = f"ont.{T}.obj.crm.customer.v1"
 P_ID = f"ont.{T}.prop.cid.v1"

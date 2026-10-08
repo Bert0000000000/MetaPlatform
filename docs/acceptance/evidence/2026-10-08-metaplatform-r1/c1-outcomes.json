@@ -1,0 +1,809 @@
+[
+  {
+    "artifact": "ont-migration-baseline.xml",
+    "tests": 22,
+    "outcomes": {
+      "passed": 22
+    },
+    "cases": [
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_family_publish_carries_instances_and_records_run",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_assess_reports_and_heals_legacy_orphans",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_sourced_upsert_updates_class_rid_on_conflict",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_rename_paired_by_slug_and_true_removal_preserved",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_counts_match_seeded_data",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_format_counts_split_coercible_and_kept",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_pk_conflicts_and_missing_detected",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_assess_with_target_payload_previews_draft",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_assess_is_read_only",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunRename",
+        "name": "test_rename_remaps_props_props_src_overlay_and_field_mapping",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_drop_preserves_by_default",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_explicit_drop_removes_keys",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_coerce_lossless_only",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_rederive_rewrites_rids_and_links",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_conflict_aborts_without_partial_writes",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_missing_pk_skip_option_reports",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_same_idempotency_key_replays_original_result",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_missing_idempotency_key_rejected",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_checksum_drift_rejected_409",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_cross_tenant_denied",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_runs_list_is_tenant_scoped",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRollbackBoundary",
+        "name": "test_rollback_after_migration_keeps_migrated_data",
+        "nodeid": null,
+        "status": "passed"
+      }
+    ]
+  },
+  {
+    "artifact": "c1-completeness-postgres.xml",
+    "tests": 68,
+    "outcomes": {
+      "passed": 68
+    },
+    "cases": [
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_family_publish_carries_instances_and_records_run",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestReattachOnFamilyPublish::test_family_publish_carries_instances_and_records_run",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_assess_reports_and_heals_legacy_orphans",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestReattachOnFamilyPublish::test_assess_reports_and_heals_legacy_orphans",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_sourced_upsert_updates_class_rid_on_conflict",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestReattachOnFamilyPublish::test_sourced_upsert_updates_class_rid_on_conflict",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_rename_paired_by_slug_and_true_removal_preserved",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestAssessClassification::test_rename_paired_by_slug_and_true_removal_preserved",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_counts_match_seeded_data",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestAssessClassification::test_counts_match_seeded_data",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_format_counts_split_coercible_and_kept",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestAssessClassification::test_format_counts_split_coercible_and_kept",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_pk_conflicts_and_missing_detected",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestAssessClassification::test_pk_conflicts_and_missing_detected",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_assess_with_target_payload_previews_draft",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestAssessClassification::test_assess_with_target_payload_previews_draft",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_assess_is_read_only",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestAssessClassification::test_assess_is_read_only",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunRename",
+        "name": "test_rename_remaps_props_props_src_overlay_and_field_mapping",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestRunRename::test_rename_remaps_props_props_src_overlay_and_field_mapping",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_drop_preserves_by_default",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestRunDropAndCoerce::test_drop_preserves_by_default",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_explicit_drop_removes_keys",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestRunDropAndCoerce::test_explicit_drop_removes_keys",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_coerce_lossless_only",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestRunDropAndCoerce::test_coerce_lossless_only",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_rederive_rewrites_rids_and_links",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestRunPkRederive::test_rederive_rewrites_rids_and_links",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_conflict_aborts_without_partial_writes",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestRunPkRederive::test_conflict_aborts_without_partial_writes",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_missing_pk_skip_option_reports",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestRunPkRederive::test_missing_pk_skip_option_reports",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_same_idempotency_key_replays_original_result",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestIdempotencyAndGuards::test_same_idempotency_key_replays_original_result",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_missing_idempotency_key_rejected",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestIdempotencyAndGuards::test_missing_idempotency_key_rejected",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_checksum_drift_rejected_409",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestIdempotencyAndGuards::test_checksum_drift_rejected_409",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_cross_tenant_denied",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestIdempotencyAndGuards::test_cross_tenant_denied",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_runs_list_is_tenant_scoped",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestIdempotencyAndGuards::test_runs_list_is_tenant_scoped",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRollbackBoundary",
+        "name": "test_rollback_after_migration_keeps_migrated_data",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py::TestRollbackBoundary::test_rollback_after_migration_keeps_migrated_data",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_full_sync_paginates_beyond_single_batch",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_full_sync_paginates_beyond_single_batch",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_same_timestamp_rows_are_not_skipped",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_same_timestamp_rows_are_not_skipped",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_incremental_rerun_picks_up_changes_only",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_incremental_rerun_picks_up_changes_only",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_multisource_priority_holds_across_batches",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_multisource_priority_holds_across_batches",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_explicit_null_clears_but_missing_column_keeps",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_explicit_null_clears_but_missing_column_keeps",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_user_edit_overlay_is_not_overwritten",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_user_edit_overlay_is_not_overwritten",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_single_row_failure_is_recorded_not_silently_successful",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_single_row_failure_is_recorded_not_silently_successful",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_interrupted_run_resumes_without_loss",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_interrupted_run_resumes_without_loss",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_data_sync_integrity.TestSyncIntegrity",
+        "name": "test_delete_event_and_full_tombstone",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py::TestSyncIntegrity::test_delete_event_and_full_tombstone",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_model_write_atomicity.TestModelWriteAtomicity",
+        "name": "test_axiom_failure_rolls_back_new_type",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_model_write_atomicity.py::TestModelWriteAtomicity::test_axiom_failure_rolls_back_new_type",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_model_write_atomicity.TestModelWriteAtomicity",
+        "name": "test_axiom_failure_preserves_previous_type",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_model_write_atomicity.py::TestModelWriteAtomicity::test_axiom_failure_preserves_previous_type",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_model_write_atomicity.TestModelWriteAtomicity",
+        "name": "test_interface_read_failure_is_not_treated_as_pass",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_model_write_atomicity.py::TestModelWriteAtomicity::test_interface_read_failure_is_not_treated_as_pass",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_model_write_atomicity.TestModelWriteAtomicity",
+        "name": "test_draft_allows_violating_ref_but_publish_rejects",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_model_write_atomicity.py::TestModelWriteAtomicity::test_draft_allows_violating_ref_but_publish_rejects",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_model_write_atomicity.TestModelWriteAtomicity",
+        "name": "test_parent_axiom_and_type_land_together",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_model_write_atomicity.py::TestModelWriteAtomicity::test_parent_axiom_and_type_land_together",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_link_cardinality_concurrency.TestLinkCardinalityConcurrency",
+        "name": "test_concurrent_conflicting_links_only_one_succeeds",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_link_cardinality_concurrency.py::TestLinkCardinalityConcurrency::test_concurrent_conflicting_links_only_one_succeeds",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_link_cardinality_concurrency.TestLinkCardinalityConcurrency",
+        "name": "test_cardinality_enforced_sequentially",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_link_cardinality_concurrency.py::TestLinkCardinalityConcurrency::test_cardinality_enforced_sequentially",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_link_cardinality_concurrency.TestLinkCardinalityConcurrency",
+        "name": "test_edit_set_add_link_enforces_cardinality",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_link_cardinality_concurrency.py::TestLinkCardinalityConcurrency::test_edit_set_add_link_enforces_cardinality",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestVersionSnapshots",
+        "name": "test_list_versions_was_empty_now_returns_snapshots",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestVersionSnapshots::test_list_versions_was_empty_now_returns_snapshots",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestVersionSnapshots",
+        "name": "test_publishing_v2_keeps_v1_definition_readable",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestVersionSnapshots::test_publishing_v2_keeps_v1_definition_readable",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestVersionSnapshots",
+        "name": "test_snapshot_is_idempotent_for_same_content",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestVersionSnapshots::test_snapshot_is_idempotent_for_same_content",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestPublishNewVersion",
+        "name": "test_publish_v2_supersedes_v1_and_keeps_both_readable",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestPublishNewVersion::test_publish_v2_supersedes_v1_and_keeps_both_readable",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestVersionConflict",
+        "name": "test_stale_expected_checksum_raises_conflict",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestVersionConflict::test_stale_expected_checksum_raises_conflict",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestVersionConflict",
+        "name": "test_current_expected_checksum_succeeds",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestVersionConflict::test_current_expected_checksum_succeeds",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestDiffReproducible",
+        "name": "test_diff_between_snapshot_and_live_is_reproducible",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestDiffReproducible::test_diff_between_snapshot_and_live_is_reproducible",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestRollbackScope",
+        "name": "test_rollback_restores_model_only",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestRollbackScope::test_rollback_restores_model_only",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestDraftConfirmPassthrough",
+        "name": "test_destructive_wip_applies_with_confirm_and_rejects_without",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestDraftConfirmPassthrough::test_destructive_wip_applies_with_confirm_and_rejects_without",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestStaleDraftConflict",
+        "name": "test_draft_baselined_before_concurrent_edit_is_rejected",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestStaleDraftConflict::test_draft_baselined_before_concurrent_edit_is_rejected",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestStaleDraftConflict",
+        "name": "test_explicit_expected_checksum_overrides_stale_baseline",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestStaleDraftConflict::test_explicit_expected_checksum_overrides_stale_baseline",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestPublishPreflight",
+        "name": "test_duplicate_property_slug_is_rejected_on_publish",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestPublishPreflight::test_duplicate_property_slug_is_rejected_on_publish",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestPublishPreflight",
+        "name": "test_validate_reports_destructive_and_unresolved_references",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestPublishPreflight::test_validate_reports_destructive_and_unresolved_references",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestVersionDependencies",
+        "name": "test_snapshot_records_dependency_rids",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestVersionDependencies::test_snapshot_records_dependency_rids",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestVersionDependencies",
+        "name": "test_resolve_references_flags_only_missing_external_refs",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestVersionDependencies::test_resolve_references_flags_only_missing_external_refs",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_version_mechanism.TestVersionDependencies",
+        "name": "test_live_checksum_pins_the_current_effective_version",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py::TestVersionDependencies::test_live_checksum_pins_the_current_effective_version",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSourceResolutionMatrix",
+        "name": "test_parent_includes_descendants_in_all_entries",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSourceResolutionMatrix::test_parent_includes_descendants_in_all_entries",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSourceResolutionMatrix",
+        "name": "test_middle_and_leaf",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSourceResolutionMatrix::test_middle_and_leaf",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSourceResolutionMatrix",
+        "name": "test_interface_expands_to_implementers_plus_descendants",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSourceResolutionMatrix::test_interface_expands_to_implementers_plus_descendants",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSourceResolutionMatrix",
+        "name": "test_unregistered_source_is_exact",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSourceResolutionMatrix::test_unregistered_source_is_exact",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSourceResolutionMatrix",
+        "name": "test_interface_without_implementers_is_empty_not_unfiltered",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSourceResolutionMatrix::test_interface_without_implementers_is_empty_not_unfiltered",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSourceResolutionMatrix",
+        "name": "test_disabled_axiom_falls_back_to_exact",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSourceResolutionMatrix::test_disabled_axiom_falls_back_to_exact",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSortNullAndPaging",
+        "name": "test_multi_key_sort_and_stable_tiebreak",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSortNullAndPaging::test_multi_key_sort_and_stable_tiebreak",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSortNullAndPaging",
+        "name": "test_null_ordering_matches_inmemory",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSortNullAndPaging::test_null_ordering_matches_inmemory",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSortNullAndPaging",
+        "name": "test_paging_is_stable_across_pages",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSortNullAndPaging::test_paging_is_stable_across_pages",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSortNullAndPaging",
+        "name": "test_paging_and_field_validation",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSortNullAndPaging::test_paging_and_field_validation",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestAggregationParity",
+        "name": "test_group_by_count_matches_inmemory",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestAggregationParity::test_group_by_count_matches_inmemory",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestAggregationParity",
+        "name": "test_sum_ignores_null_and_matches_inmemory",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestAggregationParity::test_sum_ignores_null_and_matches_inmemory",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_query_semantics_unified.TestSqlCountAndLatency",
+        "name": "test_sql_statement_budget_and_latency",
+        "nodeid": "packages/mate-tech-ont/tests/integration/test_ont_query_semantics_unified.py::TestSqlCountAndLatency::test_sql_statement_budget_and_latency",
+        "status": "passed"
+      }
+    ]
+  },
+  {
+    "artifact": "c1-completeness-rls.xml",
+    "tests": 8,
+    "outcomes": {
+      "passed": 8
+    },
+    "cases": [
+      {
+        "classname": "packages.mate-tech-ont.tests.security.test_tenant_isolation_hard",
+        "name": "test_t1_select_only_own_tenant_rows",
+        "nodeid": "packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t1_select_only_own_tenant_rows",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.security.test_tenant_isolation_hard",
+        "name": "test_t2_create_with_cross_tenant_rid_via_api_guard",
+        "nodeid": "packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t2_create_with_cross_tenant_rid_via_api_guard",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.security.test_tenant_isolation_hard",
+        "name": "test_t3_apply_action_cross_tenant_target_rejected",
+        "nodeid": "packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t3_apply_action_cross_tenant_target_rejected",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.security.test_tenant_isolation_hard",
+        "name": "test_t4_upsert_object_type_cross_tenant_rid_blocked",
+        "nodeid": "packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t4_upsert_object_type_cross_tenant_rid_blocked",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.security.test_tenant_isolation_hard",
+        "name": "test_t5_link_instance_cross_tenant_blocked",
+        "nodeid": "packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t5_link_instance_cross_tenant_blocked",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.security.test_tenant_isolation_hard",
+        "name": "test_t6_write_with_wrong_tenant_id_blocked_by_with_check",
+        "nodeid": "packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t6_write_with_wrong_tenant_id_blocked_by_with_check",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.security.test_tenant_isolation_hard",
+        "name": "test_t7_select_other_tenant_rows_returns_empty",
+        "nodeid": "packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t7_select_other_tenant_rows_returns_empty",
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.security.test_tenant_isolation_hard",
+        "name": "test_t8_update_other_tenant_row_touches_zero",
+        "nodeid": "packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t8_update_other_tenant_row_touches_zero",
+        "status": "passed"
+      }
+    ]
+  },
+  {
+    "artifact": "c1-completeness-green.xml",
+    "tests": 27,
+    "outcomes": {
+      "passed": 27
+    },
+    "cases": [
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_missing_dsn_fails_instead_of_using_application_default",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_generic_dsn_is_supported",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_conflicting_dsns_are_rejected",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_privileged_business_role_is_rejected[True-False]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_privileged_business_role_is_rejected[False-True]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_nonprivileged_business_role_is_accepted",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_empty_skipped_and_failed_junit_cannot_pass[]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_empty_skipped_and_failed_junit_cannot_pass[<skipped/>]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_empty_skipped_and_failed_junit_cannot_pass[<failure/>]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_empty_skipped_and_failed_junit_cannot_pass[<error/>]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_missing_required_suite_is_rejected",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_executed_successful_required_suite_is_accepted",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_provisioner_rejects_unsafe_targets_before_mutation[-]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_provisioner_rejects_unsafe_targets_before_mutation[postgresql://admin@localhost/postgres-postgresql://mate_ont_test@localhost/application]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_provisioner_rejects_unsafe_targets_before_mutation[postgresql://admin@localhost/application-postgresql://mate_ont_test@localhost/metaplatform_ont_test]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_provisioner_rejects_unsafe_targets_before_mutation[postgresql://admin@localhost/postgres-postgresql://meta@localhost/metaplatform_ont_test]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_provisioner_rejects_unsafe_targets_before_mutation[postgresql://admin@localhost/postgres-postgresql://mate_ont_test@elsewhere/metaplatform_ont_test]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_missing_duplicate_or_extra_individual_execution_is_rejected[actual0]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_missing_duplicate_or_extra_individual_execution_is_rejected[actual1]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_missing_duplicate_or_extra_individual_execution_is_rejected[actual2]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_parameterized_case_identity_must_match_exactly",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_ont_postgres_gate",
+        "name": "test_unfiltered_collection_ignores_inherited_pytest_selectors",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_migration_browser_gate",
+        "name": "test_invalid_browser_evidence_is_rejected[]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_migration_browser_gate",
+        "name": "test_invalid_browser_evidence_is_rejected[<testcase classname=\"ontology-migration-plan.spec.ts\" name=\"flow\"><skipped/></testcase>]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_migration_browser_gate",
+        "name": "test_invalid_browser_evidence_is_rejected[<testcase classname=\"other.spec.ts\" name=\"one\"/><testcase classname=\"other.spec.ts\" name=\"two\"/>]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_migration_browser_gate",
+        "name": "test_both_real_browser_cases_are_accepted",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "scripts.ci.tests.test_migration_browser_gate",
+        "name": "test_missing_cases_in_playwright_execution_list_are_rejected",
+        "nodeid": null,
+        "status": "passed"
+      }
+    ]
+  },
+  {
+    "artifact": "migration.xml",
+    "tests": 2,
+    "outcomes": {
+      "passed": 2
+    },
+    "cases": [
+      {
+        "classname": "ontology-migration-plan.spec.ts",
+        "name": "Ontology · 存量适配（ADR-0082） › 评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "ontology-migration-plan.spec.ts",
+        "name": "Ontology · 存量适配（ADR-0082） › 无幂等键执行被拒（400）——后端守卫",
+        "nodeid": null,
+        "status": "passed"
+      }
+    ]
+  }
+]

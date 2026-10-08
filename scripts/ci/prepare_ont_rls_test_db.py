@@ -4,11 +4,12 @@ The regular local ``meta`` role is a PostgreSQL superuser, which bypasses even
 ``FORCE ROW LEVEL SECURITY``.  This script provisions only the dedicated test
 role/database and leaves the application database untouched.
 
-Usage (from ``mate-platform-backend`` with uv):
+Usage (from the repository root with the installed workspace venv):
 
-    uv run python ../scripts/ci/prepare_ont_rls_test_db.py
+    mate-platform-backend/.venv/bin/python scripts/ci/prepare_ont_rls_test_db.py
 
-The test suite can then run with the default DSN or an explicit ``PG_DSN``.
+Explicit ``ONT_RLS_ADMIN_DSN`` (postgres maintenance database) and ``PG_DSN``
+(fixed test role/database on the same server) are mandatory before mutation.
 """
 
 from __future__ import annotations
@@ -26,10 +27,33 @@ for package_src in (BACKEND_ROOT / "packages").glob("*/src"):
     sys.path.insert(0, str(package_src))
 
 
-ADMIN_DSN = os.getenv("ONT_RLS_ADMIN_DSN", "postgresql://meta:meta@localhost:5432/postgres")
+ADMIN_DSN = os.getenv("ONT_RLS_ADMIN_DSN", "")
 TEST_ROLE = "mate_ont_test"
 TEST_PASSWORD = os.getenv("ONT_RLS_TEST_PASSWORD", TEST_ROLE)
 TEST_DATABASE = "metaplatform_ont_test"
+
+
+def validate_test_target(admin_dsn: str, test_dsn: str) -> None:
+    """Reject application/default targets before any role/database mutation."""
+    if not admin_dsn or not test_dsn:
+        raise ValueError("Explicit ONT_RLS_ADMIN_DSN and PG_DSN are required")
+    admin = psycopg2.extensions.parse_dsn(admin_dsn)
+    target = psycopg2.extensions.parse_dsn(test_dsn)
+    if admin.get("dbname") != "postgres":
+        raise ValueError("Admin DSN must select the postgres maintenance database")
+    if target.get("dbname") != TEST_DATABASE or target.get("user") != TEST_ROLE:
+        raise ValueError("Provisioning is limited to metaplatform_ont_test and mate_ont_test")
+    if not admin.get("host") or not target.get("host"):
+        raise ValueError("Both DSNs must select an explicit host")
+    if any(
+        admin.get(key, "5432" if key == "port" else "")
+        != target.get(key, "5432" if key == "port" else "")
+        for key in ("host", "port")
+    ):
+        raise ValueError("Admin and business DSNs must select the same PostgreSQL server")
+    if target.get("password") != TEST_PASSWORD:
+        raise ValueError("PG_DSN password must match ONT_RLS_TEST_PASSWORD")
+
 
 KERNEL01_V2_TABLES: tuple[str, ...] = (
     "ont_individual",
@@ -114,15 +138,17 @@ def _ensure_table_ownership() -> None:
                 _execute_ident(cur, "ALTER TABLE {} OWNER TO {}", table, TEST_ROLE)
 
 
+def _ensure_pgvector() -> None:
+    """Install the privileged extension before business-role schema bootstrap."""
+    with psycopg2.connect(ADMIN_DSN, dbname=TEST_DATABASE, connect_timeout=5) as conn:
+        with conn.cursor() as cur:
+            cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+
+
 def _ensure_schema_and_rls() -> None:
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
-    repo = PgOntologyRepository(
-        dsn=os.getenv(
-            "PG_DSN",
-            f"postgresql://{TEST_ROLE}:{TEST_PASSWORD}@localhost:5432/{TEST_DATABASE}",
-        )
-    )
+    repo = PgOntologyRepository(dsn=os.environ["PG_DSN"])
     repo._ensure_schema()
 
     with psycopg2.connect(repo._dsn, connect_timeout=5) as conn:  # type: ignore
@@ -142,15 +168,14 @@ def _ensure_schema_and_rls() -> None:
 
 
 def main() -> None:
+    validate_test_target(ADMIN_DSN, os.getenv("PG_DSN", ""))
     _ensure_role()
     _ensure_database()
     _ensure_table_ownership()
+    _ensure_pgvector()
     _ensure_schema_and_rls()
 
-    test_dsn = os.getenv(
-        "PG_DSN",
-        f"postgresql://{TEST_ROLE}:{TEST_PASSWORD}@localhost:5432/{TEST_DATABASE}",
-    )
+    test_dsn = os.environ["PG_DSN"]
     with psycopg2.connect(test_dsn, connect_timeout=5) as conn:  # type: ignore
         with conn.cursor() as cur:
             cur.execute(

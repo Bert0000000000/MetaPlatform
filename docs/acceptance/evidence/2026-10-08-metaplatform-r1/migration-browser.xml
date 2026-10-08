@@ -1,0 +1,8 @@
+<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="7.139805999999999">
+<testsuite name="ontology-migration-plan.spec.ts" timestamp="2026-10-08T01:27:39.019Z" hostname="ontology-migration" tests="2" failures="0" skipped="0" time="6.318" errors="0">
+<testcase name="Ontology · 存量适配（ADR-0082） › 评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例" classname="ontology-migration-plan.spec.ts" time="3.738">
+</testcase>
+<testcase name="Ontology · 存量适配（ADR-0082） › 无幂等键执行被拒（400）——后端守卫" classname="ontology-migration-plan.spec.ts" time="2.58">
+</testcase>
+</testsuite>
+</testsuites>

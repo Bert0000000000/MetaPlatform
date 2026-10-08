@@ -35,7 +35,11 @@ from mate_kernel.ontology.types.link_type import Cardinality, Directionality, Li
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
-PG_DSN = os.getenv("LINKC_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test")
+PG_DSN = (
+    os.getenv("LINKC_PG_DSN")
+    or os.getenv("VER_PG_DSN")
+    or os.getenv("PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test")
+)
 T = "linkconc"
 OBJ_A = f"ont.{T}.obj.org.node.v1"
 OBJ_B = f"ont.{T}.obj.org.peer.v1"

@@ -78,7 +78,7 @@ def coerce_value(from_fmt: str, to_fmt: str, value: Any) -> Any:
 def build_migration_plan(
     old: ObjectType,
     new: ObjectType,
-    options: dict[str, Any] | None = None,
+    options: object | None = None,
 ) -> dict[str, Any]:
     """old → new 定义的声明式迁移计划（纯函数；计数由 repo 的 assess 补齐）。
 
@@ -90,7 +90,20 @@ def build_migration_plan(
           "pk_missing": "abort" | "skip",                # 默认 abort
         }
     """
-    opts = options or {}
+    if options is not None and not isinstance(options, dict):
+        raise ValueError("migration options must be an object")
+    opts = options if options is not None else {}
+    if set(opts) - {"rename", "drops", "pk_missing"}:
+        raise ValueError("unknown migration option")
+    if opts.get("drops", "preserve") not in ("preserve", "drop"):
+        raise ValueError("drops must be preserve|drop")
+    if opts.get("pk_missing", "abort") not in ("abort", "skip"):
+        raise ValueError("pk_missing must be abort|skip")
+    explicit = opts.get("rename", {})
+    if not isinstance(explicit, dict) or any(
+        not isinstance(k, str) or not isinstance(v, str) for k, v in explicit.items()
+    ):
+        raise ValueError("rename must map property strings to property strings")
     old_props = {p.rid.rid: p for p in old.properties}
     new_props = {p.rid.rid: p for p in new.properties}
 
@@ -101,7 +114,8 @@ def build_migration_plan(
     new_by_slug: dict[str, str] = {}
     for rid in added:
         new_by_slug[prop_slug(rid)] = rid
-    explicit: dict[str, str] = {str(k): str(v) for k, v in dict(opts.get("rename") or {}).items()}
+    if any(src not in removed or dst not in added for src, dst in explicit.items()):
+        raise ValueError("rename must map removed properties to added properties")
     renames: dict[str, str] = {}
     drops_props: list[str] = []
     for rid in removed:
@@ -113,6 +127,8 @@ def build_migration_plan(
             renames[rid] = successor
         else:
             drops_props.append(rid)
+    if len(set(renames.values())) != len(renames):
+        raise ValueError("rename destinations must be unique")
     # 显式 mapping 里被指向的目标必须存在于新定义（防拼写错误悄悄变 no-op）
     for src, dst in explicit.items():
         if src in renames and dst not in new_props:

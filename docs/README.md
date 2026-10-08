@@ -1,17 +1,18 @@
 ﻿# Mate Platform 文档导航
 
-> **最后更新**：2026-08-25（ADR-0061 Temporal Workflow 架构同步）
+> **最后更新**：2026-10-08（C0 接管入口与 R1 单源导航）
 >
-> **平台状态**：v3.0 GA + v3.1/v4 增量；Temporal 目标架构已接受，Sprint 1A 迁移尚未完成
+> **当前工作**：用户指定本 `2026-07-02-MetaPlatform` 仓库继续研发。2026-09-08 向 `MetaPlatform-Ontology` 迁移的指针仅作历史决策；当前任务依据本仓库已接受 ADR/规格。
+> **证据边界**：下方旧版本路线、验收与状态是历史记录；本地验证、PR/主干 CI、部署和业务验收必须分别查证，不能沿用历史 Accepted。
 
 ## 🚀 新成员必读
 
-按顺序阅读这 4 份文档：
+按顺序定位当前任务及单源文档：
 
-1. **项目上下文**：[`CLAUDE.md`](../CLAUDE.md) / [`agent.md`](../agent.md)
-2. **主架构**：[`active/specs/2026-07-27-mate-platform-architecture-implementation.md`](active/specs/2026-07-27-mate-platform-architecture-implementation.md) ⭐ **THE ONE DOC**
-3. **当前发布计划**：[`active/V1.0-RELEASE-PLAN.md`](active/V1.0-RELEASE-PLAN.md)
-4. **PRD 集合**：[`active/prd/`](active/prd/)
+1. **标准接管入口**：[`AGENTS.md`](../AGENTS.md)（工作树、锁文件、安装/验证与保护现有环境的约束）；[`CLAUDE.md`](../CLAUDE.md) 保留历史上下文。
+2. **当前 R1**：[`R1 实施计划`](superpowers/plans/2026-10-08-metaplatform-r1-implementation.md)、[`本轮验收记录`](acceptance/2026-10-08-metaplatform-r1.md) 与 [`已接受优化路线图`](superpowers/plans/2026-10-08-metaplatform-optimization-roadmap.md)。
+3. **本体迁移/版本单源**：[`ADR-0082 Migration Plan`](active/decisions/ADR-0082-ontology-migration-plan.md)、[`ADR-0080 草稿与版本`](active/decisions/ADR-0080-ontology-draft-and-version-mechanism.md)、[`ont.yaml 契约`](../mate-platform-backend/contracts/openapi/services/ont.yaml)。
+4. **架构及业务背景**：[`主架构实施基线`](active/specs/2026-07-27-mate-platform-architecture-implementation.md)、[`PRD 集合`](active/prd/)。旧 [`V1.0 发布计划`](active/V1.0-RELEASE-PLAN.md) 用于对应版本追溯。
 
 ## 📁 目录结构
 
@@ -23,7 +24,7 @@
 | [`active/prd/`](active/prd/)                 | 8 个 APP 的业务 PRD（已完成） |
 | [`active/legal/`](active/legal/)             | 法务自评估、合规备案          |
 | [`active/reviews/`](active/reviews/)         | 代码评审报告                  |
-| [`active/plans/`](active/plans/)             | 开发计划、阶段任务            |
+| [`superpowers/plans/`](superpowers/plans/)   | 开发计划、阶段任务            |
 | [`active/api/`](active/api/)                 | API 规范、OpenAPI 文档        |
 | [`active/runbooks/`](active/runbooks/)       | 运维手册                      |
 | [`active/scenarios/`](active/scenarios/)     | 端到端测试场景                |
@@ -90,7 +91,7 @@
 > - 决策追溯（为什么某个决定被废止）
 > - 提取历史业务需求
 >
-> **所有新工作必须基于 `active/` 目录**。
+> **新工作基于当前已接受的 ADR/规格和任务计划**：架构/决策在 `active/`，本轮路线图与实施计划在 `superpowers/plans/`；入口只导航，不维护第二份规格。
 >
 > **Workflow 特别规则**：新增可靠业务流程基于 ADR-0061 和主架构 §1.3；旧 Flowable 文档仅用于存量实现、迁移和回滚。Temporal 负责可靠编排，不替代 FastAPI CRUD、Kafka/Outbox、Flink/Airflow、AgentLoop、规则引擎或 K8s 沙箱。
 
@@ -135,8 +136,8 @@
 
 > 当你（AI）被问及架构决策时：
 >
-> 1. **第一参考**：`active/specs/2026-07-27-mate-platform-architecture-implementation.md`
-> 2. **当前版本**：v3.x 实施基线；Temporal 目标态已接受、迁移未完成
+> 1. **第一参考**：根 `AGENTS.md`，再定位当前任务对应的已接受 ADR/规格；架构背景为 `active/specs/2026-07-27-mate-platform-architecture-implementation.md`
+> 2. **版本与证据**：v3.x 历史摘要保留；实现、迁移和验收状态以本轮当前源码及明确环境证据为准
 > 3. **关键路径**：Python 主后端 + Temporal 可靠编排控制面 + 专用执行引擎/AI 服务
 > 4. **14 业务场景**：评估完整性的标准
 > 5. **Workflow 决策源**：`active/decisions/ADR-0061-temporal-as-workflow-engine.md`
