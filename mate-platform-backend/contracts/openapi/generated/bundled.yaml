@@ -12715,6 +12715,8 @@ paths:
         ADR-0082：迁移评估（只读）。baseline → 目标定义的分类变更 + SQL 级
         影响计数 + 计划草案。baseline 缺省 = 家族上一条与目标不同的版本快照；
         target_payload（ObjectTypeDTO）缺省 = 当前 live，传草稿 = 发布前预演。
+        baseline、快照内定义、target 必须属于当前 tenant/slug 家族；跨租户 403，
+        跨家族、未知字段/选项或非法类型 422，引用不存在 404。
         body: {baseline?, target_payload?, options? {rename?, drops?, pk_missing?}}；
         返回 {changes, counts, plan, warnings, from_checksum, to_checksum}。
         计数含 reattach_pending（家族旧 rid 残留实例）/ dangling（悬空键）/
@@ -12733,7 +12735,23 @@ paths:
                   additionalProperties: true
                 options:
                   type: object
-                  additionalProperties: true
+                  additionalProperties: false
+                  properties:
+                    rename:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    drops:
+                      type: string
+                      enum:
+                        - preserve
+                        - drop
+                    pk_missing:
+                      type: string
+                      enum:
+                        - abort
+                        - skip
+              additionalProperties: false
       responses:
         '200':
           description: OK
@@ -12778,6 +12796,12 @@ paths:
         overlay/field_mapping 四处）→ coercions（无损白名单）→ pk_rederive
         （冲突/缺失 fail-closed 整体回滚，pk_missing=skip 可跳过）→ drops
         （默认 preserve 不丢数据，显式 drop 才删）。每步计数随 run 记录入档。
+        服务端按同租户家族真实 from_checksum 和 live 定义重建规范计划；仅支持
+        renames、coercions、pk_rederive、drops、reattach、class_rid、from_checksum、warnings。
+        未知字段、非法类型、伪造或扩大计划返回 422；跨租户引用返回 403。
+        所有步骤共用执行前同租户家族实例集合；覆盖和映射同样限定范围。
+        rename 源/目标键并存（含 null/相同值）整单回滚，返回
+        409 E409_MIGRATION_RENAME_CONFLICT，message 说明实例/数据源及字段。
       parameters:
         - in: header
           name: Idempotency-Key
@@ -12797,7 +12821,95 @@ paths:
               properties:
                 plan:
                   type: object
-                  additionalProperties: true
+                  additionalProperties: false
+                  required:
+                    - class_rid
+                    - from_checksum
+                    - renames
+                    - coercions
+                    - pk_rederive
+                    - drops
+                    - reattach
+                    - warnings
+                  properties:
+                    class_rid:
+                      type: string
+                    from_checksum:
+                      type: string
+                      minLength: 1
+                    renames:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    coercions:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - prop_rid
+                          - from_format
+                          - to_format
+                        properties:
+                          prop_rid:
+                            type: string
+                          from_format:
+                            type: string
+                          to_format:
+                            type: string
+                    pk_rederive:
+                      type:
+                        - object
+                        - 'null'
+                      additionalProperties: false
+                      required:
+                        - old_pk
+                        - new_pk
+                        - on_missing
+                      properties:
+                        old_pk:
+                          type: array
+                          items:
+                            type: string
+                        new_pk:
+                          type: array
+                          items:
+                            type: string
+                        on_missing:
+                          type: string
+                          enum:
+                            - abort
+                            - skip
+                    drops:
+                      type: object
+                      additionalProperties: false
+                      required:
+                        - policy
+                        - props
+                      properties:
+                        policy:
+                          type: string
+                          enum:
+                            - preserve
+                            - drop
+                        props:
+                          type: array
+                          items:
+                            type: string
+                    reattach:
+                      type:
+                        - object
+                        - 'null'
+                      additionalProperties: false
+                      required:
+                        - to
+                      properties:
+                        to:
+                          type: string
+                    warnings:
+                      type: array
+                      items:
+                        type: string
                 expected_checksum:
                   type: string
       responses:
