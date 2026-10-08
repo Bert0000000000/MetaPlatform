@@ -1,9 +1,11 @@
 # CLAUDE.md
 
-> 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-09-17（Agent 产品层 2.1-A 生产安全收口：进程隔离 / 持久审计 / 委托身份 / 工具幂等 / 版本化 / 门禁 / 口径订正）；上一版同日（1.0~2.0 交付：会话页与 agent-team run 合一 + 1.0~1.9 统一验收与边界登记）
+> Claude Code / Codex 等 Agent 先读根 [`AGENTS.md`](AGENTS.md)，再按 [`docs/README.md`](docs/README.md) 定位单源规格与 ADR。
+> **最近更新**：2026-10-08（C0 接管入口与历史/当前证据边界）；下方架构与验收摘要保留于 2026-09-17，未作为本轮环境重新验证。
+> **当前研发依据**：用户已指定本 `2026-07-02-MetaPlatform` 仓库及当前隔离工作树。2026-09-08 的 `MetaPlatform-Ontology` 权威迁移指针仅作历史决策，不构成当前构建、测试、运行或设计依赖。当前任务以 [R1 实施计划](docs/superpowers/plans/2026-10-08-metaplatform-r1-implementation.md) 和其引用的已接受 ADR/规格为准。
+> **证据边界**：下方 Accepted、通过数字、批次状态、端口与运行事实都属于注明日期的历史记录；不证明当前工作树、PR/主干 CI、部署或 R1 业务验收通过。
 >
-> **当前架构版本**：**v3.0 GA + v3.1/v4 增量**；ADR-0061 已接受 **Temporal 作为业务 Workflow 可靠编排控制面**，PlanRunner 为 DSL 翻译层。**Sprint 1A 已交付并 Accepted**（2026-09-07~08，M1/M2/M3 三份证据 `TEMPORAL-1A-M{1,2,3}-ACCEPTANCE.md`）；**双轨仍在**——`WORKFLOW_ENGINE` 默认仍是 `legacy`，按 `DUAL-RAIL-COMPARISON.md` §4 灰度后切主，legacy 保底一个版本。**别把"容器在跑"当已上线证据**，也别把"尚未切流"读成"尚未开始"
+> **历史架构版本摘要**：**v3.0 GA + v3.1/v4 增量**；ADR-0061 已接受 **Temporal 作为业务 Workflow 可靠编排控制面**，PlanRunner 为 DSL 翻译层。**Sprint 1A 已交付并 Accepted**（2026-09-07~08，M1/M2/M3 三份证据 `TEMPORAL-1A-M{1,2,3}-ACCEPTANCE.md`）；**双轨仍在**——`WORKFLOW_ENGINE` 默认仍是 `legacy`，按 `DUAL-RAIL-COMPARISON.md` §4 灰度后切主，legacy 保底一个版本。**别把"容器在跑"当已上线证据**，也别把"尚未切流"读成"尚未开始"
 >
 > **平台运行环境（2026-09-09 实测）**：
 >
@@ -22,7 +24,7 @@
 >
 > **架构治理路线（2026-08-27 复核）**：`docs/active/governance/HARD-RULES-MATRIX.md` + `docs/active/governance/FOLLOW-UP-BOARD.md` + `docs/active/V1.0-RELEASE-PLAN.md`。13 条硬规则均已有可执行门禁（13 ✅ / 0 🟡）；这表示 CI/渲染验证闭环，不表示 staging/prod 已完成部署演练。FOLLOW-UP-A/B/C/D 已完成各自 focused gate，历史登记明细合计 68（原摘要为 67），详见 FOLLOW-UP-BOARD。
 
-## v3.0 GA 状态
+## 历史 v3.0 GA 状态
 
 **8 / 8 核心 Delivery Batch 已 Accepted**。§13 硬规则 1-13 通过 pre-commit 钩子 +
 CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
@@ -83,7 +85,7 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 
 > 详见 `docs/active/specs/2026-07-27-mate-platform-architecture-implementation.md` 的服务矩阵。
 
-## 当前 Delivery Batch 接力（refactor/monorepo-shrink-phase-2 视角）
+## 历史 Delivery Batch 接力（refactor/monorepo-shrink-phase-2 视角）
 
 | Batch             | 状态         | Commit   | 关键 ADR | AI Launch Prompt                                          |
 | ----------------- | ------------ | -------- | -------- | --------------------------------------------------------- |
@@ -160,7 +162,7 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 
 ## 新 Codex / AI 会话接力
 
-1. 切到对应批次的 worktree（`.worktrees/<batch>-01`），或基于 `main` 新建分支。
+1. 从根 `AGENTS.md` 确认当前授权工作树、任务与验证入口；以下历史 batch prompt 仅在对应任务明确采用时使用。
 2. 整段复制粘贴对应 `ai-launch-prompt-batch*` 到对话开头。
 3. 跑既有 pytest 套件确认基线（`infra/tests` + `mate-platform-backend/packages/*/tests`）。
 4. 提交风格遵循 Conventional Commits。
@@ -239,7 +241,7 @@ AGENT-ORCH-01    ┘         RAG-ONT-01         ┘         AGENT-EXT-01
 
 ### 接力指引（v3.1 Ontology）
 
-1. 切到 `.worktrees/mp-ont-kernel-01`（已就绪，分支 `refactor/mp-ont-kernel-01`，基于 main）
+1. 历史批次曾使用 `.worktrees/mp-ont-kernel-01`（`refactor/mp-ont-kernel-01`）；该路径与就绪状态不是当前任务指令，接管以根 `AGENTS.md` 为准。
 2. 起 M1 启动包：12 基元 Protocol/dataclass 骨架 + 60 tests 列表
 3. 提交风格遵循 Conventional Commits；PR 引用 ADR-0021 + operationId + `MP-ONT-KERNEL-01-ACCEPTANCE.md`
 4. v0.5 任务：补抓 Palantir 官方 7 个核心页正文，替换"可证伪"行
