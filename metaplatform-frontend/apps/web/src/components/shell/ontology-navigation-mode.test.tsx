@@ -5,6 +5,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import AppShell from './AppShell';
 import OntologyTabLayout from '@/pages/ontology/layout/OntologyTabLayout';
 import { getOntologyContextSnapshot } from '@/pages/ontology/hooks/assistantContext';
+import { streamAgentChat } from '@/api/superai/chat';
 
 // Semi imports its animation driver eagerly; jsdom has no canvas implementation.
 vi.hoisted(() => {
@@ -18,10 +19,14 @@ vi.mock('@mate/shared', () => ({ useAuth: () => ({ user: { username: 'test-user'
 vi.mock('@/contexts/SettingsContext', () => ({
   useSettings: () => ({ resolvedTheme: 'light', setTheme: vi.fn().mockResolvedValue(undefined) }),
 }));
+vi.mock('@/api/superai/chat', () => ({ streamAgentChat: vi.fn().mockResolvedValue(undefined) }));
 
 beforeEach(() => {
   vi.stubGlobal('localStorage', window.localStorage);
   localStorage.clear();
+  vi.clearAllMocks();
+  HTMLElement.prototype.scrollIntoView = vi.fn();
+  Range.prototype.getBoundingClientRect = () => new DOMRect();
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   vi.stubGlobal('matchMedia', () => ({ matches: false, addListener: vi.fn(), removeListener: vi.fn(),
     addEventListener: vi.fn(), removeEventListener: vi.fn() }));
@@ -151,5 +156,26 @@ describe('本体建设工作区导航', () => {
     expect(screen.queryByRole('navigation', { name: '本体工作区导航' })).not.toBeInTheDocument();
     expect(getOntologyContextSnapshot().navigation).toMatchObject({ view: 'ontology-governance' });
     expect(screen.getByRole('tab', { name: '权限策略', selected: true })).toBeVisible();
+  });
+
+  it('对象探索的全局 Copilot 请求保留域壳语义与打开记录', async () => {
+    renderShell('/ontology/explore/objects/ont.t.obj.customer.1?class=ont.t.obj.customer.v1');
+    fireEvent.click(screen.getByRole('button', { name: '打开 SuperAI Copilot' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '向 SuperAI 提问' }), { target: { value: '解释当前对象' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: '发送' })); });
+    expect(vi.mocked(streamAgentChat).mock.calls[0]?.[3]).toMatchObject({ context: {
+      navigation: { view: 'ontology-explore', tab: 'explore',
+        url: '/ontology/explore/objects/ont.t.obj.customer.1?class=ont.t.obj.customer.v1',
+        openRecordIds: ['ont.t.obj.customer.1'] },
+    } });
+  });
+
+  it('命令搜索可直接进入完整 SuperAI 会话', async () => {
+    const router = renderShell('/ontology/model/graph');
+    fireEvent.click(screen.getByRole('textbox', { name: '打开命令面板' }));
+    const search = await screen.findByPlaceholderText('搜索对象、数字员工、应用，或输入命令…');
+    fireEvent.change(search, { target: { value: '会话' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(router.state.location.pathname).toBe('/superai/chat');
   });
 });
