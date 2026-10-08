@@ -47,7 +47,7 @@ it('selects the real later-page DTO and marks checksum from the complete active 
   fireEvent.change(await screen.findByLabelText('筛选模型'), { target: { value: '生效客户' } });
   fireEvent.click(await screen.findByRole('button', { name: '选择资源 生效客户' }));
   expect(screen.getByText('1 类型 · 0 关系')).toBeVisible();
-  expect(within(screen.getByRole('complementary', { name: '资源属性' })).getByText(live.rid)).toBeVisible();
+  expect(within(screen.getByRole('complementary', { name: '资源属性' })).getByText(live.rid, { selector: 'dd', exact: true })).toBeVisible();
   expect(new URLSearchParams(router.state.location.search).get('typeRef')).toBe(live.rid);
   expect(requests.some((r) => r === 'get /api/v1/ont/v2/object-types?limit=100&offset=100')).toBe(true);
   expect(requests.every((r) => r.startsWith('get '))).toBe(true);
