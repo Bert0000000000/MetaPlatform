@@ -26,7 +26,7 @@ import { actionDisplayName } from './logic/actions/displayName';
 import OntologyMergeDrawer from './components/OntologyMergeDrawer';
 import ObjectTypeEditorV2Drawer, { type ObjectTypeEditorPrefill } from './components/ObjectTypeEditorV2Drawer';
 import { resourceError } from './hooks/resourceErrors';
-import { discardEditorInput,editorIdentity,editorInputKey } from './hooks/editorSession';
+import { captureEditorInput,discardSubmittedEditorInput,editorIdentity,editorInputKey } from './hooks/editorSession';
 import './ontology.css';
 
 
@@ -156,6 +156,15 @@ export default function OntologyModelingPage({
   refreshKey?: number;
 }) {
   const {user}=useAuth();
+  const identity=editorIdentity(user);
+  const identityRef=useRef(identity);identityRef.current=identity;
+  const priorIdentity=useRef(identity);
+  const mounted=useRef(true);
+  const workflowGeneration=useRef(0),scanGeneration=useRef(0),dataGeneration=useRef(0),referenceGeneration=useRef(0);
+  const continuing=useRef(false);
+  const [continuationBusy,setContinuationBusy]=useState(false);
+  const [referenceErrors,setReferenceErrors]=useState<{valueTypes?:string;interfaces?:string}>({});
+  const [referencesLoading,setReferencesLoading]=useState(false);
   const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -181,6 +190,7 @@ export default function OntologyModelingPage({
   const [editorPrefill, setEditorPrefill] = useState<ObjectTypeEditorPrefill>({});
   // 提交时 precheck 命中候选：暂存完整 payload，候选 Modal「仍要新建」直接落库
   const [pendingCreatePayload, setPendingCreatePayload] = useState<KernelObjectTypeCreate | null>(null);
+  const pendingSession=useRef<{generation:number;identity:string;key:string;input:unknown}|null>(null);
   // 用户在候选 Modal 选过「仍要新建」的 name|slug|domain 组合（本次会话不再重复扫描）
   const [precheckDismissedKey, setPrecheckDismissedKey] = useState('');
 
@@ -195,23 +205,50 @@ export default function OntologyModelingPage({
   const [mergeSubmitting, setMergeSubmitting] = useState(false);
 
 
+  const captureWorkflow = () => ({generation:workflowGeneration.current,identity:identityRef.current,
+    key:editorInputKey(identityRef.current,editorMode,editorMode==='edit'?selectedConcept:undefined)});
+  const currentWorkflow = (request:{generation:number;identity:string}) => mounted.current &&
+    request.generation===workflowGeneration.current && request.identity===identityRef.current;
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;workflowGeneration.current++;scanGeneration.current++;dataGeneration.current++;referenceGeneration.current++;};},[]);
+  useEffect(()=>{
+    if(priorIdentity.current!==identity){setEditorOpen(false);setCreateOpen(false);}
+    priorIdentity.current=identity;
+    workflowGeneration.current++;scanGeneration.current++;dataGeneration.current++;referenceGeneration.current++;
+    continuing.current=false;setContinuationBusy(false);pendingSession.current=null;
+    setPendingCreatePayload(null);setCandidateModalOpen(false);setWorkflowError('');
+    setPrecheckLoading(false);setPrecheckDismissedKey('');setMergeOpen(false);setMergeSubmitting(false);
+    setObjectTypes([]);setActionTypes([]);setLinkTypes([]);setTypeHierarchy([]);
+    setSelectedConcept('');setSelectedDomain('');setLoading(true);
+    setValueTypes([]);setOntInterfaces([]);setReferenceErrors({});setReferencesLoading(false);
+  },[identity]);
+  // Preserve successful reference values on failed retries; never label a failed read empty.
+  const readReferences = async () => {
+    const generation=++referenceGeneration.current,requestIdentity=identityRef.current;
+    const fresh=()=>mounted.current && generation===referenceGeneration.current && requestIdentity===identityRef.current;
+    setReferencesLoading(true);setReferenceErrors({});
+    const [vts,ifcs]=await Promise.allSettled([listValueTypes(),listInterfaces()]);
+    if(!fresh())return;
+    if(vts.status==='fulfilled')setValueTypes(vts.value);
+    if(ifcs.status==='fulfilled')setOntInterfaces(ifcs.value);
+    setReferenceErrors({valueTypes:vts.status==='rejected'?resourceError(vts.reason):undefined,
+      interfaces:ifcs.status==='rejected'?resourceError(ifcs.reason):undefined});
+    setReferencesLoading(false);
+  };
   // 重拉全部 kernel 数据（初始加载 / 写操作后刷新）
   const refreshAll = async () => {
-    const [ots, ats, lts, vts, ifcs, hierarchy] = await Promise.all([
+    const generation=++dataGeneration.current,requestIdentity=identityRef.current;
+    void readReferences();
+    const [ots, ats, lts, hierarchy] = await Promise.all([
       listObjectTypes(),
       listActionTypes(),
       listLinkTypes(),
-      // value-types / interfaces 拉取失败不阻塞页面（编辑器内有兜底注册表）
-      listValueTypes().catch(() => [] as KernelValueType[]),
-      listInterfaces().catch(() => [] as KernelInterface[]),
       // 层级树失败时退回「域 → 概念」两层的平铺视图
       getTypeHierarchy().catch(() => [] as TypeHierarchyNode[]),
     ]);
+    if(!mounted.current || generation!==dataGeneration.current || requestIdentity!==identityRef.current)return ots;
     setObjectTypes(ots);
     setActionTypes(ats);
     setLinkTypes(lts);
-    setValueTypes(vts);
-    setOntInterfaces(ifcs);
     setTypeHierarchy(hierarchy);
     return ots;
   };
@@ -237,7 +274,7 @@ export default function OntologyModelingPage({
     })();
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
+  }, [refreshKey,identity]);
 
   const currentDomainItems = useMemo(() => {
     if (!selectedDomain) return [];
@@ -346,7 +383,10 @@ export default function OntologyModelingPage({
 
   // Shell「新建概念」按钮 → 打开 V2 编辑器（create 模式）
   useEffect(() => {
-    if (!createOpen) return;
+    if (!createOpen || continuing.current) return;
+    workflowGeneration.current++;scanGeneration.current++;
+    setPrecheckLoading(false);
+    pendingSession.current=null;setPendingCreatePayload(null);setWorkflowError('');
     setEditorMode('create');
     setEditorPrefill({});
     setEditorOpen(true);
@@ -354,47 +394,61 @@ export default function OntologyModelingPage({
 
   // 打开编辑器（edit 模式）：可指定直接展开某属性 / 直接追加新属性
   const openEditConcept = (prefill: ObjectTypeEditorPrefill = {}) => {
+    if(continuing.current)return;
+    workflowGeneration.current++;scanGeneration.current++;
+    setPrecheckLoading(false);
+    pendingSession.current=null;setPendingCreatePayload(null);setWorkflowError('');
     setEditorMode('edit');
     setEditorPrefill(prefill);
     setEditorOpen(true);
   };
 
   const closeEditor = () => {
+    if(continuing.current)return;
+    workflowGeneration.current++;scanGeneration.current++;
+    setPrecheckLoading(false);
+    pendingSession.current=null;setPendingCreatePayload(null);setCandidateModalOpen(false);
     setEditorOpen(false);
     setCreateOpen(false);
   };
 
   // 概念名称失焦（create 模式）→ 调 precheck；命中候选 → 弹 Modal 让用户选 merge / 仍要新建 / 取消
   const handleCreateNameBlur = async (name: string, slug: string, domain: string) => {
-    if (!name) return;
+    if (!name || continuing.current) return;
     if (precheckDismissedKey === `${name}|${slug}|${domain}`) return;
+    const request=captureWorkflow(),scan=++scanGeneration.current;
+    const fresh=()=>currentWorkflow(request) && scan===scanGeneration.current;
     setPrecheckLoading(true);
     try {
       // slug 暂未填也允许按 name 扫（后端兜底走 embedder）
       const resp = await precheckObjectTypes({ name, slug: slug || name, domain, top_k: 5 });
+      if(!fresh())return;
       const list = resp?.candidates ?? [];
       if (list.length > 0) {
         // 失焦触发的扫描：清掉提交路径的暂存 payload（本路径只提示，不落库）
         setPendingCreatePayload(null);
+        pendingSession.current=null;
         setCandidates(list);
         setPrecheckSource({ name, slug, domain });
         setCandidateModalOpen(true);
       }
     } catch (e) {
       // precheck 失败不阻塞创建流程（best-effort）
-      console.warn('precheck 失败', e);
+      if(fresh())console.warn('precheck 失败', e);
     } finally {
-      setPrecheckLoading(false);
+      if(fresh())setPrecheckLoading(false);
     }
   };
 
   // 保存成功后的收尾：清暂存、重拉、选中新概念
-  const afterEditorSave = async (rid: string) => {
-    discardEditorInput(editorInputKey(editorIdentity(user),'create'));
+  const afterEditorSave = async (rid: string,request:ReturnType<typeof captureWorkflow>) => {
+    if(!currentWorkflow(request))return false;
     setPendingCreatePayload(null);
     const ots = await refreshAll();
+    if(!currentWorkflow(request))return false;
     setSelectedDomain(domainOfObjectType(rid));
     if (ots.some((ot) => ot.rid === rid)) setSelectedConcept(rid);
+    return true;
   };
 
   // V2 编辑器提交：create 先过 precheck 门禁；edit 整体 upsert。
@@ -403,6 +457,9 @@ export default function OntologyModelingPage({
   const submitEditor = async (
     payload: KernelObjectTypeCreate, mode: 'create' | 'edit',
   ): Promise<string | DestructiveConfirmDetail | null> => {
+    const request=captureWorkflow();
+    const submittedInput=captureEditorInput(request.key);
+    const scan=++scanGeneration.current;
     const domain = domainOfObjectType(payload.rid);
     // rid = ont.<tenant>.obj.<domain>.<slug>.v1 → slug 段（与 handleCreateNameBlur 的 key 同构）
     const fullSlug = slugAndVersionOfObjectType(payload.rid).slug.replace(/^obj\./, '');
@@ -414,10 +471,12 @@ export default function OntologyModelingPage({
           const resp = await precheckObjectTypes({
             name: payload.display_name, slug, domain, top_k: 5,
           });
+          if(!currentWorkflow(request) || scan!==scanGeneration.current)return '编辑会话已切换；未提交旧输入。';
           const list = resp?.candidates ?? [];
           if (list.length > 0) {
-            // 抽屉正常关闭，由候选 Modal 续接（合并 / 仍要新建直接落库 / 取消）
+            // 抽屉保留输入，由候选 Modal 续接；写入期间由 caller 锁定整个表单。
             setPendingCreatePayload(payload);
+            pendingSession.current={...request,input:submittedInput};
             setCandidates(list);
             setPrecheckSource({ name: payload.display_name, slug, domain });
             setCandidateModalOpen(true);
@@ -427,10 +486,12 @@ export default function OntologyModelingPage({
           // precheck 失败不阻塞创建（best-effort）
         }
       }
+      if(!currentWorkflow(request))return '编辑会话已切换；未提交旧输入。';
       await createObjectType(payload);
-      await afterEditorSave(payload.rid);
+      if(!await afterEditorSave(payload.rid,request))return '编辑会话已切换；当前输入已保留。';
       return null;
     } catch (e) {
+      if(!currentWorkflow(request))return '编辑会话已切换；当前输入已保留。';
       console.warn('保存概念失败', e);
       // G33：409 且 detail 是对象 {error:"destructive_confirm_required",...} → 交给抽屉二段确认
       const dc = extractDestructiveConfirm(e);
@@ -441,24 +502,38 @@ export default function OntologyModelingPage({
 
   // 候选 Modal 取消：丢弃暂存 payload（避免残留到下一次「仍要新建」误落库）
   const cancelCandidateModal = () => {
+    if(continuing.current)return;
+    scanGeneration.current++;
+    setPrecheckLoading(false);
+    pendingSession.current=null;
     setCandidateModalOpen(false);
     setPendingCreatePayload(null);
   };
 
   // 候选 Modal「仍要新建」：
-  //   - 提交时触发的扫描（payload 已完整、抽屉已关）→ 直接落库
+  //   - 提交时触发的扫描（payload 已完整、抽屉保留）→ 锁定续接写入
   //   - 失焦触发的扫描（抽屉还在、表单未填完）→ 只记录「本次已忽略」，回到编辑器继续
   const continueCreateAnyway = async () => {
+    if(continuing.current)return;
     setCandidateModalOpen(false);
     if (pendingCreatePayload) {
       const payload = pendingCreatePayload;
+      const request=pendingSession.current;
+      if(!request || !currentWorkflow(request))return;
+      continuing.current=true;setContinuationBusy(true);setWorkflowError('');
       try {
         await createObjectType(payload);
-        await afterEditorSave(payload.rid);
-        closeEditor();
+        if(!await afterEditorSave(payload.rid,request))return;
+        // A different retained input generation must survive even when an older write succeeded.
+        if(discardSubmittedEditorInput(request.key,request.input)){
+          continuing.current=false;setContinuationBusy(false);closeEditor();
+        }else{
+          setWorkflowError('已提交所选定义；后续未保存输入已保留，请继续编辑。');
+        }
       } catch (e) {
-        console.warn('新建概念失败', e);
-        setWorkflowError(resourceError(e));
+        if(currentWorkflow(request))setWorkflowError(resourceError(e));
+      } finally {
+        if(currentWorkflow(request)){continuing.current=false;setContinuationBusy(false);}
       }
     } else if (precheckSource) {
       setPrecheckDismissedKey(`${precheckSource.name}|${precheckSource.slug}|${precheckSource.domain}`);
@@ -467,7 +542,8 @@ export default function OntologyModelingPage({
 
   // 用户在候选 Modal 里选了某个候选 → 打开合并 drawer（先 resolve source / target 完整定义）
   const openMergeDrawerForCandidate = async (candidate: ObjectTypeCandidate) => {
-    if (!precheckSource) return;
+    if (!precheckSource || continuing.current) return;
+    const request=captureWorkflow();
     setCandidateModalOpen(false);
     // 合并 drawer zIndex(1100) 低于 V2 编辑器(1200)：先关编辑器避免遮挡
     setEditorOpen(false);
@@ -480,6 +556,7 @@ export default function OntologyModelingPage({
         getObjectType(sourceRid).catch(() => null),
         getObjectType(candidate.rid).catch(() => null),
       ]);
+      if(!currentWorkflow(request))return;
       // 兜底：若 source 还没建出来（仅 precheck 命中），从现有列表里挑一个等价的 rid
       const resolvedSource = source ?? objectTypes.find((ot) =>
         ot.display_name === precheckSource.name || slugAndVersionOfObjectType(ot.rid).slug === `obj.${precheckSource.domain}.${precheckSource.slug}`,
@@ -500,6 +577,7 @@ export default function OntologyModelingPage({
   // 合并 drawer 确认 → 调 /object-types/merge → 刷新列表 → 选中 target
   const submitMerge = async (mapping: Record<string, string>): Promise<boolean> => {
     if (!mergeSource || !mergeTarget) return false;
+    const request=captureWorkflow(),submittedInput=captureEditorInput(captureWorkflow().key);
     setMergeSubmitting(true);
     try {
       await mergeObjectTypes({
@@ -507,6 +585,7 @@ export default function OntologyModelingPage({
         target_rid: mergeTarget.rid,
         mapping,
       });
+      if(!currentWorkflow(request))return false;
       setMergeOpen(false);
       setMergeSource(null);
       setMergeTarget(null);
@@ -515,8 +594,9 @@ export default function OntologyModelingPage({
       setCandidates([]);
       setCreateOpen(false);
       setPendingCreatePayload(null);
-      discardEditorInput(editorInputKey(editorIdentity(user),'create'));
+      discardSubmittedEditorInput(request.key,submittedInput);
       const ots = await refreshAll();
+      if(!currentWorkflow(request))return false;
       const targetDomain = domainOfObjectType(mergeTarget.rid);
       setSelectedDomain(targetDomain);
       if (ots.some((ot) => ot.rid === mergeTarget.rid)) setSelectedConcept(mergeTarget.rid);
@@ -525,7 +605,7 @@ export default function OntologyModelingPage({
       console.warn('合并失败', e);
       return false;
     } finally {
-      setMergeSubmitting(false);
+      if(currentWorkflow(request))setMergeSubmitting(false);
     }
   };
 
@@ -931,6 +1011,13 @@ export default function OntologyModelingPage({
         onClose={closeEditor}
         onSubmit={submitEditor}
         externalError={workflowError}
+        externalSubmitting={continuationBusy}
+        auxiliaryLoading={referencesLoading}
+        auxiliaryErrors={[
+          ...(referenceErrors.valueTypes?[`值类型 · ${valueTypes.length?'stale · ':''}${referenceErrors.valueTypes}`]:[]),
+          ...(referenceErrors.interfaces?[`接口 · ${ontInterfaces.length?'stale · ':''}${referenceErrors.interfaces}`]:[]),
+        ]}
+        onRetryAuxiliary={()=>void readReferences()}
         onSaveDraft={async (payload) => {
           try { await saveSchemaWip(payload); return null; }
           catch (e) { return resourceError(e); }

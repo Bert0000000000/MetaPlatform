@@ -77,8 +77,11 @@ export interface ObjectTypeEditorV2DrawerProps {
   onSaveDraft?: (payload: KernelObjectTypeCreate) => Promise<string | null>;
   onDirtyChange?: (dirty: boolean) => void;
   auxiliaryErrors?: string[];
+  auxiliaryLoading?: boolean;
   onRetryAuxiliary?: () => void;
   externalError?: string;
+  /** Caller-owned similarity continuation shares the form's write lock. */
+  externalSubmitting?: boolean;
 }
 
 interface RenderHintRow {
@@ -103,7 +106,7 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
 
 export default function ObjectTypeEditorV2Drawer({
   open, mode, objectType, objectTypes, linkTypes, interfaces, valueTypes,
-  tenant, domainOptions, prefill, onClose, onSubmit, onCreateNameBlur, prechecking, onSaveDraft, onDirtyChange, auxiliaryErrors, onRetryAuxiliary, externalError,
+  tenant, domainOptions, prefill, onClose, onSubmit, onCreateNameBlur, prechecking, onSaveDraft, onDirtyChange, auxiliaryErrors, auxiliaryLoading, onRetryAuxiliary, externalError, externalSubmitting = false,
 }: ObjectTypeEditorV2DrawerProps) {
   const {user}=useAuth();
   const identity=editorIdentity(user);
@@ -124,6 +127,7 @@ export default function ObjectTypeEditorV2Drawer({
   const [propDrafts, setPropDrafts] = useState<PropertyDraft[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const busy = submitting || externalSubmitting;
   const [error, setError] = useState('');
   // G33：409 破坏性变更二段确认（页面 onSubmit 返回 DestructiveConfirmDetail 时激活）
   const [destructive, setDestructive] = useState<DestructiveConfirmDetail | null>(null);
@@ -152,13 +156,13 @@ export default function ObjectTypeEditorV2Drawer({
   useEffect(() => {
     if (!open) return;
     const escape = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || submitting) return;
+      if (e.key !== 'Escape' || busy) return;
       e.preventDefault();
       if (dirty) setCloseRequested(true); else onClose();
     };
     window.addEventListener('keydown',escape);
     return () => window.removeEventListener('keydown',escape);
-  },[open,dirty,submitting,onClose]);
+  },[open,dirty,busy,onClose]);
 
   const vts = valueTypes.length > 0 ? valueTypes : FALLBACK_VALUE_TYPES;
 
@@ -187,7 +191,9 @@ export default function ObjectTypeEditorV2Drawer({
 
   // 打开/切换目标时初始化表单
   useEffect(() => {
-    if (!open) return;
+    // This caller keeps a closed drawer mounted. Do not re-retain its old fields
+    // on the next open before initialization/restoration has finished.
+    if (!open) { setLoadedSessionKey(''); return; }
     setError('');
     setSubmitting(false);
     setExpanded(null);
@@ -239,7 +245,8 @@ export default function ObjectTypeEditorV2Drawer({
       setRenderHints([]);
       // 新概念自动带一个主键属性（概念必有主键；kind 段用 prop —— ClassRef 正则只认 prop）
       const pk = { ...emptyPropertyDraft('id'), nullable: false, primaryKey: true };
-      pk.rid = makePropRid('id');
+      // Initialization must use the reset values, not the previous mounted form's slug/domain.
+      pk.rid = `ont.${tenant}.prop.${domainOptions[0]?.code ?? 'crm'}.<slug>-id.v1`;
       setPropDrafts([pk]);
       setExpanded(pk.uid);
       initial.current = snapshot('','',domainOptions[0]?.code??'crm','','',[],'active','',[],[],[pk]);
@@ -255,7 +262,7 @@ export default function ObjectTypeEditorV2Drawer({
   }, [slug, domain, open, mode]);
 
   if (!open) return null;
-  const requestClose = () => { if (submitting) return; if (dirty) setCloseRequested(true); else {discardEditorInput(sessionKey);onClose();} };
+  const requestClose = () => { if (busy) return; if (dirty) setCloseRequested(true); else {discardEditorInput(sessionKey);onClose();} };
 
   const updatePropDraft = (uid: string, next: PropertyDraft) => {
     setPropDrafts((ds) => ds.map((d) => {
@@ -289,6 +296,7 @@ export default function ObjectTypeEditorV2Drawer({
 
   /** 提交（整体 upsert）。confirmNameVal 非空 = 破坏性 409 后的确认重发（payload 顶层加 confirm_name）。 */
   const submit = async (confirmNameVal?: string, asDraft = false) => {
+    if (busy) return;
     if (mode === 'edit' && !objectType) return;
     const errs: string[] = [];
     if (!displayName.trim()) errs.push('概念显示名必填');
@@ -384,13 +392,15 @@ export default function ObjectTypeEditorV2Drawer({
               {mode === 'create' ? '新建概念（ObjectType）' : `编辑概念：${objectType?.display_name ?? ''}`}
             </h3>
           </div>
-          <button type="button" onClick={requestClose} aria-label="关闭" className="mp-border mp-text-2 mp-bg-1 mp-rounded-sm mp-onto-close-btn mp-onto-close-btn--sm">
+          <button type="button" onClick={requestClose} disabled={busy} aria-label="关闭" className="mp-border mp-text-2 mp-bg-1 mp-rounded-sm mp-onto-close-btn mp-onto-close-btn--sm">
             <X className="mp-icon-14" />
           </button>
         </div>
 
         {/* Body */}
-        <fieldset disabled={submitting} className="mp-flex-1 mp-overflow-y-auto mp-py-4 mp-px-5 mp-border-none mp-m-0" >
+        <fieldset disabled={busy} onClickCapture={busy ? (event)=>{event.preventDefault();event.stopPropagation();} : undefined} className="mp-flex-1 mp-overflow-y-auto mp-py-4 mp-px-5 mp-border-none mp-m-0" >
+          {externalSubmitting && <p role="status">相似概念续接写入中，请等待当前提交完成。</p>}
+          {auxiliaryLoading && <p role="status">正在读取编辑辅助信息；已有参考值与输入保持不变。</p>}
           {sessionNotice && <p role="status">{sessionNotice}</p>}
           {externalError && <p role="alert" className="mp-text-danger">{externalError}</p>}
           {dirty && !sessionNotice && <p role="status">未保存输入已保留在当前会话，尚未提交后端。离开后重新打开可继续编辑。</p>}
@@ -674,7 +684,7 @@ export default function ObjectTypeEditorV2Drawer({
                 <button
                   type="button"
                   onClick={() => void submit(confirmInput.trim())}
-                  disabled={submitting || !confirmInput.trim()}
+                  disabled={busy || !confirmInput.trim()}
                   className="mp-fw-600 mp-onto-btn mp-onto-btn--md mp-onto-btn--solid-danger"
                 >
                   {submitting ? '重发中…' : '确认重发'}
@@ -682,7 +692,7 @@ export default function ObjectTypeEditorV2Drawer({
                 <button
                   type="button"
                   onClick={() => { setDestructive(null); setConfirmInput(''); }}
-                  disabled={submitting}
+                  disabled={busy}
                   className="mp-onto-btn mp-onto-btn--md"
                 >
                   取消
@@ -700,16 +710,16 @@ export default function ObjectTypeEditorV2Drawer({
             <button
               type="button"
               onClick={requestClose}
-              disabled={submitting}
+              disabled={busy}
               className="mp-onto-btn mp-onto-btn--lg"
             >
               取消
             </button>
-            {onSaveDraft && <button type="button" onClick={() => void submit(undefined,true)} disabled={submitting} className="mp-onto-btn mp-onto-btn--lg">保存草稿（WIP）</button>}
+            {onSaveDraft && <button type="button" onClick={() => void submit(undefined,true)} disabled={busy} className="mp-onto-btn mp-onto-btn--lg">保存草稿（WIP）</button>}
             <button
               type="button"
               onClick={() => void submit()}
-              disabled={submitting}
+              disabled={busy}
               className="mp-fw-600 mp-onto-btn mp-onto-btn--lg mp-onto-btn--solid"
             >
               {submitting ? '保存中…' : '保存（整体 upsert）'}
@@ -718,8 +728,8 @@ export default function ObjectTypeEditorV2Drawer({
         </div>
         {closeRequested && <div role="dialog" aria-modal="true" aria-label="未保存的修改" className="mp-p-4 mp-border mp-bg-1">
           <p>存在未保存的修改。继续编辑或明确放弃后关闭。</p>
-          <button type="button" onClick={() => setCloseRequested(false)} className="mp-onto-btn mp-onto-btn--lg">继续编辑</button>
-          <button type="button" onClick={() => {discardEditorInput(sessionKey);onDirtyChange?.(false);onClose();}} className="mp-onto-btn mp-onto-btn--lg">放弃修改并关闭</button>
+          <button type="button" disabled={busy} onClick={() => setCloseRequested(false)} className="mp-onto-btn mp-onto-btn--lg">继续编辑</button>
+          <button type="button" disabled={busy} onClick={() => {if(busy)return;discardEditorInput(sessionKey);onDirtyChange?.(false);onClose();}} className="mp-onto-btn mp-onto-btn--lg">放弃修改并关闭</button>
         </div>}
       </div>
     </div>

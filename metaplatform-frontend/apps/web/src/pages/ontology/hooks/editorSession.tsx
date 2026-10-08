@@ -31,6 +31,18 @@ export function retainEditorInput<T>(
 export function discardEditorInput(key: string): void {
   retained.delete(key);
 }
+/** Capture the exact retained input generation without changing active identity. */
+export function captureEditorInput(key: string): unknown {
+  return retained.get(key);
+}
+export function discardSubmittedEditorInput(
+  key: string,
+  submitted: unknown,
+): boolean {
+  if (retained.get(key) !== submitted) return false;
+  retained.delete(key);
+  return true;
+}
 export function editorInputKey(
   identity: string,
   mode: 'create' | 'edit',

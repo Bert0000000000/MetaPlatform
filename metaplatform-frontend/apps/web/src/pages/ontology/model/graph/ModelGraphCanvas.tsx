@@ -48,9 +48,20 @@ export default function ModelGraphCanvas({
           +
         </button>
         <button
-          onClick={() =>
-            setZoom(Math.min(1, (stage.current?.clientWidth ?? 900) / width))
-          }
+          onClick={() => {
+            const viewport = stage.current;
+            setZoom(
+              Math.min(
+                1,
+                (viewport?.clientWidth || 900) / width,
+                (viewport?.clientHeight || 530) / height,
+              ),
+            );
+            if (viewport) {
+              viewport.scrollLeft = 0;
+              viewport.scrollTop = 0;
+            }
+          }}
         >
           适应画布
         </button>
