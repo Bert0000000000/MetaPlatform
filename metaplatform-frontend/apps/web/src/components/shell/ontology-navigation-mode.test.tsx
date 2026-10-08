@@ -121,8 +121,13 @@ describe('本体建设工作区导航', () => {
   it('七入口在 side/top 同序可点击，对象探索不套建设导航且保留上下文', () => {
     const router = renderShell('/ontology/model/graph');
     const labels = ['工作台', '业务应用', '对象探索', '本体工作室', '数字员工', '连接与知识', '治理与管理'];
-    expect(screen.getAllByRole('menuitem').map(item => item.textContent)).toEqual(labels);
-    fireEvent.click(screen.getByRole('menuitem', { name: '对象探索' }));
+    const rail = screen.getByRole('navigation', { name: '平台导航' });
+    expect(within(rail).queryByRole('menu')).not.toBeInTheDocument();
+    expect(within(rail).getAllByRole('link').map(item => item.textContent)).toEqual(labels);
+    const explore = within(rail).getByRole('link', { name: '对象探索' });
+    expect(explore).toHaveAttribute('href', '/ontology/explore/objects');
+    expect(explore).not.toHaveAttribute('tabindex', '-1');
+    fireEvent.click(explore);
     expect(router.state.location.pathname).toBe('/ontology/explore/objects');
     expect(screen.queryByRole('navigation', { name: '本体工作区导航' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '对象浏览' })).toHaveAttribute('aria-current', 'page');
@@ -138,7 +143,7 @@ describe('本体建设工作区导航', () => {
 
   it('SuperAI 常驻控件可打开 Copilot 和完整会话，不占产品菜单', () => {
     const router = renderShell('/home');
-    expect(screen.queryByRole('menuitem', { name: 'SuperAI' })).not.toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', { name: '平台导航' })).queryByRole('link', { name: 'SuperAI' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '打开 SuperAI Copilot' }));
     expect(document.getElementById('app')).toHaveAttribute('data-copilot', 'open');
     fireEvent.click(screen.getByRole('button', { name: '打开 SuperAI 会话' }));

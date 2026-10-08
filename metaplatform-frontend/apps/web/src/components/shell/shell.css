@@ -68,6 +68,7 @@
 }
 .mp-rail-entries { flex: 1; min-height: 0; width: 100%; overflow: auto; padding: 0 var(--mp-space-1); box-sizing: border-box; }
 .mp-rail-entry {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -83,6 +84,7 @@
   color: var(--semi-color-text-2);
   font: inherit;
   font-size: 10px;
+  text-decoration: none;
   cursor: pointer;
 }
 .mp-rail-entry:hover { background: var(--semi-color-fill-0); color: var(--semi-color-text-0); }

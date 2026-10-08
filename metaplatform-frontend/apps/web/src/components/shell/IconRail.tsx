@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { primaryDomains, type DomainDef } from './domains';
@@ -50,12 +50,12 @@ export default function IconRail({ active }: IconRailProps) {
   return (
     <nav className="mp-rail-nav" aria-label="平台导航">
       <button className="mp-rail-brand" type="button" aria-label="MetaPlatform 工作台" onClick={() => navigate('/home')}>M</button>
-      <div role="menu" aria-label="平台入口" className="mp-rail-entries">
-        {primaryDomains().map(domain => <button key={domain.key} type="button" role="menuitem"
+      <div className="mp-rail-entries">
+        {primaryDomains().map(domain => <Link key={domain.key} to={domain.path}
           className="mp-rail-entry" aria-current={active?.key === domain.key ? 'page' : undefined}
-          onClick={() => navigate(domain.path)}>
+        >
           {domain.icon}<span>{domain.label}</span>
-        </button>)}
+        </Link>)}
       </div>
       {footer}
     </nav>
