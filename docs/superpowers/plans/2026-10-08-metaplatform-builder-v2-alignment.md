@@ -33,7 +33,7 @@
 
 ## Task 8: 更新原型的全平台功能组与页面导航壳
 
-**Files:** `metaplatform-frontend/apps/web/src/components/shell/{domains.tsx,AppShell.tsx,TopBar.tsx,IconRail.tsx,PageTabs.tsx,CommandPalette.tsx,shell.css}`；必要新增 `WorkspaceNavigation.tsx` 与行为测试；`contexts/SettingsContext.tsx`；本体 `layout/{OntologyTabLayout.tsx,OntologySideNav.tsx,OntologyContextBar.tsx,workspace.css}`；导航 ADR/规格及全平台覆盖清单。路径以源码为准，新增组件名称可按职责调整。
+**Files:** `metaplatform-frontend/apps/web/src/components/shell/{domains.tsx,AppShell.tsx,TopBar.tsx,IconRail.tsx,PageTabs.tsx,CommandPalette.tsx,shell.css}`；必要新增 `WorkspaceNavigation.tsx` 与行为测试；`contexts/SettingsContext.tsx`；后端 `mate-tech-iam/api/dashboard.py` 新用户主题回退与定向测试（仅呈现默认值，不改已有偏好、身份或 API 语义）；本体 `layout/{OntologyTabLayout.tsx,OntologySideNav.tsx,OntologyContextBar.tsx,workspace.css}`；导航 ADR/规格及全平台覆盖清单。路径以源码为准，新增组件名称可按职责调整。
 
 **Interfaces:** 消费 Task 7 的七入口注册表和 ONTOLOGY_NAV，保留 DomainDef/Tab 调用者兼容。产出同源 workspace groups/pages、最长路径选择、搜索/面包屑和单一域工作区。所有已有正式页面/旧 URL 可达，OntologyDomainShell 的高度/助手上下文仍工作；模型资源树由 Task 9 消费内容区域尺寸。
 
@@ -41,6 +41,7 @@
 - [ ] 写并记录 RED：七入口及 SuperAI 所有现有路径选择对应组/页面，组切换能打开其真实入口，深链不跳首项；对象探索/安全页面保持正确产品归属，无重复本体侧栏。
 - [ ] 将注册表中平铺页面按现有职责归组，嵌套页面沿用真实父组；不建立另一份硬编码路由表。顶部展示功能组，左侧只展示当前组页面，细节页签留在资源内部。只有单组的入口保持明确标题和页面入口。
 - [ ] 实现深色带标签窄栏、浅色顶栏/组栏/页面导航和浅灰内容区；品牌、搜索、用户菜单、通知、SuperAI 的真实功能保留。side/top 入口偏好继续可用，已有主题不被覆盖，新用户默认 light。
+- [ ] 核对真实设置接口成功读取的回退：未知用户 GET/首次 PUT 默认 light，已有 dark/system 记录原样保持，不能用前端替身隐藏服务端默认 dark。定向验证后仅重载本轮独立 auth 源服务以实际取证，其他服务/数据库/工作树保留。
 - [ ] 390px 组栏局部滚动，页面导航可展开；真实 Tab、Escape、选择后焦点行为继承 Task 1 修复，不靠测试注入 focus。1024px 与暗色模式仍可辨认；不新增 `.semi-*` 覆盖。
 - [ ] 使用同源元数据生成可读面包屑和搜索；保留治理/admin 双前缀、探索助手 canonical context、旧 aliases/query/hash。新壳不存业务事实或伪造工作区/环境状态。
 - [ ] 跑导航/设置 focused unit 与 typecheck，self-review 后提交。实际四尺寸与全入口浏览器交 Task 5/6。
