@@ -12610,6 +12610,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProposalV2'
+  /api/v1/ont/v2/object-types/validate:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Validate model definition without mutation
+      operationId: ontValidateV2Model
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-MODEL-WORKBENCH
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelPreflightV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '422':
+          $ref: '#/components/responses/Error422'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectTypeCreateV2'
+  /api/v1/ont/v2/object-types/wip:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Stage private schema WIP without publishing
+      operationId: ontSaveV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-MODEL-WORKBENCH
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaWipSavedV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '422':
+          $ref: '#/components/responses/Error422'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaWipSaveV2'
   /api/v1/ont/v2/object-types/{rid}:
     parameters:
       - in: path
@@ -12687,6 +12755,76 @@ paths:
           $ref: '#/components/responses/Error404'
         '409':
           description: Delete protection (recent reads / remaining instances)
+  /api/v1/ont/v2/object-types/{rid}/datasources:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: Read backing datasource declarations
+      operationId: ontListV2BackingDatasources
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-MODEL-WORKBENCH
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BackingDatasourceV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '422':
+          $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/{rid}/materialization:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: Read materialized object samples
+      operationId: ontGetV2Materialization
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-MODEL-WORKBENCH
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterializationV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '422':
+          $ref: '#/components/responses/Error422'
   /api/v1/ont/v2/object-types/{rid}/migration/assess:
     parameters:
       - in: path
@@ -18075,7 +18213,8 @@ components:
       description: Canonical rid (e.g. ont.<tenant>.<kind>.<rest>).
     PropertyFormatV2:
       type: string
-      enum:
+      description: Registered value format; includes extended structured and collection types.
+      examples:
         - string
         - integer
         - double
@@ -18083,6 +18222,7 @@ components:
         - date
         - timestamp
         - marking
+        - struct
     PropertyV2:
       type: object
       additionalProperties: false
@@ -18105,9 +18245,42 @@ components:
           type: boolean
         title:
           type: string
-          minLength: 1
+          default: ''
         format:
           $ref: '#/components/schemas/PropertyFormatV2'
+        description:
+          type: string
+          default: ''
+        struct_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyV2'
+        array:
+          type: boolean
+          default: false
+        reducer:
+          type:
+            - string
+            - 'null'
+        shared:
+          type: boolean
+          default: false
+        derived:
+          anyOf:
+            - type: 'null'
+            - type: object
+              required:
+                - fn
+                - over_link
+              properties:
+                fn:
+                  type: string
+                over_link:
+                  type: string
+                field:
+                  type:
+                    - string
+                    - 'null'
     ActionTypeV2:
       type: object
       additionalProperties: false
@@ -19041,6 +19214,28 @@ components:
           items:
             type: string
           description: Type-level security markings; visible tool = type marking subset of agent required_markings (ADR-0043 §2.6)
+        parent_class:
+          type: string
+          default: ''
+        description:
+          type: string
+          default: ''
+        status:
+          type: string
+          default: active
+        type_group:
+          type: string
+          default: ''
+        render_hints:
+          type: array
+          items:
+            type: array
+            minItems: 2
+            maxItems: 2
+            items:
+              type: string
+        checksum:
+          type: string
     ObjectTypeCreateV2:
       type: object
       additionalProperties: false
@@ -19071,6 +19266,29 @@ components:
           type: array
           items:
             type: string
+        parent_class:
+          type: string
+          default: ''
+        description:
+          type: string
+          default: ''
+        status:
+          type: string
+          default: active
+        type_group:
+          type: string
+          default: ''
+        render_hints:
+          type: array
+          items:
+            type: array
+            minItems: 2
+            maxItems: 2
+            items:
+              type: string
+        confirm_name:
+          type: string
+          default: ''
     TypeProposeV2:
       type: object
       additionalProperties: false
@@ -19080,6 +19298,141 @@ components:
         type_def:
           $ref: '#/components/schemas/ObjectTypeCreateV2'
         impact_summary:
+          type: string
+    ModelPreflightV2:
+      type: object
+      required:
+        - rid
+        - valid
+        - errors
+        - warnings
+        - destructive
+        - references
+      properties:
+        rid:
+          type: string
+        valid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          items:
+            type: string
+        destructive:
+          type: array
+          items:
+            type: string
+        references:
+          type: object
+          required:
+            - resolved
+            - unresolved
+            - dependencies
+          properties:
+            resolved:
+              type: array
+              items:
+                type: string
+            unresolved:
+              type: array
+              items:
+                type: string
+            dependencies:
+              type: array
+              items:
+                type: string
+    SchemaWipSaveV2:
+      type: object
+      required:
+        - payload
+      properties:
+        payload:
+          $ref: '#/components/schemas/ObjectTypeCreateV2'
+        author:
+          type: string
+          default: ''
+    SchemaWipSavedV2:
+      type: object
+      required:
+        - rid
+        - status
+        - base_checksum
+      properties:
+        rid:
+          type: string
+        status:
+          type: string
+          enum:
+            - staged
+        base_checksum:
+          type: string
+    BackingDatasourceV2:
+      type: object
+      required:
+        - rid
+        - class_rid
+        - name
+        - kind
+        - dsn_env
+        - table_name
+        - pk_column
+        - field_mapping
+        - priority
+      properties:
+        rid:
+          type: string
+        class_rid:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+        dsn_env:
+          type: string
+        table_name:
+          type: string
+        pk_column:
+          type: string
+        ts_column:
+          type: string
+        field_mapping:
+          type: object
+          additionalProperties:
+            type: string
+        priority:
+          type: integer
+        last_synced_at:
+          type:
+            - string
+            - 'null'
+        updated_at:
+          type: string
+    MaterializationV2:
+      type: object
+      required:
+        - class_rid
+        - count
+        - rows
+        - schema
+      properties:
+        class_rid:
+          type: string
+        count:
+          type: integer
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        schema:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        generated_at:
           type: string
     ProposalConfirmV2:
       type: object

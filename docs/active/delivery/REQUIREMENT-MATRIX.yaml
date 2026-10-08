@@ -2608,6 +2608,19 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-ONT-BUILDER-MODEL-WORKBENCH:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+      - ontValidateV2Model
+      - ontSaveV2SchemaWip
+      - ontListV2BackingDatasources
+      - ontGetV2Materialization
+    handler: mate_tech_ont.main:app#ontGetV2Materialization
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-ONT-KERNEL01-APPENDOBJECTPROPERTY:
     prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
     service: ont
