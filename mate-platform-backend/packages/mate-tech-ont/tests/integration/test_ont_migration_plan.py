@@ -860,7 +860,10 @@ class TestMigrationSafety:
             {"options": {"drops": True}},
             {"options": {"rename": {P_ID: P_STAGE_V2}}},
             {"target_payload": []},
+            {"target_payload": "bad"},
+            {"options": "bad"},
             {"baseline": []},
+            {"baseline": 123},
             {"extra": True},
         ],
     )
@@ -868,6 +871,21 @@ class TestMigrationSafety:
         before = _database_state()
         r = client.post(self.base + "/assess", json=body)
         assert r.status_code == 422, r.text
+        assert _database_state() == before
+
+    @pytest.mark.parametrize("body", [
+        {"baseline": "", "target_payload": None, "options": {}},
+        {"baseline": None, "target_payload": None, "options": None},
+        {"baseline": None}, {"target_payload": None}, {"options": None},
+    ])
+    def test_frontend_optional_defaults_match_omitted_fields(self, repo, client, safety, body):
+        # Exact existing kernel.ts assessMigration producer body is the first case.
+        before = _database_state()
+        default = client.post(self.base + "/assess", json={})
+        response = client.post(self.base + "/assess", json=body)
+        assert default.status_code == 200, default.text
+        assert response.status_code == 200, response.text
+        assert response.json() == default.json()
         assert _database_state() == before
 
     @pytest.mark.parametrize(
