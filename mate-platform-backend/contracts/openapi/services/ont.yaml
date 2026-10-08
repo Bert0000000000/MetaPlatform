@@ -2288,6 +2288,12 @@ components:
           type:
           - string
           - 'null'
+        last_synced_pk:
+          type: [string, 'null']
+        last_error:
+          type: string
+        last_failed:
+          type: integer
         updated_at:
           type: string
     MaterializationV2:
