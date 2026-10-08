@@ -14,7 +14,8 @@ identities = {(c['file'], c['title']) for c in cases}
 assert len(identities) == len(cases), 'Duplicate case identity'
 assert {c['file'] for c in cases} == FILES, 'Exact builder files were not collected'
 assert all(c['project'] == 'builder-v2' for c in cases), 'Unexpected project'
-assert len(cases) >= 20, 'Builder inventory unexpectedly reduced'
+assert len(cases) >= 21, 'Builder inventory unexpectedly reduced'
+assert ('ontology-builder-v2.spec.ts', 'real Ont + own PG: editor WIP, five-step publication, saved source sync and actual sample query') in identities, 'Real builder write chain was not collected'
 if args.junit:
     root = ET.parse(args.junit).getroot()
     executed = list(root.iter('testcase'))

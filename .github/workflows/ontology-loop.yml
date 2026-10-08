@@ -25,9 +25,12 @@ on:
       - "metaplatform-frontend/tests/e2e/helpers/**"
       - "metaplatform-frontend/playwright.config.ts"
       - "metaplatform-frontend/playwright.migration.config.ts"
+      - "metaplatform-frontend/playwright.builder.config.ts"
+      - "metaplatform-frontend/builder-safe-reporter.ts"
       - "metaplatform-frontend/migration-list-reporter.ts"
       - "metaplatform-frontend/apps/web/tests/e2e/**"
       - "scripts/ci/verify_migration_browser.py"
+      - "scripts/ci/verify_builder_browser.py"
       - "metaplatform-frontend/package.json"
       - "mate-platform-backend/packages/mate-tech-ont/**"
       - "mate-platform-backend/services/api-gateway/**"
@@ -118,6 +121,20 @@ jobs:
           pnpm exec playwright test --config playwright.builder.config.ts --list
           python3 ../scripts/ci/verify_builder_browser.py --list test-results/builder-list.json
 
+      - name: Prepare nonprivileged Builder source fixture owner
+        id: builder-source-fixture
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          fixture_password="$(python3 -c 'import secrets; print(secrets.token_hex(24))')"
+          printf '::add-mask::%s\n' "$fixture_password"
+          docker compose exec -T postgres psql -U meta -d metaplatform_ont --quiet --set=ON_ERROR_STOP=1 --set=fixture_password="$fixture_password" <<'SQL'
+          CREATE ROLE builder_source_fixture LOGIN PASSWORD :'fixture_password' NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
+          GRANT CONNECT ON DATABASE metaplatform_ont TO builder_source_fixture;
+          GRANT USAGE, CREATE ON SCHEMA public TO builder_source_fixture;
+          SQL
+          printf 'password=%s\n' "$fixture_password" >> "$GITHUB_OUTPUT"
+
       - name: Execute Builder V2 page and navigation behavior
         if: ${{ !cancelled() }}
         working-directory: metaplatform-frontend
@@ -125,6 +142,11 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:9200
           E2E_GATEWAY_URL: http://127.0.0.1:8100/api/v1
           E2E_IAM_LOGIN_URL: http://127.0.0.1:8100/api/v1/iam/auth/login
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGDATABASE: metaplatform_ont
+          PGUSER: builder_source_fixture
+          PGPASSWORD: ${{ steps.builder-source-fixture.outputs.password }}
         run: |
           pnpm exec playwright test --config playwright.builder.config.ts --workers=1
           python3 ../scripts/ci/verify_builder_browser.py --list test-results/builder-list.json --junit test-results/builder.xml
