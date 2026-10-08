@@ -2529,16 +2529,18 @@ async def assess_migration_endpoint(
     if set(body) - {"baseline", "options", "target_payload"}:
         raise HTTPException(status_code=422, detail="unknown migration assess field")
     baseline = body.get("baseline", "")
+    if baseline is None:
+        baseline = ""
     if not isinstance(baseline, str):
         raise HTTPException(status_code=422, detail="baseline must be a string")
     if baseline and not baseline.startswith(f"ont.{ctx.tenant_id}."):
         raise HTTPException(status_code=403, detail="cross-tenant baseline denied")
     options = body.get("options")
-    if "options" in body and not isinstance(options, dict):
+    if options is not None and not isinstance(options, dict):
         raise HTTPException(status_code=422, detail="options must be an object")
     target_payload = body.get("target_payload")
     target = None
-    if "target_payload" in body:
+    if target_payload is not None:
         if not isinstance(target_payload, dict) or not target_payload:
             raise HTTPException(
                 status_code=422, detail="target_payload must be an ObjectType object"

@@ -873,11 +873,16 @@ class TestMigrationSafety:
         assert r.status_code == 422, r.text
         assert _database_state() == before
 
-    @pytest.mark.parametrize("body", [
-        {"baseline": "", "target_payload": None, "options": {}},
-        {"baseline": None, "target_payload": None, "options": None},
-        {"baseline": None}, {"target_payload": None}, {"options": None},
-    ])
+    @pytest.mark.parametrize(
+        "body",
+        [
+            {"baseline": "", "target_payload": None, "options": {}},
+            {"baseline": None, "target_payload": None, "options": None},
+            {"baseline": None},
+            {"target_payload": None},
+            {"options": None},
+        ],
+    )
     def test_frontend_optional_defaults_match_omitted_fields(self, repo, client, safety, body):
         # Exact existing kernel.ts assessMigration producer body is the first case.
         before = _database_state()
