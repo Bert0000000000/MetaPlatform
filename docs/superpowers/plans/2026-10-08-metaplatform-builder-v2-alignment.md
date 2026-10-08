@@ -1,11 +1,12 @@
 # MetaPlatform Builder V2 Alignment Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-> 状态：Accepted；2026-10-08 用户已确认具体设计并授权实施，使用本聊天当前隔离工作树。
+> 状态：Accepted；2026-10-08 用户已确认具体设计并授权实施，随后选择按产品重设计文档切换七个一级入口。使用本聊天当前隔离工作树。
+> 顺序：Task 1 原壳基线及其审查修复 → Task 7 七入口修订 → Task 2–6。Task 7 是实施中用户补充的导航范围，编号保留以追踪既有任务证据。
 
 **Goal:** 将现有 MetaPlatform 本体模块按 V2 原型优化为可真实使用的本体建设工作台。
 
-**Architecture:** 保留八域平台与六域本体的正式路由、Semi 组件及既有后端。以 ONTOLOGY_NAV 派生工作区导航、搜索和面包屑，依次接入模型卡片画布、资源编辑、真实映射和发布流程。业务事实继续由现有 API、WIP 和不可变版本快照管理。
+**Architecture:** 用七个产品入口重新组织既有平台能力，本体工作室按六组建设职责组织；保留正式路由、Semi 组件及既有后端。以单一注册表派生导航、搜索和面包屑，依次接入模型卡片画布、资源编辑、真实映射和发布流程。业务事实继续由现有 API、WIP 和不可变版本快照管理。
 
 **Tech Stack:** 现有 React 19、TypeScript、Semi、lucide-react、Vite、Vitest、Playwright；后端 Python 3.12、FastAPI、PostgreSQL 16。依赖使用 frontend pnpm-lock 与 backend uv.lock。
 
@@ -14,9 +15,11 @@
 ## Global Constraints
 
 - 工作目录为 `C:/Users/houuu/.codex/worktrees/242e/2026-07-02-MetaPlatform`，起始 HEAD 为 `9646f018`；保留其他工作树、现有服务、数据库和用户修改。
-- 平台八个一级入口不变。本体一级入口直达 `/ontology/model/graph`；`/ontology` 继续为总览，增加 `/ontology/overview` 别名。全站根入口继续 `/home`。
-- 本体采用平台 IconRail → 六域左侧工作区导航 → 单资源详情页签，其他域继续原导航。planned 项不显示。
+- 平台一级入口为工作台、业务应用、对象探索、本体工作室、数字员工、连接与知识、治理与管理。SuperAI 常驻入口和 `/superai/chat` 保留。旧八域的真实能力及旧 URL 保留，不复制事实源。
+- 本体一级入口直达 `/ontology/model/graph`；`/ontology` 继续为总览，增加 `/ontology/overview` 别名。全站根入口继续 `/home`。
+- 本体工作室六组为概览、业务模型、数据接入、业务动作、变更发布、运行与质量。对象探索为独立消费入口，继续 `/ontology/explore/*`，不套建设侧栏。接口/公理、函数/编排保留高级入口；planned 项不显示。
 - 本体路径、搜索索引、面包屑和兼容 tab 元数据从 `ONTOLOGY_NAV` 派生；最长路径匹配。页面、选中资源、详情页签和查询视图进 URL。
+- 跨页带入 `typeRef`、可用 `changeRef` 与站内 `returnTo`；保留现有 `class` 参数兼容。返回目标只接受站内路径，不在 URL 放令牌或敏感记录。
 - 复用现有真实 API、身份、租户上下文、编辑器及治理链；不移植原型合成数据、本地角色、假同步或假快照，不新建平行事实库。
 - 颜色和尺寸通过现有 Semi 主题包及应用令牌配置；不更换组件库，不新增 `.semi-*` 内部样式覆盖。
 - 水位列声明 DTO 没有 `ts_column` 入参：显示实际配置，不提供假保存。本次不扩大后端业务语义；新增消费的既有端点若未契约化，先同步契约。
@@ -26,7 +29,31 @@
 - 六组 PostgreSQL 回归、ontology core 浏览器闭环、两个 migration 用例均须实际采集执行且零 skip；分别登记单元/接口替身 UI、本地真实后端、CI、部署与业务验收。
 - 主视觉验证尺寸为 `1440`、`1920`，并覆盖 `1024`、`390`；键盘可用，窄屏导航可展开，无文档级横向溢出。
 
+## Task 7: 用户后补的七入口产品导航与职责归组
+
+**Files:** `components/shell/{domains.tsx,IconRail.tsx,TopBar.tsx,CommandPalette.tsx,CopilotDock.tsx,shell.css}`；`pages/ontology/navigation.ts`、`layout/{OntologyTabLayout.tsx,OntologyContextBar.tsx,OntologySideNav.tsx,workspace.css}`；必要 `routes/ontology.tsx` 兼容别名；导航单元与 E2E；ADR-0069、IA v2 规格、`docs/active/specs/2026-09-14-ui-redesign/DESIGN-SPEC.md` 和文档索引。
+
+**Interfaces:** 消费 Task 1 的工作区/最长路径基础。产出单一平台产品域注册表（七个菜单项，SuperAI 为常驻能力）、`resolveDomain(pathname)` 的最长 route-prefix 归属和同源命令索引；保留现有 DomainDef/Tab 对 PageTabs 消费者的接口。ontology assistant context 仍由既有域壳发布，不因对象探索归组丢失。
+
+- [ ] 先同步 ADR/导航规格的后补用户决定，明确七入口覆盖初始八入口呈现，不把原提案全部记为已接受后台需求。
+- [ ] 写并运行 RED：所有现有路径在新七入口下归属正确，尤其 `/ontology/explore/*` 属于对象探索、`/admin/*` 和 `/gov/*` 属于治理与管理；SuperAI 完整路由与常驻入口仍可达；不存在复制的对象探索/建设菜单。
+
+```ts
+expect(resolveDomain('/ontology/explore/objectset')?.label).toBe('对象探索');
+expect(resolveDomain('/admin/org/users')?.label).toBe('治理与管理');
+expect(resolveDomain('/gov/tech/components')?.label).toBe('治理与管理');
+```
+
+- [ ] 七个一级入口按用户选定顺序呈现：工作台、业务应用、对象探索、本体工作室、数字员工、连接与知识、治理与管理。保留原有效页面与 URL；navMode 的 side/top 两种呈现都正确。
+- [ ] 全局 SuperAI 支持打开现有 Copilot 与完整 `/superai/chat`；搜索仍可发现该会话入口。不能让移出一级菜单的 SuperAI 旧 URL 变成无域/不可访问。
+- [ ] 本体六组按概览、业务模型、数据接入、业务动作、变更发布、运行与质量归组；同步、模型校验、执行记录、审计、使用量进入运行与质量；模型检查同义项收口同一实现，旧深链继续可达；安全策略链接同一治理事实。
+- [ ] 对象探索 `/ontology/explore/*` 保留 OntologyDomainShell 上下文写入与高度约束，但不显示本体建设侧栏。对象浏览、ObjectSet、聚合、地图来自同一正式路由配置。
+- [ ] 菜单不能创建新原型身份、角色或前端权限。已有角色/权限消费可复用；没有现行权限映射的角色裁剪不编造规则，服务端授权继续为准。
+- [ ] 跑 Node 22 focused unit/typecheck，旧路径矩阵与窄屏焦点修复不能退化；self-review 后提交。Task 6 执行真实浏览器、全七入口检查与旧路径回归。
+
 ## Task 1: 工作区壳、导航单源与视觉层级
+
+> 本任务的八入口/旧六域术语是原始已实施基线；后补七入口与新职责分组由 Task 7 覆盖。保留原 brief/review 作为历史证据。
 
 **Files:** `docs/active/decisions/ADR-0069-ontology-ia-v2-workspace-navigation.md`、`docs/active/specs/2026-09-18-ontology-ia-v2-design.md`、`docs/README.md`；`metaplatform-frontend/apps/web/src/pages/ontology/navigation.ts`、`layout/OntologyTabLayout.tsx`、新增 `layout/OntologySideNav.tsx` / `layout/OntologyContextBar.tsx` / `layout/workspace.css`；`components/shell/{domains.tsx,AppShell.tsx,TopBar.tsx,IconRail.tsx,shell.css}`、`routes/ontology.tsx`；导航单元和浏览器用例。
 
@@ -50,9 +77,9 @@ expect(ontologyBreadcrumb('/ontology/data/mappings').map(c => c.name))
 
 ## Task 2: 真实模型卡片画布与类型编辑工作台
 
-**Files:** `pages/ontology/model/{graph/OntologyGraphPage.tsx,OntologyGraphView.tsx}`；新增 `model/graph/{ModelGraphCanvas.tsx,ModelInspector.tsx,model-workbench.css}`；`model/object-types/{ObjectTypesPage.tsx,ObjectTypeDetailPage.tsx}`、`layout/ResourceDetailLayout.tsx`、必要的类型编辑 hook；现有 `components/ObjectTypeEditorV2Drawer.tsx` / `PropertyEditorV2.tsx`；新增对应行为单元测试。
+**Files:** `pages/ontology/model/{graph/OntologyGraphPage.tsx,OntologyGraphView.tsx}`；新增 `model/graph/{ModelGraphCanvas.tsx,ModelInspector.tsx,model-workbench.css}`；`model/object-types/{ObjectTypesPage.tsx,ObjectTypeDetailPage.tsx}`、`layout/ResourceDetailLayout.tsx`、必要的类型编辑 hook；现有 `components/ObjectTypeEditorV2Drawer.tsx` / `PropertyEditorV2.tsx`；`api/ont/kernel.ts` 与 `contracts/openapi/services/ont.yaml` 的本任务实际消费端点；新增对应行为单元测试。
 
-**Interfaces:** 消费 `listObjectTypes/listLinkTypes/getObjectType` 的 Kernel DTO，复用 existing type writer/precheck/WIP 与完整扩展元数据；产出模型卡片、Inspector 及资源切换编辑。其他实例图继续使用 ForceGraph，不改其行为。
+**Interfaces:** 消费 `listObjectTypes/listLinkTypes/getObjectType` 的 Kernel DTO，复用 existing type writer/precheck/WIP 与完整扩展元数据；产出模型卡片、Inspector 及资源切换编辑。类型历史改为 `listVersions` 的 KernelVersion 快照（当前 VersionHistory 仍错误读取 live 类型列表，不能沿用该假历史）。其他实例图继续使用 ForceGraph，不改其行为。
 
 - [ ] 写失败用例：选中真实模型显示该类型主键/属性/关系；打开编辑器路由保留选中 RID；详情编辑保留原接口/marking/parent 等扩展字段；读取失败有重试；未保存输入不会静默丢弃。
 
@@ -65,8 +92,11 @@ expect(screen.getByRole('heading', { name: '客户' })).toBeVisible();
 ```
 
 - [ ] 记录 RED 后实现卡片 + SVG 关系连线，拖动、缩放、fit、双击/键盘打开、图/资源列表切换；布局状态不写模型数据。图与 Inspector 使用同一 DTO 集合，过滤后计数一致。
+- [ ] 新增实际消费的校验/WIP 调用前，核对现有 DTO 与 operationId 并同步缺失 OpenAPI 登记；不改变后端语义。
 - [ ] 模型检查通过既有校验 API，尚未执行时明确显示；请求失败不显示空结果为通过。真实状态和选择 RID 可恢复。
 - [ ] 类型详情增加资源列表、业务名/机器名、属性操作、现有真实页签和数据源/动作入口。沿用现有完整编辑器与写入/相似扫描，不建另一份属性事实库。
+- [ ] 来源绑定页签真正读取 backing datasource，将物化样本分开展示；跨页入口带入选中类型与返回位置，旧 datasources/history 深链兼容。
+- [ ] 历史读取 listVersions 并复用独立 VersionHistory 组件，供 Task 4 发布历史接入；辅助错误保留明确 partial/forbidden/unavailable，异步请求用代次或取消防止旧资源响应污染。
 - [ ] 编辑器关闭/切换处理未保存状态，保存失败保留草稿。复用现有 WIP 暂存，发布入口导向现有治理流程，不能把直接发布叫“保存草稿”。
 - [ ] 运行受影响单元、typecheck；自查 Loading/空/403/422 状态和 narrow 布局后提交。
 
@@ -87,6 +117,7 @@ expect(requestBody).not.toHaveProperty('ts_column');
 
 - [ ] 记录 RED；实现来源与类型资源选择、属性行映射、主键/必填提示、dsn_env 引用、真实服务端水位展示；禁止无契约水位编辑。
 - [ ] 以真实物化结果呈现样本表，加载/空/错误分别显示；保存回读与同步结果来自接口。未保存映射禁止相关同步，切换处理未保存输入。
+- [ ] 进入映射/同步时尊重 URL 对象上下文，不默认改成首条类型；回到原资源保留页签/筛选。没有源字段元数据契约时不伪造字段下拉或样本来源。
 - [ ] 跑 API 请求/组件单元与 typecheck；提交契约/RED/feature，数据库与真实同步验收交给 Task 6。
 
 ## Task 4: 草稿校验、影响、确认与发布组织
@@ -107,6 +138,7 @@ fireEvent.click(screen.getByRole('button', { name: '校验草稿' }));
 - [ ] 记录 RED；把草稿审阅/校验/影响/确认/结果呈现为清晰步骤，以类型/快照选择代替主要手填 RID；高级标识可查看。
 - [ ] 保留破坏性二段确认、模型冲突、迁移执行与记录。只显示真实结果，失败保持可重试，修改输入使旧结果失效。
 - [ ] 类型详情历史与发布历史均使用 listVersions，清楚标记模型回滚范围；不要顺带实现 R2–R6 后台。
+- [ ] 同源历史组件复用 Task 2 的组件；发布/校验接受并保留 typeRef、changeRef（实际已有引用时）、returnTo，失败与陈旧数据不显示成暂无数据。
 - [ ] 跑受影响单元和 typecheck，自查原两个 migration 浏览器用户操作仍有兼容入口；提交。
 
 ## Task 5: 全本体页面一致性与浏览器回归清单
@@ -116,6 +148,7 @@ fireEvent.click(screen.getByRole('button', { name: '校验草稿' }));
 **Interfaces:** 消费 Tasks 1–4 工作区与页面，保留 ObjectSet、分析、地图、动作编排、安全与审计操作。浏览器分别验证真实服务与接口替身，不能混称。
 
 - [ ] 检查所有 active 本体页的标题/容器/滚动一致性，复用页面自有类统一 spacing、表格与状态；其他七域不出现本体侧栏。
+- [ ] 全局七个入口与六组建设职责一致；对象消费与模型定义视图分开，其他产品入口不出现建设侧栏。总览呈现继续建设、具体阻断与下一步，不编造负责人或健康结论。
 - [ ] 浏览器写用户行为与请求断言，覆盖建模壳/编辑/映射/发布四段的核心流程、未保存处理、深链与失败态；记录 RED 再修复实际问题。
 - [ ] 维持旧路径矩阵与对象消费/Proposal/审计流程，不删测试掩盖退化；更名只改设计变化对应的断言。
 - [ ] 显式收集此目录的新增与原 IA 浏览器文件，避免 root testDir 漏采集；给 CI 增加精确入口和结果工件。
