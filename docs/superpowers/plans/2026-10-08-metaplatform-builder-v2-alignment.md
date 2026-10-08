@@ -50,7 +50,7 @@
 
 **Files:** `mate-platform-backend/services/auth-service/src/mate_auth_service/main.py` 及对应当前测试；`metaplatform-frontend/packages/shared/src/components/SharedLoginPage.tsx` 与行为测试；`apps/web/src/pages/ontology/hooks/editorSession.tsx`、现有编辑器身份不可用提示和覆盖测试；必要登录契约核对（不新增端点/字段/角色）。
 
-**Interfaces:** 现有 IAM/dashboard password grant 登录已调用 OIDC userinfo，但遗漏 `openid` 导致当前 provider 返回 403/空用户 ID。消费已有 AuthResponse.userId/user.id、accessToken 和真实 tenant 上下文；产出正常登录的稳定用户 ID 与按身份隔离编辑会话。保留当前后台最佳努力响应、签名校验和授权语义。
+**Interfaces:** 现有 IAM/dashboard password grant 登录已调用 OIDC userinfo，但遗漏 `openid` 导致当前 provider 返回 403/空用户 ID。消费已有 AuthResponse.userId/user.id、accessToken 和真实 tenant 上下文；产出正常登录的稳定用户 ID 与按身份隔离编辑会话。保留当前后台最佳努力 HTTP 200/SUCCESS、DTO、令牌和错误流程、签名校验和授权语义；无 subject 时移除 dashboard 按用户名生成的替代 ID，与 IAM 一样返回空 ID，由 UI 提示重试。
 
 - [ ] 以已保存的独立 provider 比较探针为 RED 前置证据：省略范围时 userinfo403/无 subject，openid 时 userinfo200/有 subject；不打印令牌、口令或私人信息。补登录 HTTP 边界测试检查实际 password grant 请求及返回用户 ID。
 - [ ] 补齐现有 IAM 和 dashboard 人员登录的 OIDC 身份信息范围；不请求新增角色/权限，不为 token 注入用户/tenant，不更换 provider，不改 legacy/signature 标志，不扩大身份协议。
