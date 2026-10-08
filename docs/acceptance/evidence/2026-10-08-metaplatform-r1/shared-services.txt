@@ -1,0 +1,6 @@
+/mate-tech-ont 2026-10-07T15:30:27.709724954Z healthy
+/mate-auth-service 2026-10-07T14:13:39.725223Z healthy
+/mate-api-gateway 2026-10-07T14:13:40.5891062Z healthy
+/mate-keycloak 2026-10-07T14:14:14.781790486Z healthy
+/mate-postgres 2026-10-07T14:13:40.1238808Z healthy
+/mate-redis 2026-10-07T14:13:39.7005914Z healthy

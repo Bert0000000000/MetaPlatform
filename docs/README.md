@@ -10,7 +10,7 @@
 按顺序定位当前任务及单源文档：
 
 1. **标准接管入口**：[`AGENTS.md`](../AGENTS.md)（工作树、锁文件、安装/验证与保护现有环境的约束）；[`CLAUDE.md`](../CLAUDE.md) 保留历史上下文。
-2. **当前 R1**：[`R1 实施计划`](superpowers/plans/2026-10-08-metaplatform-r1-implementation.md) 与 [`已接受优化路线图`](superpowers/plans/2026-10-08-metaplatform-optimization-roadmap.md)。
+2. **当前 R1**：[`R1 实施计划`](superpowers/plans/2026-10-08-metaplatform-r1-implementation.md)、[`本轮验收记录`](acceptance/2026-10-08-metaplatform-r1.md) 与 [`已接受优化路线图`](superpowers/plans/2026-10-08-metaplatform-optimization-roadmap.md)。
 3. **本体迁移/版本单源**：[`ADR-0082 Migration Plan`](active/decisions/ADR-0082-ontology-migration-plan.md)、[`ADR-0080 草稿与版本`](active/decisions/ADR-0080-ontology-draft-and-version-mechanism.md)、[`ont.yaml 契约`](../mate-platform-backend/contracts/openapi/services/ont.yaml)。
 4. **架构及业务背景**：[`主架构实施基线`](active/specs/2026-07-27-mate-platform-architecture-implementation.md)、[`PRD 集合`](active/prd/)。旧 [`V1.0 发布计划`](active/V1.0-RELEASE-PLAN.md) 用于对应版本追溯。
 

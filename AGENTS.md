@@ -30,11 +30,11 @@ Set-Location ..
 
 | 验证范围 | 当前源码入口 |
 | --- | --- |
-| 迁移/版本数据库回归 | 从 `mate-platform-backend` 用 `.venv/Scripts/python.exe -m pytest packages/mate-tech-ont/tests/integration/test_ont_migration_plan.py packages/mate-tech-ont/tests/integration/test_ont_version_mechanism.py -q`；执行前显式设置 `VER_PG_DSN` 为本次独立 PostgreSQL 目标 |
+| 必需数据库回归 | 从根目录用 `mate-platform-backend/.venv/Scripts/python.exe scripts/ci/verify_ont_postgres.py --junit .ci/ont-postgres.xml`；显式设置 `PG_DSN` / `VER_PG_DSN` 到同一独立 PostgreSQL 16 目标。入口预检非特权角色，完整采集并执行迁移、同步、原子性、关系并发、版本、查询六组用例，逐条核对身份，拒绝 skip |
 | 后端治理/非特权 RLS | [ga-acceptance.yml](.github/workflows/ga-acceptance.yml)；[verify_ont_rls.sh](scripts/ci/verify_ont_rls.sh)（仅对独立数据库设置 `ONT_RLS_ADMIN_DSN` / `PG_DSN`） |
 | 前端类型/构建 | 从 `metaplatform-frontend` 执行 `pnpm --filter @mate/web typecheck`、`pnpm --filter @mate/web build` |
 | 浏览器核心闭环 | [Playwright 配置](metaplatform-frontend/playwright.config.ts)、[ontology-loop CI](.github/workflows/ontology-loop.yml)；独立服务和端口由 R1 计划定义 |
-| 迁移浏览器用例 | [ontology-migration-plan.spec.ts](metaplatform-frontend/apps/web/tests/e2e/ontology-migration-plan.spec.ts) 位于根 Playwright `testDir` 之外；R1 C1 必须显式采集并执行，不能把根核心闭环通过视为迁移用例通过 |
+| 迁移浏览器用例 | 从 `metaplatform-frontend` 用 `pnpm exec playwright test --config playwright.migration.config.ts --workers=1`；先用 `--list --reporter=./migration-list-reporter.ts` 保存安全清单，再分别用根目录 `scripts/ci/verify_migration_browser.py --list` / `--junit` 核对清单和实际结果。配置显式选择 [ontology-migration-plan.spec.ts](metaplatform-frontend/apps/web/tests/e2e/ontology-migration-plan.spec.ts)，它位于根核心测试目录之外 |
 
 ## 实施与证据约束
 

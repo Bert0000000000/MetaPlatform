@@ -1,0 +1,360 @@
+[
+  {
+    "artifact": "task-3-red.xml",
+    "tests": 58,
+    "outcomes": {
+      "passed": 24,
+      "failure": 34
+    },
+    "cases": [
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_family_publish_carries_instances_and_records_run",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_assess_reports_and_heals_legacy_orphans",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestReattachOnFamilyPublish",
+        "name": "test_sourced_upsert_updates_class_rid_on_conflict",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_rename_paired_by_slug_and_true_removal_preserved",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_counts_match_seeded_data",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_format_counts_split_coercible_and_kept",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_pk_conflicts_and_missing_detected",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_assess_with_target_payload_previews_draft",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestAssessClassification",
+        "name": "test_assess_is_read_only",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunRename",
+        "name": "test_rename_remaps_props_props_src_overlay_and_field_mapping",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_drop_preserves_by_default",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_explicit_drop_removes_keys",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunDropAndCoerce",
+        "name": "test_coerce_lossless_only",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_rederive_rewrites_rids_and_links",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_conflict_aborts_without_partial_writes",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRunPkRederive",
+        "name": "test_missing_pk_skip_option_reports",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_same_idempotency_key_replays_original_result",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_missing_idempotency_key_rejected",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_checksum_drift_rejected_409",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_cross_tenant_denied",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestIdempotencyAndGuards",
+        "name": "test_runs_list_is_tenant_scoped",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestRollbackBoundary",
+        "name": "test_rollback_after_migration_keeps_migrated_data",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change0]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change1]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change2]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change3]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change4]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change5]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change6]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change7]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change8]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change9]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change10]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change11]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change12]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change13]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_tampered_plan_rejected_without_changes[change14]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body0]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body1]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body2]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body3]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body4]",
+        "nodeid": null,
+        "status": "passed"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body5]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body6]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body7]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_bad_assess_input_rejected_without_changes[body8]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_references_rejected_without_changes[foreign_live]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_references_rejected_without_changes[foreign_snapshot]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_references_rejected_without_changes[other_live]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_references_rejected_without_changes[other_snapshot]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_references_rejected_without_changes[foreign_target]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_references_rejected_without_changes[other_target]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_rename_collision_aborts_every_table[props]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_rename_collision_aborts_every_table[props_src]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_rename_collision_aborts_every_table[overlay]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_rename_collision_aborts_every_table[mapping]",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_fixed_family_scope_preserves_decoys_and_other_tenant",
+        "nodeid": null,
+        "status": "failure"
+      },
+      {
+        "classname": "packages.mate-tech-ont.tests.integration.test_ont_migration_plan.TestMigrationSafety",
+        "name": "test_explicit_rename_remains_supported",
+        "nodeid": null,
+        "status": "passed"
+      }
+    ]
+  }
+]

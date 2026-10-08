@@ -1,0 +1,170 @@
+[
+  {
+    "target": "pgvector_regression",
+    "database": "metaplatform_ont_test",
+    "role": "mate_ont_test",
+    "postgresql": "16.15 (Debian 16.15-1.pgdg12+2)",
+    "superuser": false,
+    "bypassrls": false,
+    "vector": "0.8.6",
+    "rls_tables": [
+      {
+        "table": "ont_action_type",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_axiom",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_function",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_individual",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_interface",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_link_instance",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_link_type",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_object_type",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_property",
+        "row_security": false,
+        "force_row_security": false
+      }
+    ]
+  },
+  {
+    "target": "native_rls",
+    "database": "metaplatform_ont_test",
+    "role": "mate_ont_test",
+    "postgresql": "16.15",
+    "superuser": false,
+    "bypassrls": false,
+    "vector": null,
+    "rls_tables": [
+      {
+        "table": "ont_action_type",
+        "row_security": true,
+        "force_row_security": true
+      },
+      {
+        "table": "ont_axiom",
+        "row_security": true,
+        "force_row_security": true
+      },
+      {
+        "table": "ont_function",
+        "row_security": true,
+        "force_row_security": true
+      },
+      {
+        "table": "ont_individual",
+        "row_security": true,
+        "force_row_security": true
+      },
+      {
+        "table": "ont_interface",
+        "row_security": true,
+        "force_row_security": true
+      },
+      {
+        "table": "ont_link_instance",
+        "row_security": true,
+        "force_row_security": true
+      },
+      {
+        "table": "ont_link_type",
+        "row_security": true,
+        "force_row_security": true
+      },
+      {
+        "table": "ont_object_type",
+        "row_security": true,
+        "force_row_security": true
+      },
+      {
+        "table": "ont_property",
+        "row_security": true,
+        "force_row_security": true
+      }
+    ]
+  },
+  {
+    "target": "native_browser",
+    "database": "codex_r1_ontology",
+    "role": "codex_r1_app",
+    "postgresql": "16.15",
+    "superuser": false,
+    "bypassrls": false,
+    "vector": null,
+    "rls_tables": [
+      {
+        "table": "ont_action_type",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_axiom",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_function",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_individual",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_interface",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_link_instance",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_link_type",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_object_type",
+        "row_security": false,
+        "force_row_security": false
+      },
+      {
+        "table": "ont_property",
+        "row_security": false,
+        "force_row_security": false
+      }
+    ]
+  }
+]

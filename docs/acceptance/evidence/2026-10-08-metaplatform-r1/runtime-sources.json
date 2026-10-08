@@ -1,0 +1,29 @@
+{
+  "scope": "Local isolated R1 fixture infrastructure; no deployment claim",
+  "python": "3.12.13",
+  "node_local": "26.3.0",
+  "node_ci": "22",
+  "pnpm_local": "11.15.1",
+  "pgvector": {
+    "image_tag": "pgvector/pgvector:pg16",
+    "image_id": "sha256:9b05db12a35460fff0587e009f9326e414a53e9484555547f96d214a2ba98ef7",
+    "repository_digest": "pgvector/pgvector@sha256:ccc6e83d6e35e931dc7c5def2022729d5a6c370318d099181995567ff1fb4d6b"
+  },
+  "redis": {
+    "image_tag": "redis:7-alpine",
+    "image_id": "sha256:5509c0097c6064aa8a3b1df58f1d950e67090fffa6678ae8f3f1dc2385f12deb",
+    "repository_digest": "redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf"
+  },
+  "native_postgresql": {
+    "version": "16.15",
+    "source": "https://get.enterprisedb.com/postgresql/postgresql-16.15-1-windows-x64-binaries.zip",
+    "extracted_entries": 1662,
+    "validation": "ZipFile CRC for extracted bin/lib/share entries; original full ZIP not downloaded",
+    "postgres_exe_sha256": "8192a1b2e02f9546b4fc775519c5ca719f2bfa1d6a4a7ac6f3258c5e4da39e5d"
+  },
+  "native_keycloak": {
+    "version": "25.0.6",
+    "source": "https://github.com/keycloak/keycloak/releases/download/25.0.6/keycloak-25.0.6.zip",
+    "complete_archive_sha256": "cfec876e5f3c1849756ce2d4327c708ddc6e24a86ab939a69787f19b503d8e36"
+  }
+}

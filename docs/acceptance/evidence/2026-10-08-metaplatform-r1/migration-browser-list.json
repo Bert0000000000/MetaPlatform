@@ -1,0 +1,28 @@
+{
+  "suites": [
+    {
+      "specs": [
+        {
+          "file": "ontology-migration-plan.spec.ts",
+          "title": "评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例",
+          "line": 124,
+          "tests": [
+            {
+              "projectName": "ontology-migration"
+            }
+          ]
+        },
+        {
+          "file": "ontology-migration-plan.spec.ts",
+          "title": "无幂等键执行被拒（400）——后端守卫",
+          "line": 179,
+          "tests": [
+            {
+              "projectName": "ontology-migration"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
