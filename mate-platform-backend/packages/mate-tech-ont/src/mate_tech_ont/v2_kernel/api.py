@@ -66,6 +66,7 @@ from mate_platform.tenancy.guards import require_tenant
 from .pg_repo import (  # 409 翻译 + 定义指纹的行形态（版本快照与 live 同源）
     MigrationPkConflict,
     MigrationPkMissing,
+    MigrationRenameConflict,
     ModelValidationUnavailable,
     SlugConflictError,
     VersionConflict,
@@ -2524,12 +2525,27 @@ async def assess_migration_endpoint(
         raise HTTPException(status_code=403, detail="cross-tenant migration assess denied")
     from mate_kernel.ontology.identity.class_ref import ClassRef
 
-    body = payload or {}
-    baseline = str(body.get("baseline") or "")
-    options = body.get("options") or None
+    body = payload if payload is not None else {}
+    if set(body) - {"baseline", "options", "target_payload"}:
+        raise HTTPException(status_code=422, detail="unknown migration assess field")
+    baseline = body.get("baseline", "")
+    if not isinstance(baseline, str):
+        raise HTTPException(status_code=422, detail="baseline must be a string")
+    if baseline and not baseline.startswith(f"ont.{ctx.tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant baseline denied")
+    options = body.get("options")
+    if "options" in body and not isinstance(options, dict):
+        raise HTTPException(status_code=422, detail="options must be an object")
     target_payload = body.get("target_payload")
     target = None
-    if isinstance(target_payload, dict) and target_payload:
+    if "target_payload" in body:
+        if not isinstance(target_payload, dict) or not target_payload:
+            raise HTTPException(
+                status_code=422, detail="target_payload must be an ObjectType object"
+            )
+        target_rid = target_payload.get("rid")
+        if isinstance(target_rid, str) and not target_rid.startswith(f"ont.{ctx.tenant_id}."):
+            raise HTTPException(status_code=403, detail="cross-tenant target denied")
         try:
             target = _dto_to_ot(ObjectTypeDTO(**target_payload))
         except Exception as e:
@@ -2545,6 +2561,8 @@ async def assess_migration_endpoint(
             target=target,
             options=options,
         )
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
@@ -2571,12 +2589,14 @@ async def run_migration_endpoint(
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant migration run denied")
     key = _require_idempotency_key(request)
-    body = payload or {}
-    plan = dict(body.get("plan") or {})
-    expected_checksum = str(body.get("expected_checksum") or "")
-    if not plan:
+    body = payload if payload is not None else {}
+    if set(body) - {"plan", "expected_checksum"}:
+        raise HTTPException(status_code=422, detail="unknown migration run field")
+    plan = body.get("plan")
+    expected_checksum = body.get("expected_checksum")
+    if not isinstance(plan, dict) or not plan:
         raise HTTPException(status_code=422, detail="plan is required (from assess)")
-    if not expected_checksum:
+    if not isinstance(expected_checksum, str) or not expected_checksum:
         raise HTTPException(status_code=422, detail="expected_checksum is required")
     from mate_kernel.ontology.identity.class_ref import ClassRef
 
@@ -2590,6 +2610,13 @@ async def run_migration_endpoint(
             idempotency_key=key,
             expected_checksum=expected_checksum,
         )
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except MigrationRenameConflict as e:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "E409_MIGRATION_RENAME_CONFLICT", "message": str(e)},
+        ) from e
     except VersionConflict as e:
         raise HTTPException(
             status_code=409,

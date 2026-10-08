@@ -88,6 +88,10 @@ class ModelValidationUnavailable(RuntimeError):
     """
 
 
+class MigrationRenameConflict(RuntimeError):
+    """A rename would overwrite a destination key (API 409)."""
+
+
 class MigrationPkMissing(RuntimeError):
     """ONT-MIGRATION-PLAN：实例缺新主键属性值 → fail-closed 拒执行（API 409）。"""
 
@@ -2107,6 +2111,148 @@ class PgOntologyRepository(OntologyRepository):
         )
         return [r["rid"] for r in cur.fetchall()]
 
+    def _migration_ref(
+        self, reference: str, tenant: str, slug: str, *, snapshot: bool = False
+    ) -> None:
+        parts = reference.split(".")
+        if len(parts) < 5 or parts[0] != "ont" or parts[2] not in ("obj", "ver"):
+            raise ValueError("invalid migration definition reference")
+        if parts[2] == "ver" and not snapshot:
+            raise ValueError("migration target/definition must be an ObjectType")
+        if parts[1] != tenant or self._current_tenant() not in (None, tenant):
+            raise PermissionError("cross-tenant migration reference denied")
+        if parts[2] == "obj" and _family_of_rid(reference) != (tenant, slug):
+            raise ValueError("migration reference must belong to the same ObjectType family")
+
+    def _migration_definition(self, cur: Any, reference: str, tenant: str, slug: str) -> ObjectType:
+        """Validate reference, persisted metadata AND snapshot before reading instance data."""
+        self._migration_ref(reference, tenant, slug, snapshot=True)
+        snapshot = reference.split(".")[2] == "ver"
+        table = "ont_type_version" if snapshot else "ont_object_type"
+        cur.execute(f"SELECT * FROM {table} WHERE rid = %s AND tenant_id = %s", (reference, tenant))
+        row = cur.fetchone()
+        if row is None:
+            raise KeyError(f"migration definition not found: {reference}")
+        if row["slug"] != slug:
+            raise ValueError("migration snapshot/type belongs to another family")
+        if snapshot:
+            self._migration_ref(row["class_rid"], tenant, slug)
+            definition = row["definition"]
+            if not isinstance(definition, dict) or not definition:
+                raise ValueError("migration version has no definition snapshot")
+            if definition.get("rid") != row["class_rid"]:
+                raise ValueError("snapshot definition does not match its class_rid")
+        else:
+            definition = row
+        self._migration_ref(definition["rid"], tenant, slug)
+        if definition.get("tenant_id") != tenant or definition.get("slug") != slug:
+            raise ValueError("migration definition metadata does not match its family")
+        result = _row_to_ot(definition)
+        if snapshot and self._definition_checksum(_ot_to_row(result)) != row["checksum"]:
+            raise ValueError("migration snapshot checksum does not match its definition")
+        return result
+
+    def _canonical_migration_plan(
+        self,
+        cur: Any,
+        rid: ClassRef,
+        live: ObjectType,
+        plan: dict[str, Any],
+        tenant: str,
+        slug: str,
+    ) -> dict[str, Any]:
+        from mate_kernel.ontology.migration import build_migration_plan
+
+        fields = {
+            "class_rid",
+            "from_checksum",
+            "renames",
+            "coercions",
+            "pk_rederive",
+            "drops",
+            "reattach",
+            "warnings",
+        }
+        if not isinstance(plan, dict) or set(plan) != fields:
+            raise ValueError("migration plan has missing or unknown fields")
+        if not isinstance(plan["class_rid"], str):
+            raise ValueError("plan class_rid must be a string")
+        self._migration_ref(plan["class_rid"], tenant, slug)
+        if plan["class_rid"] != rid.rid:
+            raise ValueError("plan target must equal current live rid")
+        if not isinstance(plan["from_checksum"], str) or not plan["from_checksum"]:
+            raise ValueError("plan from_checksum is required")
+        if (
+            not isinstance(plan["renames"], dict)
+            or not isinstance(plan["coercions"], list)
+            or not isinstance(plan["warnings"], list)
+        ):
+            raise ValueError("malformed migration plan")
+        drops, pk = plan["drops"], plan["pk_rederive"]
+        if (
+            not isinstance(drops, dict)
+            or set(drops) != {"policy", "props"}
+            or not isinstance(drops["props"], list)
+        ):
+            raise ValueError("malformed migration drops")
+        if pk is not None and (
+            not isinstance(pk, dict) or set(pk) != {"old_pk", "new_pk", "on_missing"}
+        ):
+            raise ValueError("malformed migration pk_rederive")
+        if plan["reattach"] is not None and plan["reattach"] != {"to": rid.rid}:
+            raise ValueError("invalid migration reattach target")
+        cur.execute(
+            "SELECT rid FROM ont_type_version WHERE tenant_id=%s AND slug=%s AND checksum=%s AND definition IS NOT NULL ORDER BY version_no DESC",
+            (tenant, slug, plan["from_checksum"]),
+        )
+        baseline = cur.fetchone()
+        if baseline is not None:
+            old = self._migration_definition(cur, baseline["rid"], tenant, slug)
+        elif plan["from_checksum"] == self._definition_checksum(_ot_to_row(live)):
+            old = live
+        else:
+            raise ValueError("from_checksum is not a legitimate family definition")
+        options = {
+            "rename": plan["renames"],
+            "drops": drops["policy"],
+            "pk_missing": pk["on_missing"] if pk is not None else "abort",
+        }
+        canonical = build_migration_plan(old, live, options)
+        canonical["from_checksum"] = plan["from_checksum"]
+        # Pending reattach is data-dependent and can change since assessment. Its only
+        # permitted destination is live; execution always repairs legitimate family members.
+        canonical["reattach"] = plan["reattach"]
+        if canonical != plan:
+            raise ValueError("submitted migration plan differs from the server canonical plan")
+        return canonical
+
+    @staticmethod
+    def _check_migration_renames(
+        cur: Any, tenant: str, targets: list[str], family: list[str], renames: dict[str, str]
+    ) -> None:
+        for old, new in renames.items():
+            cur.execute(
+                "SELECT rid FROM ont_individual WHERE tenant_id=%s AND rid=ANY(%s) AND ((props ? %s AND props ? %s) OR (props_src ? %s AND props_src ? %s)) LIMIT 1",
+                (tenant, targets, old, new, old, new),
+            )
+            conflict = cur.fetchone()
+            if conflict is None:
+                cur.execute(
+                    "SELECT a.individual_rid AS rid FROM ont_edit_overlay a JOIN ont_edit_overlay b ON a.individual_rid=b.individual_rid AND a.tenant_id=b.tenant_id WHERE a.tenant_id=%s AND a.individual_rid=ANY(%s) AND a.property_rid=%s AND b.property_rid=%s LIMIT 1",
+                    (tenant, targets, old, new),
+                )
+                conflict = cur.fetchone()
+            if conflict is None:
+                cur.execute(
+                    "SELECT class_rid AS rid FROM ont_backing_datasource WHERE tenant_id=%s AND class_rid=ANY(%s) AND field_mapping ? %s AND field_mapping ? %s LIMIT 1",
+                    (tenant, family, old, new),
+                )
+                conflict = cur.fetchone()
+            if conflict is not None:
+                raise MigrationRenameConflict(
+                    f"rename conflict on {conflict['rid']}: {old} -> {new}; destination key already exists"
+                )
+
     def assess_migration(
         self,
         rid: ClassRef,
@@ -2126,19 +2272,26 @@ class PgOntologyRepository(OntologyRepository):
 
         self._ensure_schema()
         tenant, slug = _family_of_rid(rid.rid)
-        ind_prefix = f"ont.{tenant}.ind.{slug}."
-        live = self.get_object_type(rid)
-        target_def = target if target is not None else live
-        to_checksum = self._definition_checksum(_ot_to_row(target_def))
-
-        if baseline is not None:
-            base_def = self._definition_for(baseline)
-        else:
-            base_def = target_def
-            for v in reversed(self.list_versions(rid)):
-                if v.checksum != to_checksum and v.definition:
-                    base_def = _row_to_ot(v.definition)
-                    break
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                live = self._migration_definition(cur, rid.rid, tenant, slug)
+                target_def = target if target is not None else live
+                self._migration_ref(target_def.rid.rid, tenant, slug)
+                to_checksum = self._definition_checksum(_ot_to_row(target_def))
+                if baseline is not None:
+                    base_def = self._migration_definition(cur, baseline.rid, tenant, slug)
+                else:
+                    base_def = target_def
+                    cur.execute(
+                        "SELECT rid FROM ont_type_version WHERE tenant_id=%s AND slug=%s AND checksum != %s AND definition IS NOT NULL AND class_rid != '' ORDER BY version_no DESC LIMIT 1",
+                        (tenant, slug, to_checksum),
+                    )
+                    previous = cur.fetchone()
+                    if previous is not None:
+                        base_def = self._migration_definition(cur, previous["rid"], tenant, slug)
+        finally:
+            conn.close()
         from_checksum = self._definition_checksum(_ot_to_row(base_def))
 
         plan = build_migration_plan(base_def, target_def, options)
@@ -2147,7 +2300,12 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                pat = self._like_prefix(ind_prefix)
+                family = self._family_type_rids(cur, tenant, slug)
+                cur.execute(
+                    "SELECT rid FROM ont_individual WHERE tenant_id=%s AND class_rid=ANY(%s)",
+                    (tenant, family),
+                )
+                targets = [r["rid"] for r in cur.fetchall()]
                 counts: dict[str, Any] = {
                     "reattach_pending": 0,
                     "dangling": {},
@@ -2159,8 +2317,8 @@ class PgOntologyRepository(OntologyRepository):
                 }
                 cur.execute(
                     "SELECT count(*) AS n FROM ont_individual "
-                    "WHERE tenant_id = %s AND rid LIKE %s AND class_rid != %s",
-                    (tenant, pat, rid.rid),
+                    "WHERE tenant_id = %s AND rid = ANY(%s) AND class_rid != %s",
+                    (tenant, targets, rid.rid),
                 )
                 counts["reattach_pending"] = int(cur.fetchone()["n"])
                 if counts["reattach_pending"]:
@@ -2171,14 +2329,14 @@ class PgOntologyRepository(OntologyRepository):
                     for k in affected_keys:
                         cur.execute(
                             "SELECT count(*) AS n FROM ont_individual "
-                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
-                            (tenant, pat, k),
+                            "WHERE tenant_id = %s AND rid = ANY(%s) AND props ? %s",
+                            (tenant, targets, k),
                         )
                         counts["dangling"][k] = int(cur.fetchone()["n"])
                     cur.execute(
                         "SELECT count(*) AS n FROM ont_individual "
-                        "WHERE tenant_id = %s AND rid LIKE %s AND props ?| %s",
-                        (tenant, pat, affected_keys),
+                        "WHERE tenant_id = %s AND rid = ANY(%s) AND props ?| %s",
+                        (tenant, targets, affected_keys),
                     )
                     counts["instances_affected"] = int(cur.fetchone()["n"])
 
@@ -2192,15 +2350,15 @@ class PgOntologyRepository(OntologyRepository):
                         continue
                     cur.execute(
                         "SELECT count(*) AS n FROM ont_individual "
-                        "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
-                        (tenant, pat, k),
+                        "WHERE tenant_id = %s AND rid = ANY(%s) AND props ? %s",
+                        (tenant, targets, k),
                     )
                     total = int(cur.fetchone()["n"])
                     if (f_old, f_new) in _LOSSLESS_PAIRS:
                         if f_new == "string":
                             # number → string：数值型存量全部可无损
                             cond = "jsonb_typeof(props -> %s) = 'number'"
-                            params = (tenant, pat, k, k)
+                            params = (tenant, targets, k, k)
                         elif f_new == "double":
                             # string→double（可解析文本）或 integer→double（数值型全可）
                             cond = (
@@ -2208,16 +2366,16 @@ class PgOntologyRepository(OntologyRepository):
                                 "OR (jsonb_typeof(props -> %s) = 'string' "
                                 f"AND props ->> %s ~ {_COERCE_REGEX['double']}))"
                             )
-                            params = (tenant, pat, k, k, k, k)
+                            params = (tenant, targets, k, k, k, k)
                         else:  # → integer：仅可解析文本（string→int）
                             cond = (
                                 "jsonb_typeof(props -> %s) = 'string' "
                                 f"AND props ->> %s ~ {_COERCE_REGEX[f_new]}"
                             )
-                            params = (tenant, pat, k, k, k)
+                            params = (tenant, targets, k, k, k)
                         cur.execute(
                             "SELECT count(*) AS n FROM ont_individual "
-                            f"WHERE tenant_id = %s AND rid LIKE %s AND props ? %s "
+                            f"WHERE tenant_id = %s AND rid = ANY(%s) AND props ? %s "
                             f"AND {cond}",
                             params,
                         )
@@ -2235,18 +2393,18 @@ class PgOntologyRepository(OntologyRepository):
                     eff = src_of.get(pk["new_pk"][0], pk["new_pk"][0])
                     cur.execute(
                         "SELECT count(*) AS n FROM ont_individual "
-                        "WHERE tenant_id = %s AND rid LIKE %s AND (props ->> %s) IS NULL",
-                        (tenant, pat, eff),
+                        "WHERE tenant_id = %s AND rid = ANY(%s) AND (props ->> %s) IS NULL",
+                        (tenant, targets, eff),
                     )
                     counts["pk_missing"] = int(cur.fetchone()["n"])
                     cur.execute(
                         "SELECT count(*) AS n FROM ("
                         "  SELECT props ->> %s AS v FROM ont_individual "
-                        "  WHERE tenant_id = %s AND rid LIKE %s "
+                        "  WHERE tenant_id = %s AND rid = ANY(%s) "
                         "    AND (props ->> %s) IS NOT NULL"
                         "  GROUP BY v HAVING count(*) > 1"
                         ") dups",
-                        (eff, tenant, pat, eff),
+                        (eff, tenant, targets, eff),
                     )
                     counts["pk_conflicts"] = int(cur.fetchone()["n"])
         finally:
@@ -2283,20 +2441,27 @@ class PgOntologyRepository(OntologyRepository):
         self._ensure_schema()
         tenant, slug = _family_of_rid(rid.rid)
         ind_prefix = f"ont.{tenant}.ind.{slug}."
-        pat = self._like_prefix(ind_prefix)
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("SELECT * FROM ont_object_type WHERE rid = %s", (rid.rid,))
-                live_row = cur.fetchone()
-                if live_row is None:
-                    raise KeyError(f"ObjectType not found: {rid.rid}")
-                live_ck = self._definition_checksum(_ot_to_row(_row_to_ot(live_row)))
+                live = self._migration_definition(cur, rid.rid, tenant, slug)
+                live_ck = self._definition_checksum(_ot_to_row(live))
+                if not isinstance(expected_checksum, str) or not expected_checksum:
+                    raise ValueError("expected_checksum is required")
+                if not isinstance(idempotency_key, str) or not idempotency_key:
+                    raise ValueError("idempotency_key is required")
                 if expected_checksum and expected_checksum != live_ck:
                     raise VersionConflict(
                         f"live definition changed: expected {expected_checksum}, "
                         f"current {live_ck} (re-assess before migrating)"
                     )
+                plan = self._canonical_migration_plan(cur, rid, live, plan, tenant, slug)
+                fam_rids = self._family_type_rids(cur, tenant, slug)
+                cur.execute(
+                    "SELECT rid FROM ont_individual WHERE tenant_id=%s AND class_rid=ANY(%s) FOR UPDATE",
+                    (tenant, fam_rids),
+                )
+                targets = [r["rid"] for r in cur.fetchall()]
                 # 幂等回放：同键已完成 → 原结果返回，不重复执行
                 cur.execute(
                     "SELECT * FROM ont_migration_run WHERE tenant_id = %s AND idempotency_key = %s",
@@ -2314,6 +2479,7 @@ class PgOntologyRepository(OntologyRepository):
                         "replayed": True,
                     }
 
+                self._check_migration_renames(cur, tenant, targets, fam_rids, plan["renames"])
                 run_id = f"migr-{_uuid.uuid4().hex[:12]}"
                 cur.execute(
                     "INSERT INTO ont_migration_run "
@@ -2338,41 +2504,32 @@ class PgOntologyRepository(OntologyRepository):
                 # 1) reattach：家族内挂在旧版本 rid 上的实例 → 当前 live rid
                 cur.execute(
                     "UPDATE ont_individual SET class_rid = %s, updated_at = now() "
-                    "WHERE tenant_id = %s AND rid LIKE %s AND class_rid != %s",
-                    (rid.rid, tenant, pat, rid.rid),
+                    "WHERE tenant_id = %s AND rid = ANY(%s) AND class_rid != %s",
+                    (rid.rid, tenant, targets, rid.rid),
                 )
                 counts["reattached"] = cur.rowcount
 
                 # 2) renames：props / props_src / overlay / field_mapping 四处同步
                 if renames:
-                    fam_rids = self._family_type_rids(cur, tenant, slug)
                     for old, new in renames.items():
                         cur.execute(
                             "UPDATE ont_individual SET props = props - %s "
                             "|| jsonb_build_object(%s, props -> %s), updated_at = now() "
-                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
-                            (old, new, old, tenant, pat, old),
+                            "WHERE tenant_id = %s AND rid = ANY(%s) AND props ? %s",
+                            (old, new, old, tenant, targets, old),
                         )
                         n_props = cur.rowcount
                         cur.execute(
                             "UPDATE ont_individual SET props_src = props_src - %s "
                             "|| jsonb_build_object(%s, props_src -> %s), updated_at = now() "
-                            "WHERE tenant_id = %s AND rid LIKE %s AND props_src ? %s",
-                            (old, new, old, tenant, pat, old),
+                            "WHERE tenant_id = %s AND rid = ANY(%s) AND props_src ? %s",
+                            (old, new, old, tenant, targets, old),
                         )
                         n_src = cur.rowcount
-                        # overlay 主键 (individual_rid, property_rid)：新旧键并存时
-                        # 先并（删旧留新），再改剩余的旧键行
-                        cur.execute(
-                            "DELETE FROM ont_edit_overlay a USING ont_edit_overlay b "
-                            "WHERE a.individual_rid = b.individual_rid "
-                            "AND a.property_rid = %s AND b.property_rid = %s",
-                            (old, new),
-                        )
                         cur.execute(
                             "UPDATE ont_edit_overlay SET property_rid = %s, updated_at = now() "
-                            "WHERE property_rid = %s AND individual_rid LIKE %s",
-                            (new, old, pat),
+                            "WHERE property_rid = %s AND tenant_id = %s AND individual_rid = ANY(%s)",
+                            (new, old, tenant, targets),
                         )
                         n_overlay = cur.rowcount
                         n_fm = 0
@@ -2382,8 +2539,8 @@ class PgOntologyRepository(OntologyRepository):
                                 "field_mapping = field_mapping - %s "
                                 "|| jsonb_build_object(%s, field_mapping -> %s), "
                                 "updated_at = now() "
-                                "WHERE class_rid = ANY(%s) AND field_mapping ? %s",
-                                (old, new, old, fam_rids, old),
+                                "WHERE tenant_id = %s AND class_rid = ANY(%s) AND field_mapping ? %s",
+                                (old, new, old, tenant, fam_rids, old),
                             )
                             n_fm = cur.rowcount
                         counts["renamed"][old] = {
@@ -2401,8 +2558,8 @@ class PgOntologyRepository(OntologyRepository):
                     f_new = c["to_format"]
                     cur.execute(
                         "SELECT count(*) AS n FROM ont_individual "
-                        "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
-                        (tenant, pat, k),
+                        "WHERE tenant_id = %s AND rid = ANY(%s) AND props ? %s",
+                        (tenant, targets, k),
                     )
                     total = int(cur.fetchone()["n"])
                     if f_new in ("integer", "double"):
@@ -2423,17 +2580,17 @@ class PgOntologyRepository(OntologyRepository):
                             "UPDATE ont_individual SET props = jsonb_set(props, %s, "
                             f"to_jsonb((props ->> %s)::{_COERCE_SQLTYPE[f_new]})), "
                             "updated_at = now() "
-                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s "
+                            "WHERE tenant_id = %s AND rid = ANY(%s) AND props ? %s "
                             f"AND {cond}",
-                            ([k], k, tenant, pat, k, *cparams),
+                            ([k], k, tenant, targets, k, *cparams),
                         )
                     else:  # → string
                         cur.execute(
                             "UPDATE ont_individual SET props = jsonb_set(props, %s, "
                             "to_jsonb(props ->> %s)), updated_at = now() "
-                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s "
+                            "WHERE tenant_id = %s AND rid = ANY(%s) AND props ? %s "
                             "AND jsonb_typeof(props -> %s) = 'number'",
-                            ([k], k, tenant, pat, k, k),
+                            ([k], k, tenant, targets, k, k),
                         )
                     coerced[k] = cur.rowcount
                     coerce_kept[k] = total - coerced[k]
@@ -2453,11 +2610,11 @@ class PgOntologyRepository(OntologyRepository):
                     on_missing = pk.get("on_missing") or "abort"
                     cur.execute(
                         "SELECT rid, props ->> %s AS v FROM ont_individual "
-                        "WHERE tenant_id = %s AND rid LIKE %s",
-                        (eff, tenant, pat),
+                        "WHERE tenant_id = %s AND rid = ANY(%s)",
+                        (eff, tenant, targets),
                     )
                     rows = cur.fetchall()
-                    targets: dict[str, list[str]] = {}
+                    pk_targets: dict[str, list[str]] = {}
                     rederived = 0
                     skipped: list[str] = []
                     moves: list[tuple[str, str]] = []
@@ -2472,9 +2629,9 @@ class PgOntologyRepository(OntologyRepository):
                                 "fix data or pass pk_missing=skip"
                             )
                         new_rid = f"{ind_prefix}{value}"
-                        targets.setdefault(new_rid, []).append(r["rid"])
+                        pk_targets.setdefault(new_rid, []).append(r["rid"])
                         moves.append((r["rid"], new_rid))
-                    dups = {t: olds for t, olds in targets.items() if len(olds) > 1}
+                    dups = {t: olds for t, olds in pk_targets.items() if len(olds) > 1}
                     if dups:
                         raise MigrationPkConflict(
                             "pk rederive conflict — duplicate target rids: "
@@ -2486,27 +2643,28 @@ class PgOntologyRepository(OntologyRepository):
                             continue
                         cur.execute(
                             "UPDATE ont_individual SET rid = %s, primary_key = %s, "
-                            "updated_at = now() WHERE rid = %s",
-                            (new_rid, new_rid.rsplit(".", 1)[-1], old_rid),
+                            "updated_at = now() WHERE rid = %s AND tenant_id = %s",
+                            (new_rid, new_rid.rsplit(".", 1)[-1], old_rid, tenant),
                         )
                         cur.execute(
                             "UPDATE ont_link_instance SET src = %s, updated_at = now() "
-                            "WHERE src = %s",
-                            (new_rid, old_rid),
+                            "WHERE src = %s AND tenant_id = %s",
+                            (new_rid, old_rid, tenant),
                         )
                         links += cur.rowcount
                         cur.execute(
                             "UPDATE ont_link_instance SET dst = %s, updated_at = now() "
-                            "WHERE dst = %s",
-                            (new_rid, old_rid),
+                            "WHERE dst = %s AND tenant_id = %s",
+                            (new_rid, old_rid, tenant),
                         )
                         links += cur.rowcount
                         # 覆盖层跟着实例 rid 走
                         cur.execute(
                             "UPDATE ont_edit_overlay SET individual_rid = %s, "
-                            "updated_at = now() WHERE individual_rid = %s",
-                            (new_rid, old_rid),
+                            "updated_at = now() WHERE individual_rid = %s AND tenant_id = %s",
+                            (new_rid, old_rid, tenant),
                         )
+                        targets[targets.index(old_rid)] = new_rid
                         rederived += 1
                     counts["pk_rederived"] = rederived
                     counts["links_rewritten"] = links
@@ -2520,20 +2678,25 @@ class PgOntologyRepository(OntologyRepository):
                         cur.execute(
                             "UPDATE ont_individual SET props = props - %s, "
                             "props_src = props_src - %s, updated_at = now() "
-                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
-                            (k, k, tenant, pat, k),
+                            "WHERE tenant_id = %s AND rid = ANY(%s) AND (props ? %s OR props_src ? %s)",
+                            (k, k, tenant, targets, k, k),
                         )
                         counts["dropped"][k] = cur.rowcount
                         cur.execute(
                             "DELETE FROM ont_edit_overlay WHERE property_rid = %s "
-                            "AND individual_rid LIKE %s",
-                            (k, pat),
+                            "AND tenant_id = %s AND individual_rid = ANY(%s)",
+                            (k, tenant, targets),
+                        )
+                        cur.execute(
+                            "UPDATE ont_backing_datasource SET field_mapping=field_mapping - %s, updated_at=now() "
+                            "WHERE tenant_id=%s AND class_rid=ANY(%s) AND field_mapping ? %s",
+                            (k, tenant, fam_rids, k),
                         )
                     else:
                         cur.execute(
                             "SELECT count(*) AS n FROM ont_individual "
-                            "WHERE tenant_id = %s AND rid LIKE %s AND props ? %s",
-                            (tenant, pat, k),
+                            "WHERE tenant_id = %s AND rid = ANY(%s) AND props ? %s",
+                            (tenant, targets, k),
                         )
                         counts["preserved"][k] = int(cur.fetchone()["n"])
 
