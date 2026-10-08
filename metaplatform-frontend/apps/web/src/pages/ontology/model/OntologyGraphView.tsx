@@ -11,6 +11,7 @@ import {
 } from '@/api/ont/kernel';
 import ModelGraphCanvas from './graph/ModelGraphCanvas';
 import ModelInspector from './graph/ModelInspector';
+import ModelResourceTree from './graph/ModelResourceTree';
 import { resourceUrl } from '../hooks/resourceContext';
 import { resourceError } from '../hooks/resourceErrors';
 import './graph/model-workbench.css';
@@ -19,6 +20,12 @@ export default function OntologyGraphView() {
   const navigate = useNavigate(),
     location = useLocation();
   const [params, setParams] = useSearchParams();
+  const [treeOpen, setTreeOpen] = useState(
+      () => !window.matchMedia('(max-width: 680px)').matches,
+    ),
+    [inspectorOpen, setInspectorOpen] = useState(
+      () => !window.matchMedia('(max-width: 680px)').matches,
+    );
   const [types, setTypes] = useState<KernelObjectType[]>([]),
     [links, setLinks] = useState<KernelLinkType[]>([]);
   const [loading, setLoading] = useState(true),
@@ -71,6 +78,13 @@ export default function OntologyGraphView() {
     (l) => known.has(l.src) && known.has(l.dst),
   );
   const selected = filtered.find((t) => t.rid === rid) ?? null;
+  const unavailableSelection = !rid || selected
+    ? undefined
+    : errors.length
+      ? `模型读取未完成 · ${rid}`
+      : types.some((t) => t.rid === rid)
+        ? `所选资源被筛选隐藏 · ${rid}`
+        : `未找到请求的模型 · ${rid}`;
   useEffect(() => {
     checkGeneration.current++;
     setCheck(null);
@@ -136,8 +150,16 @@ export default function OntologyGraphView() {
           onChange={(e) => update('q', e.target.value)}
         />
         <span>
-          {filtered.length} 类型 · {visibleLinks.length} 关系
+          {loading
+            ? '模型读取中…'
+            : errors.length
+              ? '计数未完成'
+              : `${filtered.length} 类型 · ${visibleLinks.length} 关系`}
         </span>
+        <button aria-expanded={treeOpen} aria-controls="model-resource-tree"
+          onClick={() => setTreeOpen((open) => !open)}>资源树</button>
+        <button aria-expanded={inspectorOpen} aria-controls="model-inspector"
+          onClick={() => setInspectorOpen((open) => !open)}>属性检查器</button>
         <button onClick={() => void load()}>刷新</button>
         <button
           disabled={!selected || checking}
@@ -160,55 +182,79 @@ export default function OntologyGraphView() {
       {loading ? (
         <p className="mw-hint">正在读取模型定义…</p>
       ) : (
-        <div className="mw-content">
-          {filtered.length === 0 ? (
-            <p className="mw-hint">
-              {errors.length ? '模型读取未完成' : '没有匹配的对象类型'}
-            </p>
-          ) : view === 'graph' ? (
-            <ModelGraphCanvas
-              types={filtered}
-              links={visibleLinks}
-              selectedRid={rid}
-              onSelect={(id) => update('typeRef', id)}
-              onOpen={open}
+        <div className={`mw-content ${treeOpen ? 'has-tree' : ''} ${inspectorOpen ? 'has-inspector' : ''}`}>
+          <div id="model-resource-tree" className="mw-tree-panel" hidden={!treeOpen}>
+            <ModelResourceTree
+              types={filtered} selectedRid={rid} query={query}
+              incomplete={errors.length > 0}
+              onQuery={(value) => update('q', value)}
+              onSelect={(id) => update('typeRef', id)} onOpen={open}
             />
-          ) : (
-            <div className="mw-list">
-              {filtered.map((t) => (
-                <button
-                  key={t.rid}
-                  aria-label={`选择模型 ${t.display_name || propSlug(t.rid)}`}
-                  aria-pressed={rid === t.rid}
-                  onClick={() => update('typeRef', t.rid)}
-                  onDoubleClick={() => open(t.rid)}
-                >
-                  {t.display_name}
-                  <small>
-                    {t.rid} · {t.properties.length} 属性
-                  </small>
-                </button>
-              ))}
+          </div>
+          <div className="mw-visual-panel">
+            <div className="mw-view-heading">
+              <strong>{view === 'graph' ? '模型关系图' : '对象资源列表'}</strong>
+              <small>同源模型定义 · {errors.length ? '读取未完成' : `${filtered.length} 类型 · ${visibleLinks.length} 关系`}</small>
             </div>
-          )}
-          <ModelInspector
-            type={selected}
-            links={visibleLinks.filter((l) => l.src === rid || l.dst === rid)}
-            onOpen={() => open(rid)}
-            onBinding={() =>
-              navigate(
-                resourceUrl(
-                  '/ontology/data/mappings',
-                  rid,
-                  back,
-                  params.get('changeRef') || undefined,
-                ),
-              )
-            }
-            onExplore={() =>
-              navigate(resourceUrl('/ontology/explore/objects', rid, back))
-            }
-          />
+            {filtered.length === 0 ? (
+              <p className="mw-hint">
+                {errors.length ? '模型读取未完成' : '没有匹配的对象类型'}
+              </p>
+            ) : view === 'graph' ? (
+              <ModelGraphCanvas
+                types={filtered}
+                links={visibleLinks}
+                selectedRid={rid}
+                onSelect={(id) => update('typeRef', id)}
+                onOpen={open}
+              />
+            ) : (
+              <div className="mw-list">
+                {filtered.map((t) => (
+                  <button
+                    key={t.rid}
+                    aria-label={`选择模型 ${t.display_name || propSlug(t.rid)}`}
+                    aria-pressed={rid === t.rid}
+                    onClick={() => update('typeRef', t.rid)}
+                    onDoubleClick={() => open(t.rid)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.shiftKey) {
+                        e.preventDefault();
+                        open(t.rid);
+                      }
+                    }}
+                  >
+                    {t.display_name}
+                    <small>
+                      {t.rid} · {t.properties.length} 属性
+                    </small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div id="model-inspector" className="mw-inspector-panel" hidden={!inspectorOpen}>
+            <ModelInspector
+              type={selected}
+              unavailableSelection={unavailableSelection}
+              linksUnavailable={errors.length > 0}
+              links={visibleLinks.filter((l) => l.src === rid || l.dst === rid)}
+              onOpen={() => open(rid)}
+              onBinding={() =>
+                navigate(
+                  resourceUrl(
+                    '/ontology/data/mappings',
+                    rid,
+                    back,
+                    params.get('changeRef') || undefined,
+                  ),
+                )
+              }
+              onExplore={() =>
+                navigate(resourceUrl('/ontology/explore/objects', rid, back))
+              }
+            />
+          </div>
         </div>
       )}
       <div className="mw-check" aria-live="polite">

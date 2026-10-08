@@ -9,12 +9,16 @@ export default function ModelInspector({
   onOpen,
   onBinding,
   onExplore,
+  unavailableSelection,
+  linksUnavailable,
 }: {
   type: KernelObjectType | null;
   links: KernelLinkType[];
   onOpen: () => void;
   onBinding: () => void;
   onExplore: () => void;
+  unavailableSelection?: string;
+  linksUnavailable?: boolean;
 }) {
   return (
     <aside className="mw-inspector" aria-label="资源属性">
@@ -50,7 +54,8 @@ export default function ModelInspector({
               </li>
             ))}
           </ul>
-          <h3>关联模型 · {links.length}</h3>
+          <h3>关联模型 · {linksUnavailable ? '未完成' : links.length}</h3>
+          {linksUnavailable && <p>关系读取未完成，请重试模型读取。</p>}
           <ul>
             {links.map((l) => (
               <li key={l.rid}>
@@ -65,7 +70,7 @@ export default function ModelInspector({
           <button onClick={onExplore}>查询对象实例</button>
         </>
       ) : (
-        <p>选择模型查看属性与关系</p>
+        <p>{unavailableSelection || '选择模型查看属性与关系'}</p>
       )}
     </aside>
   );

@@ -30,6 +30,7 @@
   outline-offset: 2px;
 }
 .mw-workbench button[aria-pressed='true'],
+.mw-workbench button[aria-expanded='true'],
 .mw-workbench .mw-primary {
   color: var(--semi-color-primary);
   border-color: var(--semi-color-primary);
@@ -47,15 +48,83 @@
 }
 .mw-content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
+}
+.mw-content.has-tree {
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+.mw-content.has-inspector {
+  grid-template-columns: minmax(0, 1fr) 265px;
+}
+.mw-content.has-tree.has-inspector {
+  grid-template-columns: 180px minmax(0, 1fr) 265px;
+}
+.mw-tree-panel, .mw-visual-panel, .mw-inspector-panel {
+  min-width: 0;
+}
+.mw-tree-panel[hidden], .mw-inspector-panel[hidden], .mw-resource-list[hidden] {
+  display: none;
+}
+.mw-tree {
+  height: 100%;
+  box-sizing: border-box;
+  max-height: 720px;
+  overflow: auto;
+}
+.mw-tree strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.mw-tree input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.mw-tree h3 {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 22px 0 8px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--semi-color-text-2);
+}
+.mw-tree button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border-color: transparent;
+  padding: 8px;
+  font-size: 12px;
+}
+.mw-tree button span {
+  overflow-wrap: anywhere;
+}
+.mw-tree button small {
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.mw-view-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--semi-color-border);
+  font-size: 12px;
+}
+.mw-view-heading small {
+  color: var(--semi-color-text-2);
 }
 .mw-canvas-wrap {
   min-width: 0;
 }
 .mw-canvas {
   overflow: auto;
-  max-height: 620px;
+  height: clamp(320px, 60vh, 620px);
   background-image: radial-gradient(
     var(--semi-color-border) 1px,
     transparent 1px
@@ -128,6 +197,9 @@
   padding: 18px;
   min-width: 0;
   overflow-wrap: anywhere;
+  max-height: 720px;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 .mw-inspector small,
 .mw-hint {
@@ -183,11 +255,19 @@
 }
 .mw-detail {
   display: grid;
-  grid-template-columns: 185px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   border: 1px solid var(--semi-color-border);
   border-radius: 8px;
   background: var(--semi-color-bg-1);
   min-width: 0;
+}
+.mw-detail.has-resources {
+  grid-template-columns: 185px minmax(0, 1fr);
+}
+.mw-detail .mw-resource-toggle {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin: 12px;
 }
 .mw-resource-list {
   padding: 14px;
@@ -213,6 +293,30 @@
   min-width: 0;
   padding: 20px;
 }
+.mw-detail-main .mp-page-head {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--semi-color-border);
+}
+.mw-resource-heading, .mw-property-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+  margin: 16px 0;
+}
+.mw-definition-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--semi-color-fill-0);
+}
+.mw-property-heading h3 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--semi-color-text-0);
+}
 .mw-detail-main .mp-onto-resource-detail-body {
   overflow-x: auto;
 }
@@ -229,17 +333,43 @@
   color: var(--semi-color-text-2);
 }
 @media (max-width: 1024px) {
-  .mw-content {
-    grid-template-columns: minmax(0, 1fr) 235px;
+  .mw-content.has-tree {
+    grid-template-columns: 145px minmax(0, 1fr);
   }
-  .mw-detail {
+  .mw-content.has-inspector {
+    grid-template-columns: minmax(0, 1fr) 215px;
+  }
+  .mw-content.has-tree.has-inspector {
+    grid-template-columns: 145px minmax(0, 1fr) 215px;
+  }
+  .mw-detail.has-resources {
     grid-template-columns: 155px minmax(0, 1fr);
   }
 }
 @media (max-width: 680px) {
   .mw-content,
+  .mw-content.has-tree,
+  .mw-content.has-inspector,
+  .mw-content.has-tree.has-inspector,
+  .mw-detail.has-resources,
   .mw-detail {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .mw-tree-panel {
+    grid-row: 1;
+  }
+  .mw-inspector-panel {
+    grid-row: 2;
+  }
+  .mw-visual-panel {
+    grid-row: 3;
+  }
+  .mw-tree, .mw-inspector {
+    max-height: 300px;
+  }
+  .mw-tree button {
+    display: flex;
+    width: 100%;
   }
   .mw-inspector {
     border-left: 0;

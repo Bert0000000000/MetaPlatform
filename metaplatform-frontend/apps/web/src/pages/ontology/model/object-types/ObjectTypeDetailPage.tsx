@@ -61,6 +61,9 @@ export default function ObjectTypeDetailPage() {
   const navigate = useNavigate(),
     location = useLocation();
   const [params] = useSearchParams();
+  const [resourcesOpen, setResourcesOpen] = useState(
+    () => !window.matchMedia('(max-width: 680px)').matches,
+  );
   const [type, setType] = useState<KernelObjectType | null>(null),
     [types, setTypes] = useState<KernelObjectType[]>([]),
     [links, setLinks] = useState<KernelLinkType[]>([]),
@@ -226,9 +229,13 @@ export default function ObjectTypeDetailPage() {
       children
     );
   return (
-    <div className="mw-detail">
-      <aside className="mw-resource-list" aria-label="对象资源">
-        <strong>对象资源 · {types.length}</strong>
+    <div className={`mw-detail ${resourcesOpen ? 'has-resources' : ''}`}>
+      <button className="mw-resource-toggle" aria-controls="detail-resources"
+        aria-expanded={resourcesOpen} onClick={() => setResourcesOpen((open) => !open)}>
+        切换对象资源
+      </button>
+      <aside id="detail-resources" className="mw-resource-list" aria-label="对象资源" hidden={!resourcesOpen}>
+        <strong>对象资源 · {loading || pending.resources ? '读取中' : errors.resources ? '计数未完成' : types.length}</strong>
         <input
           aria-label="筛选资源"
           placeholder="筛选资源"
@@ -269,8 +276,9 @@ export default function ObjectTypeDetailPage() {
       <div className="mw-detail-main">
         <ResourceDetailLayout
           title={type?.display_name || propSlug(rid)}
-          desc={`${propSlug(rid)} · ${rid}`}
+          desc={`${type?.type_group || '未分组'} · ${rid}`}
           tabs={TABS}
+          tabType="line"
           activeTab={tab}
           onTabChange={(key) =>
             navigate(
@@ -306,6 +314,12 @@ export default function ObjectTypeDetailPage() {
             </>
           }
         >
+          {type && (
+            <div className="mw-resource-heading">
+              <span>{type.description || '暂无描述'}</span>
+              <span className="mw-definition-status">定义状态 · {type.status || '未提供'}</span>
+            </div>
+          )}
           {notice && (
             <p role="status">
               {notice}{' '}
@@ -323,7 +337,12 @@ export default function ObjectTypeDetailPage() {
             <p>读取对象类型…</p>
           ) : !type ? null : tab === 'properties' ? (
             <>
-              <h3>属性定义</h3>
+              <div className="mw-property-heading">
+                <h3>属性定义 · {type.properties.length} 属性</h3>
+                <span>主键 · {type.primary_key.map((r) =>
+                  type.properties.find((p) => p.rid === r)?.title || propSlug(r),
+                ).join(' + ') || '未提供'}</span>
+              </div>
               <DataTablePro
                 columns={[
                   { title: '属性业务名', dataIndex: 'title', width: 170 },
@@ -450,11 +469,11 @@ export default function ObjectTypeDetailPage() {
               <VersionHistory
                 rid={rid}
                 currentChecksum={
-                  types.find(
+                  !errors.resources && !pending.resources ? types.find(
                     (t) =>
                       t.rid.replace(/\.v\d+$/, '') ===
                       rid.replace(/\.v\d+$/, ''),
-                  )?.checksum
+                  )?.checksum : undefined
                 }
               />
               <button onClick={() => route('/ontology/governance/releases')}>

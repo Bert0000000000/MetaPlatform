@@ -100,7 +100,16 @@ async function getOne<T>(path: string): Promise<T> {
 }
 
 export async function listObjectTypes(): Promise<KernelObjectType[]> {
-  return list<KernelObjectType>('/object-types');
+  // GET returns an array with no total. A short terminal batch proves completion;
+  // a failed later batch rejects the entire read, never a partial active family.
+  const types: KernelObjectType[] = [];
+  const limit = 100;
+  for (let offset = 0; ; offset += limit) {
+    const resp = await apiClient.get(v2('/object-types'), { params: { limit, offset } });
+    const batch = resp.data as KernelObjectType[];
+    types.push(...batch);
+    if (batch.length < limit) return types;
+  }
 }
 
 export async function getObjectType(rid: string): Promise<KernelObjectType> {
