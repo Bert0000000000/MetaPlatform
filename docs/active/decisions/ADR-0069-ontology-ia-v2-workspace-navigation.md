@@ -144,3 +144,15 @@ children 胶囊行 = 各组子页面，与 ki/gov/admin 域同构）。
 
 **历史注记**：左侧工作区导航为 2026-09-18 ~ 09-23 的 IA v2 交付形态；
 本附录不否定该交付（其路由/拆分成果全部延续），仅调整导航呈现以统一全站交互。
+
+## 附录：2026-10-08 本体建设工作区呈现决定（Accepted）
+
+用户已确认[Builder V2 对齐设计](../../superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)并授权实施。本附录覆盖 2026-09-24 附录中的横向导航呈现决定；该历史记录和既有路由、页面拆分、旧深链成果保留。
+
+- 本体采用平台 IconRail → 六域左侧工作区导航 → 单资源详情页签；其他七域继续 PageTabs。本体域声明 `navigationMode: 'workspace'`，兼容 tabs 元数据由 `ONTOLOGY_NAV` 派生。
+- 一级本体入口为 `/ontology/model/graph`（模型工作台），语义模型的默认子页同为模型工作台。`/ontology` 继续为总览，`/ontology/overview` 为别名；全站根入口继续 `/home`。
+- 六域导航、命令搜索、面包屑与兼容 tabs 共享 `ONTOLOGY_NAV`，仅 active 项可进入导航，当前页以最长路径匹配，详情深链归入所属资源入口。
+- 窄屏通过可访问按钮展开导航，路由跳转后收起；刷新、前进后退和旧路径重定向保留。`OntologyDomainShell` 继续发布 ADR-0065 的真实路由及打开记录上下文。
+- 平台定位区采用深色主题令牌，工作区使用 Semi 与应用令牌；不新增 Semi 内部样式覆盖，不展示虚构项目、分支、Owner 或草稿数量。
+
+实施及证据边界见[对齐计划](../../superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)：渲染单元、独立浏览器、真实后端、CI、部署与业务验收分别记录。

@@ -385,3 +385,13 @@ Dashboard；动作与函数有独立入口；发布与治理不含 Agent 回归�
 同 ADR-0069 §2.5 / §4 / 不变量 5。PR 切分：PR-1 foundation（IA2-0+IA2-1）→
 PR-2 semantic-model → PR-3 data → PR-4 explore → PR-5 logic → PR-6 governance →
 PR-7 cleanup-acceptance；每 PR 文件范围明确、不混 Agent 改动、有测试与回滚说明。
+
+## 10. 2026-10-08 建设工作区呈现更新（Accepted）
+
+依据 [ADR-0069 的 2026-10-08 决定](../decisions/ADR-0069-ontology-ia-v2-workspace-navigation.md)与[已接受 Builder V2 设计](../../superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)，本体恢复独立六域左侧导航，其他域保留横向 PageTabs；覆盖 2026-09-24 横向呈现决定，保留历史和全部正式 URL/深链成果。
+
+`ONTOLOGY_NAV` 统一派生 active 导航、面包屑、命令搜索及兼容 tabs；路径按最长匹配，资源详情不落入总览。语义模型首项及组根默认页为“模型工作台” `/ontology/model/graph`，一级本体入口同路由；`/ontology` 总览保留，新增 `/ontology/overview` 别名。标签使用接口定义、公理与约束、函数管理、变更草稿、权限策略、操作审计，保留聚合分析、地图、Action 编排和使用量。
+
+桌面采用深色平台定位区、白色工作区导航和上下文面包屑；390px 提供可折叠导航并保持键盘访问，内容局部滚动。路由及打开记录仍由 `OntologyDomainShell` 写入 assistant context，不增加业务事实或虚构工作区状态。
+
+当前验证资源、命令与本地/真实服务/CI/部署/业务验收边界以[对齐实施计划](../../superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)为准；§7 中历史共享端口和旧基线不得作为本轮通过证据。

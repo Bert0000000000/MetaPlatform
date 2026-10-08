@@ -16,6 +16,8 @@
 
 ## 📁 目录结构
 
+当前本体建设界面依据 [Builder V2 已接受设计](superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)与[实施计划](superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)；导航呈现单源为 [ADR-0069](active/decisions/ADR-0069-ontology-ia-v2-workspace-navigation.md)的 2026-10-08 附录及 [IA v2 规格](active/specs/2026-09-18-ontology-ia-v2-design.md) §10。
+
 ### 🟢 `active/` — 当前活跃（v3.x / v4 增量）
 
 | 子目录                                       | 内容                          |
