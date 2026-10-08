@@ -1,0 +1,1361 @@
+{
+  "sourceCommit": "f892895200d57312fbb753866271d82f4d52af83",
+  "checkoutHead": "041cb1582eb74595b5cbb1c1f615a3dd39e3053b",
+  "evidenceKind": "32 supplementary read-only representative captures; original Builder gate32 retained separately; labelled current DTO HTTP boundary, real IAM/settings/Ont",
+  "authentication": {
+    "actualUserInfoBackedId": true,
+    "signedTenant": true,
+    "inventedIdOrRoles": false
+  },
+  "boundaryHelperSha256": "e1d2a10285fdcc4736619b7b7d7d3202d9055d5fd4fadc4dce2cd912bc89705f",
+  "records": [
+    {
+      "page": "home",
+      "width": 1440,
+      "height": 1000,
+      "route": "/home",
+      "ready": [
+        "summary DTO rendered; independent approvals503 rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/dashboard/page/summary",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/dashboard/todos",
+          "status": 503
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/dashboard/todos",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "home-1440.png"
+    },
+    {
+      "page": "home",
+      "width": 1920,
+      "height": 1080,
+      "route": "/home",
+      "ready": [
+        "summary DTO rendered; independent approvals503 rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/dashboard/page/summary",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/dashboard/todos",
+          "status": 503
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/dashboard/todos",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "home-1920.png"
+    },
+    {
+      "page": "home",
+      "width": 1024,
+      "height": 900,
+      "route": "/home",
+      "ready": [
+        "summary DTO rendered; independent approvals503 rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/dashboard/page/summary",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/dashboard/todos",
+          "status": 503
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/dashboard/todos",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "home-1024.png"
+    },
+    {
+      "page": "home",
+      "width": 390,
+      "height": 844,
+      "route": "/home",
+      "ready": [
+        "summary DTO rendered; independent approvals503 rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/dashboard/page/summary",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/dashboard/todos",
+          "status": 503
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/dashboard/todos",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "home-390.png"
+    },
+    {
+      "page": "apps",
+      "width": 1440,
+      "height": 1000,
+      "route": "/apps/mine",
+      "ready": [
+        "application DTO rendered; independent groups/domains503 completed"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/apphub/apps",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/apphub/apps/groups",
+          "status": 503
+        },
+        {
+          "path": "/api/v1/apphub/apps/domains",
+          "status": 503
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/apphub/apps/groups",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/apphub/apps/domains",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "apps-1440.png"
+    },
+    {
+      "page": "apps",
+      "width": 1920,
+      "height": 1080,
+      "route": "/apps/mine",
+      "ready": [
+        "application DTO rendered; independent groups/domains503 completed"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/apphub/apps",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/apphub/apps/groups",
+          "status": 503
+        },
+        {
+          "path": "/api/v1/apphub/apps/domains",
+          "status": 503
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/apphub/apps/groups",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/apphub/apps/domains",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "apps-1920.png"
+    },
+    {
+      "page": "apps",
+      "width": 1024,
+      "height": 900,
+      "route": "/apps/mine",
+      "ready": [
+        "application DTO rendered; independent groups/domains503 completed"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/apphub/apps",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/apphub/apps/groups",
+          "status": 503
+        },
+        {
+          "path": "/api/v1/apphub/apps/domains",
+          "status": 503
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/apphub/apps/groups",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/apphub/apps/domains",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "apps-1024.png"
+    },
+    {
+      "page": "apps",
+      "width": 390,
+      "height": 844,
+      "route": "/apps/mine",
+      "ready": [
+        "application DTO rendered; independent groups/domains503 completed"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/apphub/apps",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/apphub/apps/groups",
+          "status": 503
+        },
+        {
+          "path": "/api/v1/apphub/apps/domains",
+          "status": 503
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/apphub/apps/groups",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/apphub/apps/domains",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "apps-390.png"
+    },
+    {
+      "page": "explore",
+      "width": 1440,
+      "height": 1000,
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "real selected-class individuals count2/rendered2/2 table"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/individuals",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "explore-1440.png"
+    },
+    {
+      "page": "explore",
+      "width": 1920,
+      "height": 1080,
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "real selected-class individuals count2/rendered2/2 table"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/individuals",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "explore-1920.png"
+    },
+    {
+      "page": "explore",
+      "width": 1024,
+      "height": 900,
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "real selected-class individuals count2/rendered2/2 table"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/individuals",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "explore-1024.png"
+    },
+    {
+      "page": "explore",
+      "width": 390,
+      "height": 844,
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "real selected-class individuals count2/rendered2/2 table"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/individuals",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "explore-390.png"
+    },
+    {
+      "page": "ontology",
+      "width": 1440,
+      "height": 1000,
+      "route": "/ontology/model/graph?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "real complete model/link reads; actual selected Inspector rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "ontology-1440.png"
+    },
+    {
+      "page": "ontology",
+      "width": 1920,
+      "height": 1080,
+      "route": "/ontology/model/graph?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "real complete model/link reads; actual selected Inspector rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "ontology-1920.png"
+    },
+    {
+      "page": "ontology",
+      "width": 1024,
+      "height": 900,
+      "route": "/ontology/model/graph?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "real complete model/link reads; actual selected Inspector rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "ontology-1024.png"
+    },
+    {
+      "page": "ontology",
+      "width": 390,
+      "height": 844,
+      "route": "/ontology/model/graph?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "real complete model/link reads; actual selected Inspector rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "ontology-390.png"
+    },
+    {
+      "page": "agents",
+      "width": 1440,
+      "height": 1000,
+      "route": "/agents",
+      "ready": [
+        "actual ACTIVE-enum DTO rendered as one enabled employee"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/dw/employees",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/dw/tools",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/dw/knowledge-bases",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/admin/ai/models",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "agents-1440.png"
+    },
+    {
+      "page": "agents",
+      "width": 1920,
+      "height": 1080,
+      "route": "/agents",
+      "ready": [
+        "actual ACTIVE-enum DTO rendered as one enabled employee"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/dw/employees",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/dw/tools",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/dw/knowledge-bases",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/admin/ai/models",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "agents-1920.png"
+    },
+    {
+      "page": "agents",
+      "width": 1024,
+      "height": 900,
+      "route": "/agents",
+      "ready": [
+        "actual ACTIVE-enum DTO rendered as one enabled employee"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/dw/employees",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/dw/tools",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/dw/knowledge-bases",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/admin/ai/models",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "agents-1024.png"
+    },
+    {
+      "page": "agents",
+      "width": 390,
+      "height": 844,
+      "route": "/agents",
+      "ready": [
+        "actual ACTIVE-enum DTO rendered as one enabled employee"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/dw/employees",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/dw/tools",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/dw/knowledge-bases",
+          "status": 503,
+          "declaredBoundary": true
+        },
+        {
+          "path": "/api/v1/admin/ai/models",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "agents-390.png"
+    },
+    {
+      "page": "ki",
+      "width": 1440,
+      "height": 1000,
+      "route": "/ki/kb",
+      "ready": [
+        "declared service-unavailable503 rendered; not empty/healthy"
+      ],
+      "reads": [],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/kb/collections",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "ki-1440.png"
+    },
+    {
+      "page": "ki",
+      "width": 1920,
+      "height": 1080,
+      "route": "/ki/kb",
+      "ready": [
+        "declared service-unavailable503 rendered; not empty/healthy"
+      ],
+      "reads": [],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/kb/collections",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "ki-1920.png"
+    },
+    {
+      "page": "ki",
+      "width": 1024,
+      "height": 900,
+      "route": "/ki/kb",
+      "ready": [
+        "declared service-unavailable503 rendered; not empty/healthy"
+      ],
+      "reads": [],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/kb/collections",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "ki-1024.png"
+    },
+    {
+      "page": "ki",
+      "width": 390,
+      "height": 844,
+      "route": "/ki/kb",
+      "ready": [
+        "declared service-unavailable503 rendered; not empty/healthy"
+      ],
+      "reads": [],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/kb/collections",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "ki-390.png"
+    },
+    {
+      "page": "gov",
+      "width": 1440,
+      "height": 1000,
+      "route": "/gov/business",
+      "ready": [
+        "declared service-unavailable503 rendered; not empty/healthy"
+      ],
+      "reads": [],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/arch/capabilities/tree",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "gov-1440.png"
+    },
+    {
+      "page": "gov",
+      "width": 1920,
+      "height": 1080,
+      "route": "/gov/business",
+      "ready": [
+        "declared service-unavailable503 rendered; not empty/healthy"
+      ],
+      "reads": [],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/arch/capabilities/tree",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "gov-1920.png"
+    },
+    {
+      "page": "gov",
+      "width": 1024,
+      "height": 900,
+      "route": "/gov/business",
+      "ready": [
+        "declared service-unavailable503 rendered; not empty/healthy"
+      ],
+      "reads": [],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/arch/capabilities/tree",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "gov-1024.png"
+    },
+    {
+      "page": "gov",
+      "width": 390,
+      "height": 844,
+      "route": "/gov/business",
+      "ready": [
+        "declared service-unavailable503 rendered; not empty/healthy"
+      ],
+      "reads": [],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/arch/capabilities/tree",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "gov-390.png"
+    },
+    {
+      "page": "superai",
+      "width": 1440,
+      "height": 1000,
+      "route": "/superai/chat",
+      "ready": [
+        "conversation/messages/model-empty DTO requests completed; actual fixture message rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/copilot/conversations",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/conversations/conv-boundary/messages",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/models/chat",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/models/multimodal",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/agent-team/runs",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "superai-1440.png"
+    },
+    {
+      "page": "superai",
+      "width": 1920,
+      "height": 1080,
+      "route": "/superai/chat",
+      "ready": [
+        "conversation/messages/model-empty DTO requests completed; actual fixture message rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/copilot/conversations",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/conversations/conv-boundary/messages",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/models/chat",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/models/multimodal",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/agent-team/runs",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "superai-1920.png"
+    },
+    {
+      "page": "superai",
+      "width": 1024,
+      "height": 900,
+      "route": "/superai/chat",
+      "ready": [
+        "conversation/messages/model-empty DTO requests completed; actual fixture message rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/copilot/conversations",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/conversations/conv-boundary/messages",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/models/chat",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/models/multimodal",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/agent-team/runs",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "superai-1024.png"
+    },
+    {
+      "page": "superai",
+      "width": 390,
+      "height": 844,
+      "route": "/superai/chat",
+      "ready": [
+        "conversation/messages/model-empty DTO requests completed; actual fixture message rendered"
+      ],
+      "reads": [
+        {
+          "path": "/api/v1/copilot/conversations",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/conversations/conv-boundary/messages",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/models/chat",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/copilot/models/multimodal",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [
+        {
+          "path": "/api/v1/agent-team/runs",
+          "status": 503,
+          "declaredBoundary": true
+        }
+      ],
+      "mutations": [],
+      "screenshot": "superai-390.png"
+    }
+  ]
+}

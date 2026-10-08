@@ -1,0 +1,57 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "checkout_head": "041cb1582eb74595b5cbb1c1f615a3dd39e3053b",
+  "source_tree": "c72290d13930885ca6c2fe990b7c80999d8a9f3f",
+  "mode": "migration",
+  "date_utc": "20261008T203752024094Z",
+  "exit_code": 1,
+  "owned_target_verified": true,
+  "database": {
+    "database": "metaplatform_ont_test",
+    "role": "mate_ont_test",
+    "superuser": false,
+    "bypassrls": false,
+    "createdb": false,
+    "createrole": false,
+    "major_version": 16
+  },
+  "browser_database": {
+    "database": "codex_builder_ontology",
+    "role": "builder_app",
+    "superuser": false,
+    "bypassrls": false,
+    "createdb": false,
+    "createrole": false,
+    "major_version": 16
+  },
+  "collection": [
+    {
+      "file": "ontology-migration-plan.spec.ts",
+      "title": "无幂等键执行被拒（400）——后端守卫"
+    },
+    {
+      "file": "ontology-migration-plan.spec.ts",
+      "title": "评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例"
+    }
+  ],
+  "results": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sources_before": {
+    "file_count": 2220,
+    "sha256": "0b659132a7345eb84f350a9c74b1b04cc82fcfc08e7a548c7789e6920a937c43"
+  },
+  "sources_after": {
+    "file_count": 2220,
+    "sha256": "0b659132a7345eb84f350a9c74b1b04cc82fcfc08e7a548c7789e6920a937c43"
+  },
+  "source_unchanged": true,
+  "junit_sha256": "c38519d9668a7560b0c7471963ffa01723b608ff2df4ed24bc22ca35f820370f",
+  "evidence_kind": "local current-source execution; no CI/deployment/GA claim",
+  "reason": "Task6 collection parser omitted describe path; original cases 2/2 passed but public exact identity guard failed",
+  "entrypoint_sha256": "217d60ce0177c98567435ef2eb507712ccd97572d192e315a87ff059db0e4198",
+  "canonical_migration_auditor_exit_code": 0
+}

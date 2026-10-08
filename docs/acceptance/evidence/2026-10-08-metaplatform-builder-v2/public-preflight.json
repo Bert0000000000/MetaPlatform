@@ -1,10 +1,15 @@
 {
   "mode": "preflight",
   "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
-  "exit_code": 2,
-  "owned_target_verified": false,
-  "refusal_class": "ownership_or_preflight_not_verified",
-  "reason": "Owned-container inspection unavailable; target ownership is unverified",
-  "evidence_kind": "actual public runner preflight refusal; no successful target validation or gate execution",
-  "interpretation": "Guard refused before database/gate execution; prior controller PG123 success is separate evidence"
+  "exit_code": 0,
+  "owned_target_verified": true,
+  "database": {
+    "database": "metaplatform_ont_test",
+    "role": "mate_ont_test",
+    "superuser": false,
+    "bypassrls": false,
+    "createdb": false,
+    "createrole": false,
+    "major_version": 16
+  }
 }

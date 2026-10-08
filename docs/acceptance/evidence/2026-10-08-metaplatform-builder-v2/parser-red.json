@@ -1,0 +1,25 @@
+{
+  "phase": "red",
+  "evidence_kind": "read-only parser validation on real already-executed core9/migration2; no new gate execution",
+  "entrypoint_sha256": "217d60ce0177c98567435ef2eb507712ccd97572d192e315a87ff059db0e4198",
+  "results": {
+    "core": {
+      "actual_junit": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "identities_match": true
+    },
+    "migration": {
+      "actual_junit": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "identities_match": false
+    }
+  }
+}

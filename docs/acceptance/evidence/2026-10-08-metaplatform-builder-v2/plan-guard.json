@@ -1,0 +1,12 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "entrypoint_sha256": "e6117eb515889a4897c747b273c74f75f077ea6694dedccd53301cf2675966f8",
+  "evidence_kind": "pure read-only guard verification using actual accepted plan; no services/gates",
+  "results": {
+    "actual_plan_checkbox_only_accepted": true,
+    "noncheckbox_text_rejected": true,
+    "extra_newline_rejected": true,
+    "other_spec_path_rejected": true,
+    "current_exact_plan_accepted": true
+  }
+}

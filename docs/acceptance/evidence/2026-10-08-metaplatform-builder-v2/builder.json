@@ -1,0 +1,152 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "checkout_head": "041cb1582eb74595b5cbb1c1f615a3dd39e3053b",
+  "mode": "builder",
+  "exit_code": 0,
+  "seconds": 128.641,
+  "results": {
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "case_status": [
+    {
+      "name": "real Ont: model selection, dirty editor history restoration, binding samples and same-resource publication",
+      "classname": "ontology-builder-v2.spec.ts",
+      "seconds": "32.752",
+      "status": "passed"
+    },
+    {
+      "name": "real Ont + explicit HTTP error: create references retry and failed model read stay distinguishable",
+      "classname": "ontology-builder-v2.spec.ts",
+      "seconds": "1.218",
+      "status": "passed"
+    },
+    {
+      "name": "real Ont + own PG: editor WIP, five-step publication, saved source sync and actual sample query",
+      "classname": "ontology-builder-v2.spec.ts",
+      "seconds": "3.881",
+      "status": "passed"
+    },
+    {
+      "name": "六域均可达，工作区显示侧栏和上下文，planned 页面不进入导航",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "2.953",
+      "status": "passed"
+    },
+    {
+      "name": "点击关系类型后返回/前进保持 URL、高亮与面包屑",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "1.298",
+      "status": "passed"
+    },
+    {
+      "name": "点击功能域打开真实默认页",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "0.966",
+      "status": "passed"
+    },
+    {
+      "name": "域根 redirect 到默认子页，总览别名保留",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "2.465",
+      "status": "passed"
+    },
+    {
+      "name": "对象资源详情深链刷新保持，侧栏不错误高亮总览",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "1.53",
+      "status": "passed"
+    },
+    {
+      "name": "对象浏览刷新保持现有页面能力",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "1.684",
+      "status": "passed"
+    },
+    {
+      "name": "390px 可展开导航并通过键盘进入关系类型，无文档横向溢出",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "1.223",
+      "status": "passed"
+    },
+    {
+      "name": "离开本体后其他域显示自己的功能组和页面",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "1.601",
+      "status": "passed"
+    },
+    {
+      "name": "七个产品菜单 side/top 同序可达，SuperAI 常驻与旧会话路由保留",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "9.215",
+      "status": "passed"
+    },
+    {
+      "name": "运行质量别名复用校验且保留 query，统一权限策略不套建设侧栏",
+      "classname": "ontology-ia-v2-navigation.spec.ts",
+      "seconds": "1.543",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP boundary: summary and approvals retry independently, app references retain directory, activation is truthful",
+      "classname": "platform-builder-v2.spec.ts",
+      "seconds": "2.266",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP boundary: session, dialogue and actual context stay reachable without model claims",
+      "classname": "platform-builder-v2.spec.ts",
+      "seconds": "1.592",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP boundary: seven entry page patterns and SuperAI at 1440px",
+      "classname": "platform-builder-v2.spec.ts",
+      "seconds": "7.68",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP boundary: seven entry page patterns and SuperAI at 1920px",
+      "classname": "platform-builder-v2.spec.ts",
+      "seconds": "7.341",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP boundary: seven entry page patterns and SuperAI at 1024px",
+      "classname": "platform-builder-v2.spec.ts",
+      "seconds": "7.772",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP boundary: seven entry page patterns and SuperAI at 390px",
+      "classname": "platform-builder-v2.spec.ts",
+      "seconds": "7.879",
+      "status": "passed"
+    },
+    {
+      "name": "real provider negative cache: editor relogin link reaches usable login despite incomplete historical ID",
+      "classname": "platform-builder-v2.spec.ts",
+      "seconds": "22.719",
+      "status": "passed"
+    },
+    {
+      "name": "real signed settings: theme and navigation preference survive reload and restore original choice",
+      "classname": "platform-builder-v2.spec.ts",
+      "seconds": "5.161",
+      "status": "passed"
+    }
+  ],
+  "frontend_sources_before": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "frontend_sources_after": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "source_unchanged": true,
+  "canonical_exact_identity_auditor_exit_code": 0,
+  "attribution": "Original complete Builder21 via controller original runner, not public entry; implementation f892 bytes match701 hash; fixture settings restored"
+}

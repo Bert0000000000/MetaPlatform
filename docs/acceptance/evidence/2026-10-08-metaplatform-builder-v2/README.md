@@ -15,6 +15,20 @@
 | `core-latest-failed.json` | 实际158 beforeAll登录504后1failure/8未运行的安全投影；不是通过或当前f892实际运行 |
 | `core-collection.json`、`migration-collection.json`、`builder-collection.json` | 实际f892安全采集9/2/21身份，exit0/701sourcehash不变；仅采集，不是成功执行 |
 | `review.json` | 整分支首审+唯一最终限定复审的安全摘要；两P2关闭，规格/质量Approved；运行条件仍保留 |
-| `public-preflight.json` | 公共复现入口实际f892 preflight exit2：owned-container inspection不可用，guard拒绝；未到达DB或gate，先前PG绿色不替代此入口成功 |
+| `public-preflight.json`、`public-preflight-failed-01.json` | 当前实际 preflight exit0、owned PG16/四非特权标志；旧ownership inspect不可用exit2失败另保留 |
 
-当前 core9/migration2/Builder21 成功执行、52 个内容 ready 截图与窄屏工具条实际交互证据待控制器健康栈/最终运行后补入；当前登录504，未重复失败登录或生成旧图填充。不得复制 raw JUnit diagnostics、error-context、compose、private-config、environment、tokens、auth-state、HAR/trace/video 或完整原始日志。Failed attempts 在忽略私有区保留，公共投影仅包含 source、测试身份/数量、状态、指纹与已核实原因边界。证据提交与 implementation source 分离。
+当前原core9/原migration2/完整Builder21均真实通过，52个named-ready只读视图均已像素检查；窄屏语义mode点击/恢复及type390尾动作nativeTab仍未达，最后一次授权探针登录504后停止。不得复制 raw JUnit diagnostics、error-context、compose、private-config、environment、tokens、auth-state、HAR/trace/video 或完整原始日志。Failed attempts 在忽略私有区保留，公共投影仅包含 source、测试身份/数量、状态、指纹与已核实原因边界。证据提交与 implementation source 分离。
+
+| 新增文件 | 来源与含义 |
+|---|---|
+| `public-core.json`、`public-migration.json` | 实际公共入口9/2 exit0，2220源hash不变；严格原身份/零skip |
+| `public-migration-failed-01.json` | 原2/2成功但旧public parser漏suite导致exit1；保留失败，不冒称公共成功 |
+| `builder.json` | 当前原runner21/21与canonical精确21身份audit0；701源hash不变 |
+| `parser-red.json`、`parser-green.json`、`plan-guard.json` | actual已执行9/2的只读解析验证及唯一accepted plan checkbox-only守卫；不等于重跑gate |
+| `ont-viewports.json`、`platform-viewports.json` | 真UserInfo/签名tenant、每帧settings/theme/named-ready/error/API/overflow/no-write metadata；平台替身明确 |
+| `screenshot-manifest.json`、`screenshots/` | 52最终只读图、原Builder32（height1000）、失败8图，SHA256逐文件；原32无制造的逐帧metadata |
+| `builder-gate-image-inventory.json` | 原32PNG的实际尺寸/指纹，原路径与来源 |
+| `visual-inspection.json` | 实际52像素检视，逐页/尺寸观察与窄屏局部裁切限制 |
+| `narrow-interaction.json` | 四次探针事实、已有native局部滚动/trial证据与未达semantic/type尾动作；不计产品bug或PASS |
+
+只复制明确PNG/安全JSON allowlist。原private helpers/日志/失败XML保持ignored。Task6仍IN_PROGRESS，fresh证据复审与窄屏退出未完成，未提交此续跑包。

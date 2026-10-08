@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -24,6 +25,7 @@ PG_CONTAINER = 'codex-242e-builder-v2-pg'
 PRIVATE_ROOT = ROOT / '.superpowers/runtime/builder-v2/validation'
 FRONTEND = ROOT / 'metaplatform-frontend'
 EXPECTED = {'core': 9, 'migration': 2, 'builder': 21}
+ACCEPTED_PLAN = 'docs/superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md'
 
 
 class Refused(Exception):
@@ -32,6 +34,21 @@ class Refused(Exception):
 
 def git(*args: str) -> str:
     return subprocess.check_output(['git', *args], cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
+
+
+def checkbox_only_change(before: str, after: str) -> bool:
+    """Allow status marks only; preserve every other character in the plan."""
+    def normalize(text: str) -> str:
+        return re.sub(r'(?m)^(\s*[-*+] )\[[ xX]\](?=\s)', r'\1[ ]', text)
+    return normalize(before) == normalize(after)
+
+
+def accepted_plan_bookkeeping(source: str, path: str) -> bool:
+    if path != ACCEPTED_PLAN or not (ROOT / path).is_file():
+        return False
+    before = subprocess.check_output(['git', 'show', f'{source}:{path}'], cwd=ROOT,
+                                     stderr=subprocess.DEVNULL).decode('utf-8')
+    return checkbox_only_change(before, (ROOT / path).read_text(encoding='utf-8'))
 
 
 def fingerprint() -> dict:
@@ -115,18 +132,29 @@ def browser_preflight() -> None:
 
 def identities_json(path: Path) -> set[tuple[str, str]]:
     payload = json.loads(path.read_text(encoding='utf-8-sig'))
-    if 'cases' in payload:
-        return {(c['file'], c['title']) for c in payload['cases']}
     result: set[tuple[str, str]] = set()
-    def walk(suites: list[dict]) -> None:
+    def add(file: str, title: str) -> None:
+        identity = (Path(file.replace('\\', '/')).name, title)
+        if identity in result:
+            raise Refused('Duplicate collected browser identity')
+        result.add(identity)
+    if 'cases' in payload:
+        for case in payload['cases']:
+            add(case['file'], case['title'])
+        return result
+    def walk(suites: list[dict], parents: tuple[str, ...] = (), depth: int = 0) -> None:
         for suite in suites:
+            title = suite.get('title', '')
+            title_parts = Path(title.replace('\\', '/')).parts
+            file_parts = Path(suite.get('file', '').replace('\\', '/')).parts
+            # Playwright's JSON root wraps each file. Exclude that file label,
+            # then retain every describe title, including nested/same-leaf suites.
+            file_wrapper = depth == 0 and bool(title_parts) and file_parts[-len(title_parts):] == title_parts
+            lineage = parents if file_wrapper or not title else (*parents, title)
             for spec in suite.get('specs', []):
                 for _test in spec.get('tests', []):
-                    identity = (Path(spec.get('file', suite.get('file', '')).replace('\\', '/')).name, spec['title'])
-                    if identity in result:
-                        raise Refused('Duplicate collected browser identity')
-                    result.add(identity)
-            walk(suite.get('suites', []))
+                    add(spec.get('file', suite.get('file', '')), ' › '.join((*lineage, spec['title'])))
+            walk(suite.get('suites', []), lineage, depth + 1)
     walk(payload['suites'])
     return result
 
@@ -151,7 +179,8 @@ def main() -> int:
     changed = git('diff', '--name-only', source).splitlines()
     allowed = ('docs/acceptance/', 'scripts/ci/run_builder_v2_validation.')
     untracked = git('ls-files', '--others', '--exclude-standard').splitlines()
-    if any(not p.startswith(allowed) for p in changed + untracked):
+    if any(not p.startswith(allowed) and not accepted_plan_bookkeeping(source, p)
+           for p in changed + untracked):
         raise Refused('Current tree differs from reviewed source outside acceptance/repro paths')
     if sys.version_info[:2] != (3, 12):
         raise Refused('Use the locked workspace Python 3.12')

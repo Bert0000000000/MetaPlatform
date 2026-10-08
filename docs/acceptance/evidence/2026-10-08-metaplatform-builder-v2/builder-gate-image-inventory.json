@@ -1,0 +1,231 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "evidence_kind": "actual PNG headers/hashes from current successful Builder run; not new capture/prefs/page-error metadata",
+  "count": 32,
+  "images": [
+    {
+      "name": "agents-1024.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-2a7e5-terns-and-SuperAI-at-1024px-builder-v2/agents-1024.png",
+      "width": 1024,
+      "height": 1000,
+      "sha256": "aa29139dfa7631e3b608c9b5514a5a94d596fb0125cf6c26aaf31755a8407627"
+    },
+    {
+      "name": "apps-mine-1024.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-2a7e5-terns-and-SuperAI-at-1024px-builder-v2/apps-mine-1024.png",
+      "width": 1024,
+      "height": 1000,
+      "sha256": "12f65c62982c9b00047a1771fd090b046f66357ee8ee7a997d92ad4c45906037"
+    },
+    {
+      "name": "gov-business-1024.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-2a7e5-terns-and-SuperAI-at-1024px-builder-v2/gov-business-1024.png",
+      "width": 1024,
+      "height": 1000,
+      "sha256": "cbe5ca29df8610657165f1fbc4b3b7529d000b43b43dd6f1f479370b99e155bb"
+    },
+    {
+      "name": "home-1024.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-2a7e5-terns-and-SuperAI-at-1024px-builder-v2/home-1024.png",
+      "width": 1024,
+      "height": 1000,
+      "sha256": "dfff30d6ea6a0835291b683da5364c519ee6a2efb5f6e5740f516f78762285ac"
+    },
+    {
+      "name": "ki-kb-1024.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-2a7e5-terns-and-SuperAI-at-1024px-builder-v2/ki-kb-1024.png",
+      "width": 1024,
+      "height": 1000,
+      "sha256": "dae1957b5a666001a221bc04af4fc644010423ef19a9e4c82ec30c819ddb54af"
+    },
+    {
+      "name": "ontology-explore-objects-1024.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-2a7e5-terns-and-SuperAI-at-1024px-builder-v2/ontology-explore-objects-1024.png",
+      "width": 1024,
+      "height": 1000,
+      "sha256": "4767833ecdeebd52c9ea79a4e372aa72f7d75aba50d7df019733fa5129a43865"
+    },
+    {
+      "name": "ontology-model-graph-1024.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-2a7e5-terns-and-SuperAI-at-1024px-builder-v2/ontology-model-graph-1024.png",
+      "width": 1024,
+      "height": 1000,
+      "sha256": "1657e7ac00d906c39d6b0d32e59e85e65d817e130460fb38f6bb3547dccdcfec"
+    },
+    {
+      "name": "superai-chat-1024.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-2a7e5-terns-and-SuperAI-at-1024px-builder-v2/superai-chat-1024.png",
+      "width": 1024,
+      "height": 1000,
+      "sha256": "c3e964843102c9b7b21562493f9cfb7bf6ae3632b22f44eb95fd5e504a7e82a8"
+    },
+    {
+      "name": "agents-1920.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-77b73-terns-and-SuperAI-at-1920px-builder-v2/agents-1920.png",
+      "width": 1920,
+      "height": 1000,
+      "sha256": "f08131b69dfd90091aecf68ce85ae9ec96d98bf390c64cc06b53baad9f75e372"
+    },
+    {
+      "name": "apps-mine-1920.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-77b73-terns-and-SuperAI-at-1920px-builder-v2/apps-mine-1920.png",
+      "width": 1920,
+      "height": 1000,
+      "sha256": "438a5e7e807ea3e9d599c23f075cde03dcb8963e76013841f2fd566413141d35"
+    },
+    {
+      "name": "gov-business-1920.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-77b73-terns-and-SuperAI-at-1920px-builder-v2/gov-business-1920.png",
+      "width": 1920,
+      "height": 1000,
+      "sha256": "292403955edd49f73164c39ba9c8a344c13a982c81f994b127a760295a566e4f"
+    },
+    {
+      "name": "home-1920.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-77b73-terns-and-SuperAI-at-1920px-builder-v2/home-1920.png",
+      "width": 1920,
+      "height": 1000,
+      "sha256": "ba58a11be3409bb5e22afd89b343a36840805579df62bf43e4e694b53d319359"
+    },
+    {
+      "name": "ki-kb-1920.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-77b73-terns-and-SuperAI-at-1920px-builder-v2/ki-kb-1920.png",
+      "width": 1920,
+      "height": 1000,
+      "sha256": "e5a3de0b6e1c9eb512d31f36f324a8f5df325a38ef120feafdcb835322966e34"
+    },
+    {
+      "name": "ontology-explore-objects-1920.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-77b73-terns-and-SuperAI-at-1920px-builder-v2/ontology-explore-objects-1920.png",
+      "width": 1920,
+      "height": 1000,
+      "sha256": "99761f53bf6d32371fca66d2bcd2dc36771aadf5557f3d2510ede7e81434f2a5"
+    },
+    {
+      "name": "ontology-model-graph-1920.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-77b73-terns-and-SuperAI-at-1920px-builder-v2/ontology-model-graph-1920.png",
+      "width": 1920,
+      "height": 1000,
+      "sha256": "73e312cff60e39533c34f5f1dbb064cf6b7ee47c3eb07704c076457fda0d5a2b"
+    },
+    {
+      "name": "superai-chat-1920.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-77b73-terns-and-SuperAI-at-1920px-builder-v2/superai-chat-1920.png",
+      "width": 1920,
+      "height": 1000,
+      "sha256": "602fe62b36ffc6261550ab0d4fddf67103a3b15fdc80405932c59e59012ca6a5"
+    },
+    {
+      "name": "agents-1440.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-84b78-terns-and-SuperAI-at-1440px-builder-v2/agents-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "ff203a77be3220ae138e780cdea42db08bdc2390f18c03cfac73e1c607714df0"
+    },
+    {
+      "name": "apps-mine-1440.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-84b78-terns-and-SuperAI-at-1440px-builder-v2/apps-mine-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "ee9d49eaf5a3b5caf00073dc2445b0de910275c1b202a4e4c12bb942ae80316a"
+    },
+    {
+      "name": "gov-business-1440.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-84b78-terns-and-SuperAI-at-1440px-builder-v2/gov-business-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "c6caf7b9036926bbee5ef13131baa51d77f65194f7ca3a72ff6bc276ddf7a9e4"
+    },
+    {
+      "name": "home-1440.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-84b78-terns-and-SuperAI-at-1440px-builder-v2/home-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "11ce307edf306184b6749384da97268e9e7b682cac2163d84841581ef66fcbf3"
+    },
+    {
+      "name": "ki-kb-1440.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-84b78-terns-and-SuperAI-at-1440px-builder-v2/ki-kb-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "3cb610ab27dddff828d9f04752d38aa41e017118ce14944a9f6565212d71a670"
+    },
+    {
+      "name": "ontology-explore-objects-1440.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-84b78-terns-and-SuperAI-at-1440px-builder-v2/ontology-explore-objects-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "1f2b36e15b1ba44e23806f4d800a669b8fb3b463cabd21f53e30b6fadb0a45f1"
+    },
+    {
+      "name": "ontology-model-graph-1440.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-84b78-terns-and-SuperAI-at-1440px-builder-v2/ontology-model-graph-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "d70631a70e50995dff6f5e01d5c233ddf7c617825724cc3cbbd7391fbb49d796"
+    },
+    {
+      "name": "superai-chat-1440.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-84b78-terns-and-SuperAI-at-1440px-builder-v2/superai-chat-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "ea985ee2becb383b719048962a1258ab6580d269de4a4034e2a92df4add15fa8"
+    },
+    {
+      "name": "agents-390.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-85895-tterns-and-SuperAI-at-390px-builder-v2/agents-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "f84323b95a0034ab19b15570616f73a7abfdcd27600a3dd66dcc60c065bc3cab"
+    },
+    {
+      "name": "apps-mine-390.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-85895-tterns-and-SuperAI-at-390px-builder-v2/apps-mine-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "66ff753f5997214b719c8b7edd494e65189ebb21f5f1d8960d99f2ce63f2b0ac"
+    },
+    {
+      "name": "gov-business-390.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-85895-tterns-and-SuperAI-at-390px-builder-v2/gov-business-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "b36afd9ac00737940de68030ee79942311c8e3e8e425092aeacc7cc3dd49a713"
+    },
+    {
+      "name": "home-390.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-85895-tterns-and-SuperAI-at-390px-builder-v2/home-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "35195937f82a8858440db27652bbc3c595aebcce2c643008cd05bf99826eb89b"
+    },
+    {
+      "name": "ki-kb-390.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-85895-tterns-and-SuperAI-at-390px-builder-v2/ki-kb-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "df5db8d2d77f9ba09bfd1b8ca2346f4edc7e2336841894e5cb5f67a588b43272"
+    },
+    {
+      "name": "ontology-explore-objects-390.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-85895-tterns-and-SuperAI-at-390px-builder-v2/ontology-explore-objects-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "adecc23bc74f53575bb526d4c9b3b5c92c5dc353ec7ff79924fdddbf3dac0553"
+    },
+    {
+      "name": "ontology-model-graph-390.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-85895-tterns-and-SuperAI-at-390px-builder-v2/ontology-model-graph-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "3e38f191cec35ca7c0e854cfced0ca62be23639eb767e912b6c3ee1fd091b0da"
+    },
+    {
+      "name": "superai-chat-390.png",
+      "relative_path": "metaplatform-frontend/test-results/builder-artifacts/platform-builder-v2-HTTP-b-85895-tterns-and-SuperAI-at-390px-builder-v2/superai-chat-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "eca305c1ede534c00a73ff8b02c6365443050f31a0ca56703a8dd9ea1ec60fb4"
+    }
+  ]
+}

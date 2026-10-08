@@ -208,15 +208,15 @@ fireEvent.click(screen.getByRole('button', { name: '校验草稿' }));
 
 **Interfaces:** 消费所有实施任务最终代码，使用当前 `verify_ont_postgres.py`、`verify_migration_browser.py`、ontology core E2E；资源命名限定 `codex-242e-builder-v2-*`。
 
-- [ ] 按 AGENTS 安装 Node 22/pnpm 与 Python 3.12/uv 锁定依赖；构建 Chromium/esbuild，记录来源与版本。
-- [ ] 独立 PostgreSQL 16 容器创建业务测试库/非特权角色；执行六组完整回归并核对 collection/JUnit，不允许环境 skip。
+- [x] 按 AGENTS 安装 Node 22/pnpm 与 Python 3.12/uv 锁定依赖；构建 Chromium/esbuild，记录来源与版本。
+- [x] 独立 PostgreSQL 16 容器创建业务测试库/非特权角色；执行六组完整回归并核对 collection/JUnit，不允许环境 skip。
 
 ```powershell
 mate-platform-backend/.venv/Scripts/python.exe scripts/ci/verify_ont_postgres.py --junit .ci/builder-v2-ont-postgres.xml
 ```
 
-- [ ] 独立 Keycloak/auth/gateway/Ont/Redis 与前端启动真实登录，使用本工作树源码（source mount 或 native source）。仅使用本轮资源，不能运行现有脚本的共享 Free ports。
-- [ ] 采集和执行 ontology core、两个 migration 及 builder/受影响 IA 浏览器；安全保存身份和结果，不含密码/令牌。
+- [x] 独立 Keycloak/auth/gateway/Ont/Redis 与前端启动真实登录，使用本工作树源码（source mount 或 native source）。仅使用本轮资源，不能运行现有脚本的共享 Free ports。
+- [x] 采集和执行 ontology core、两个 migration 及 builder/受影响 IA 浏览器；安全保存身份和结果，不含密码/令牌。
 
 ```powershell
 pnpm exec playwright test --config playwright.migration.config.ts --list --reporter=./migration-list-reporter.ts
