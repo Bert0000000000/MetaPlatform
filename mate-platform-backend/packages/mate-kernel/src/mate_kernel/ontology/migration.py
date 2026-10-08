@@ -78,7 +78,7 @@ def coerce_value(from_fmt: str, to_fmt: str, value: Any) -> Any:
 def build_migration_plan(
     old: ObjectType,
     new: ObjectType,
-    options: dict[str, Any] | None = None,
+    options: object | None = None,
 ) -> dict[str, Any]:
     """old → new 定义的声明式迁移计划（纯函数；计数由 repo 的 assess 补齐）。
 

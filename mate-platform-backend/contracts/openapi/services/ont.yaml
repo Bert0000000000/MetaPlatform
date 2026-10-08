@@ -1728,12 +1728,14 @@ paths:
               type: object
               properties:
                 baseline: { type: [string, "null"] }
-                target_payload: { type: [object, "null"], additionalProperties: true }
+                target_payload:
+                  { type: [object, "null"], additionalProperties: true }
                 options:
                   type: [object, "null"]
                   additionalProperties: false
                   properties:
-                    rename: { type: object, additionalProperties: { type: string } }
+                    rename:
+                      { type: object, additionalProperties: { type: string } }
                     drops: { type: string, enum: [preserve, drop] }
                     pk_missing: { type: string, enum: [abort, skip] }
               additionalProperties: false
@@ -1793,11 +1795,22 @@ paths:
                 plan:
                   type: object
                   additionalProperties: false
-                  required: [class_rid, from_checksum, renames, coercions, pk_rederive, drops, reattach, warnings]
+                  required:
+                    [
+                      class_rid,
+                      from_checksum,
+                      renames,
+                      coercions,
+                      pk_rederive,
+                      drops,
+                      reattach,
+                      warnings,
+                    ]
                   properties:
                     class_rid: { type: string }
                     from_checksum: { type: string, minLength: 1 }
-                    renames: { type: object, additionalProperties: { type: string } }
+                    renames:
+                      { type: object, additionalProperties: { type: string } }
                     coercions:
                       type: array
                       items:

@@ -1,0 +1,100 @@
+{
+  "red-eight-required": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "-v",
+      "C:\\Users\\houuu\\.codex\\worktrees\\c385\\2026-07-02-MetaPlatform:/repo:ro",
+      "tufin/oasdiff@sha256:b8c8f37ad67e9e603524684135381355eee36dec2c83540433d69a6b06a1e360",
+      "breaking",
+      "/repo/.superpowers/sdd/2026-10-08-metaplatform-r1-integration/base-openapi.yaml",
+      "/repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml",
+      "--fail-on",
+      "ERR",
+      "--format",
+      "singleline",
+      "--color",
+      "never"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "stdout": "8 changes: 8 error, 0 warning, 0 info\nerror at /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/class_rid` [new-required-request-property]. \n\nerror at /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/coercions` [new-required-request-property]. \n\nerror at /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/drops` [new-required-request-property]. \n\nerror at /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/from_checksum` [new-required-request-property]. \n\nerror at /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/pk_rederive` [new-required-request-property]. \n\nerror at /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/reattach` [new-required-request-property]. \n\nerror at /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/renames` [new-required-request-property]. \n\nerror at /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/warnings` [new-required-request-property]. \n\n\n",
+    "stderr": ""
+  },
+  "green-approved-eight": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "-v",
+      "C:\\Users\\houuu\\.codex\\worktrees\\c385\\2026-07-02-MetaPlatform:/repo:ro",
+      "tufin/oasdiff@sha256:b8c8f37ad67e9e603524684135381355eee36dec2c83540433d69a6b06a1e360",
+      "breaking",
+      "/repo/.superpowers/sdd/2026-10-08-metaplatform-r1-integration/base-openapi.yaml",
+      "/repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml",
+      "--fail-on",
+      "ERR",
+      "--format",
+      "singleline",
+      "--color",
+      "never",
+      "--err-ignore",
+      "/repo/mate-platform-backend/contracts/openapi/oasdiff-r1-approved-errors.txt"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "stdout": "No breaking changes to report, but the specs are different. Run 'oasdiff diff' to see structural differences.\n",
+    "stderr": ""
+  },
+  "negative-ninth-plan-property": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "-v",
+      "C:\\Users\\houuu\\.codex\\worktrees\\c385\\2026-07-02-MetaPlatform:/repo:ro",
+      "tufin/oasdiff@sha256:b8c8f37ad67e9e603524684135381355eee36dec2c83540433d69a6b06a1e360",
+      "breaking",
+      "/repo/.superpowers/sdd/2026-10-08-metaplatform-r1-integration/base-openapi.yaml",
+      "/repo/.superpowers/sdd/2026-10-08-metaplatform-r1-integration/negative-ninth-plan-property.json",
+      "--fail-on",
+      "ERR",
+      "--format",
+      "singleline",
+      "--color",
+      "never",
+      "--err-ignore",
+      "/repo/mate-platform-backend/contracts/openapi/oasdiff-r1-approved-errors.txt"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "stdout": "1 changes: 1 error, 0 warning, 0 info\nerror at /repo/.superpowers/sdd/2026-10-08-metaplatform-r1-integration/negative-ninth-plan-property.json, in API POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/unapproved_ninth` [new-required-request-property]. \n\n\n",
+    "stderr": ""
+  },
+  "negative-other-endpoint": {
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "-v",
+      "C:\\Users\\houuu\\.codex\\worktrees\\c385\\2026-07-02-MetaPlatform:/repo:ro",
+      "tufin/oasdiff@sha256:b8c8f37ad67e9e603524684135381355eee36dec2c83540433d69a6b06a1e360",
+      "breaking",
+      "/repo/.superpowers/sdd/2026-10-08-metaplatform-r1-integration/base-openapi.yaml",
+      "/repo/.superpowers/sdd/2026-10-08-metaplatform-r1-integration/negative-other-endpoint.json",
+      "--fail-on",
+      "ERR",
+      "--format",
+      "singleline",
+      "--color",
+      "never",
+      "--err-ignore",
+      "/repo/mate-platform-backend/contracts/openapi/oasdiff-r1-approved-errors.txt"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "stdout": "1 changes: 1 error, 0 warning, 0 info\nerror at /repo/.superpowers/sdd/2026-10-08-metaplatform-r1-integration/negative-other-endpoint.json, in API POST /api/v1/ont/v2/object-types/{rid}/migration/assess added the new required request property `unapproved_other` [new-required-request-property]. \n\n\n",
+    "stderr": ""
+  }
+}

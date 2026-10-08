@@ -1,7 +1,7 @@
 # MetaPlatform R1 本地验收记录
 
 > 状态：R1（C0–C2）本地技术验收完成；任务审查与全分支最终审查通过，无未解决 Critical / Important。
-> 范围：已接受路线图的准备工作与 R1（C0–C2），不代表 R2–R6、远程 CI、部署或业务试点通过。
+> 范围：已接受路线图的准备工作与 R1（C0–C2）；后续远端结果见[集成记录](2026-10-08-metaplatform-r1-integration.md)，不代表 R2–R6、部署或业务试点通过。
 
 ## 来源与变更
 
@@ -98,9 +98,9 @@ mate-platform-backend/.venv/Scripts/python.exe scripts/ci/verify_migration_brows
 - C1：初审发现逐条测试完整性缺陷；`473b9051` 修复后[独立复审](evidence/2026-10-08-metaplatform-r1/c1-fix-review.md)确认已解决，未引入新问题。
 - C2：完成真实数据库及浏览器验证，[独立任务审查](evidence/2026-10-08-metaplatform-r1/c2-review.md) Approved，无未解决 Critical / Important。
 - [全分支最终审查](evidence/2026-10-08-metaplatform-r1/final-review.md)：范围 `e965d866..d1e11382`，技术集成就绪（Ready to merge — Yes），没有集成前必修问题。后续仅登记审查结论、补存同一最终代码的契约测试 XML、临时资源清理及归档忽略规则，不改实现。
-- 本轮只有一个控制端判断：[字段共存时保守中止](evidence/2026-10-08-metaplatform-r1/rulings.md)，空值/同值场景可能需要人工处理；数据不自动覆盖。
+- R1 本地实现阶段的控制端判断：[字段共存时保守中止](evidence/2026-10-08-metaplatform-r1/rulings.md)，空值/同值场景可能需要人工处理；数据不自动覆盖。后续契约兼容性收紧的判断见[集成记录](2026-10-08-metaplatform-r1-integration.md)。
 - 契约 lint 通过且无错误；Redocly 36 条、Spectral 100 条警告定位在迁移路径之外，没有独立重跑历史基线来证明相同数量。锁定 npm 依赖安装产生的弃用提示也已记录；没有改依赖/锁文件。
-- 远程 GitHub CI / required branch protection：未执行或更改；本地绿色不是远程合并准入证明。
+- 本地收口时尚未执行远程 GitHub CI；随后已授权推送并创建 PR #96，实际结果和集成修复见[集成记录](2026-10-08-metaplatform-r1-integration.md)。分支保护未更改；本地绿色不是远程合并准入证明。
 - 部署、业务验收与试点：未执行。模型回滚仍只恢复模型，不恢复迁移数据。
 - 下一轮 R2：按路线图 C3/C4 完成发布—迁移—持续同步、数值精度与组合步骤；R3 再验收命令重放/并发；完整迁移试点以前置轮次为准。
 

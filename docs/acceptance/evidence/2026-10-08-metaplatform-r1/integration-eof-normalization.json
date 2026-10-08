@@ -1,0 +1,51 @@
+[
+  {
+    "file": "c2-final-postgres.collection.json",
+    "before_sha256": "81b9df1fd4fadb579813a8c889cb70d25cccb7f6d75199e6981c72c0960d3030",
+    "after_sha256": "8983829deaf538769d69172c3d9590ab7d5b190590b35c1a411a77f90b53164f",
+    "bytes_added": 1,
+    "semantic_change": false
+  },
+  {
+    "file": "contract-tests.xml",
+    "before_sha256": "e8f05c9e5a5d97a2c4e5b7ca09d8330c046d13095affbf5d84e62cd56ba5fa5c",
+    "after_sha256": "6c61c928845c49f79a63c361b138902ed2c3af68ae018b4e68756cf43add290c",
+    "bytes_added": 1,
+    "semantic_change": false
+  },
+  {
+    "file": "migration-browser-list.json",
+    "before_sha256": "5fc33419477ae7ea7ffff84932ca8f92228f2a8021795b35e5c1e806904458ae",
+    "after_sha256": "0e82e4eea7fe75e9b3f885f40ee9e408e3d6de8c573e4d805f2e1a896bf80e00",
+    "bytes_added": 1,
+    "semantic_change": false
+  },
+  {
+    "file": "ont-rls.xml",
+    "before_sha256": "ed61494a807a26c98a95fe2466ebb59fce1b832036867ee9bf07093e6199d312",
+    "after_sha256": "77ee81367ec19febf0f6cd986ffe5fee320d9be0b84f10912a0203254794ed60",
+    "bytes_added": 1,
+    "semantic_change": false
+  },
+  {
+    "file": "ont-postgres.xml",
+    "before_sha256": "f50291cd84b5090661e693648e7850daae3ffa139074aaa0f8e77745b3932b3e",
+    "after_sha256": "ac4a2ef15e537ab0f316a6988553c57e8284117df4b62b09ee17a3d699a8ee48",
+    "bytes_added": 1,
+    "semantic_change": false
+  },
+  {
+    "file": "ci-gate-behavior.xml",
+    "before_sha256": "b98151d951c12f6c372ece08b0c0ad798b3394d7a08ad7de33529e4b61fad4d6",
+    "after_sha256": "b6767929f66c61e9e5709b40e2978bbe4130c1f6bf11785c80c5a88741eabf26",
+    "bytes_added": 1,
+    "semantic_change": false
+  },
+  {
+    "file": "migration-browser.xml",
+    "before_sha256": "e82c45a9f493fa032ed66d92f9669603147795db02a10360eb1e13a4432812dd",
+    "after_sha256": "58017d0222aabc670fcafec83c55989dcaf086220677dbbbd31cd2faed07e4b0",
+    "bytes_added": 1,
+    "semantic_change": false
+  }
+]
