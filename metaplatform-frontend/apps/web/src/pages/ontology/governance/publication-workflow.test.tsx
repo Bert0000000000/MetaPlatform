@@ -557,3 +557,55 @@ it('rechecks stored WIP revision before apply and requires validation after anot
   expect(http.requests.some((c) => c.url?.endsWith('/apply'))).toBe(false);
   expect(screen.getByRole('button', { name: '确认发布' })).toBeDisabled();
 });
+it('keeps delayed migration serialized through unrelated input and snapshot interactions and shows its real result', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const late = deferred<unknown>();
+  const handler = http.handler;
+  http.handler = (c) =>
+    c.url?.endsWith('/migration/run') ? late.promise : handler(c);
+  render(
+    <MemoryRouter>
+      <ReleasesPage />
+    </MemoryRouter>,
+  );
+  const assess = await screen.findByRole('button', { name: '评估影响' });
+  await waitFor(() => expect(assess).toBeEnabled());
+  fireEvent.click(assess);
+  fireEvent.click(await screen.findByRole('button', { name: '执行迁移' }));
+  await waitFor(() =>
+    expect(
+      http.requests.filter((c) => c.url?.endsWith('/migration/run')),
+    ).toHaveLength(1),
+  );
+
+  fireEvent.change(screen.getByPlaceholderText('对比 rid（against）'), {
+    target: { value: 'unrelated-diff' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '高级新版本 RID' }), {
+    target: { value: 'ont.tenant.obj.crm.customer.v9' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '设为对比' }));
+  const pending = screen.getByRole('button', { name: /迁移中|执行迁移/ });
+  expect(pending).toBeDisabled();
+  fireEvent.click(pending);
+  fireEvent.click(screen.getByRole('button', { name: '发布新版本' }));
+  expect(
+    http.requests.filter((c) => c.url?.endsWith('/migration/run')),
+  ).toHaveLength(1);
+  expect(http.requests.some((c) => c.url?.endsWith('/branch'))).toBe(false);
+  expect(
+    http.requests.find((c) => c.url?.endsWith('/migration/run'))?.headers?.[
+      'Idempotency-Key'
+    ],
+  ).toBeTruthy();
+
+  await act(async () =>
+    late.resolve({ run_id: 'actual-run-1', counts: { reattached: 3 } }),
+  );
+  await screen.findByText(/迁移完成（run actual-run-1）/);
+  expect(
+    screen.queryByRole('button', { name: '执行迁移' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByPlaceholderText('对比 rid（against）')).toBeEnabled();
+  confirm.mockRestore();
+});

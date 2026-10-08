@@ -85,6 +85,9 @@ export default function ReleasesPage() {
   );
   const [rollbackFrom, setRollbackFrom] = useState('');
   const [busy, setBusy] = useState('');
+  // A write remains in flight until its promise settles, independently of read/display resets.
+  const mutation = useRef(false);
+  const [mutationPending, setMutationPending] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   // 存量适配（ADR-0082）：评估结果 + 可编辑计划副本 + 运行历史
@@ -109,6 +112,7 @@ export default function ReleasesPage() {
   const [branchMode, setBranchMode] = useState('version');
   const [copySlug, setCopySlug] = useState('');
   const invalidate = () => {
+    if (mutation.current) return;
     operations.current++;
     setBusy('');
     setErr('');
@@ -116,15 +120,18 @@ export default function ReleasesPage() {
     setDiffResult(null);
   };
   const editBranch = (value: string) => {
+    if (mutation.current) return;
     invalidate();
     setBranchEdited(true);
     setBranchRid(value);
   };
   const editDiff = (field: 'base' | 'against', value: string) => {
+    if (mutation.current) return;
     invalidate();
     field === 'base' ? setDiffBase(value) : setDiffAgainst(value);
   };
   const editRollback = (value: string) => {
+    if (mutation.current) return;
     invalidate();
     setRollbackFrom(value);
   };
@@ -232,8 +239,10 @@ export default function ReleasesPage() {
   const draftPublished = useCallback(
     (type: KernelObjectType) => {
       if (type.rid !== currentRid.current) return;
-      operations.current++;
-      setBusy('');
+      if (!mutation.current) {
+        operations.current++;
+        setBusy('');
+      }
       setAssessment(null);
       setPlan(null);
       setHistoryRefresh((v) => v + 1);
@@ -245,6 +254,7 @@ export default function ReleasesPage() {
 
   /** 用户主动切换类型才清提示；发布/回滚后的自动重载不清（否则成功消息被吞掉）。 */
   const pickType = (rid: string) => {
+    if (mutation.current) return;
     reads.current++;
     invalidate();
     setVerRid(rid);
@@ -261,6 +271,7 @@ export default function ReleasesPage() {
 
   /** 草稿 page 的 publish 是 POST /object-types/wip/{rid}/apply；此处是**已发布类型**的版本操作。 */
   const doBranch = async () => {
+    if (mutation.current) return;
     if (!verRid) {
       setErr('请先选择类型');
       return;
@@ -276,6 +287,8 @@ export default function ReleasesPage() {
       n = ++operations.current;
     const fresh = () =>
       n === operations.current && source === currentRid.current;
+    mutation.current = true;
+    setMutationPending(true);
     setBusy('branch');
     setErr('');
     setMsg('');
@@ -300,11 +313,14 @@ export default function ReleasesPage() {
     } catch (e) {
       if (fresh()) setErr(resourceError(e));
     } finally {
+      mutation.current = false;
+      setMutationPending(false);
       if (fresh()) setBusy('');
     }
   };
 
   const doDiff = async () => {
+    if (mutation.current) return;
     const base = diffBase.trim() || verRid;
     const against = diffAgainst.trim();
     if (!base || !against) {
@@ -334,6 +350,7 @@ export default function ReleasesPage() {
   };
 
   const doRollback = async () => {
+    if (mutation.current) return;
     if (!verRid) {
       setErr('请先选择类型');
       return;
@@ -356,6 +373,8 @@ export default function ReleasesPage() {
       n = ++operations.current;
     const fresh = () =>
       n === operations.current && source === currentRid.current;
+    mutation.current = true;
+    setMutationPending(true);
     setBusy('rollback');
     setErr('');
     setMsg('');
@@ -374,12 +393,15 @@ export default function ReleasesPage() {
     } catch (e) {
       if (fresh()) setErr(resourceError(e));
     } finally {
+      mutation.current = false;
+      setMutationPending(false);
       if (fresh()) setBusy('');
     }
   };
 
   /** 存量适配评估（只读）：上一条版本快照 → 当前生效 的真实影响计数 + 计划草案。 */
   const doAssess = async () => {
+    if (mutation.current) return;
     if (!verRid) {
       setErr('请先选择类型');
       return;
@@ -412,6 +434,7 @@ export default function ReleasesPage() {
 
   /** 执行存量适配：确认框带摘要（含信息损失警告）；PK 冲突/缺失 fail-closed 由后端拦。 */
   const doRunMigration = async () => {
+    if (mutation.current) return;
     if (!verRid || !assessment || !plan) return;
     const c = assessment.counts;
     const lossNote =
@@ -432,6 +455,8 @@ export default function ReleasesPage() {
       n = ++operations.current;
     const fresh = () =>
       n === operations.current && source === currentRid.current;
+    mutation.current = true;
+    setMutationPending(true);
     setBusy('migrate');
     setErr('');
     setMsg('');
@@ -452,6 +477,8 @@ export default function ReleasesPage() {
     } catch (e) {
       if (fresh()) setErr(resourceError(e));
     } finally {
+      mutation.current = false;
+      setMutationPending(false);
       if (fresh()) setBusy('');
     }
   };
@@ -473,8 +500,9 @@ export default function ReleasesPage() {
           <button
             type="button"
             className="mp-onto-btn"
-            disabled={detailBusy}
+            disabled={detailBusy || mutationPending}
             onClick={() => {
+              if (mutation.current) return;
               invalidate();
               setAssessment(null);
               setPlan(null);
@@ -491,7 +519,11 @@ export default function ReleasesPage() {
         }
       />
 
-      <div className="mp-gov-card">
+      <fieldset
+        className="mp-gov-card"
+        disabled={mutationPending}
+        style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+      >
         <div className="mp-flex-center mp-gap-2">
           <span className="mp-text-sm mp-text-2 mp-shrink-0">目标类型</span>
           <select
@@ -622,6 +654,7 @@ export default function ReleasesPage() {
               aria-label="发布方式"
               value={branchMode}
               onChange={(e) => {
+                if (mutation.current) return;
                 invalidate();
                 setBranchMode(e.target.value);
                 setBranchEdited(false);
@@ -640,6 +673,7 @@ export default function ReleasesPage() {
                 aria-label="副本机器名"
                 value={copySlug}
                 onChange={(e) => {
+                  if (mutation.current) return;
                   invalidate();
                   setCopySlug(e.target.value);
                   const p = verRid.split('.');
@@ -1077,7 +1111,7 @@ export default function ReleasesPage() {
             desc="先在语义模型里创建类型。"
           />
         )}
-      </div>
+      </fieldset>
     </>
   );
 }
