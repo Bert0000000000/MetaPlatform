@@ -12,12 +12,8 @@ function cell(value: unknown): string {
       ? JSON.stringify(value)
       : String(value);
 }
-/** A GET-only materialization view; no source-schema or source-preview data is invented. */
-export default function MaterializationSamples({
-  typeRid,
-}: {
-  typeRid: string;
-}) {
+/** Type-scoped GET state survives source-editor composition and selection. */
+export function useMaterializationSamples(typeRid: string) {
   const [result, setResult] = useState<MaterializationResult>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,6 +37,17 @@ export default function MaterializationSamples({
       ++request.current;
     };
   }, [read]);
+  return { result, loading, error, read };
+}
+/** A GET-only materialization view; no source-schema or source-preview data is invented. */
+export default function MaterializationSamples({
+  typeRid,
+  state,
+}: {
+  typeRid: string;
+  state: ReturnType<typeof useMaterializationSamples>;
+}) {
+  const { result, loading, error, read } = state;
   const columns = [
     ...new Set([
       ...Object.keys(result?.schema || {}),

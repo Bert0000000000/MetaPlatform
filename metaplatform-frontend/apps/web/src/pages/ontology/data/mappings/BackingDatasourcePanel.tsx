@@ -15,7 +15,9 @@ import { resourceUrl, safeReturnTo } from '../../hooks/resourceContext';
 import { resourceError } from '../../hooks/resourceErrors';
 import { ridTail } from '../../rid';
 import SourceMappingEditor, { mappingIsDirty } from './SourceMappingEditor';
-import MaterializationSamples from './MaterializationSamples';
+import MaterializationSamples, {
+  useMaterializationSamples,
+} from './MaterializationSamples';
 import './backing-datasource.css';
 
 /** Source declarations are edits; samples are independent reads; sync uses saved declarations. */
@@ -185,6 +187,7 @@ function SourceWorkspace({
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<BackingDatasourceSyncResult>();
   const [syncError, setSyncError] = useState('');
+  const samples = useMaterializationSamples(type.rid);
   const alive = useRef(true);
   const request = useRef(0);
   const command = useRef(0);
@@ -297,6 +300,52 @@ function SourceWorkspace({
       if (alive.current && generation === command.current) setSyncing(false);
     }
   };
+  const samplePanel = (
+    <MaterializationSamples typeRid={type.rid} state={samples} />
+  );
+  const syncPanel = (
+    <section className="mp-mapping-card mp-mapping-sync" aria-label="同步结果">
+      <h3>真实同步结果</h3>
+      {syncing && <p role="status">同步请求执行中…</p>}
+      {syncError && <p role="alert">同步／结果回读失败 · {syncError}</p>}
+      {!syncResult && !syncing && !syncError && <p>尚未同步</p>}
+      {syncResult && (
+        <>
+          <p
+            role={
+              syncResult.ok && syncResult.total_failed === 0
+                ? 'status'
+                : 'alert'
+            }
+          >
+            {syncResult.ok && syncResult.total_failed === 0
+              ? '同步完成'
+              : '部分失败'}{' '}
+            · 同步 {syncResult.total_synced} · 失败 {syncResult.total_failed} ·
+            删除 {syncResult.total_deleted}
+          </p>
+          {Object.entries(syncResult.sources).map(([name, result]) => (
+            <div key={name}>
+              <strong>{name}</strong>
+              <p>
+                同步 {result.synced} · 失败 {result.failed} · 删除{' '}
+                {result.deleted}
+              </p>
+              <p>
+                已处理边界：{result.cursor.ts || '无时间水位'} ·{' '}
+                {result.cursor.pk || '无主键边界'}
+              </p>
+              {result.failures.map((failure, index) => (
+                <p role="alert" key={index}>
+                  {String(failure.pk)} · {failure.error}
+                </p>
+              ))}
+            </div>
+          ))}
+        </>
+      )}
+    </section>
+  );
   return (
     <>
       <div className="mp-mapping-toolbar">
@@ -380,7 +429,7 @@ function SourceWorkspace({
       {loaded && unknownSource && (
         <p role="alert">请求的来源绑定不可用：{sourceRef}</p>
       )}
-      {loaded && !unknownSource && (
+      {loaded && !unknownSource ? (
         <SourceMappingEditor
           key={sourceKey}
           type={type}
@@ -390,56 +439,18 @@ function SourceWorkspace({
           sources={rows}
           canSave={!error && !loading}
           externalBusy={syncing}
+          sourceFooter={syncPanel}
+          mappingFooter={samplePanel}
           onState={editorState}
           onSaved={saved}
           onComplete={complete}
         />
+      ) : (
+        <div className="mp-mapping-layout">
+          <aside className="mp-mapping-source">{syncPanel}</aside>
+          <div className="mp-mapping-target">{samplePanel}</div>
+        </div>
       )}
-      <section
-        className="mp-mapping-card mp-mapping-sync"
-        aria-label="同步结果"
-      >
-        <h3>真实同步结果</h3>
-        {syncing && <p role="status">同步请求执行中…</p>}
-        {syncError && <p role="alert">同步／结果回读失败 · {syncError}</p>}
-        {!syncResult && !syncing && !syncError && <p>尚未同步</p>}
-        {syncResult && (
-          <>
-            <p
-              role={
-                syncResult.ok && syncResult.total_failed === 0
-                  ? 'status'
-                  : 'alert'
-              }
-            >
-              {syncResult.ok && syncResult.total_failed === 0
-                ? '同步完成'
-                : '部分失败'}{' '}
-              · 同步 {syncResult.total_synced} · 失败 {syncResult.total_failed}{' '}
-              · 删除 {syncResult.total_deleted}
-            </p>
-            {Object.entries(syncResult.sources).map(([name, result]) => (
-              <div key={name}>
-                <strong>{name}</strong>
-                <p>
-                  同步 {result.synced} · 失败 {result.failed} · 删除{' '}
-                  {result.deleted}
-                </p>
-                <p>
-                  已处理边界：{result.cursor.ts || '无时间水位'} ·{' '}
-                  {result.cursor.pk || '无主键边界'}
-                </p>
-                {result.failures.map((failure, index) => (
-                  <p role="alert" key={index}>
-                    {String(failure.pk)} · {failure.error}
-                  </p>
-                ))}
-              </div>
-            ))}
-          </>
-        )}
-      </section>
-      <MaterializationSamples typeRid={type.rid} />
     </>
   );
 }

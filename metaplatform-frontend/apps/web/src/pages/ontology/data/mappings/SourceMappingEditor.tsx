@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Input, InputNumber } from '@douyinfe/semi-ui';
 import {
   upsertBackingDatasource,
@@ -68,6 +68,8 @@ export default function SourceMappingEditor({
   sources,
   canSave,
   externalBusy,
+  sourceFooter,
+  mappingFooter,
   onState,
   onSaved,
   onComplete,
@@ -79,6 +81,8 @@ export default function SourceMappingEditor({
   sources: KernelBackingDatasource[];
   canSave: boolean;
   externalBusy: boolean;
+  sourceFooter: ReactNode;
+  mappingFooter: ReactNode;
   onState: (dirty: boolean, busy: boolean) => void;
   onSaved: (name: string) => Promise<KernelBackingDatasource>;
   onComplete: (source: KernelBackingDatasource) => void;
@@ -344,141 +348,155 @@ export default function SourceMappingEditor({
             </p>
           )}
         </section>
+        {sourceFooter}
       </aside>
-      <section className="mp-mapping-card mp-mapping-properties">
-        <h3>
-          字段映射 {form.table || '未配置来源'} →{' '}
-          {type.display_name || ridTail(type.rid)}
-        </h3>
-        <p className="mp-mapping-muted">
-          来源列按声明填写；当前接口未提供源字段清单。目标使用完整属性 RID。
-        </p>
-        {!identity && (
-          <p role="alert">
-            身份或租户不可用，不能保存映射；未保存输入无法保留在个人会话。
+      <div className="mp-mapping-target">
+        <section className="mp-mapping-card mp-mapping-properties">
+          <h3>
+            字段映射 {form.table || '未配置来源'} →{' '}
+            {type.display_name || ridTail(type.rid)}
+          </h3>
+          <p className="mp-mapping-muted">
+            来源列按声明填写；当前接口未提供源字段清单。目标使用完整属性 RID。
           </p>
-        )}
-        {(dirty || uncertain) && (
-          <p role="status">
-            未保存输入已保留在当前会话；当前输入尚未完成保存回读，返回后请核对。此副本不是服务端草稿。
-          </p>
-        )}
-        {initial && initial.definition !== definition && (
-          <p role="alert">stale · 类型定义已变化，保留输入请重新核对。</p>
-        )}
-        {notice && <p role="status">{notice}</p>}
-        {error && <p role="alert">{error}</p>}
-        <div className="mp-mapping-table-scroll">
-          <table className="mp-mapping-table">
-            <thead>
-              <tr>
-                <th>来源列</th>
-                <th>目标属性</th>
-                <th>约束</th>
-              </tr>
-            </thead>
-            <tbody>
-              {type.properties.map((property, index) => {
-                const primary =
-                  property.primary_key ||
-                  type.primary_key.includes(property.rid);
-                const required = primary || !property.nullable;
-                const enabled =
-                  required ||
-                  Object.prototype.hasOwnProperty.call(
-                    form.mapping,
-                    property.rid,
+          {!identity && (
+            <p role="alert">
+              身份或租户不可用，不能保存映射；未保存输入无法保留在个人会话。
+            </p>
+          )}
+          {(dirty || uncertain) && (
+            <p role="status">
+              未保存输入已保留在当前会话；当前输入尚未完成保存回读，返回后请核对。此副本不是服务端草稿。
+            </p>
+          )}
+          {initial && initial.definition !== definition && (
+            <p role="alert">stale · 类型定义已变化，保留输入请重新核对。</p>
+          )}
+          {notice && <p role="status">{notice}</p>}
+          {error && <p role="alert">{error}</p>}
+          <div className="mp-mapping-table-scroll">
+            <table className="mp-mapping-table">
+              <thead>
+                <tr>
+                  <th>来源列</th>
+                  <th>目标属性</th>
+                  <th>约束</th>
+                </tr>
+              </thead>
+              <tbody>
+                {type.properties.map((property, index) => {
+                  const primary =
+                    property.primary_key ||
+                    type.primary_key.includes(property.rid);
+                  const required = primary || !property.nullable;
+                  const enabled =
+                    required ||
+                    Object.prototype.hasOwnProperty.call(
+                      form.mapping,
+                      property.rid,
+                    );
+                  return (
+                    <tr key={`${property.rid}:${index}`}>
+                      <td>
+                        {!required && (
+                          <label className="mp-mapping-optional">
+                            <input
+                              type="checkbox"
+                              aria-label={`映射 ${property.title || ridTail(property.rid)}`}
+                              checked={enabled}
+                              disabled={locked}
+                              onChange={(event) => {
+                                setForm((old) => {
+                                  const mapping = { ...old.mapping };
+                                  if (event.target.checked)
+                                    mapping[property.rid] = '';
+                                  else delete mapping[property.rid];
+                                  return { ...old, mapping };
+                                });
+                                setError('');
+                              }}
+                            />
+                            映射此属性
+                          </label>
+                        )}
+                        <Input
+                          aria-label={`${property.title || ridTail(property.rid)} 来源列`}
+                          value={form.mapping[property.rid] || ''}
+                          disabled={locked || !enabled}
+                          onChange={(value) =>
+                            changeColumn(property.rid, value)
+                          }
+                          placeholder={required ? '填写来源列' : '可选'}
+                        />
+                      </td>
+                      <td>
+                        <strong>
+                          {property.title || ridTail(property.rid)}
+                        </strong>
+                        <code>{property.rid}</code>
+                        <span>
+                          {property.format} · {property.type_id}
+                        </span>
+                      </td>
+                      <td>
+                        {primary ? '业务主键' : required ? '必填' : '可选'}
+                      </td>
+                    </tr>
                   );
-                return (
-                  <tr key={`${property.rid}:${index}`}>
-                    <td>
-                      {!required && (
-                        <label className="mp-mapping-optional">
-                          <input
-                            type="checkbox"
-                            aria-label={`映射 ${property.title || ridTail(property.rid)}`}
-                            checked={enabled}
-                            disabled={locked}
-                            onChange={(event) => {
-                              setForm((old) => {
-                                const mapping = { ...old.mapping };
-                                if (event.target.checked)
-                                  mapping[property.rid] = '';
-                                else delete mapping[property.rid];
-                                return { ...old, mapping };
-                              });
-                              setError('');
-                            }}
-                          />
-                          映射此属性
-                        </label>
-                      )}
-                      <Input
-                        aria-label={`${property.title || ridTail(property.rid)} 来源列`}
-                        value={form.mapping[property.rid] || ''}
-                        disabled={locked || !enabled}
-                        onChange={(value) => changeColumn(property.rid, value)}
-                        placeholder={required ? '填写来源列' : '可选'}
-                      />
-                    </td>
-                    <td>
-                      <strong>{property.title || ridTail(property.rid)}</strong>
-                      <code>{property.rid}</code>
-                      <span>
-                        {property.format} · {property.type_id}
-                      </span>
-                    </td>
-                    <td>{primary ? '业务主键' : required ? '必填' : '可选'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {unexpected.map((rid) => (
-          <div className="mp-mapping-unknown" key={rid} role="alert">
-            不属于当前类型的已保存映射：<code>{rid}</code> → {form.mapping[rid]}
+                })}
+              </tbody>
+            </table>
+          </div>
+          {unexpected.map((rid) => (
+            <div className="mp-mapping-unknown" key={rid} role="alert">
+              不属于当前类型的已保存映射：<code>{rid}</code> →{' '}
+              {form.mapping[rid]}
+              <Button
+                disabled={locked}
+                type="danger"
+                onClick={() => {
+                  if (
+                    !window.confirm(`移除已保存映射 ${rid}？保存后才写入后端。`)
+                  )
+                    return;
+                  setForm((old) => {
+                    const mapping = { ...old.mapping };
+                    delete mapping[rid];
+                    return { ...old, mapping };
+                  });
+                  setError('');
+                }}
+              >
+                移除此映射
+              </Button>
+            </div>
+          ))}
+          <div className="mp-mapping-actions">
             <Button
-              disabled={locked}
-              type="danger"
-              onClick={() => {
-                if (
-                  !window.confirm(`移除已保存映射 ${rid}？保存后才写入后端。`)
-                )
-                  return;
-                setForm((old) => {
-                  const mapping = { ...old.mapping };
-                  delete mapping[rid];
-                  return { ...old, mapping };
-                });
-                setError('');
-              }}
+              theme="solid"
+              type="primary"
+              disabled={
+                !identity ||
+                customWatermark ||
+                unsupportedKind ||
+                locked ||
+                !canSave
+              }
+              loading={busy}
+              onClick={() => void submit()}
             >
-              移除此映射
+              保存映射
+            </Button>
+            <Button
+              disabled={locked || !(dirty || uncertain)}
+              onClick={discard}
+            >
+              丢弃未保存输入
             </Button>
           </div>
-        ))}
-        <div className="mp-mapping-actions">
-          <Button
-            theme="solid"
-            type="primary"
-            disabled={
-              !identity ||
-              customWatermark ||
-              unsupportedKind ||
-              locked ||
-              !canSave
-            }
-            loading={busy}
-            onClick={() => void submit()}
-          >
-            保存映射
-          </Button>
-          <Button disabled={locked || !(dirty || uncertain)} onClick={discard}>
-            丢弃未保存输入
-          </Button>
-        </div>
-      </section>
+        </section>
+        {mappingFooter}
+      </div>
     </div>
   );
 }

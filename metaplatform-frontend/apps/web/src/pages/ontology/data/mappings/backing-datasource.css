@@ -37,10 +37,12 @@
   gap: 16px;
   align-items: start;
 }
-.mp-mapping-source {
+.mp-mapping-source,
+.mp-mapping-target {
   display: grid;
   gap: 14px;
   min-width: 0;
+  align-content: start;
 }
 .mp-mapping-card {
   min-width: 0;
@@ -164,9 +166,6 @@
   gap: 8px;
   padding-top: 16px;
 }
-.mp-mapping-samples {
-  margin-left: 246px;
-}
 .mp-mapping-samples .mp-mapping-toolbar {
   justify-content: space-between;
 }
@@ -184,9 +183,6 @@
   .mp-mapping-layout {
     grid-template-columns: 210px minmax(0, 1fr);
   }
-  .mp-mapping-samples {
-    margin-left: 226px;
-  }
 }
 @media (max-width: 680px) {
   .mp-mapping-workspace {
@@ -194,9 +190,6 @@
   }
   .mp-mapping-layout {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .mp-mapping-samples {
-    margin-left: 0;
   }
   .mp-mapping-type-label {
     margin-left: 0;
