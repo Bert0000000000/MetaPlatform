@@ -1,0 +1,32 @@
+{
+  "mode": "migration-list",
+  "exit_code": 0,
+  "seconds": 2.031,
+  "source_head": "f892895200d57312fbb753866271d82f4d52af83",
+  "frontend_sources_before": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "frontend_sources_after": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "source_unchanged": true,
+  "base_url": "http://127.0.0.1:59260",
+  "evidence_kind": "actual safe collection only; not test execution or passed browser gate",
+  "collected": 2,
+  "cases": [
+    {
+      "file": "ontology-migration-plan.spec.ts",
+      "title": "评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例",
+      "project": "ontology-migration"
+    },
+    {
+      "file": "ontology-migration-plan.spec.ts",
+      "title": "无幂等键执行被拒（400）——后端守卫",
+      "project": "ontology-migration"
+    }
+  ],
+  "config": "playwright.migration.config.ts",
+  "config_sha256": "91bf9d0b77197621cbc9469dbf7cd37c02e4912ab556109657811665def0d8e2"
+}

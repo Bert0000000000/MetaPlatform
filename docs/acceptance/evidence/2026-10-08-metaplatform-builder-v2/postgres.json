@@ -1,0 +1,32 @@
+{
+  "exit_code": 0,
+  "seconds": 242.203,
+  "source_head_at_completion": "158ab2366c7123680520e051ad685e000f5d6716",
+  "backend_sources_before": {
+    "sha256": "57a7db1a2dabbff42af28efc9cc53528f01ca444561dfc74f6cda8f443c51f63",
+    "file_count": 1419
+  },
+  "backend_sources_after": {
+    "sha256": "57a7db1a2dabbff42af28efc9cc53528f01ca444561dfc74f6cda8f443c51f63",
+    "file_count": 1419
+  },
+  "source_unchanged": true,
+  "local_connection_options": {
+    "sslmode": "disable",
+    "gssencmode": "disable",
+    "previous_actual_ssl": false
+  },
+  "results": {
+    "tests": 123,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "failed_case_names": [],
+  "gate_messages": [
+    "PostgreSQL preflight: database='metaplatform_ont_test', role='mate_ont_test', NOSUPERUSER NOBYPASSRLS, PostgreSQL 16",
+    "Required PostgreSQL gate: 123 executed, 0 skipped, 6 required suites present"
+  ],
+  "recorded_date": "2026-10-09 Asia/Shanghai",
+  "origin": "controller actual execution; strict safe projection"
+}

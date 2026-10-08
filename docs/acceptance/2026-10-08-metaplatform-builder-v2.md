@@ -5,8 +5,8 @@
 ## 范围与源码
 
 - 已接受输入：[设计](../superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)、[实施计划](../superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)。最新 HTML 的七入口、全平台布局与现有后端范围为用户已批准范围。原型合成客户、假角色、假同步/发布快照及无契约操作不进入正式业务链。
-- 工作树：`C:/Users/houuu/.codex/worktrees/242e/2026-07-02-MetaPlatform`；分支 `codex/metaplatform-builder-v2`；基线 `9646f018`；最后已审查实施源码 **`8df5ba95b3b07bd2721a16ddbdc9f7b75681ff00`**，tree **`b937cab8b2848a4c9af5f656a66c05442bac9079`**。证据提交单独产生，不递归把自身作为实施源码。
-- Task 5 全包审查发现的两个 Important 已在 `8df5ba95` 修复；限定差异的规格/质量复审 Approved。全分支最终只读审查由控制器执行，当前待完成。
+- 工作树：`C:/Users/houuu/.codex/worktrees/242e/2026-07-02-MetaPlatform`；分支 `codex/metaplatform-builder-v2`；基线 `9646f018`；当前稳定实施源码 **`f892895200d57312fbb753866271d82f4d52af83`**，tree **`c72290d13930885ca6c2fe990b7c80999d8a9f3f`**。证据提交单独产生，不递归把自身作为实施源码。
+- Task 5 两轮 Important/设置取证修复已分别在 `8df5ba95`、`158ab236` 限定复审 Approved。最终整分支审查 `9646f018..158ab236` 发现两个 Important/P2（命令锁可重置/父子发布命令未协调，跨域/legacy 同 family 当前版本标记）；唯一实施修复 `f8928952` 统一同步命令锁和 canonical tenant+terminal-slug family。唯一限定最终复审 `158ab236..f8928952` 的规格/质量均 Approved，两项 P2 关闭、无新 Critical/Important；控制器已确认。源码审查通过与最终运行退出分开，[review.json](evidence/2026-10-08-metaplatform-builder-v2/review.json) 不认证尚未完成的浏览器/视觉、CI 或部署。
 - [active 页面清单](../active/acceptance/builder-v2-active-page-coverage.md) 分类 **151 个 active 路由模式、132 个直接解析唯一页面源**（150 条直接解析加 `/ontology` wrapper 人工核对）；123 个 redirect 为兼容声明。清单是源页面/共享 PageHeader、表格、卡片与状态模式采用证据，**不是 151 页面逐一浏览器验收**。query/RID/tab 实例不无限扩展；Apphub 的 15 个 query 子页继续由既有 wrapper 分发。
 - 代表浏览器配置显式选择 IA、Ont Builder、平台 Builder 三个文件，21 个身份；覆盖七入口、常驻 SuperAI、功能组、页面导航、深链、历史、普通 Tab/Escape 和偏好。真实 Ont 与其他服务的 HTTP 替身分别登记。
 
@@ -16,23 +16,27 @@
 
 | 范围 | 当前最终状态 | 源码与实际数量 | 证据口径 |
 |---|---|---|---|
-| 全前端 unit | 通过 | `8df5ba95`；233 执行 / 233 通过 / 0 failure / 0 error / 0 skip；699 源文件前后指纹一致 | [unit.json](evidence/2026-10-08-metaplatform-builder-v2/unit.json)，本地组件/请求边界证据 |
-| 最终 typecheck / build | 通过 | `8df5ba95`；两项 exit 0，699 源文件前后指纹一致 | [typecheck.json](evidence/2026-10-08-metaplatform-builder-v2/typecheck.json)、[build.json](evidence/2026-10-08-metaplatform-builder-v2/build.json)；后续仅浏览器/helper 修订须核对源是否变化 |
-| 原六组 PostgreSQL 回归 | 未通过；待重跑 | 最新完整尝试 `eb2eeacd`，123 执行 / 122 通过 / 1 setup OperationalError / 0 skip；1419 后端 PY/SQL 指纹一致 | [postgres-latest-failed.json](evidence/2026-10-08-metaplatform-builder-v2/postgres-latest-failed.json)，连接意外关闭；不是最终绿色门禁 |
-| 原 ontology core | 待最终执行 | 9 个原用例 | 原 core 项目、完整采集，不筛选 |
-| 原 migration | 待最终执行 | 2 个原用例 | 专用配置和安全 list/JUnit 核对；不删除/替换原断言 |
-| Builder / 受影响 IA | 待最终执行 | 21 个当前身份 | 先采集，再核对执行身份、零失败/跳过；旧成功 21 及后续登录失败均保留 |
+| 全前端 unit | 通过 | `f8928952`；240 执行 / 240 通过 / 0 failure / 0 error / 0 skip；701 源文件前后指纹一致 | [unit.json](evidence/2026-10-08-metaplatform-builder-v2/unit.json)，本地组件/请求边界证据 |
+| 最终 typecheck / build | 通过 | `f8928952`；两项 exit 0，701 源文件前后指纹一致 | [typecheck.json](evidence/2026-10-08-metaplatform-builder-v2/typecheck.json)、[build.json](evidence/2026-10-08-metaplatform-builder-v2/build.json) |
+| 原六组 PostgreSQL 回归 | 通过，后端字节适用当前源 | `158ab236` 实际完整 123 执行 / 123 通过 / 0 failure / 0 error / 0 skip；1419 后端 PY/SQL 前后指纹一致，`158..f892` backend/gate/contract 未变 | [postgres.json](evidence/2026-10-08-metaplatform-builder-v2/postgres.json)、[源适用性核对](evidence/2026-10-08-metaplatform-builder-v2/source-applicability.json)；不伪称在 f892 重跑 |
+| 原 ontology core | 已采集 9，执行未通过 | `f8928952` collection exit 0；`158ab236` beforeAll 登录 504：JUnit 9 身份中 1 failure / 8 未运行（标为 skipped）/ 0 pass | [core-collection.json](evidence/2026-10-08-metaplatform-builder-v2/core-collection.json)、[失败回执](evidence/2026-10-08-metaplatform-builder-v2/core-latest-failed.json)；采集不是成功执行 |
+| 原 migration | 已采集 2，待最终执行 | `f8928952` collection exit 0，2 个原身份 | [migration-collection.json](evidence/2026-10-08-metaplatform-builder-v2/migration-collection.json)；专用配置和 list/JUnit 核对，不删除/替换原断言 |
+| Builder / 受影响 IA | 已采集 21，待最终执行 | `f8928952` collection exit 0，三文件完整身份 | [builder-collection.json](evidence/2026-10-08-metaplatform-builder-v2/builder-collection.json)；仍需实际身份吻合、零失败/跳过，旧成功 21 及后续登录失败均保留 |
 | 四尺寸截图 | 待最终执行/检查 | Ont 五页 × 四尺寸 = 20；平台八代表页 × 四尺寸 = 32 | 内容 ready、实际身份/个人设置、像素/溢出/交互分别核对；壳截图不替代页面内容 |
-| 契约工具 | 待最终回执 | 任务局部已有检查；最终统一检查待登记 | 采用 contracts 自身 package-lock 与脚本 |
-| 全分支最终审查 | 待完成 | 实施源码与独立证据包 | 所有 Critical/Important 关闭才满足退出条件 |
+| 契约工具 | 通过，字节适用当前源 | 控制器在 `158ab236` 实际 contract 7/7、validate_contracts exit 0；`158..f892` backend/contract/gate 未变 | [contracts.json](evidence/2026-10-08-metaplatform-builder-v2/contracts.json)；JUnit 7 项安全投影，validator exit 来源为控制器确认而非本证据 Agent 重跑 |
+| 全分支最终审查 | 源码 findings 已关闭；运行条件保留 | 整分支首审加唯一限定最终修复复审，两 P2 addressed；规格/质量 Approved | [review.json](evidence/2026-10-08-metaplatform-builder-v2/review.json)；合入评估 conditional，未认证最终运行/证据退出 |
 
-早期 PG 123/123、core 9/9、migration 2/2 是旧源码基线，不能填充本表。PG 曾有预检连接失败、122/123 的 fixture connection error、122/123 的 legacy interface assertion，以及上述另一 setup case 的 unexpected connection close；失败尝试完整保留在忽略的私有运行区。原 focused 查询重跑曾通过 1/1，不能替代完整六组回归。安全检查没有发现已确认的服务重启/OOM/PANIC 原因，接口读取错误是否关联该 assertion 未证实。Windows 端口转发/传输只是调查方向，**没有确认根因**。
+早期 PG 123/123、core 9/9、migration 2/2 是旧源码基线，不能填充本表。上述 PG 绿色来自新的完整原六组运行（migration77、sync9、atomic5、cardinality3、versions16、query13），collection/JUnit 由原 gate 逐条核对，耗时 242.203s。当前公开回执保留真正执行的 `158ab236` source，而以只读后端 1419 文件指纹与空 diff 证明对当前 f892 字节适用。
+
+PG 先前有预检连接失败、122/123 的 fixture connection error、122/123 的 legacy interface assertion，以及另一 setup case 的 unexpected connection close；[先前失败投影](evidence/2026-10-08-metaplatform-builder-v2/postgres-latest-failed.json) 与完整私有失败尝试均保留。原 focused 查询 1/1 没有替代完整回归。最终同一独立 DB/角色以显式 `sslmode=disable/gssencmode=disable` 运行；之前 prefer/disable 实际连接均 SSL=false，这不是 TLS 降级或 SSL 根因证据。安全检查没有确认服务重启/OOM/PANIC 原因，接口读取错误是否关联 assertion 未证实。Windows 端口转发/传输只是调查方向，**没有确认根因**。Linux container runner 尝试在 ownership inspect 500 前失败，没有创建/执行该 gate；没有重启共享 Docker Desktop/WSL。
+
+当前三服务 health 可 200，但 IAM 登录仍 504；同 CID 的本轮 Keycloak 恢复未解决登录边界。同步/异步 JWKS 探针对执行工具的 CreateProcess 被 policy 拒绝，返回只有“blocked by policy”、无具体原因，未执行/未绕过。此事实不证明 JWKS 是否为根因。当前 core9、migration2、Builder21 的成功执行与 52 张最终内容 ready 截图/390 输入工具条实际交互仍未达到，继续保留预览和资源，不能宣布全退出条件完成。
 
 Builder 旧完整 21/21 后曾出现 14 通过/7 失败及 16 通过/5 失败；失败发生在登录前置（504/504/504），未达到产品断言。现有 builder-only helper 对 502/503/504 最多三次尝试并逐项记录 HTTP 状态；401/403/422、缺身份或断言失败不重试成绿色、不 skip。其它错误 selector/DTO 假设和被拒绝的 RID 尝试也保留，正向 fixture 修正不算产品问题已修复。
 
 ## 真实链路与 HTTP 边界
 
-真实目标为本轮独立 PostgreSQL 16、Keycloak、Redis、native 当前源码 IAM/Auth、gateway、Ont 和当前源码 Vite。签名校验开启；浏览器实际 login/UserInfo-backed ID、签名 tenant 与匹配 `userId` 的个人设置请求/响应才能建立个人会话、应用主题。当前签名 JWT 缺 `sub`/`realm_access` 时不制造 ID 或管理员角色。实际 SharedLoginPage 无预置 storage/无 HTTP stub 的登录探针与只读 page capture 的真实登录后注入会话，是两种独立证据；后者不称为 UI 登录操作。
+真实目标为本轮独立 PostgreSQL 16、Keycloak、Redis、native 当前源码 IAM/Auth、gateway、Ont 和当前源码 Vite。签名校验开启；浏览器实际 login/UserInfo-backed ID、签名 tenant 与匹配 `userId` 的个人设置请求/响应才能建立个人会话、应用主题。**新增 Builder strict helper、实际 SharedLoginPage 与 capture** 在当前签名 JWT 缺 `sub`/`realm_access` 时不制造 ID 或管理员角色。原 core/migration 的既有 auth helper 仍保留 claims 缺失时派生 ID、默认角色的 fallback；保留原 helper 和断言不改，因此这些原 suite 即使通过，也不能单独认证实际个人身份或角色授权，须以 UserInfo-backed Builder/UI 证据另行核对，当前未完成的 suite 不记为通过。实际 SharedLoginPage 无预置 storage/无 HTTP stub 的登录探针与只读 page capture 的真实登录后注入会话，是两种独立证据；后者不称为 UI 登录操作。
 
 新增真实写入用例 `real Ont + own PG: editor WIP, five-step publication, saved source sync and actual sample query` 没有 `page.route` 拦截。它通过实际 UI：只读 precheck → WIP save/服务端回读 → validation → GET 404 核实全新目标 → 实际 `confirm_with` apply → 不可变版本/checksum 当前生效回读 → 普通 backing source 完整属性 RID 映射 upsert/回读 → 全量 sync → materialization 两行 → explorer 同 class 两行/完整属性值。只允许六种实际 POST：precheck、WIP save、validate、apply、source save、sync。全量 sync body `{}` 使用现有可选 incremental 的 false 默认值，成功结果为 synced 2 / failed 0 / deleted 0。唯一 `src_builder_e2e_*` 源表由实际非特权 fixture 角色新建、参数绑定两行；不 DROP、不复用既有表，测试模型/WIP/源表保留在隔离目标。**当前源码最终执行回执尚待控制器提供。** 模型发布不等同于实例迁移、回滚或 Proposal 执行，原 core/migration 单独核对。
 
@@ -48,12 +52,12 @@ Builder 旧完整 21/21 后曾出现 14 通过/7 失败及 16 通过/5 失败；
 | `GET /api/v1/copilot/conversations`、`/conversations/conv-boundary/messages` | 人工会话与 user 消息，验证既有页面消费行为 |
 | `GET /api/v1/copilot/models/chat`、`/models/multimodal` | 明确空模型 DTO，无模型推理/工具执行 |
 | IAM 与 Ont 路径 | 继续真实网络请求 |
-| `GET/PUT /api/v1/dashboard/settings` | 当前 `8df5ba95` 的宽域替身会落入未登记 503；独立 capture 的真实 settings 证明单独登记；不能将此平台用例称为远端 settings 成功 |
+| `GET/PUT /api/v1/dashboard/settings` | `158ab236` 修复后仅精确路径 GET/PUT 放行真实服务；POST、子路径及未知 dashboard 调用仍 503。当前 f892 相同 helper/用例字节 |
 | 其余非本体调用 | 明确 503 未登记边界；知识/治理页展示 unavailable，不暗示真实服务运行 |
 
 辅助读失败的专门 Ont UI 用例另外拦截已标注的读请求以验证 partial/unavailable，不能混算为正常真实 Ont 链。HTTP 替身的目录/审批错误重试、KB 不吞失败、治理 unavailable 和 SuperAI DTO 页面只证明前端行为，不证明这些独立业务服务的集成/执行。
 
-Task 6 边界审查发现上述 settings 拦截与 helper 注释/用例标题“real signed settings”不一致，已交控制器实施/复审；本证据任务不改业务或原用例。当前该用例只能证明本地偏好 fallback/reload，不计入最终远端偏好退出条件，后续源码/回执到齐再更新。
+Task 6 曾发现旧 settings 拦截与 helper 注释/标题“real signed settings”不一致，旧完整 20/21 中该用例的远端 settings pass 归因明确撤回。Task 5 原实施者只修复两个 E2E 路径、限定复审 Approved；同一个原用例 focused GREEN 1 项在真实 provider-backed ID 下核对初始 GET200、精确主题 PUT200、reload GET200 的服务器持久值，并在 finally 恢复原完整服务器偏好/验证 GET，恢复本地导航选择。基线 replay 的有意义 RED 为登录200后 settings503；此前登录504三次不能充当 RED。`mp_nav_mode` 是既有本地偏好，不制造服务器导航 DTO 字段。该 focused 成功与更早独立实际身份/settings capture 分别保留，**不填充最终完整 21**；生产/backend/API 未因本证据任务变更。
 
 ## 四项 Ruling 与继承限制
 
@@ -64,7 +68,7 @@ Task 6 边界审查发现上述 settings 拦截与 helper 注释/用例标题“
 3. **已加载自定义水位绑定不可编辑保存（Task 3）**：当前 save DTO 不提供 `ts_column`，repository upsert 会将省略值覆盖为 `updated_at`。检测实际加载的 custom watermark 后阻止保存、保留输入并解释限制；读取/物化/已保存配置同步和明确新建另一来源仍可用，普通/新来源可保存。代价：这些绑定的修改须等待已接受的保留配置 API，不能只提示后静默重置；本轮无后端水位新语义。
 4. **CI-only 非特权源 fixture（Task 5）**：仅 ephemeral ontology-loop job 新建 `builder_source_fixture`，`NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`，显式本 job DB/schema 的 CONNECT/USAGE/CREATE；生成并 mask 密码，PG env 仅此 step；新增显式 `CI=true` loopback5432/metaplatform_ont/该角色 allowlist，实际 case 复核四标志。代价：新 CI setup 可能失败，须实际 CI 成功后才宣称通过；不改全局 init、生产角色、本地预览或存量数据。当前只有配置/源码验证，没有 CI 运行。
 
-现有服务缺少 **saved-WIP revision 原子前置条件**。前端 exact reread、stored base 与本地 generation/独立 pending lock 可阻止已观测陈旧结果及请求中重复提交，但不能排除 reread 与 apply 之间的并发 WIP 替换。本轮未新增未接受的后端事务协议。另有 **RID grammar 不一致**：ClassRef/editor 接受的下划线 fixture 被现行 validation `_RID_RE` 判为 `valid:false`，UI 正确阻止 apply。通过 fixture 改用共同接受的 hyphen slug；该既有下划线边界没有修复，不能称所有合法编辑 RID 均可发布。
+现有服务缺少 **saved-WIP revision 原子前置条件**。前端 exact reread、stored base、本地 generation 与当前共享同步命令所有权（覆盖 child apply/discard 和 parent branch/rollback/migration，跨 refresh/selection/read/身份变更保持至对应命令 settle）可阻止已观测陈旧结果与竞争写入，但不能排除 reread 与 apply 之间的并发服务端 WIP 替换。本轮未新增未接受的后端事务协议。另有 **RID grammar 不一致**：ClassRef/editor 接受的下划线 fixture 被现行 validation `_RID_RE` 判为 `valid:false`，UI 正确阻止 apply。通过 fixture 改用共同接受的 hyphen slug；该既有下划线边界没有修复，不能称所有合法编辑 RID 均可发布。
 
 源列元数据/源样本预览、原型审批配置/沙箱或假执行若现行 API 不支持不开放；物化样本不是源样本。不变版本/current checksum 是模型事实；模型回滚不承诺实例恢复或外部副作用补偿。Neo4j legacy v1 未启动；embedder 为 hash、function backend 为 local subprocess，不外推远端模型/运行沙箱能力。
 
@@ -80,7 +84,7 @@ Task 6 边界审查发现上述 settings 拦截与 helper 注释/用例标题“
 
 ```powershell
 # 从仓库根目录；private 环境输入已在本地设置，不写在命令/文档中
-$source = '8df5ba95b3b07bd2721a16ddbdc9f7b75681ff00'
+$source = 'f892895200d57312fbb753866271d82f4d52af83'
 ./scripts/ci/run_builder_v2_validation.ps1 -Mode preflight -SourceCommit $source
 ./scripts/ci/run_builder_v2_validation.ps1 -Mode postgres -SourceCommit $source
 $node = (Resolve-Path '.superpowers/runtime/node22/package/bin/node.exe').Path
@@ -90,7 +94,9 @@ $pnpm = Join-Path $env:APPDATA 'npm/node_modules/pnpm/bin/pnpm.cjs'
 ./scripts/ci/run_builder_v2_validation.ps1 -Mode builder -SourceCommit $source -NodePath $node -PnpmPath $pnpm
 ```
 
-入口的原始 PG 操作为 `mate-platform-backend/.venv/Scripts/python.exe scripts/ci/verify_ont_postgres.py --junit <new ignored run>/results.xml`，仍由原 gate 完整采集六组/逐条核对执行身份。原 migration 为 `pnpm exec playwright test --config playwright.migration.config.ts --list --reporter=./migration-list-reporter.ts` 和 `--workers=1`，安全清单/JUnit 分别交 `scripts/ci/verify_migration_browser.py --list/--junit`；Builder 对应 `playwright.builder.config.ts`、`builder-safe-reporter.ts` 与 `scripts/ci/verify_builder_browser.py --list <builder-list.json> --junit <builder.xml>`。root 最终实跑采用既有忽略区 controller wrappers，命令/config/hash 由其最终安全回执补充；新增公共入口目前只有语法/help检查，**未冒称它已运行上述 gates**。
+入口的原始 PG 操作为 `mate-platform-backend/.venv/Scripts/python.exe scripts/ci/verify_ont_postgres.py --junit <new ignored run>/results.xml`，仍由原 gate 完整采集六组/逐条核对执行身份。原 migration 为 `pnpm exec playwright test --config playwright.migration.config.ts --list --reporter=./migration-list-reporter.ts` 和 `--workers=1`，安全清单/JUnit 分别交 `scripts/ci/verify_migration_browser.py --list/--junit`；Builder 对应 `playwright.builder.config.ts`、`builder-safe-reporter.ts` 与 `scripts/ci/verify_builder_browser.py --list <builder-list.json> --junit <builder.xml>`。控制器当前安全采集 9/2/21 皆 exit0、701 前后源码指纹一致，case 清单只证明采集完整，原最终实跑仍由其既有忽略区 wrappers 管理。
+
+**公共入口实际复现状态**：[public-preflight.json](evidence/2026-10-08-metaplatform-builder-v2/public-preflight.json) 记录控制器在 f892 实际 `-Mode preflight` 返回 **exit2**，安全原因仅“Owned-container inspection unavailable; target ownership is unverified”。guard 未越过所有权验证，未到达 DB preflight、未执行 gate。之前控制器原 PG123 绿色不代表这个新公共入口实跑成功。Python/PowerShell 语法/help、缺 caller input 拒绝及未审查源码拒绝检查通过；正向公共入口 preflight/完整 gate 复现仍待 ownership inspect 可用，**未声明该入口已运行/通过上述 gates**。
 
 前端原始 gates 从 `metaplatform-frontend` 用 Node22 first PATH 执行 `pnpm --filter @mate/web exec vitest run`、`pnpm --filter @mate/web typecheck`、`pnpm --filter @mate/web build`。contracts 从其独立目录执行锁定依赖工具 `npm run check` 及当前 contract pytest；完整原始输出只留忽略目录。
 
@@ -102,4 +108,4 @@ $pnpm = Join-Path $env:APPDATA 'npm/node_modules/pnpm/bin/pnpm.cjs'
 
 本轮预览 [http://127.0.0.1:59260](http://127.0.0.1:59260) 保留。独立 ports：gateway58110、auth58111、Ont58017、PG55493、Keycloak55389、Redis55387；容器 `codex-242e-builder-v2-*`，goal `01a11b4d-ab28-7ed0-9a89-929e5fae1374`。不使用/重启其它工作树、共享服务或 DB，不释放端口。Docker host source-mount 曾 ENOMEM，仅本轮已确认拥有的 API 尝试停止；当前 native source，不能以旧 image 版本冒称当前源码。
 
-最终安全证据入 Git 后，控制器将仍需的 helper/private runtime 复制到 Git ignored `.superpowers/runtime/builder-v2`，逐个验证 absolute 源/目标路径和文件 allowlist、更新 helper 路径且不重启预览。compose/private config/raw log/auth-state/HAR/trace 不入公共证据；不删除现存工作树，不 reset/prune/remove/递归清理共享资源。一次 helper 源读取意外显示了源码公开演示 fixture 字面量，未读取/持久化 private-config、JWT 或私人环境值；后续只做内部字段 allowlist 提取。
+Task 6 未完成，计划/SDD 运行目录和全部既有服务/数据/工作树继续保留。最终安全证据入 Git 后，控制器可将仍需的 helper/private runtime 显式镜像到 Git ignored `.superpowers/runtime/builder-v2`，逐个验证 absolute 源/目标路径和文件 allowlist、更新 helper 路径且不重启预览；**目前该镜像尚未执行**。compose/private config/raw log/auth-state/HAR/trace 不入公共证据；不删除现存工作树，不 reset/prune/remove/递归清理共享资源。一次 helper 源读取意外显示了源码公开演示 fixture 字面量，未读取/持久化 private-config、JWT 或私人环境值；后续只做内部字段 allowlist 提取。

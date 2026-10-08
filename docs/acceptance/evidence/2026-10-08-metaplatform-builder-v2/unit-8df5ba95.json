@@ -1,19 +1,19 @@
 {
   "stage": "unit",
   "exit_code": 0,
-  "seconds": 27.64,
-  "source_head_at_completion": "f892895200d57312fbb753866271d82f4d52af83",
+  "seconds": 19.547,
+  "source_head_at_completion": "8df5ba95b3b07bd2721a16ddbdc9f7b75681ff00",
   "frontend_sources_before": {
-    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
-    "file_count": 701
+    "sha256": "b2e162678bcecafcfe3b3e57a914be820fc3b4f01f41cc8955ac66928d6a237d",
+    "file_count": 699
   },
   "frontend_sources_after": {
-    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
-    "file_count": 701
+    "sha256": "b2e162678bcecafcfe3b3e57a914be820fc3b4f01f41cc8955ac66928d6a237d",
+    "file_count": 699
   },
   "source_unchanged": true,
   "results": {
-    "tests": 240,
+    "tests": 233,
     "failures": 0,
     "errors": 0,
     "skipped": 0

@@ -1,0 +1,67 @@
+{
+  "execution_source": "158ab2366c7123680520e051ad685e000f5d6716",
+  "applies_to_source": "f892895200d57312fbb753866271d82f4d52af83",
+  "recorded_date": "2026-10-09 Asia/Shanghai",
+  "evidence_kind": "controller executed contract JUnit safe projection; validate exit supplied by controller, not rerun by evidence worker",
+  "results": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "classname": "contracts.tests.test_bundle",
+      "name": "test_bundle_is_openapi_31"
+    },
+    {
+      "classname": "contracts.tests.test_bundle",
+      "name": "test_bundle_operation_ids_are_unique"
+    },
+    {
+      "classname": "contracts.tests.test_bundle",
+      "name": "test_bundle_contains_all_domains"
+    },
+    {
+      "classname": "contracts.tests.test_contract_rules",
+      "name": "test_manifest_contains_every_approved_domain"
+    },
+    {
+      "classname": "contracts.tests.test_contract_rules",
+      "name": "test_validator_rejects_missing_governance"
+    },
+    {
+      "classname": "contracts.tests.test_existing_contract_migration",
+      "name": "test_existing_operations_are_conserved"
+    },
+    {
+      "classname": "contracts.tests.test_existing_contract_migration",
+      "name": "test_every_migrated_operation_has_governance"
+    }
+  ],
+  "junit_sha256": "e91f49780bea54ad1fe67aa242fe879adb06e5f2b3e1580c58d188e58593a513",
+  "validate_contracts_exit_code": 0,
+  "validation_provenance": "controller confirmed at158; current backend/contract/gate bytes unchanged; see source-applicability.json",
+  "commands": [
+    {
+      "cwd": "mate-platform-backend",
+      "argv": [
+        ".venv/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "contracts/tests/test_bundle.py",
+        "contracts/tests/test_contract_rules.py",
+        "contracts/tests/test_existing_contract_migration.py",
+        "-q",
+        "--junitxml=../.superpowers/sdd/2026-10-08-metaplatform-builder-v2-alignment/runtime/contracts-final.xml"
+      ]
+    },
+    {
+      "cwd": "mate-platform-backend",
+      "argv": [
+        ".venv/Scripts/python.exe",
+        "contracts/scripts/validate_contracts.py"
+      ]
+    }
+  ]
+}
