@@ -6,7 +6,9 @@ let activeIdentity = '';
 export function editorIdentity(
   user: { id: string; tenantId: string } | null,
 ): string {
-  return user ? JSON.stringify([user.id, user.tenantId]) : '';
+  return user && typeof user.id === 'string' && user.id.trim() &&
+    typeof user.tenantId === 'string' && user.tenantId.trim()
+    ? JSON.stringify([user.id, user.tenantId]) : '';
 }
 export function setEditorSessionIdentity(identity: string): void {
   if (identity !== activeIdentity) {

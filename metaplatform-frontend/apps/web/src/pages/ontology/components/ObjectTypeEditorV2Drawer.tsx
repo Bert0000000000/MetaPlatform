@@ -402,8 +402,9 @@ export default function ObjectTypeEditorV2Drawer({
           {externalSubmitting && <p role="status">相似概念续接写入中，请等待当前提交完成。</p>}
           {auxiliaryLoading && <p role="status">正在读取编辑辅助信息；已有参考值与输入保持不变。</p>}
           {sessionNotice && <p role="status">{sessionNotice}</p>}
+          {!identity && <p role="alert" className="mp-text-danger">身份不可用，跨页后未保存输入无法恢复。请先保存当前输入，或复制备份后<a href="/login">重新登录</a>。</p>}
           {externalError && <p role="alert" className="mp-text-danger">{externalError}</p>}
-          {dirty && !sessionNotice && <p role="status">未保存输入已保留在当前会话，尚未提交后端。离开后重新打开可继续编辑。</p>}
+          {dirty && identity && !sessionNotice && <p role="status">未保存输入已保留在当前会话，尚未提交后端。离开后重新打开可继续编辑。</p>}
           {auxiliaryErrors?.length ? <div role="alert" className="mp-text-danger">partial · 编辑辅助信息读取失败：{auxiliaryErrors.join('；')} {onRetryAuxiliary && <button type="button" onClick={onRetryAuxiliary}>重试编辑辅助信息</button>}</div> : null}
           {/* ── 基础信息 ── */}
           <div className="mp-mb-5">

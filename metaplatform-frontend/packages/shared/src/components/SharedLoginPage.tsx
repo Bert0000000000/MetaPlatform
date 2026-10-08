@@ -92,8 +92,13 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
     setError(null);
     try {
       const resp = await apiLogin({ username, password, tenantId: defaultTenantId });
+      const userId = resp.userId ?? resp.user?.id;
+      if (typeof userId !== 'string' || !userId.trim() ||
+          typeof resp.accessToken !== 'string' || !resp.accessToken.trim()) {
+        throw new Error('登录未返回有效用户身份或令牌，请重试登录');
+      }
       const user: AuthUser = {
-        id: resp.userId ?? resp.user?.id ?? "",
+        id: userId,
         username: resp.username ?? resp.user?.username ?? username,
         tenantId: defaultTenantId,
         realName: resp.realName ?? resp.user?.realName,
@@ -150,12 +155,13 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
     setLoading(true);
     ssoCallback(providerId, { code, state })
       .then((resp) => {
-        if (!resp.accessToken) {
-          setError("SSO 回调未返回 accessToken");
+        if (typeof resp.userId !== 'string' || !resp.userId.trim() ||
+            typeof resp.accessToken !== 'string' || !resp.accessToken.trim()) {
+          setError('SSO 登录未返回有效用户身份或令牌，请重新登录');
           return;
         }
         const user: AuthUser = {
-          id: resp.userId ?? "",
+          id: resp.userId,
           username: resp.username ?? "",
           tenantId: defaultTenantId,
           roles: ["USER"],
@@ -418,6 +424,7 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
             />
             {error && (
               <div
+                role="alert"
                 style={{
                   fontSize: 12,
                   color: "var(--destructive)",

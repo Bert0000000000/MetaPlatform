@@ -344,6 +344,7 @@ async def iam_login(req: IamLoginRequest) -> IamAuthResponse:
     token_url = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
     form = {
         "grant_type": "password",
+        "scope": "openid",
         "client_id": KEYCLOAK_CLIENT_ID,
         "client_secret": KEYCLOAK_CLIENT_SECRET,
         "username": req.username,
@@ -475,6 +476,7 @@ async def dashboard_login_keycloak(req: IamLoginRequest) -> dict[str, Any]:
     token_url = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
     form = {
         "grant_type": "password",
+        "scope": "openid",
         "client_id": KEYCLOAK_CLIENT_ID,
         "client_secret": KEYCLOAK_CLIENT_SECRET,
         "username": req.username,
@@ -518,7 +520,7 @@ async def dashboard_login_keycloak(req: IamLoginRequest) -> dict[str, Any]:
         logger.warning("dashboard_login.userinfo_failed", error=str(exc))
     return {
         "loginResult": "SUCCESS",
-        "userId": sub or f"u-{req.username}",
+        "userId": sub,
         "username": preferred,
         "realName": real_name,
         "accessToken": access_token,
@@ -529,7 +531,7 @@ async def dashboard_login_keycloak(req: IamLoginRequest) -> dict[str, Any]:
         "requirePasswordReset": False,
         "mfaRequired": False,
         "user": {
-            "id": sub or f"u-{req.username}",
+            "id": sub,
             "username": preferred,
             "email": email,
             "realName": real_name,
