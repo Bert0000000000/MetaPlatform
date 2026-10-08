@@ -1,0 +1,29 @@
+{
+  "exit_code": 1,
+  "seconds": 363.015,
+  "source_head_at_completion": "eb2eeacd8860769e0286edc49b2b21e0ac039290",
+  "backend_sources_before": {
+    "sha256": "57a7db1a2dabbff42af28efc9cc53528f01ca444561dfc74f6cda8f443c51f63",
+    "file_count": 1419
+  },
+  "backend_sources_after": {
+    "sha256": "57a7db1a2dabbff42af28efc9cc53528f01ca444561dfc74f6cda8f443c51f63",
+    "file_count": 1419
+  },
+  "source_unchanged": true,
+  "results": {
+    "tests": 123,
+    "failures": 0,
+    "errors": 1,
+    "skipped": 0
+  },
+  "failed_case_names": [
+    "test_fixed_family_scope_preserves_decoys_and_other_tenant"
+  ],
+  "gate_messages": [
+    "PostgreSQL preflight: database='metaplatform_ont_test', role='mate_ont_test', NOSUPERUSER NOBYPASSRLS, PostgreSQL 16",
+    "PostgreSQL gate FAILED: Required JUnit contains skipped, failed or errored tests"
+  ],
+  "recorded_date": "2026-10-09 Asia/Shanghai",
+  "origin": "controller actual execution; strict safe projection"
+}
