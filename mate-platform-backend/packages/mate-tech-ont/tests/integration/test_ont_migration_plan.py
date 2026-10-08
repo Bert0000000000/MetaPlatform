@@ -21,6 +21,8 @@
 from __future__ import annotations
 
 import os
+import copy
+import json
 import sys
 from datetime import UTC, datetime
 
@@ -730,3 +732,155 @@ class TestRollbackBoundary:
         with repo.tenant_scope(T):
             runs = repo.list_migration_runs(ClassRef(OBJ_V1))
         assert len(runs) == 1, "迁移记录跨回滚保留（链条可追溯）"
+
+
+# R1 C2: real PostgreSQL boundaries, including auxiliary tables without FORCE RLS.
+_SAFETY_TABLES = (
+    "ont_individual", "ont_edit_overlay", "ont_backing_datasource",
+    "ont_migration_run", "ont_link_instance", "ont_type_version", "ont_object_type",
+)
+
+
+def _database_state():
+    return {table: _sql(f"SELECT to_jsonb(t) FROM {table} t ORDER BY to_jsonb(t)::text")
+            for table in _SAFETY_TABLES}
+
+
+@pytest.fixture()
+def safety(repo):
+    from dataclasses import replace
+
+    foreign = "migforeign"
+    other_cls = f"ont.{T}.obj.crm.other.v1"
+    foreign_cls = f"ont.{foreign}.obj.crm.deal.v1"
+    for table in _SAFETY_TABLES:
+        _sql(f"DELETE FROM {table} WHERE tenant_id=%s", (foreign,))
+    _publish_v1_then_v2(repo, (P_ID, P_STAGE_V1, P_LEGACY, P_AMT),
+                      (P_ID, P_STAGE_V2, P_AMT), v2_fmts={P_AMT: "integer"})
+    with repo.tenant_scope(T):
+        repo.upsert_object_type(_ot(other_cls, (P_ID, P_STAGE_V1, P_STAGE_V2, P_LEGACY, P_AMT)))
+    with repo.tenant_scope(foreign):
+        repo.upsert_object_type(_ot(foreign_cls, (P_ID, P_STAGE_V1, P_STAGE_V2, P_LEGACY)))
+    rows = [(T, OBJ_V1, f"ont.{T}.ind.deal.target"),
+            (T, other_cls, f"ont.{T}.ind.deal.decoy"),
+            (foreign, foreign_cls, f"ont.{foreign}.ind.deal.other")]
+    for tenant, cls, irid in rows:
+        props = {P_ID: irid, P_STAGE_V1: "old", P_LEGACY: "legacy", P_AMT: "123"}
+        if cls != OBJ_V1:
+            props[P_STAGE_V2] = "keep"
+        with repo.tenant_scope(tenant):
+            repo.create_individual(replace(_ind("seed", cls, props), rid=irid, tenant_id=tenant))
+            repo.upsert_backing_datasource({"tenant_id": tenant, "class_rid": cls,
+                "name": "safety", "table": "source", "pk_column": "id",
+                "field_mapping": {k: "column" for k in props}})
+        _sql("UPDATE ont_individual SET props_src=%s::jsonb WHERE rid=%s",
+             (json.dumps({k: {"src": "pipe"} for k in props}), irid))
+        for prop in (P_STAGE_V1, P_STAGE_V2) if cls != OBJ_V1 else (P_STAGE_V1,):
+            _sql("INSERT INTO ont_edit_overlay (individual_rid,property_rid,tenant_id) VALUES (%s,%s,%s)",
+                 (irid, prop, tenant))
+    with repo.tenant_scope(T):
+        a = repo.assess_migration(ClassRef(OBJ_V1))
+    yield {"assessment": a, "rows": rows, "foreign": foreign,
+           "other_cls": other_cls, "foreign_cls": foreign_cls}
+    for table in _SAFETY_TABLES:
+        _sql(f"DELETE FROM {table} WHERE tenant_id=%s", (foreign,))
+
+
+class TestMigrationSafety:
+    base = f"/api/v1/ont/v2/object-types/{OBJ_V1}/migration"
+
+    @pytest.mark.parametrize("change", [
+        {"class_rid": f"ont.{T}.obj.crm.other.v1"},
+        {"from_checksum": "forged"}, {"extra": True},
+        {"renames": {P_STAGE_V1: P_ID}}, {"renames": {P_ID: P_STAGE_V2}},
+        {"coercions": [{"prop_rid": P_AMT, "from_format": "string", "to_format": "double"}]},
+        {"coercions": [{"prop_rid": P_ID, "from_format": "string", "to_format": "integer"}]},
+        {"drops": {"policy": "drop", "props": [P_ID]}},
+        {"drops": {"policy": "oops", "props": [P_LEGACY]}},
+        {"drops": {"policy": "drop", "props": [P_LEGACY], "all": True}},
+        {"reattach": {"to": f"ont.{T}.obj.crm.other.v1"}},
+        {"pk_rederive": {"old_pk": [P_ID], "new_pk": [P_AMT], "on_missing": "skip"}},
+        {"renames": []}, {"coercions": {}}, {"warnings": "bad"},
+    ])
+    def test_tampered_plan_rejected_without_changes(self, repo, client, safety, change):
+        a = safety["assessment"]
+        plan = {**copy.deepcopy(a["plan"]), **change}
+        before = _database_state()
+        response = client.post(self.base + "/run", json={"plan": plan, "expected_checksum": a["to_checksum"]},
+                               headers={"Idempotency-Key": "safety-tamper"})
+        assert response.status_code == 422, response.text
+        assert _database_state() == before
+
+    @pytest.mark.parametrize("body", [
+        {"options": {"extra": True}}, {"options": []}, {"options": {"rename": []}},
+        {"options": {"pk_missing": "bad"}}, {"options": {"drops": True}},
+        {"options": {"rename": {P_ID: P_STAGE_V2}}}, {"target_payload": []},
+        {"baseline": []}, {"extra": True},
+    ])
+    def test_bad_assess_input_rejected_without_changes(self, repo, client, safety, body):
+        before = _database_state()
+        r = client.post(self.base + "/assess", json=body)
+        assert r.status_code == 422, r.text
+        assert _database_state() == before
+
+    @pytest.mark.parametrize("kind", ["foreign_live", "foreign_snapshot", "other_live", "other_snapshot", "foreign_target", "other_target"])
+    def test_references_rejected_without_changes(self, repo, client, safety, kind):
+        from mate_tech_ont.v2_kernel.api import _ot_to_dto
+
+        foreign = kind.startswith("foreign")
+        cls = safety["foreign_cls"] if foreign else safety["other_cls"]
+        with repo.tenant_scope(safety["foreign"] if foreign else T):
+            snapshot = repo.list_versions(ClassRef(cls))[-1].rid
+            target = _ot_to_dto(repo.get_object_type(ClassRef(cls))).model_dump(mode="json")
+        body = {"target_payload": target} if kind.endswith("target") else {"baseline": snapshot if kind.endswith("snapshot") else cls}
+        before = _database_state()
+        r = client.post(self.base + "/assess", json=body)
+        assert r.status_code == (403 if foreign else 422), r.text
+        assert _database_state() == before
+        with repo.tenant_scope(T), pytest.raises((ValueError, PermissionError)):
+            repo.assess_migration(ClassRef(OBJ_V1), **({"target": _ot(cls, (P_ID,))} if kind.endswith("target") else {"baseline": ClassRef(body["baseline"])}))
+
+    @pytest.mark.parametrize("where", ["props", "props_src", "overlay", "mapping"])
+    def test_rename_collision_aborts_every_table(self, repo, client, safety, where):
+        irid = safety["rows"][0][2]
+        if where in ("props", "props_src"):
+            _sql(f"UPDATE ont_individual SET {where}={where} || %s::jsonb WHERE rid=%s", (json.dumps({P_STAGE_V2: None}), irid))
+        elif where == "overlay":
+            _sql("INSERT INTO ont_edit_overlay (individual_rid,property_rid,tenant_id) VALUES (%s,%s,%s)", (irid, P_STAGE_V2, T))
+        else:
+            _sql("UPDATE ont_backing_datasource SET field_mapping=field_mapping || %s::jsonb WHERE tenant_id=%s AND class_rid=%s", (json.dumps({P_STAGE_V2: "keep"}), T, OBJ_V1))
+        before = _database_state()
+        a = safety["assessment"]
+        r = client.post(self.base + "/run", json={"plan": a["plan"], "expected_checksum": a["to_checksum"]}, headers={"Idempotency-Key": "safety-collision"})
+        assert r.status_code == 409, r.text
+        assert "E409_MIGRATION_RENAME_CONFLICT" in r.text and P_STAGE_V2 in r.text
+        assert _database_state() == before
+
+    def test_fixed_family_scope_preserves_decoys_and_other_tenant(self, repo, safety):
+        before = _database_state()
+        a = safety["assessment"]
+        assert a["counts"]["dangling"][P_STAGE_V1] == 1
+        plan = copy.deepcopy(a["plan"])
+        plan["drops"]["policy"] = "drop"
+        with repo.tenant_scope(T):
+            repo.run_migration(ClassRef(OBJ_V1), plan, expected_checksum=a["to_checksum"], idempotency_key="safety-scope")
+        after = _database_state()
+        target = safety["rows"][0][2]
+        for table in ("ont_individual", "ont_edit_overlay", "ont_backing_datasource"):
+            def non_target(row):
+                obj = row[0]
+                return obj["tenant_id"] != T or (obj.get("class_rid") != OBJ_V1 if table == "ont_backing_datasource" else obj.get("individual_rid", obj.get("rid")) != target)
+            assert [r for r in before[table] if non_target(r)] == [r for r in after[table] if non_target(r)], table
+        props, src = _sql("SELECT props,props_src FROM ont_individual WHERE rid=%s", (target,))[0]
+        assert props[P_STAGE_V2] == "old" and props[P_AMT] == 123
+        assert P_STAGE_V1 not in src and P_LEGACY not in src
+        mapping = _sql("SELECT field_mapping FROM ont_backing_datasource WHERE tenant_id=%s AND class_rid=%s", (T, OBJ_V1))[0][0]
+        assert P_STAGE_V1 not in mapping and P_LEGACY not in mapping
+
+    def test_explicit_rename_remains_supported(self, repo):
+        _publish_v1_then_v2(repo, (P_ID, P_LEGACY), (P_ID, P_CODE))
+        with repo.tenant_scope(T):
+            repo.create_individual(_ind("x", OBJ_V1, {P_ID: "x", P_LEGACY: "keep"}))
+            a = repo.assess_migration(ClassRef(OBJ_V1), options={"rename": {P_LEGACY: P_CODE}})
+            repo.run_migration(ClassRef(OBJ_V1), a["plan"], expected_checksum=a["to_checksum"], idempotency_key="explicit-rename")
+        assert _sql("SELECT props->>%s FROM ont_individual WHERE rid=%s", (P_CODE, f"ont.{T}.ind.deal.x"))[0][0] == "keep"
