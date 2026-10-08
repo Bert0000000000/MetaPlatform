@@ -647,6 +647,8 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}
   /api/v1/ont/v2/object-types/{rid}/datasources:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1datasources
+  /api/v1/ont/v2/object-types/{rid}/datasources/sync:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1datasources~1sync
   /api/v1/ont/v2/object-types/{rid}/materialization:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1materialization
   /api/v1/ont/v2/object-types/{rid}/migration/assess:

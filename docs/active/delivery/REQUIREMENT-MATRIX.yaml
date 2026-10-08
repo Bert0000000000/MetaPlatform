@@ -3855,3 +3855,14 @@ requirements:
       - mate-platform-backend/packages/mate-tech-agent-team/tests/test_artifacts.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-ONT-BUILDER-SOURCE-MAPPING:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontUpsertV2BackingDatasource
+    - ontSyncV2BackingDatasources
+    handler: mate_tech_ont.main:app#ontSyncV2BackingDatasources
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted

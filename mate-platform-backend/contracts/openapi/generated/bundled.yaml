@@ -12791,6 +12791,90 @@ paths:
           $ref: '#/components/responses/Error403'
         '422':
           $ref: '#/components/responses/Error422'
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Declare or update a backing datasource
+      operationId: ontUpsertV2BackingDatasource
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-SOURCE-MAPPING
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackingDatasourceCreateV2'
+      responses:
+        '200':
+          description: Declaration saved; read the declaration list for actual configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - rid
+                  - name
+                properties:
+                  rid:
+                    type: string
+                  name:
+                    type: string
+        '403':
+          $ref: '#/components/responses/Error403'
+        '422':
+          $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/{rid}/datasources/sync:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Synchronize declared backing datasources
+      description: Synchronizes every declared source for this type. HTTP 200 may contain failed rows and ok=false; the result is not an overall success in that case.
+      operationId: ontSyncV2BackingDatasources
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-SOURCE-MAPPING
+      x-mate-implementation-status: implemented
+      parameters:
+        - in: query
+          name: incremental
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Actual aggregate and per-source outcomes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceSyncV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '422':
+          $ref: '#/components/responses/Error422'
   /api/v1/ont/v2/object-types/{rid}/materialization:
     parameters:
       - in: path
@@ -19410,6 +19494,97 @@ components:
             - 'null'
         updated_at:
           type: string
+    BackingDatasourceCreateV2:
+      type: object
+      description: The path supplies class_rid and authenticated context supplies tenant authority. Credentials are server environment references. No ts_column input is supported; upsert uses the server default updated_at.
+      required:
+        - class_rid
+        - name
+        - table
+        - pk_column
+      properties:
+        class_rid:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          default: pg_table
+        dsn_env:
+          type: string
+          default: ONT_SOURCE_DSN
+        table:
+          type: string
+        pk_column:
+          type: string
+        field_mapping:
+          type: object
+          description: Full property RID to source column name
+          additionalProperties:
+            type: string
+          default: {}
+        priority:
+          type: integer
+          default: 100
+    BackingDatasourceSyncV2:
+      type: object
+      required:
+        - ok
+        - total_synced
+        - total_failed
+        - total_deleted
+        - sources
+      properties:
+        ok:
+          type: boolean
+        total_synced:
+          type: integer
+        total_failed:
+          type: integer
+        total_deleted:
+          type: integer
+        sources:
+          type: object
+          additionalProperties:
+            type: object
+            required:
+              - synced
+              - failed
+              - deleted
+              - failures
+              - cursor
+            properties:
+              synced:
+                type: integer
+              failed:
+                type: integer
+              deleted:
+                type: integer
+              failures:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - pk
+                    - error
+                  properties:
+                    pk: {}
+                    error:
+                      type: string
+              cursor:
+                type: object
+                required:
+                  - ts
+                  - pk
+                properties:
+                  ts:
+                    type:
+                      - string
+                      - 'null'
+                  pk:
+                    type:
+                      - string
+                      - 'null'
     MaterializationV2:
       type: object
       required:
