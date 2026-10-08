@@ -2,7 +2,7 @@
 
 范围：当前 Task 8 单一注册表解析的 **151 个 active 路由模式 / 132 个直接解析唯一页面源**；150 条直接解析，另人工核对 `/ontology` 本地总览/redirect wrapper。123 个 redirect 声明属于兼容矩阵，未计作额外页面。RID、tab 与 query 参数实例不无限展开。
 
-本表是当前源码与页面模式归类，不宣称逐个渲染了 151 个页面，也不宣称后端健康或正式交付。浏览器代表覆盖七入口、SuperAI、六组、历史路径、四宽、普通 Tab/Escape、主题/导航偏好；新增 builder 配置显式收集三个文件。非本体域采用人工编写的当前 DTO HTTP 边界，未知调用显式 503；身份/设置与 Ont 读取使用独立真实服务。mandatory core/migration/PG 结果独立登记。
+本表是当前源码与页面模式归类，不宣称逐个渲染了 151 个页面，也不宣称后端健康或正式交付。浏览器代表覆盖七入口、SuperAI、六组、历史路径、四宽、普通 Tab/Escape、主题/导航偏好；builder 配置显式收集三个文件共 21 项，保留原 20 项并增加真实写入链。该链在独立非特权 PG 目标的唯一测试来源上通过 UI 保存 WIP、五步发布、保存映射、同步与样本/对象查询；没有接口替身。非本体域采用人工编写的当前 DTO HTTP 边界，未知调用显式 503；身份/设置与 Ont 使用独立真实服务。mandatory core/migration/PG 结果独立登记。
 
 共享样式：`components/skeleton/skeleton.css` 的页头、表格局部滚动、状态与窄屏筛选；保留自有列表/卡片/画布操作。ResourceDetailLayout、KernelPrimitiveListPage 与 ExternalAgentsPanel 已实际使用 PageHeader；ApphubShell 依据现有 query 分发 15 个子页，无额外平台事实。Flowgram 原有演示仍明确是演示。
 
@@ -125,7 +125,7 @@
 | /admin/flowgram | gov / platform / /admin/flowgram | src/pages/dashboard/admin/FlowgramDemoPage.tsx | 显式演示画布 | __AdminLayout 的 PageHeader + FlowRunner 局部画布 | 共享页头源码核对；演示不登记为真实执行 |
 | /admin/demo | gov / platform / /admin/platform/components | src/routes/demo/index.tsx | 共享资源清单/状态 | PageHeader, DataTablePro, FilterBar, EmptyState, SheetDetail | 当前源模式核对；共享样式与代表浏览器继承 |
 | /ontology | ontology / overview / /ontology | src/routes/ontology.tsx → src/pages/ontology/overview/OverviewPage.tsx | 建设总览 / 读取阻断 / 下一步 | OntologyIndexRoute：无 tab 渲染总览；旧 tab 转发；PageHeader + 真实计数/读失败/继续建设卡片 | 失败状态单元 + 真实 IA 总览路由 |
-| /ontology/model/object-types | ontology / model / /ontology/model/object-types | src/pages/ontology/model/object-types/ObjectTypesPage.tsx | 共享页头/卡片/业务状态 | PageHeader | 当前源模式核对；共享样式与代表浏览器继承 |
+| /ontology/model/object-types | ontology / model / /ontology/model/object-types | src/pages/ontology/model/object-types/ObjectTypesPage.tsx | 完整模型目录 / 编辑器 / WIP | PageHeader + OntologyModelingPage/ObjectTypeEditorV2Drawer；保留真实新建与属性编辑 | 真实签名 UI 保存唯一 WIP、完整请求与服务端回读；模型编辑单元 |
 | /ontology/model/object-types/:rid | ontology / model / /ontology/model/object-types | src/pages/ontology/model/object-types/ObjectTypeDetailPage.tsx | 资源详情 / 局部页签 | ResourceDetailLayout 的共享 PageHeader + 既有详情操作 | 详情源码模式复用；对象详情真实浏览器/单元代表 |
 | /ontology/model/object-types/:rid/:tab | ontology / model / /ontology/model/object-types | src/pages/ontology/model/object-types/ObjectTypeDetailPage.tsx | 资源详情 / 局部页签 | ResourceDetailLayout 的共享 PageHeader + 既有详情操作 | 详情源码模式复用；对象详情真实浏览器/单元代表 |
 | /ontology/model/link-types | ontology / model / /ontology/model/link-types | src/pages/ontology/model/link-types/LinkTypesPage.tsx | 基元清单 | KernelPrimitiveListPage 的 PageHeader/FilterBar/DataTablePro/EmptyState | 真实 IA 路由浏览器代表 + 源码复用 |
@@ -133,10 +133,10 @@
 | /ontology/model/axioms | ontology / model / /ontology/model/axioms | src/pages/ontology/model/axioms/AxiomsPage.tsx | 基元清单 | KernelPrimitiveListPage 的 PageHeader/FilterBar/DataTablePro/EmptyState | 真实 IA 路由浏览器代表 + 源码复用 |
 | /ontology/model/graph | ontology / model / /ontology/model/graph | src/pages/ontology/model/graph/OntologyGraphPage.tsx | 模型树 / 画布 / Inspector | OntologyGraphView、ModelResourceTree/GraphCanvas/Inspector | 真实 Ont 选择/深链浏览器 + 模型工作台单元 |
 | /ontology/model/validation | ontology / operations / /ontology/model/validation | src/pages/ontology/model/validation/ModelValidationPage.tsx | 共享页头/卡片/业务状态 | PageHeader, EmptyState | 当前源模式核对；共享样式与代表浏览器继承 |
-| /ontology/data/mappings | ontology / data / /ontology/data/mappings | src/pages/ontology/data/mappings/ObjectMappingsPage.tsx | 共享页头/卡片/业务状态 | PageHeader | 当前源模式核对；共享样式与代表浏览器继承 |
+| /ontology/data/mappings | ontology / data / /ontology/data/mappings | src/pages/ontology/data/mappings/ObjectMappingsPage.tsx | 来源声明 / 字段映射 / 独立物化 | PageHeader + SourceMappingEditor/BackingDatasourcePanel/MaterializationSamples | 真实签名 UI 保存完整 RID 映射、回读、同步与 PG 样本；四宽代表 |
 | /ontology/data/sync | ontology / operations / /ontology/data/sync | src/pages/ontology/data/sync/SyncJobsPage.tsx | 共享资源清单/状态 | PageHeader, DataTablePro, FilterBar, EmptyState | 当前源模式核对；共享样式与代表浏览器继承 |
 | /ontology/data/lineage | ontology / data / /ontology/data/lineage | src/pages/ontology/data/lineage/OntologyLineagePage.tsx | 共享页头/卡片/业务状态 | PageHeader, EmptyState | 当前源模式核对；共享样式与代表浏览器继承 |
-| /ontology/explore/objects/:rid? | explore / explore / /ontology/explore/objects | src/pages/ontology/explorer/ObjectExplorerPage.tsx | 对象消费两栏 / 动作抽屉 | PageHeader/SplitPane/DataTablePro/SheetDetail/Proposal | 真实 IA 与四宽对象浏览；必需 core 门禁另记 |
+| /ontology/explore/objects/:rid? | explore / explore / /ontology/explore/objects | src/pages/ontology/explorer/ObjectExplorerPage.tsx | 对象消费两栏 / 动作抽屉 | PageHeader/SplitPane/DataTablePro/SheetDetail/Proposal | 真实同步后两条对象与完整属性查询；真实 IA 与四宽浏览；必需 core 门禁另记 |
 | /ontology/explore/analysis | explore / explore / /ontology/explore/analysis | src/pages/ontology/AnalysisPage.tsx | 分析画布 | PageHeader + 既有类型/属性/聚合/SVG 图表 | 新增共享页头；保留聚合与 Pin；源码模式核对 |
 | /ontology/explore/map | explore / explore / /ontology/explore/map | src/pages/ontology/MapPage.tsx | 地图画布 | PageHeader + 既有地理类型/实例/视口 | 新增共享页头；保留地图操作；源码模式核对 |
 | /ontology/explore/objectset | explore / explore / /ontology/explore/objectset | src/pages/ontology/explore/objectset/ObjectSetBuilderPage.tsx | 共享资源清单/状态 | PageHeader, DataTablePro, EmptyState | 当前源模式核对；共享样式与代表浏览器继承 |
@@ -148,7 +148,7 @@
 | /ontology/logic/functions/:rid/:tab | ontology / logic / /ontology/logic/functions | src/pages/ontology/logic/functions/FunctionDetailPage.tsx | 资源详情 / 局部页签 | ResourceDetailLayout 的共享 PageHeader + 既有详情操作 | 详情源码模式复用；对象详情真实浏览器/单元代表 |
 | /ontology/logic/designer | ontology / logic / /ontology/logic/designer | src/pages/ontology/logic/designer/ActionDesignerPage.tsx | 动作资源 / 编排画布 | 既有资源选择、详情与全屏 Flowgram；局部容器滚动 | 命名源码核对；未宣称执行历史已接入 |
 | /ontology/logic/runs | ontology / operations / /ontology/logic/runs | src/pages/ontology/logic/runs/ActionRunsPage.tsx | 共享资源清单/状态 | PageHeader, DataTablePro, FilterBar, EmptyState | 当前源模式核对；共享样式与代表浏览器继承 |
-| /ontology/governance/drafts | ontology / governance / /ontology/governance/drafts | src/pages/ontology/governance/drafts/DraftsPage.tsx | 共享页头/卡片/业务状态 | PageHeader | 当前源模式核对；共享样式与代表浏览器继承 |
+| /ontology/governance/drafts | ontology / governance / /ontology/governance/drafts | src/pages/ontology/governance/drafts/DraftsPage.tsx | 草稿 / 五步发布 | PageHeader + SchemaWipCard 五步审阅/校验/影响/确认/结果 | 真实签名 UI 校验、GET404 验证新目标、确认 apply、校验和与当前发布历史 |
 | /ontology/governance/releases | ontology / governance / /ontology/governance/releases | src/pages/ontology/governance/releases/ReleasesPage.tsx | 共享页头/卡片/业务状态 | PageHeader, EmptyState | 当前源模式核对；共享样式与代表浏览器继承 |
 | /ontology/governance/usage | ontology / operations / /ontology/governance/usage | src/pages/ontology/governance/usage/UsagePage.tsx | 共享资源清单/状态 | PageHeader, DataTablePro, EmptyState | 当前源模式核对；共享样式与代表浏览器继承 |
 | /ontology/governance/security | gov / security / /ontology/governance/security | src/pages/ontology/governance/security/SecurityPage.tsx | 共享页头/卡片/业务状态 | PageHeader | 当前源模式核对；共享样式与代表浏览器继承 |
