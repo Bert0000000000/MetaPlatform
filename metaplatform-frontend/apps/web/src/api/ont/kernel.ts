@@ -1125,6 +1125,9 @@ export interface KernelBackingDatasource {
   priority: number;
   ts_column?: string;
   last_synced_at?: string | null;
+  last_synced_pk?: string | null;
+  last_error?: string;
+  last_failed?: number;
   updated_at?: string;
 }
 
@@ -1155,15 +1158,29 @@ export async function upsertBackingDatasource(
   return resp.data as Record<string, unknown>;
 }
 
-/** 批量/增量同步（incremental=true 按 ts_column > 水位）；返回 {源名: 同步行数}。 */
+export interface BackingDatasourceSyncSource {
+  synced: number;
+  failed: number;
+  deleted: number;
+  failures: Array<{ pk: unknown; error: string }>;
+  cursor: { ts: string | null; pk: string | null };
+}
+export interface BackingDatasourceSyncResult {
+  ok: boolean;
+  total_synced: number;
+  total_failed: number;
+  total_deleted: number;
+  sources: Record<string, BackingDatasourceSyncSource>;
+}
+/** Synchronizes every declared source. HTTP 200 with ok=false is a partial failure. */
 export async function syncBackingDatasources(
   classRid: string, incremental = false,
-): Promise<Record<string, number>> {
+): Promise<BackingDatasourceSyncResult> {
   const resp = await apiClient.post(
     v2(`/object-types/${encodeURIComponent(classRid)}/datasources/sync`), {},
     { params: incremental ? { incremental: true } : undefined },
   );
-  return resp.data as Record<string, number>;
+  return resp.data as BackingDatasourceSyncResult;
 }
 
 /** DATA-15：物化行集（对象最新状态回流读端点）。 */
