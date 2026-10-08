@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@douyinfe/semi-ui';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/skeleton';
@@ -14,7 +15,8 @@ import '../../ontology.css';
  * 随本页收编（其他基元页没有真实编辑器，不放创建入口——ADR-0069 §2.4）。
  */
 export default function ObjectTypesPage() {
-  const [createOpen, setCreateOpen] = useState(false);
+  const [params] = useSearchParams();
+  const [createOpen, setCreateOpen] = useState(params.get('create') === 'true');
 
   return (
     <>

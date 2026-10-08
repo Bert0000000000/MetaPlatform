@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useAuth } from '@mate/shared';
 import { Button, Card, Modal } from '@douyinfe/semi-ui';
 import { SheetDetail } from '@/components/skeleton';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -10,6 +11,7 @@ import {
   listObjectTypes, listActionTypes, listLinkTypes,
   listValueTypes, listInterfaces,
   createObjectType,
+  saveSchemaWip,
   getObjectType,
   precheckObjectTypes, mergeObjectTypes,
   getTypeHierarchy,
@@ -23,6 +25,8 @@ import { getTenantId } from '@/utils/auth';
 import { actionDisplayName } from './logic/actions/displayName';
 import OntologyMergeDrawer from './components/OntologyMergeDrawer';
 import ObjectTypeEditorV2Drawer, { type ObjectTypeEditorPrefill } from './components/ObjectTypeEditorV2Drawer';
+import { resourceError } from './hooks/resourceErrors';
+import { discardEditorInput,editorIdentity,editorInputKey } from './hooks/editorSession';
 import './ontology.css';
 
 
@@ -151,8 +155,11 @@ export default function OntologyModelingPage({
   /** Shell 注入：proposal execute 成功后递增，触发本组件重新拉数据。 */
   refreshKey?: number;
 }) {
-    const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
+  const {user}=useAuth();
+  const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [workflowError, setWorkflowError] = useState('');
   const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
   const [linkTypes, setLinkTypes] = useState<KernelLinkType[]>([]);
   // EXP-02/04：值类型注册表 + Interface 清单（V2 编辑器数据源）
@@ -215,9 +222,12 @@ export default function OntologyModelingPage({
       try {
         const ots = await refreshAll();
         if (!active) return;
-        if (ots.length > 0 && !selectedConcept) {
-          setSelectedDomain(domainOfObjectType(ots[0].rid));
-          setSelectedConcept(ots[0].rid);
+        const params = new URLSearchParams(location.search);
+        const requested = params.get('typeRef') || params.get('class');
+        const initialType = ots.find(t => t.rid === requested) || ots[0];
+        if (initialType && !selectedConcept) {
+          setSelectedDomain(domainOfObjectType(initialType.rid));
+          setSelectedConcept(initialType.rid);
         }
       } catch (e) {
         console.warn('本体数据加载失败', e);
@@ -380,6 +390,7 @@ export default function OntologyModelingPage({
 
   // 保存成功后的收尾：清暂存、重拉、选中新概念
   const afterEditorSave = async (rid: string) => {
+    discardEditorInput(editorInputKey(editorIdentity(user),'create'));
     setPendingCreatePayload(null);
     const ots = await refreshAll();
     setSelectedDomain(domainOfObjectType(rid));
@@ -410,7 +421,7 @@ export default function OntologyModelingPage({
             setCandidates(list);
             setPrecheckSource({ name: payload.display_name, slug, domain });
             setCandidateModalOpen(true);
-            return null;
+            return '检测到相似概念，请在候选窗口选择；编辑内容已保留。';
           }
         } catch {
           // precheck 失败不阻塞创建（best-effort）
@@ -444,8 +455,10 @@ export default function OntologyModelingPage({
       try {
         await createObjectType(payload);
         await afterEditorSave(payload.rid);
+        closeEditor();
       } catch (e) {
         console.warn('新建概念失败', e);
+        setWorkflowError(resourceError(e));
       }
     } else if (precheckSource) {
       setPrecheckDismissedKey(`${precheckSource.name}|${precheckSource.slug}|${precheckSource.domain}`);
@@ -502,6 +515,7 @@ export default function OntologyModelingPage({
       setCandidates([]);
       setCreateOpen(false);
       setPendingCreatePayload(null);
+      discardEditorInput(editorInputKey(editorIdentity(user),'create'));
       const ots = await refreshAll();
       const targetDomain = domainOfObjectType(mergeTarget.rid);
       setSelectedDomain(targetDomain);
@@ -902,6 +916,7 @@ export default function OntologyModelingPage({
       </SheetDetail>
 
       {/* V2 类型/属性编辑器：create（Shell 按钮）/ edit（编辑概念 / 新增属性 / 行内编辑） */}
+      {workflowError && <div role="alert">{workflowError}</div>}
       <ObjectTypeEditorV2Drawer
         open={editorOpen}
         mode={editorMode}
@@ -910,11 +925,16 @@ export default function OntologyModelingPage({
         linkTypes={linkTypes}
         interfaces={ontInterfaces}
         valueTypes={valueTypes}
-        tenant={getTenantId() || 'demo'}
+        tenant={getTenantId() || ''}
         domainOptions={Object.entries(DOMAIN_LABELS).map(([code, label]) => ({ code, label }))}
         prefill={editorPrefill}
         onClose={closeEditor}
         onSubmit={submitEditor}
+        externalError={workflowError}
+        onSaveDraft={async (payload) => {
+          try { await saveSchemaWip(payload); return null; }
+          catch (e) { return resourceError(e); }
+        }}
         onCreateNameBlur={handleCreateNameBlur}
         prechecking={precheckLoading}
       />

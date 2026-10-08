@@ -853,9 +853,17 @@ export interface SchemaWipEntry {
   author: string;
   payload: Record<string, unknown>;
   created_at?: string;
+  base_checksum?: string;
 }
 
-/** WIP 暂存清单（G33，他人不可见）。 */
+/** Stage an existing backend WIP. Does not apply the model or create a version. */
+export async function saveSchemaWip(payload: KernelObjectTypeCreate): Promise<{rid: string; status: 'staged'; base_checksum: string}> {
+  const { confirm_name: _confirmation, ...definition } = payload;
+  const resp = await apiClient.post(v2('/object-types/wip'), { payload: definition });
+  return resp.data;
+}
+
+/** 租户作用域 WIP 暂存清单；author 元数据不代表独立个人隔离。 */
 export async function listSchemaWip(): Promise<SchemaWipEntry[]> {
   return list<SchemaWipEntry>('/object-types/wip');
 }
@@ -863,7 +871,7 @@ export async function listSchemaWip(): Promise<SchemaWipEntry[]> {
 /** 应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁；二段确认 confirm_name 走 query 参数）。
  *
  * `expectedChecksum`：乐观并发 —— 与当前生效定义不一致 → 409（不静默覆盖他人改动）。
- * 传空则不做并发校验。
+ * 传空时后端仍按 WIP 保存时的 base_checksum 校验基线。
  */
 export async function applySchemaWip(
   rid: string, confirmName = '', expectedChecksum = '',

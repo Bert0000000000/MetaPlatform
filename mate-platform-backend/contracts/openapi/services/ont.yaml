@@ -1927,7 +1927,7 @@ paths:
         - platform.write
       tags:
       - ont
-      summary: Stage private schema WIP without publishing
+      summary: Stage schema WIP without publishing
       operationId: ontSaveV2SchemaWip
       x-mate-owner: ontology-platform
       x-mate-permission: ont.write

@@ -3,6 +3,7 @@ import zh_CN from '@douyinfe/semi-ui/lib/es/locale/source/zh_CN';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { AuthProvider, AuthGuard, ScrollbarAutoHide } from '@mate/shared';
+import { EditorSessionIdentity } from './pages/ontology/hooks/editorSession';
 import LoginPage from './pages/LoginPage';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -109,6 +110,7 @@ function App() {
     <SemiConfigProvider locale={zh_CN}>
       <SettingsProvider>
         <AuthProvider>
+          <EditorSessionIdentity />
           <BrowserRouter>
             <ErrorBoundary>
               <AppRoutes />

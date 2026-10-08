@@ -33,6 +33,8 @@ export interface StructFieldDraft {
   format: string;
   /** 编辑已有嵌套字段时保留原 rid；新建时提交前由 structFieldRid 生成。 */
   rid?: string;
+  /** Original nested DTO metadata is retained while editing title/format. */
+  original?: KernelProperty;
 }
 
 /** 单个属性的可编辑草稿。rid 由父级（ObjectTypeEditorV2Drawer）按属性名联动重算。 */
@@ -109,6 +111,7 @@ export function draftFromProperty(p: KernelProperty): PropertyDraft {
       title: sf.title,
       format: sf.format,
       rid: sf.rid,
+      original: sf,
     })),
   };
 }
@@ -173,10 +176,11 @@ export function draftToPropertyDTO(d: PropertyDraft, valueTypes: KernelValueType
     description: d.description.trim(),
     struct_fields: fmt === 'struct'
       ? d.structFields.map((f) => ({
+        ...f.original,
         rid: f.rid ?? structFieldRid(d.rid, f.title),
-        type_id: nestedTypeId(f.format),
-        nullable: true,
-        primary_key: false,
+        type_id: f.original?.format === f.format ? f.original.type_id : nestedTypeId(f.format),
+        nullable: f.original?.nullable ?? true,
+        primary_key: f.original?.primary_key ?? false,
         title: f.title.trim(),
         format: f.format,
       }))

@@ -9,6 +9,12 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { safeReturnTo, resourceUrl } from '../hooks/resourceContext';
+import {
+  setEditorSessionIdentity,
+  readEditorInput,
+  retainEditorInput,
+} from '../hooks/editorSession';
 import * as api from '@/api/ont/kernel';
 import OntologyGraphView from './OntologyGraphView';
 import ObjectTypeDetailPage from './object-types/ObjectTypeDetailPage';
@@ -88,6 +94,7 @@ const customer: api.KernelObjectType = {
   ],
 };
 beforeEach(() => {
+  setEditorSessionIdentity('');
   vi.clearAllMocks();
   HTMLElement.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal(
@@ -234,4 +241,198 @@ it('exposes forbidden auxiliary reads with retry, never an empty success', async
     expect(api.listBackingDatasources).toHaveBeenCalledTimes(2),
   );
   expect(await screen.findByText('暂无来源绑定')).toBeVisible();
+});
+it('keeps filter counts and selected URL, model checks never turn failed reads into success', async () => {
+  vi.mocked(api.listObjectTypes).mockResolvedValue([
+    customer,
+    {
+      ...customer,
+      rid: 'ont.tenant.obj.crm.supplier.v1',
+      display_name: '供应商',
+    },
+  ]);
+  const router = mount(
+    `/ontology/model/graph?typeRef=${encodeURIComponent(customer.rid)}&q=客户&view=list`,
+  );
+  expect(
+    await screen.findByRole('button', { name: '选择模型 客户' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByText('1 类型 · 1 关系')).toBeVisible();
+  expect(screen.queryByRole('button', { name: '选择模型 供应商' })).toBeNull();
+  expect(screen.getByText(/尚未校验/)).toBeVisible();
+  vi.mocked(api.validateObjectTypeModel).mockRejectedValueOnce({
+    response: { status: 403, data: { detail: 'denied' } },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '校验选中模型' }));
+  expect(await screen.findByText(/校验失败.*403/)).toBeVisible();
+  expect(screen.queryByText(/校验通过/)).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '图谱视图' }));
+  expect(router.state.location.search).toContain('typeRef=');
+  expect(
+    await screen.findByRole('button', { name: '选择模型 客户' }),
+  ).toBeVisible();
+});
+it('ignores stale object and auxiliary responses after switching resources', async () => {
+  let finishOld: (value: api.KernelBackingDatasource[]) => void = () => {};
+  const old = new Promise<api.KernelBackingDatasource[]>((resolve) => {
+    finishOld = resolve;
+  });
+  vi.mocked(api.listBackingDatasources).mockImplementation((rid) =>
+    rid === customer.rid ? old : Promise.resolve([]),
+  );
+  const supplier = {
+    ...customer,
+    rid: 'ont.tenant.obj.crm.supplier.v1',
+    display_name: '供应商',
+  };
+  vi.mocked(api.getObjectType).mockImplementation((rid) =>
+    Promise.resolve(rid === supplier.rid ? supplier : customer),
+  );
+  const router = mount(
+    `/ontology/model/object-types/${encodeURIComponent(customer.rid)}/datasources`,
+  );
+  await screen.findByRole('heading', { name: '客户' });
+  await router.navigate(
+    `/ontology/model/object-types/${encodeURIComponent(supplier.rid)}/datasources`,
+  );
+  expect(await screen.findByRole('heading', { name: '供应商' })).toBeVisible();
+  finishOld([
+    {
+      rid: 'source',
+      class_rid: customer.rid,
+      name: '陈旧来源',
+      kind: 'postgres',
+      dsn_env: 'DSN',
+      table_name: 'old',
+      pk_column: 'id',
+      field_mapping: {},
+      priority: 1,
+    },
+  ]);
+  expect(await screen.findByText('暂无来源绑定')).toBeVisible();
+  expect(screen.queryByText('陈旧来源')).toBeNull();
+});
+it('does not discard clean editor and explicitly handles Escape on dirty fields', async () => {
+  mount(
+    `/ontology/model/object-types/${encodeURIComponent(customer.rid)}/properties`,
+  );
+  fireEvent.click(await screen.findByRole('button', { name: '编辑模型' }));
+  fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+  expect(screen.queryByRole('dialog', { name: '未保存的修改' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '编辑模型' }));
+  fireEvent.change(screen.getByLabelText('概念显示名'), {
+    target: { value: '修改' },
+  });
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(screen.getByRole('dialog', { name: '未保存的修改' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: '放弃修改并关闭' }));
+  expect(screen.queryByLabelText('概念显示名')).toBeNull();
+});
+it('rejects unsafe return URLs while preserving identifiers and legacy class', () => {
+  for (const value of [
+    'https://evil.test',
+    '//evil.test',
+    '/\\evil.test',
+    '/home\n',
+  ])
+    expect(safeReturnTo(value)).toBeUndefined();
+  const url = resourceUrl(
+    '/ontology/explore/objects',
+    customer.rid,
+    '/ontology/model/graph?view=list',
+    'change-rid',
+  );
+  const params = new URLSearchParams(url.split('?')[1]);
+  expect(params.get('typeRef')).toBe(customer.rid);
+  expect(params.get('class')).toBe(customer.rid);
+  expect(params.get('returnTo')).toBe('/ontology/model/graph?view=list');
+  expect(params.get('changeRef')).toBe('change-rid');
+});
+it('restores FULL unsaved input after navigation away and back without any mutation', async () => {
+  const path = `/ontology/model/object-types/${encodeURIComponent(customer.rid)}/properties`;
+  const router = mount(path);
+  fireEvent.click(await screen.findByRole('button', { name: '编辑模型' }));
+  fireEvent.change(screen.getByLabelText('概念显示名'), {
+    target: { value: '未保存名称' },
+  });
+  fireEvent.click(screen.getAllByRole('button', { name: '添加属性' }).at(-1)!);
+  const invalid = screen.getByPlaceholderText('例如 dept_name');
+  fireEvent.change(invalid, { target: { value: 'invalid property !' } });
+  await router.navigate('/ontology/model/graph');
+  await screen.findByRole('button', { name: '选择模型 客户' });
+  vi.mocked(api.getObjectType).mockResolvedValueOnce({
+    ...customer,
+    checksum: 'changed-live',
+    description: '服务端新描述',
+  });
+  await router.navigate(-1);
+  await screen.findByRole('heading',{name:'客户'});
+  await waitFor(()=>expect(screen.getByRole('button',{name:'编辑模型'})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: '编辑模型' }));
+  expect(screen.getByLabelText('概念显示名')).toHaveValue('未保存名称');
+  expect(screen.getByPlaceholderText('例如 dept_name')).toHaveValue(
+    'invalid property !',
+  );
+  expect(
+    screen.getByText(/未保存输入已保留在当前会话，尚未提交后端/),
+  ).toHaveTextContent('当前生效定义已变化');
+  expect(api.createObjectType).not.toHaveBeenCalled();
+  expect(api.saveSchemaWip).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+  fireEvent.click(screen.getByRole('button', { name: '放弃修改并关闭' }));
+  fireEvent.click(screen.getByRole('button', { name: '编辑模型' }));
+  expect(screen.getByLabelText('概念显示名')).toHaveValue('客户');
+  expect(screen.queryByText(/未保存输入已保留/)).toBeNull();
+});
+it('clears session input on logout and identity changes', () => {
+  setEditorSessionIdentity('user-a');
+  retainEditorInput('user-a', 'resource', { invalidDraft: '!' });
+  expect(readEditorInput('user-a', 'resource')).toEqual({ invalidDraft: '!' });
+  setEditorSessionIdentity('');
+  setEditorSessionIdentity('user-a');
+  expect(readEditorInput('user-a', 'resource')).toBeUndefined();
+  retainEditorInput('user-a', 'resource', { invalidDraft: '!' });
+  setEditorSessionIdentity('user-b');
+  expect(readEditorInput('user-b', 'resource')).toBeUndefined();
+});
+it('marks active-family checksum when an archived RID detail is opened', async () => {
+  const live = {
+    ...customer,
+    rid: customer.rid.replace('.v1', '.v2'),
+    checksum: 'new-live',
+  };
+  vi.mocked(api.listObjectTypes).mockResolvedValue([live]);
+  const base = {
+    class_ref: customer.rid,
+    parent_rid: null,
+    created_at: '2026-10-08T10:00:00Z',
+    author: 'reviewer',
+    change_set: [],
+    status: 'published',
+    dependencies: [],
+  };
+  vi.mocked(api.listVersions).mockResolvedValue([
+    {
+      ...base,
+      rid: 'snap-old',
+      version_no: 1,
+      checksum: 'live-sum',
+      definition: { display_name: '旧快照' },
+    },
+    {
+      ...base,
+      rid: 'snap-new',
+      version_no: 2,
+      checksum: 'new-live',
+      definition: { display_name: '生效快照' },
+    },
+  ]);
+  mount(
+    `/ontology/model/object-types/${encodeURIComponent(customer.rid)}/history`,
+  );
+  const current = await screen.findByText('当前生效');
+  expect(current.closest('tr')).toHaveTextContent('生效快照');
+  expect(current.closest('tr')).not.toHaveTextContent('旧快照');
+  expect(screen.getByRole('heading', { name: '客户' })).toBeVisible();
+  expect(api.listVersions).toHaveBeenCalledWith(customer.rid);
 });

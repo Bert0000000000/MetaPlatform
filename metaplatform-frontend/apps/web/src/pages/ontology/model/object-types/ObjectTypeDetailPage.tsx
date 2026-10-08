@@ -1,325 +1,565 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Tag } from '@douyinfe/semi-ui';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  getMaterialization,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
+import {
   getObjectType,
+  listObjectTypes,
   listActionTypes,
   listLinkTypes,
-  listObjectTypes,
-  type KernelActionType,
-  type KernelLinkType,
+  listBackingDatasources,
+  getMaterialization,
+  listValueTypes,
+  listInterfaces,
+  createObjectType,
+  saveSchemaWip,
+  extractDestructiveConfirm,
+  propSlug,
   type KernelObjectType,
+  type KernelObjectTypeCreate,
+  type KernelLinkType,
+  type KernelBackingDatasource,
+  type KernelActionType,
+  type KernelValueType,
+  type KernelInterface,
   type MaterializationResult,
 } from '@/api/ont/kernel';
-import { DataTablePro, EmptyState } from '@/components/skeleton';
+import { getTenantId } from '@/utils/auth';
+import { DataTablePro } from '@/components/skeleton';
 import ResourceDetailLayout from '../../layout/ResourceDetailLayout';
-import { ridTail } from '../../rid';
+import ObjectTypeEditorV2Drawer, {
+  type ObjectTypeEditorPrefill,
+} from '../../components/ObjectTypeEditorV2Drawer';
+import VersionHistory from '../../components/VersionHistory';
+import { resourceUrl, safeReturnTo } from '../../hooks/resourceContext';
+import { resourceError } from '../../hooks/resourceErrors';
+import '../graph/model-workbench.css';
 import '../../ontology.css';
 
-/**
- * 对象类型详情（IA2-2 资源详情路由）：/ontology/model/object-types/:rid[/:tab]。
- *
- * <p>四个**有真实数据**的 Tab 进 URL（ADR-0069 路由即状态）：概览 / 属性 / 关系 /
- * 数据源（物化）。矩阵里的 interfaces / axioms / dependents / history / security
- * 尚无独立数据面——不渲染页签、不造假（设计规格 §2.5），随批次补。
- *
- * <p>:rid 由 React Router 解码；构造链接时调用方需 encodeURIComponent。
- */
-type DetailTab = 'overview' | 'properties' | 'links' | 'datasources' | 'history';
-
-const TABS: Array<{ key: DetailTab; label: string }> = [
+const TABS = [
   { key: 'overview', label: '概览' },
-  { key: 'properties', label: '属性' },
+  { key: 'properties', label: '属性与约束' },
   { key: 'links', label: '关系' },
-  { key: 'datasources', label: '数据源' },
-  { key: 'history', label: '版本历史' },
+  { key: 'datasources', label: '来源绑定' },
+  { key: 'actions', label: '业务动作' },
+  { key: 'history', label: '版本与影响' },
 ];
-
-function normalizeTab(raw: string | undefined): DetailTab {
-  return TABS.some((t) => t.key === raw) ? (raw as DetailTab) : 'overview';
-}
-
+type Aux =
+  | 'resources'
+  | 'links'
+  | 'bindings'
+  | 'samples'
+  | 'actions'
+  | 'valueTypes'
+  | 'interfaces';
 export default function ObjectTypeDetailPage() {
-  const { rid = '', tab: rawTab } = useParams<{ rid: string; tab?: string }>();
-  const navigate = useNavigate();
-  const tab = normalizeTab(rawTab);
-
-  const [type, setType] = useState<KernelObjectType | null>(null);
-  const [actions, setActions] = useState<KernelActionType[] | null>(null);
-  const [links, setLinks] = useState<KernelLinkType[] | null>(null);
-  const [materialization, setMaterialization] = useState<MaterializationResult | null>(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-
+  const { rid = '', tab: rawTab } = useParams();
+  const tab = TABS.some((t) => t.key === rawTab) ? rawTab : 'overview';
+  const navigate = useNavigate(),
+    location = useLocation();
+  const [params] = useSearchParams();
+  const [type, setType] = useState<KernelObjectType | null>(null),
+    [types, setTypes] = useState<KernelObjectType[]>([]),
+    [links, setLinks] = useState<KernelLinkType[]>([]),
+    [bindings, setBindings] = useState<KernelBackingDatasource[]>([]),
+    [samples, setSamples] = useState<MaterializationResult | null>(null),
+    [actions, setActions] = useState<KernelActionType[]>([]),
+    [valueTypes, setValueTypes] = useState<KernelValueType[]>([]),
+    [interfaces, setInterfaces] = useState<KernelInterface[]>([]);
+  const [error, setError] = useState(''),
+    [errors, setErrors] = useState<Partial<Record<Aux, string>>>({}),
+    [pending, setPending] = useState<Partial<Record<Aux, boolean>>>({}),
+    [loading, setLoading] = useState(true),
+    [query, setQuery] = useState('');
+  const [editing, setEditing] = useState(false),
+    [prefill, setPrefill] = useState<ObjectTypeEditorPrefill>({}),
+    [notice, setNotice] = useState('');
+  const [wipRef, setWipRef] = useState('');
+  const generation = useRef(0),
+    auxGeneration = useRef<Partial<Record<Aux, number>>>({});
+  const readAux = useCallback(
+    async (key: Aux, gen: number) => {
+      const request = (auxGeneration.current[key] ?? 0) + 1;
+      auxGeneration.current[key] = request;
+      setErrors((e) => ({ ...e, [key]: undefined }));
+      setPending((p) => ({ ...p, [key]: true }));
+      const fresh = () =>
+        generation.current === gen && auxGeneration.current[key] === request;
+      try {
+        switch (key) {
+          case 'resources': {
+            const x = await listObjectTypes();
+            if (fresh()) setTypes(x);
+            break;
+          }
+          case 'links': {
+            const x = await listLinkTypes();
+            if (fresh())
+              setLinks(x.filter((l) => l.src === rid || l.dst === rid));
+            break;
+          }
+          case 'bindings': {
+            const x = await listBackingDatasources(rid);
+            if (fresh()) setBindings(x);
+            break;
+          }
+          case 'samples': {
+            const x = await getMaterialization(rid);
+            if (fresh()) setSamples(x);
+            break;
+          }
+          case 'actions': {
+            const x = await listActionTypes();
+            if (fresh()) setActions(x.filter((a) => a.on.includes(rid)));
+            break;
+          }
+          case 'valueTypes': {
+            const x = await listValueTypes();
+            if (fresh()) setValueTypes(x);
+            break;
+          }
+          case 'interfaces': {
+            const x = await listInterfaces();
+            if (fresh()) setInterfaces(x);
+            break;
+          }
+        }
+      } catch (e) {
+        if (fresh()) setErrors((x) => ({ ...x, [key]: resourceError(e) }));
+      } finally {
+        if (fresh()) setPending((p) => ({ ...p, [key]: false }));
+      }
+    },
+    [rid],
+  );
   const load = useCallback(async () => {
+    const gen = ++generation.current;
+    setNotice('');
+    setWipRef('');
+    setEditing(false);
     setLoading(true);
+    setType(null);
+    setTypes([]);
+    setLinks([]);
+    setBindings([]);
+    setSamples(null);
+    setActions([]);
+    setValueTypes([]);
+    setInterfaces([]);
+    setErrors({});
+    setPending({});
     setError('');
     try {
       const t = await getObjectType(rid);
+      if (generation.current !== gen) return;
       setType(t);
-      // 关系与物化是详情页的两个独立数据面，各自失败不拖垮整页
-      listLinkTypes()
-        .then((all) => setLinks(all.filter((l) => l.src === rid || l.dst === rid)))
-        .catch(() => setLinks([]));
-      getMaterialization(rid)
-        .then(setMaterialization)
-        .catch(() => setMaterialization(null));
-      // 概念完整性 K：概览的关联 Action 直达（与概念抽屉对齐）
-      listActionTypes()
-        .then((all) => setActions(all.filter((at) => at.on.includes(rid))))
-        .catch(() => setActions([]));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
       setLoading(false);
+      (
+        [
+          'resources',
+          'links',
+          'bindings',
+          'samples',
+          'actions',
+          'valueTypes',
+          'interfaces',
+        ] as Aux[]
+      ).forEach((key) => void readAux(key, gen));
+    } catch (e) {
+      if (generation.current === gen) {
+        setError(resourceError(e));
+        setLoading(false);
+      }
     }
-  }, [rid]);
-
+  }, [rid, readAux]);
   useEffect(() => {
     void load();
-  }, [load]);
-
-  /** 切 Tab = 换路由段（可分享 / 可返回），不改本地 state。 */
-  const switchTab = (key: string) => navigate(`/ontology/model/object-types/${encodeURIComponent(rid)}/${key}`);
-
-  const title = type?.display_name || ridTail(rid);
-
-  const relationColumns = useMemo(
-    () => [
-      {
-        title: '关系',
-        dataIndex: 'rid',
-        width: 200,
-        ellipsis: true,
-        render: (_: unknown, row: KernelLinkType) => (
-          <span className="mp-onto-strong">{ridTail(row.rid)}</span>
-        ),
-      },
-      {
-        title: '方向',
-        dataIndex: 'src',
-        width: 320,
-        ellipsis: true,
-        render: (_: unknown, row: KernelLinkType) =>
-          row.src === rid
-            ? `出 → ${row.dst_display_name || ridTail(row.dst)}`
-            : `入 ← ${row.src_display_name || ridTail(row.src)}`,
-      },
-      { title: '基数', dataIndex: 'cardinality', width: 120 },
-      { title: '方向性', dataIndex: 'directionality', width: 130 },
-    ],
-    [rid],
-  );
-
-  return (
-    <ResourceDetailLayout
-      title={title}
-      desc={`${rid} · 对象类型详情 · 数据取自本体内核 v2`}
-      tabs={TABS.map((t) => ({
-        key: t.key,
-        label: t.key === 'links' ? `关系${links ? ` · ${links.length}` : ''}` : t.label,
-      }))}
-      activeTab={tab}
-      onTabChange={switchTab}
-    >
-      {error ? (
-        <EmptyState
-          illustration="failure"
-          title="对象类型读取失败"
-          desc={error}
-          actions={
-            <Button theme="solid" type="primary" onClick={() => void load()}>
-              重试
-            </Button>
-          }
-        />
-      ) : loading ? (
-        <EmptyState illustration="no-content" title="读取中…" desc="数据取自本体内核 v2" />
-      ) : !type ? null : tab === 'overview' ? (
-        <div className="mp-onto-detail-grid">
-          <dl className="mp-onto-detail-list">
-            <dt>rid</dt>
-            <dd className="mp-onto-mono">{type.rid}</dd>
-            <dt>主键</dt>
-            <dd>{type.primary_key.join(', ') || '—'}</dd>
-            <dt>父类型</dt>
-            <dd>{type.parent_class ? ridTail(type.parent_class) : '—'}</dd>
-            <dt>类型组</dt>
-            <dd>{type.type_group || '—'}</dd>
-            <dt>状态</dt>
-            <dd>{type.status ? <Tag size="small" type="light">{type.status}</Tag> : '—'}</dd>
-            <dt>接口</dt>
-            <dd>{type.interfaces.length ? type.interfaces.map(ridTail).join('、') : '—'}</dd>
-            <dt>属性数</dt>
-            <dd>{type.properties.length}</dd>
-            <dt>关系数</dt>
-            <dd>{links?.length ?? '…'}</dd>
-            <dt>关联 Action</dt>
-            <dd>
-              {actions === null ? (
-                '…'
-              ) : actions.length === 0 ? (
-                '—'
-              ) : (
-                <span className="mp-flex mp-wrap mp-gap-1">
-                  {actions.map((at) => (
-                    <Link
-                      key={at.rid}
-                      to={`/ontology/logic/actions/${encodeURIComponent(at.rid)}`}
-                      title={at.rid}
-                    >
-                      <Tag size="small" type="light">{at.title || ridTail(at.rid)}</Tag>
-                    </Link>
-                  ))}
-                </span>
-              )}
-            </dd>
-            <dt>描述</dt>
-            <dd>{type.description || '—'}</dd>
-          </dl>
-        </div>
-      ) : tab === 'properties' ? (
-        <DataTablePro
-          columns={[
-            { title: '属性', dataIndex: 'title', width: 200, ellipsis: true },
-            {
-              title: '类型',
-              dataIndex: 'type_id',
-              width: 160,
-              ellipsis: true,
-              render: (v: string) => <span className="mp-onto-mono">{ridTail(v)}</span>,
-            },
-            {
-              title: '主键',
-              dataIndex: 'primary_key',
-              width: 80,
-              render: (v: boolean) => (v ? '✓' : ''),
-            },
-            {
-              title: '可空',
-              dataIndex: 'nullable',
-              width: 80,
-              render: (v: boolean) => (v ? '✓' : '—'),
-            },
-            { title: '格式', dataIndex: 'format', width: 110 },
-            {
-              title: '共享',
-              dataIndex: 'shared',
-              width: 80,
-              render: (v: boolean | undefined) => (v ? '✓' : '—'),
-            },
-            { title: 'rid', dataIndex: 'rid', ellipsis: true },
-          ]}
-          dataSource={type.properties}
-          rowKey="rid"
-          empty={<EmptyState illustration="no-content" title="该类型没有属性" />}
-        />
-      ) : tab === 'links' ? (
-        <DataTablePro<KernelLinkType>
-          columns={relationColumns}
-          dataSource={links ?? []}
-          rowKey="rid"
-          loading={links === null}
-          empty={<EmptyState illustration="no-content" title="没有挂在该类型上的关系" />}
-        />
-      ) : tab === 'history' ? (
-        <VersionHistory rid={rid} />
-      ) : materialization ? (
-        <div className="mp-onto-detail-grid">
-          <dl className="mp-onto-detail-list">
-            <dt>实例数（物化）</dt>
-            <dd>{materialization.count}</dd>
-            <dt>生成时间</dt>
-            <dd>{materialization.generated_at ?? '—'}</dd>
-            <dt>物化列</dt>
-            <dd>{Object.keys(materialization.schema).length}</dd>
-          </dl>
-          <DataTablePro
-            columns={Object.keys(materialization.schema).slice(0, 6).map((col) => ({
-              title: col,
-              dataIndex: col,
-              ellipsis: true,
-            }))}
-            dataSource={materialization.rows.slice(0, 20).map((r, i) => ({ ...r, __row__: String(i) }))}
-            rowKey="__row__"
-            empty={<EmptyState illustration="no-content" title="暂无物化行" />}
-          />
-        </div>
-      ) : (
-        <EmptyState
-          illustration="no-content"
-          title="暂无物化数据"
-          desc="该类型尚未声明背挂数据源或未触发同步。"
-        />
-      )}
-    </ResourceDetailLayout>
-  );
-}
-
-/**
- * 版本历史（概念完整性批次 · D）：Version 基元的语义层呈现。
- * 同族版本 = listObjectTypes 里 rid 去掉末段版本号的聚合（零新契约）。
- */
-function VersionHistory({ rid }: { rid: string }) {
-  const [rows, setRows] = useState<KernelObjectType[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const all = await listObjectTypes();
-        if (!active) return;
-        const family = rid.replace(/\.v\d+$/, '');
-        setRows(all.filter((t) => t.rid.replace(/\.v\d+$/, '') === family));
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
     return () => {
-      active = false;
+      generation.current++;
     };
-  }, [rid]);
-
+  }, [load]);
+  const back = location.pathname + location.search,
+    changeRef = wipRef || params.get('changeRef') || undefined;
+  const route = (path: string) =>
+    navigate(resourceUrl(path, rid, back, changeRef));
+  const edit = (pf: ObjectTypeEditorPrefill = {}) => {
+    setPrefill(pf);
+    setEditing(true);
+  };
+  const write = async (payload: KernelObjectTypeCreate) => {
+    const gen = generation.current;
+    try {
+      await createObjectType(payload);
+      if (gen === generation.current) void load();
+      return null;
+    } catch (e) {
+      return extractDestructiveConfirm(e) || resourceError(e);
+    }
+  };
+  const draft = async (payload: KernelObjectTypeCreate) => {
+    const gen = generation.current;
+    try {
+      const result = await saveSchemaWip(payload);
+      if (gen === generation.current) {
+        setNotice(`未发布草稿已暂存 · ${result.rid}`);
+        setWipRef(result.rid);
+      }
+      return null;
+    } catch (e) {
+      return resourceError(e);
+    }
+  };
+  const auxiliary = (key: Aux, label: string, children: React.ReactNode) =>
+    errors[key] ? (
+      <div role="alert" className="mw-error">
+        partial · {label} · {errors[key]}{' '}
+        <button onClick={() => void readAux(key, generation.current)}>
+          重试{label}
+        </button>
+      </div>
+    ) : pending[key] ? (
+      <p>{label}读取中…</p>
+    ) : (
+      children
+    );
   return (
-    <DataTablePro
-      columns={[
-        {
-          title: '版本',
-          dataIndex: 'rid',
-          width: 140,
-          render: (v: string) => {
-            const ver = v.match(/\.v(\d+)$/)?.[1] ?? '—';
-            return <span className="mp-onto-strong">v{ver}</span>;
-          },
-        },
-        {
-          title: '显示名',
-          dataIndex: 'display_name',
-          width: 200,
-          ellipsis: true,
-        },
-        {
-          title: '属性数',
-          dataIndex: 'properties',
-          width: 90,
-          render: (v: KernelObjectType['properties']) => v.length,
-        },
-        {
-          title: '当前查看',
-          dataIndex: '__current',
-          width: 100,
-          render: (_: unknown, row: KernelObjectType) =>
-            row.rid === rid ? <Tag size="small" color="blue" type="light">当前</Tag> : null,
-        },
-        { title: 'rid', dataIndex: 'rid', ellipsis: true },
-      ]}
-      dataSource={rows}
-      rowKey="rid"
-      loading={loading}
-      empty={<EmptyState illustration="no-content" title="未找到同族版本" />}
-    />
+    <div className="mw-detail">
+      <aside className="mw-resource-list" aria-label="对象资源">
+        <strong>对象资源 · {types.length}</strong>
+        <input
+          aria-label="筛选资源"
+          placeholder="筛选资源"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        {auxiliary(
+          'resources',
+          '资源列表',
+          types
+            .filter((t) =>
+              `${t.display_name} ${t.rid}`
+                .toLowerCase()
+                .includes(query.toLowerCase()),
+            )
+            .map((t) => (
+              <button
+                key={t.rid}
+                aria-current={t.rid === rid ? 'page' : undefined}
+                disabled={editing}
+                onClick={() =>
+                  navigate(
+                    resourceUrl(
+                      `/ontology/model/object-types/${encodeURIComponent(t.rid)}/${tab}`,
+                      t.rid,
+                      safeReturnTo(params.get('returnTo')),
+                      changeRef,
+                    ),
+                  )
+                }
+              >
+                {t.display_name || propSlug(t.rid)}
+                <small>{propSlug(t.rid)}</small>
+              </button>
+            )),
+        )}
+      </aside>
+      <div className="mw-detail-main">
+        <ResourceDetailLayout
+          title={type?.display_name || propSlug(rid)}
+          desc={`${propSlug(rid)} · ${rid}`}
+          tabs={TABS}
+          activeTab={tab}
+          onTabChange={(key) =>
+            navigate(
+              `/ontology/model/object-types/${encodeURIComponent(rid)}/${key}${location.search}`,
+            )
+          }
+          actions={
+            <>
+              {safeReturnTo(params.get('returnTo')) && (
+                <button
+                  onClick={() =>
+                    navigate(safeReturnTo(params.get('returnTo'))!)
+                  }
+                >
+                  返回工作台
+                </button>
+              )}
+              <button disabled={!type} onClick={() => edit()}>
+                编辑模型
+              </button>
+              <button
+                disabled={!type}
+                onClick={() => edit({ addNewProp: true })}
+              >
+                添加属性
+              </button>
+              <button
+                disabled={!type}
+                onClick={() => route('/ontology/governance/drafts')}
+              >
+                审阅与发布
+              </button>
+            </>
+          }
+        >
+          {notice && (
+            <p role="status">
+              {notice}{' '}
+              <button onClick={() => route('/ontology/governance/drafts')}>
+                前往变更草稿
+              </button>
+            </p>
+          )}
+          {error ? (
+            <div role="alert" className="mw-error">
+              对象类型 · {error}
+              <button onClick={() => void load()}>重试</button>
+            </div>
+          ) : loading ? (
+            <p>读取对象类型…</p>
+          ) : !type ? null : tab === 'properties' ? (
+            <>
+              <h3>属性定义</h3>
+              <DataTablePro
+                columns={[
+                  { title: '属性业务名', dataIndex: 'title', width: 170 },
+                  {
+                    title: '机器标识',
+                    dataIndex: 'rid',
+                    width: 210,
+                    render: (v: string) => propSlug(v),
+                  },
+                  { title: '数据类型', dataIndex: 'format', width: 100 },
+                  {
+                    title: '必填',
+                    dataIndex: 'nullable',
+                    width: 70,
+                    render: (v: boolean) => (v ? '—' : '✓'),
+                  },
+                  {
+                    title: '主键',
+                    dataIndex: 'primary_key',
+                    width: 70,
+                    render: (v: boolean) => (v ? '✓' : '—'),
+                  },
+                  { title: '说明', dataIndex: 'description', ellipsis: true },
+                  {
+                    title: '操作',
+                    key: 'edit',
+                    dataIndex: 'rid',
+                    width: 90,
+                    render: (v: string) => (
+                      <button
+                        aria-label={`编辑属性 ${type.properties.find((p) => p.rid === v)?.title || propSlug(v)}`}
+                        onClick={() => edit({ expandPropRid: v })}
+                      >
+                        编辑
+                      </button>
+                    ),
+                  },
+                ]}
+                dataSource={type.properties}
+                rowKey="rid"
+                empty={<p>暂无属性</p>}
+              />
+              <p>
+                主键与类型变更在既有写入门禁中检查；发布与实例迁移分别处理。
+              </p>
+            </>
+          ) : tab === 'links' ? (
+            auxiliary(
+              'links',
+              '关系',
+              <DataTablePro
+                columns={[
+                  {
+                    title: '关系',
+                    dataIndex: 'rid',
+                    render: (v: string) => propSlug(v),
+                  },
+                  { title: '来源类型', dataIndex: 'src' },
+                  { title: '目标类型', dataIndex: 'dst' },
+                  { title: '基数', dataIndex: 'cardinality' },
+                ]}
+                dataSource={links}
+                rowKey="rid"
+                empty={<p>暂无关系</p>}
+              />,
+            )
+          ) : tab === 'datasources' ? (
+            <>
+              <h3>来源绑定</h3>
+              <button onClick={() => route('/ontology/data/mappings')}>
+                配置来源映射
+              </button>
+              {auxiliary(
+                'bindings',
+                '来源绑定',
+                bindings.length ? (
+                  <DataTablePro
+                    columns={[
+                      { title: '来源', dataIndex: 'name' },
+                      { title: '类型', dataIndex: 'kind' },
+                      { title: '来源表', dataIndex: 'table_name' },
+                      { title: '主键列', dataIndex: 'pk_column' },
+                      { title: '水位列（实际配置）', dataIndex: 'ts_column' },
+                    ]}
+                    dataSource={bindings}
+                    rowKey="rid"
+                  />
+                ) : (
+                  <p>暂无来源绑定</p>
+                ),
+              )}
+              <h3>物化样本</h3>
+              {auxiliary(
+                'samples',
+                '物化样本',
+                samples ? (
+                  <>
+                    <p>
+                      实例数 {samples.count} ·{' '}
+                      {samples.generated_at || '生成时间未提供'} ·
+                      读取不触发同步
+                    </p>
+                    <DataTablePro
+                      columns={Object.keys(samples.schema).map((col) => ({
+                        title: col,
+                        dataIndex: col,
+                      }))}
+                      dataSource={samples.rows
+                        .slice(0, 20)
+                        .map((r, i) => ({ ...r, __row__: i }))}
+                      rowKey="__row__"
+                      empty={<p>暂无物化样本</p>}
+                    />
+                  </>
+                ) : (
+                  <p>暂无物化样本</p>
+                ),
+              )}
+            </>
+          ) : tab === 'history' ? (
+            <>
+              {(errors.resources || pending.resources) &&
+                auxiliary('resources', '当前生效定义', null)}
+              <VersionHistory
+                rid={rid}
+                currentChecksum={
+                  types.find(
+                    (t) =>
+                      t.rid.replace(/\.v\d+$/, '') ===
+                      rid.replace(/\.v\d+$/, ''),
+                  )?.checksum
+                }
+              />
+              <button onClick={() => route('/ontology/governance/releases')}>
+                查看发布与迁移影响
+              </button>
+            </>
+          ) : tab === 'actions' ? (
+            auxiliary(
+              'actions',
+              '业务动作',
+              <>
+                <button onClick={() => route('/ontology/logic/actions')}>
+                  配置业务动作
+                </button>
+                {actions.length ? (
+                  actions.map((a) => (
+                    <p key={a.rid}>
+                      <button
+                        onClick={() =>
+                          route(
+                            `/ontology/logic/actions/${encodeURIComponent(a.rid)}`,
+                          )
+                        }
+                      >
+                        {a.title || propSlug(a.rid)}
+                      </button>
+                    </p>
+                  ))
+                ) : (
+                  <p>暂无关联业务动作</p>
+                )}
+              </>,
+            )
+          ) : (
+            <>
+              <dl className="mp-onto-detail-list">
+                <dt>业务名</dt>
+                <dd>{type.display_name}</dd>
+                <dt>机器名</dt>
+                <dd>{propSlug(type.rid)}</dd>
+                <dt>主键</dt>
+                <dd>{type.primary_key.join(' + ')}</dd>
+                <dt>父类型</dt>
+                <dd>{type.parent_class || '—'}</dd>
+                <dt>接口</dt>
+                <dd>{type.interfaces.join('、') || '—'}</dd>
+                <dt>标记</dt>
+                <dd>{type.marking?.join('、') || '—'}</dd>
+                <dt>定义状态</dt>
+                <dd>{type.status || '未提供'}</dd>
+                <dt>描述</dt>
+                <dd>{type.description || '—'}</dd>
+              </dl>
+              <button onClick={() => route('/ontology/data/mappings')}>
+                来源与映射
+              </button>
+              <button onClick={() => route('/ontology/explore/objects')}>
+                查询对象实例
+              </button>
+              {Object.values(errors).some(Boolean) && (
+                <p className="mw-error">
+                  partial · 部分辅助信息读取失败，请在相应页签重试。
+                </p>
+              )}
+            </>
+          )}
+          {editing && type && (
+            <>
+              {(['valueTypes', 'interfaces'] as Aux[]).map(
+                (key) =>
+                  errors[key] && (
+                    <p role="alert" key={key}>
+                      编辑辅助信息 · {errors[key]}
+                    </p>
+                  ),
+              )}
+              <ObjectTypeEditorV2Drawer
+                open={editing}
+                mode="edit"
+                objectType={type}
+                objectTypes={types}
+                linkTypes={links}
+                interfaces={interfaces}
+                valueTypes={valueTypes}
+                tenant={getTenantId() || ''}
+                domainOptions={[]}
+                prefill={prefill}
+                onClose={() => setEditing(false)}
+                onSubmit={write}
+                onSaveDraft={draft}
+                auxiliaryErrors={(
+                  ['resources', 'links', 'valueTypes', 'interfaces'] as Aux[]
+                ).flatMap((key) =>
+                  errors[key] ? [`${key} · ${errors[key]}`] : [],
+                )}
+                onRetryAuxiliary={() => {
+                  (
+                    ['resources', 'links', 'valueTypes', 'interfaces'] as Aux[]
+                  ).forEach((key) => void readAux(key, generation.current));
+                }}
+              />
+            </>
+          )}
+        </ResourceDetailLayout>
+      </div>
+    </div>
   );
 }
