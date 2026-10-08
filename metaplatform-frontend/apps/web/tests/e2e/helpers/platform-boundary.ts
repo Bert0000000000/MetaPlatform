@@ -19,7 +19,9 @@ export async function platformBoundary(page: Page) {
   };
   await page.route('**/api/v1/**', async route => {
     const path = new URL(route.request().url()).pathname;
-    if (path.startsWith('/api/v1/iam/') || path.startsWith('/api/v1/ont/')) return route.continue();
+    const method = route.request().method();
+    const realSettings = path === '/api/v1/dashboard/settings' && (method === 'GET' || method === 'PUT');
+    if (path.startsWith('/api/v1/iam/') || path.startsWith('/api/v1/ont/') || realSettings) return route.continue();
     reads.set(path, (reads.get(path) ?? 0) + 1);
     if (onceFailed.has(path) && reads.get(path) === 1) return route.fulfill({ status: 503, json: { message: `${path.endsWith('/todos') ? '审批' : path.endsWith('/groups') ? '分类' : '业务域'}边界读取失败` } });
     if (route.request().method() === 'GET' && path in responses) return route.fulfill({ json: responses[path] });

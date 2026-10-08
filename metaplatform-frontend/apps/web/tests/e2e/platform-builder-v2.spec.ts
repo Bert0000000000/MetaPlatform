@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Response } from '@playwright/test';
 import { builderAuth } from './helpers/builder-auth';
 import { platformBoundary } from './helpers/platform-boundary';
 
@@ -70,18 +70,90 @@ test('real provider negative cache: editor relogin link reaches usable login des
 
 test('real signed settings: theme and navigation preference survive reload and restore original choice', async ({ page }) => {
   await platformBoundary(page);
+  const settingsPath = '/api/v1/dashboard/settings';
+  const matchesSettings = (method: string) => (response: Response) =>
+    new URL(response.url()).pathname === settingsPath && response.request().method() === method;
+  const firstRead = page.waitForResponse(matchesSettings('GET'));
   await page.goto('/home');
   await expect(page.getByText('HTTP 边界统计')).toBeVisible();
-  const original = await page.locator('body').getAttribute('theme-mode');
-  await page.getByRole('button', { name: '切换主题', exact: true }).click();
-  await expect.poll(() => page.locator('body').getAttribute('theme-mode')).not.toBe(original);
-  const changed = await page.locator('body').getAttribute('theme-mode');
-  await page.getByRole('button', { name: '切换导航布局' }).click();
-  await expect(page.locator('.mp-topnav')).toBeVisible();
-  await page.reload();
-  await expect(page.locator('.mp-topnav')).toBeVisible();
-  await expect.poll(() => page.locator('body').getAttribute('theme-mode')).toBe(changed);
-  await page.getByRole('button', { name: '切换导航布局' }).click();
-  await page.getByRole('button', { name: '切换主题', exact: true }).click();
-  await expect.poll(() => page.locator('body').getAttribute('theme-mode')).toBe(original);
+  const userId = await page.evaluate(() => JSON.parse(localStorage.getItem('mate_platform_user') ?? '{}').id as string);
+  expect(typeof userId === 'string' && !!userId.trim(), 'Actual provider UserInfo identity required').toBe(true);
+  const initial = await firstRead;
+  expect(initial.status(), 'Initial real settings GET HTTP status').toBe(200);
+  expect(new URL(initial.url()).searchParams.get('userId') === userId, 'GET uses actual provider identity').toBe(true);
+  const initialBody = await initial.json();
+  const original = (initialBody.data ?? initialBody) as {
+    userId: string; language: string; timezone: string; dateFormat: string;
+    defaultPage: string; theme: 'light' | 'dark' | 'system'; layout: string[];
+  };
+  expect(original.userId === userId, 'GET returns matching provider identity').toBe(true);
+  expect(['light', 'dark', 'system'].includes(original.theme), 'GET returns a supported real theme').toBe(true);
+  const originalResolved = original.theme === 'system'
+    ? await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : original.theme;
+  await expect(page.locator('body')).toHaveAttribute('theme-mode', originalResolved);
+  // Navigation mode is the existing local shell preference, not a server DTO field.
+  const originalNav = await page.evaluate(() => localStorage.getItem('mp_nav_mode') ?? 'side');
+  const changed = originalResolved === 'dark' ? 'light' : 'dark';
+  let writeAttempted = false;
+  try {
+    const write = page.waitForResponse(matchesSettings('PUT'));
+    writeAttempted = true;
+    await page.getByRole('button', { name: '切换主题', exact: true }).click();
+    const written = await write;
+    expect(written.status(), 'Real settings PUT HTTP status').toBe(200);
+    const payload = written.request().postDataJSON();
+    expect(payload.userId === userId && payload.theme === changed, 'UI PUT uses actual identity and chosen theme').toBe(true);
+    expect(Object.keys(payload).sort().join(',') === 'theme,userId', 'UI writes only the chosen preference').toBe(true);
+    const writtenBody = await written.json();
+    const persisted = writtenBody.data ?? writtenBody;
+    expect(persisted.userId === userId && persisted.theme === changed, 'Successful PUT returns chosen preference for actual identity').toBe(true);
+    await expect(page.locator('body')).toHaveAttribute('theme-mode', changed);
+    await page.getByRole('button', { name: '切换导航布局' }).click();
+    const changedNav = originalNav === 'side' ? 'top' : 'side';
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('mp_nav_mode'))).toBe(changedNav);
+    const reread = page.waitForResponse(matchesSettings('GET'));
+    await page.reload();
+    const reloaded = await reread;
+    expect(reloaded.status(), 'Reload real settings GET HTTP status').toBe(200);
+    expect(new URL(reloaded.url()).searchParams.get('userId') === userId, 'Reload GET uses actual identity').toBe(true);
+    const reloadBody = await reloaded.json();
+    const restoredRead = reloadBody.data ?? reloadBody;
+    expect(restoredRead.userId === userId && restoredRead.theme === changed, 'Reload GET proves server-persisted chosen theme').toBe(true);
+    await expect(page.locator('body')).toHaveAttribute('theme-mode', changed);
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('mp_nav_mode'))).toBe(changedNav);
+    if (changedNav === 'top') await expect(page.locator('.mp-topnav')).toBeVisible();
+    else await expect(page.locator('.mp-topnav')).toBeHidden();
+  } finally {
+    try {
+      if (writeAttempted) {
+        // Restore the actual captured server preferences even if a later assertion fails.
+        // Session/body stay inside the page; return safe status/boolean evidence only.
+        const restoration = await page.evaluate(async ({ settingsPath, original }) => {
+          const response = await fetch(settingsPath, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('mate_platform_token')}` },
+            body: JSON.stringify(original), signal: AbortSignal.timeout(15_000),
+          });
+          if (!response.ok) return { status: response.status, matches: false };
+          const body = await response.json();
+          const saved = body.data ?? body;
+          return { status: response.status, matches: Object.entries(original).every(([key, value]) => JSON.stringify(saved[key]) === JSON.stringify(value)) };
+        }, { settingsPath, original });
+        expect(restoration.status, 'Restore original real settings PUT HTTP status').toBe(200);
+        expect(restoration.matches, 'Original server preferences restored exactly').toBe(true);
+      }
+    } finally {
+      const currentNav = await page.evaluate(() => localStorage.getItem('mp_nav_mode') ?? 'side');
+      if (currentNav !== originalNav) await page.getByRole('button', { name: '切换导航布局' }).click();
+      const finalRead = page.waitForResponse(matchesSettings('GET'));
+      await page.reload();
+      const finalResponse = await finalRead;
+      expect(finalResponse.status(), 'Restored settings GET HTTP status').toBe(200);
+      const finalBody = await finalResponse.json();
+      const finalSettings = finalBody.data ?? finalBody;
+      expect(Object.entries(original).every(([key, value]) => JSON.stringify(finalSettings[key]) === JSON.stringify(value)), 'Final GET confirms original server preferences').toBe(true);
+      await expect(page.locator('body')).toHaveAttribute('theme-mode', originalResolved);
+      await expect.poll(() => page.evaluate(() => localStorage.getItem('mp_nav_mode') ?? 'side')).toBe(originalNav);
+    }
+  }
 });
