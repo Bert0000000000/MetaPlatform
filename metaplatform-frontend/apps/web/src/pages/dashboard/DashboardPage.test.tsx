@@ -1,0 +1,40 @@
+import '@testing-library/jest-dom/vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import DashboardPage from './DashboardPage';
+import * as summary from '@/api/dashboard/workbench';
+import * as approvals from '@/api/dashboard/approvals';
+vi.hoisted(() => { HTMLCanvasElement.prototype.getContext = (() => ({ fillRect() {}, clearRect() {}, getImageData: () => ({ data: new Uint8ClampedArray(4) }) })) as never; });
+vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+Range.prototype.getBoundingClientRect = () => new DOMRect();
+vi.mock('@mate/shared', () => ({ useAuth: () => ({ user: { realName: '当前人' } }) }));
+vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ resolvedTheme: 'light' }) }));
+vi.mock('@/api/dashboard/workbench', () => ({ getDashboardSummary: vi.fn() }));
+vi.mock('@/api/dashboard/approvals', () => ({ getPendingTasks: vi.fn(), completeTask: vi.fn() }));
+afterEach(() => { cleanup(); vi.resetAllMocks(); });
+it('keeps successful summary visible and independently retries failed approvals without claiming empty', async () => {
+  vi.mocked(summary.getDashboardSummary).mockResolvedValue({ stats: [{ label: '实际统计', value: '7', icon: '', trend_label: null, trend_value: null, trend_up: false }], recentTasks: [], activeAgents: [], quickLinks: [] , systemHealth: [] });
+  vi.mocked(approvals.getPendingTasks).mockRejectedValueOnce(new Error('审批暂不可用')).mockResolvedValueOnce({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 });
+  render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+  expect(await screen.findByText('审批暂不可用')).toBeVisible();
+  expect(screen.getByText('实际统计')).toBeVisible();
+  expect(screen.queryByText('没有待办审批')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '重试审批' }));
+  expect(await screen.findByText('没有待办审批')).toBeVisible();
+  expect(summary.getDashboardSummary).toHaveBeenCalledTimes(1);
+});
+it('keeps successful approvals actionable when summary fails', async () => {
+  vi.mocked(summary.getDashboardSummary).mockRejectedValue(new Error('汇总暂不可用'));
+  vi.mocked(approvals.getPendingTasks).mockResolvedValue({ items: [{ taskId: 'a1', title: '实际审批', applicant: '申请人' }], total: 1 } as never);
+  render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+  expect(await screen.findByText('汇总暂不可用')).toBeVisible();
+  expect(screen.getByText('实际审批')).toBeVisible();
+  expect(screen.getByRole('button', { name: '通过' })).toBeEnabled();
+});
+it('renders successful empty approvals without waiting for a slow summary', async () => {
+  vi.mocked(summary.getDashboardSummary).mockReturnValue(new Promise(() => {}));
+  vi.mocked(approvals.getPendingTasks).mockResolvedValue({ items: [], total: 0 } as never);
+  render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+  expect(await screen.findByText('没有待办审批')).toBeVisible();
+});

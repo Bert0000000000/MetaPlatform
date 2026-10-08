@@ -135,8 +135,8 @@ describe('本体建设工作区导航', () => {
     expect(getOntologyContextSnapshot().navigation).toMatchObject({ view: 'ontology-explore', tab: 'explore' });
     fireEvent.click(screen.getByRole('button', { name: '切换导航布局' }));
     const topNav = document.querySelector('.mp-topnav') as HTMLElement;
-    expect(within(topNav).getAllByRole('tab').map(tab => tab.textContent)).toEqual(labels);
-    fireEvent.click(within(topNav).getByRole('tab', { name: '治理与管理' }));
+    expect(within(topNav).getAllByRole('link').map(link => link.textContent)).toEqual(labels);
+    fireEvent.click(within(topNav).getByRole('link', { name: '治理与管理' }));
     expect(router.state.location.pathname).toBe('/gov/business');
     expect(screen.getByRole('link', { name: '组织' })).toBeVisible();
   });

@@ -50,6 +50,8 @@ describe('ProposalConfirmDrawer', () => {
     getProposalPreview.mockResolvedValue(preview);
     confirmProposal.mockResolvedValue({ id: preview.id, status: 'confirmed' });
     getProposal
+      // Opening reads authoritative preflight before the user sends any command.
+      .mockResolvedValueOnce({ proposal_id: preview.id, kind: 'action', status: 'pending' })
       .mockResolvedValueOnce({
         proposal_id: preview.id,
         kind: 'action',
@@ -78,6 +80,8 @@ describe('ProposalConfirmDrawer', () => {
     await waitFor(() => expect(executeProposal).toHaveBeenCalledWith(preview.id));
     expect(getProposal).toHaveBeenNthCalledWith(1, preview.id);
     expect(getProposal).toHaveBeenNthCalledWith(2, preview.id);
+    expect(getProposal).toHaveBeenNthCalledWith(3, preview.id);
+    expect(getProposal).toHaveBeenCalledTimes(3);
     expect(await screen.findByText('已执行成功')).toBeInTheDocument();
     expect(screen.getByText('executed')).toBeInTheDocument();
     expect(screen.getByText('ontology-operator')).toBeInTheDocument();

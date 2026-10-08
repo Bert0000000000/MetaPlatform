@@ -92,3 +92,21 @@ it('establishes a valid SSO session and consumes its callback state', async () =
   expect(sessionStorage.getItem('sso_provider')).toBeNull();
   expect(localStorage.getItem('mate_platform_token')).toBe('fixture-access');
 });
+
+it.each([{ id: '', tenantId: 'existing-tenant' }, { id: 'provider-person-42', tenantId: '' }])('keeps re-login usable for an incomplete historical session: %j', async (identity) => {
+  localStorage.setItem('mate_platform_token', 'opaque-negative-cache-token');
+  localStorage.setItem('mate_platform_user', JSON.stringify({ ...identity, username: 'historical-person', roles: [] }));
+  mount();
+  expect(screen.getByTestId('shared-login-submit')).toBeVisible();
+  expect(screen.queryByRole('heading', { name: /个人页面/ })).toBeNull();
+  vi.mocked(api.login).mockResolvedValueOnce({ accessToken: 'fixture-access', userId: 'provider-person-42' });
+  fireEvent.click(screen.getByTestId('shared-login-submit'));
+  expect(await screen.findByRole('heading', { name: '个人页面 provider-person-42' })).toBeVisible();
+});
+
+it('preserves the existing redirect for a complete historical session', async () => {
+  localStorage.setItem('mate_platform_token', 'opaque-existing-session-token');
+  localStorage.setItem('mate_platform_user', JSON.stringify({ id: 'provider-person-42', tenantId: 'existing-tenant', username: 'person', roles: [] }));
+  mount();
+  expect(await screen.findByRole('heading', { name: '个人页面 provider-person-42' })).toBeVisible();
+});
