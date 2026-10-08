@@ -395,3 +395,11 @@ PR-7 cleanup-acceptance；每 PR 文件范围明确、不混 Agent 改动、有�
 桌面采用深色平台定位区、白色工作区导航和上下文面包屑；390px 提供可折叠导航并保持键盘访问，内容局部滚动。路由及打开记录仍由 `OntologyDomainShell` 写入 assistant context，不增加业务事实或虚构工作区状态。
 
 当前验证资源、命令与本地/真实服务/CI/部署/业务验收边界以[对齐实施计划](../../superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)为准；§7 中历史共享端口和旧基线不得作为本轮通过证据。
+
+## 11. 2026-10-08 用户后补七入口修订（Accepted）
+
+[已接受修订设计](../../superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)覆盖 §10 的八入口呈现与原六域归组。一级菜单依次为工作台、业务应用、对象探索、本体工作室、数字员工、连接与知识、治理与管理；SuperAI 常驻能力和完整 `/superai/*` 路由保留。
+
+本体六组按概览、业务模型、数据接入、业务动作、变更发布、运行与质量组织；同步、模型校验、执行记录、审计、使用量进入运行与质量，模型检查旧入口复用模型校验。接口/公理、函数/编排继续可达。对象浏览、ObjectSet、聚合和地图以原 `/ontology/explore/*` 归入对象探索，不在建设侧栏重复；`OntologyDomainShell` 的上下文与高度约束继续生效。
+
+`/gov/*`、`/admin/*` 合并至治理与管理，现有 `/ontology/governance/security` 也由该入口发现并沿用同一策略实现。最长 route-prefix 决定所属产品域。菜单、tabs、搜索和面包屑由现有导航声明派生；保留全部现有有效 URL 与旧深链。此修订不增加后台业务语义、不复制权限事实、不创建前端角色，权限以现行服务端授权为准。实现与浏览器验收分别记录，执行入口见[计划 Task 7](../../superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)。
