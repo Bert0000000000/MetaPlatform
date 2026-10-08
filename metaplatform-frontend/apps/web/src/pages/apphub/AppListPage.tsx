@@ -409,6 +409,8 @@ export default function AppListPage() {
         domains={domains}
         appCounts={domainAppCounts}
         loading={domainsLoading}
+        error={domainsError}
+        onRetry={() => void loadDomains().catch(() => {})}
         onChanged={async () => {
           const list = await loadDomains();
           // 域被删掉后，原来选中的 chip 已不存在，回到「全部」，

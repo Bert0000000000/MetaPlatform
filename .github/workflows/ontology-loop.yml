@@ -178,10 +178,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ontology-core-e2e-artifacts
+          # Builder uploads only its dedicated safe whitelist; keep diagnostics private.
           path: |
             metaplatform-frontend/tests/e2e/.artifacts/**
             metaplatform-frontend/playwright-report/**
             metaplatform-frontend/test-results/**
+            !metaplatform-frontend/test-results/builder*
+            !metaplatform-frontend/test-results/builder*/**
           if-no-files-found: ignore
           retention-days: 14
 
