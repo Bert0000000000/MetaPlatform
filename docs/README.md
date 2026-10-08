@@ -16,7 +16,7 @@
 
 ## 📁 目录结构
 
-当前本体建设界面依据 [Builder V2 已接受设计](superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)与[实施计划](superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)；用户后补七入口决定覆盖历史八入口呈现，导航单源为 [ADR-0069](active/decisions/ADR-0069-ontology-ia-v2-workspace-navigation.md)的 2026-10-08 后补附录、[IA v2 规格](active/specs/2026-09-18-ontology-ia-v2-design.md) §11 与 [平台导航规格修订](active/specs/2026-09-14-ui-redesign/DESIGN-SPEC.md)。
+当前全平台界面依据 [Builder V2 已接受设计](superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)与[实施计划](superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)；七入口与常驻 SuperAI 采用顶部功能组、当前组左侧页面导航，覆盖历史八入口及阶段侧栏/PageTabs 呈现。导航单源为 [ADR-0069](active/decisions/ADR-0069-ontology-ia-v2-workspace-navigation.md)的全平台功能组附录、[IA v2 规格](active/specs/2026-09-18-ontology-ia-v2-design.md) §12 与 [平台导航规格修订](active/specs/2026-09-14-ui-redesign/DESIGN-SPEC.md)。
 
 ### 🟢 `active/` — 当前活跃（v3.x / v4 增量）
 
