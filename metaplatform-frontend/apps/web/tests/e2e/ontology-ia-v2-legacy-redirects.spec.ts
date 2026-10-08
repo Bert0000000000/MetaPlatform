@@ -33,7 +33,7 @@ const CASES: Array<[string, string]> = [
   ['/ontology?tab=analytics', '/ontology/explore/analysis'],
   ['/ontology?tab=governance', '/ontology/governance/releases'],
   // ---- 6-tab 时代路径 ----
-  ['/ontology/model', '/ontology/model/object-types'],
+  ['/ontology/model', '/ontology/model/graph'],
   ['/ontology/model/editor', '/ontology/model/object-types'],
   ['/ontology/object-types', '/ontology/model/object-types'],
   ['/ontology/relationship-types', '/ontology/model/link-types'],

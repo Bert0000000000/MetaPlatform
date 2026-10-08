@@ -1,45 +1,91 @@
-/**
- * 本体域导航模式契约—— 2026-09-24 起为 tab 模式常驻契约。
- *
- * <p>用户决策：本体导航回归与全站一致的横向 PageTabs（主 tab = 六大功能组 +
- * children 胶囊行），IA v2 的正式 URL 与路由即状态成果全部保留。
- * 本文件防止后续改动悄悄把本体域改回 workspace 模式（左侧导航）或
- * 清空 tabs/children 结构（PageTabs 高亮与面包屑依赖它）。
- *
- * <p>渲染行为由 E2E 断言（ontology-ia-v2-navigation.spec）：
- * 本体页面渲染 .mp-pagetabs、无 .mp-onto-sidenav。
- */
 import '@testing-library/jest-dom/vitest';
-import { describe, expect, it } from 'vitest';
-import { DOMAINS } from './domains';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import AppShell from './AppShell';
+import OntologyTabLayout from '@/pages/ontology/layout/OntologyTabLayout';
+import { getOntologyContextSnapshot } from '@/pages/ontology/hooks/assistantContext';
 
-describe('本体域导航模式契约（tab 模式）', () => {
-  it('本体域不声明 workspace 模式（横向 PageTabs 渲染）', () => {
-    const ontology = DOMAINS.find((d) => d.key === 'ontology');
-    expect(ontology).toBeDefined();
-    expect(ontology?.navigationMode).toBeUndefined();
+// Semi imports its animation driver eagerly; jsdom has no canvas implementation.
+vi.hoisted(() => {
+  HTMLCanvasElement.prototype.getContext = (() => ({ fillRect() {}, clearRect() {},
+    getImageData: () => ({ data: new Uint8ClampedArray(4) }),
+  })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+});
+
+// Authentication/settings are external providers; navigation and Semi rendering stay real.
+vi.mock('@mate/shared', () => ({ useAuth: () => ({ user: { username: 'test-user' }, logout: vi.fn() }) }));
+vi.mock('@/contexts/SettingsContext', () => ({
+  useSettings: () => ({ resolvedTheme: 'light', setTheme: vi.fn().mockResolvedValue(undefined) }),
+}));
+
+beforeEach(() => {
+  vi.stubGlobal('localStorage', window.localStorage);
+  localStorage.clear();
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+  vi.stubGlobal('matchMedia', () => ({ matches: false, addListener: vi.fn(), removeListener: vi.fn(),
+    addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+});
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+function renderShell(path: string) {
+  const router = createMemoryRouter([{
+    element: <AppShell />,
+    children: [
+      { path: '/ontology', element: <OntologyTabLayout />, children: [
+        { index: true, element: <h1>总览内容</h1> },
+        { path: '*', element: <h1>本体资源内容</h1> },
+      ] },
+      { path: '/home', element: <h1>工作台内容</h1> },
+    ],
+  }], { initialEntries: [path] });
+  render(<RouterProvider router={router} />);
+  return router;
+}
+
+describe('本体建设工作区导航', () => {
+  it('对象详情深链高亮对象类型，保留上下文且不显示平台 PageTabs', () => {
+    renderShell('/ontology/model/object-types/ont.t.obj.customer.v1/properties');
+    const nav = screen.getByRole('navigation', { name: '本体工作区导航' });
+    expect(within(nav).getByRole('link', { name: '对象类型' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('link', { name: '总览' })).not.toHaveAttribute('aria-current');
+    expect(screen.queryByRole('tab', { name: '语义模型' })).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: '本体上下文' })).toHaveTextContent('语义模型');
+    expect(getOntologyContextSnapshot().navigation).toMatchObject({
+      view: 'ontology-model', tab: 'model', url: '/ontology/model/object-types/ont.t.obj.customer.v1/properties',
+    });
+    expect(within(nav).queryByText('保存的查询')).not.toBeInTheDocument();
+    expect(within(nav).queryByText('审批策略')).not.toBeInTheDocument();
   });
 
-  it('其他域也不使用 workspace 模式（该模式已无使用者）', () => {
-    const others = DOMAINS.filter((d) => d.key !== 'ontology');
-    for (const d of others) {
-      expect(d.navigationMode).toBeUndefined();
-    }
+  it('点击关系类型和浏览器返回更新 URL、高亮与上下文', async () => {
+    const router = renderShell('/ontology/model/graph');
+    const nav = screen.getByRole('navigation', { name: '本体工作区导航' });
+    fireEvent.click(within(nav).getByRole('link', { name: '关系类型' }));
+    expect(router.state.location.pathname).toBe('/ontology/model/link-types');
+    expect(within(nav).getByRole('link', { name: '关系类型' })).toHaveAttribute('aria-current', 'page');
+    await act(() => router.navigate(-1));
+    expect(router.state.location.pathname).toBe('/ontology/model/graph');
+    expect(within(nav).getByRole('link', { name: '模型工作台' })).toHaveAttribute('aria-current', 'page');
+    expect(getOntologyContextSnapshot().navigation?.url).toBe('/ontology/model/graph');
   });
 
-  it('六大功能组主 tab 齐全，且五组带 children 胶囊行（总览直达除外）', () => {
-    const ontology = DOMAINS.find((d) => d.key === 'ontology');
-    const keys = ontology?.tabs.map((t) => t.key);
-    expect(keys).toEqual(
-      expect.arrayContaining(['overview', 'model', 'data', 'explore', 'logic', 'governance']),
-    );
-    const withChildren = ontology?.tabs.filter((t) => (t.children ?? []).length > 0) ?? [];
-    expect(withChildren.length).toBe(5);
-    // 子页路径全部落在对应组前缀下（tab 高亮最长前缀匹配的前提）
-    for (const t of withChildren) {
-      for (const c of t.children ?? []) {
-        expect(c.path.startsWith(`${t.path}/`)).toBe(true);
-      }
-    }
+  it('导航展开按钮有可操作状态，选择页面后收起', () => {
+    renderShell('/ontology/model/graph');
+    const toggle = screen.getByRole('button', { name: '展开本体导航' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    expect(screen.getByRole('button', { name: '收起本体导航' })).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('link', { name: '关系类型' }));
+    expect(screen.getByRole('button', { name: '展开本体导航' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('其他域继续呈现可点击 PageTabs，离开本体清空上下文', async () => {
+    const router = renderShell('/ontology/model/graph');
+    await act(() => router.navigate('/home'));
+    expect(screen.getByRole('tab', { name: '概览' })).toBeVisible();
+    expect(screen.getByRole('tab', { name: '待办' })).toBeVisible();
+    expect(screen.queryByRole('navigation', { name: '本体工作区导航' })).not.toBeInTheDocument();
+    expect(getOntologyContextSnapshot().navigation).toBeNull();
   });
 });
