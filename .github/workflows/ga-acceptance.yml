@@ -256,10 +256,8 @@ jobs:
       - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
         run: python scripts/ci/forbid_legacy_artifacts.py
 
-  # v3.1 Ontology (ADR-0021 KERNEL-01 + ADR-0016 mate-tech-ont): bring the
-  # mate-kernel + mate-tech-ont pytest suites under the same gate. PG-gated
-  # e2e cases auto-skip without a PostgreSQL service (expected in CI: no PG
-  # container in this job; local baseline ~980 passed / ~57 skipped).
+  # Broad unit/import coverage. Mandatory database evidence is reported by
+  # ont-postgres-required below, independently of this job's optional PG cases.
   ont-kernel-tests:
     name: ont-kernel pytest (mate-kernel + mate-tech-ont)
     runs-on: ubuntu-latest
@@ -314,12 +312,70 @@ jobs:
       - name: Install uv
         run: python -m pip install uv
       - name: Install Ontology workspace dependencies
-        run: uv sync --directory mate-platform-backend --package mate-tech-ont --dev --frozen
+        working-directory: mate-platform-backend
+        run: |
+          uv sync --frozen --python 3.12 --package mate-tech-ont --no-install-workspace
+          uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
+          uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
       - name: Run non-privileged PostgreSQL RLS acceptance
         run: bash scripts/ci/verify_ont_rls.sh
         env:
           ONT_RLS_ADMIN_DSN: postgresql://meta:meta@localhost:5432/postgres
           PG_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ontology-rls-required-results
+          path: .ci/ont-rls.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  # ADR-0082/0080 affected database regressions are mandatory: connection loss,
+  # missing collection or any skip fails this check. Multi-tenant fixture SQL
+  # and auxiliary tables are covered here; FORCE RLS remains ga-014 above.
+  ont-postgres-required:
+    name: ontology PostgreSQL required regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: meta
+          POSTGRES_PASSWORD: meta
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meta -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      ONT_RLS_ADMIN_DSN: postgresql://meta:meta@localhost:5432/postgres
+      PG_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install locked Ontology runtime and test dependencies
+        working-directory: mate-platform-backend
+        run: |
+          python -m pip install uv
+          uv sync --frozen --python 3.12 --package mate-tech-ont --no-install-workspace
+          uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
+          uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
+      - name: Gate behavior regression tests
+        run: mate-platform-backend/.venv/bin/python -m pytest scripts/ci/tests/test_ont_postgres_gate.py scripts/ci/tests/test_migration_browser_gate.py -q -o addopts=
+      - name: Prepare isolated business-role regression database
+        run: mate-platform-backend/.venv/bin/python scripts/ci/prepare_ont_postgres_test_db.py
+      - name: Execute migration, sync, atomicity, link concurrency, version and query regressions
+        run: mate-platform-backend/.venv/bin/python scripts/ci/verify_ont_postgres.py --junit .ci/ont-postgres.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ontology-postgres-required-results
+          path: .ci/ont-postgres.xml
+          if-no-files-found: error
+          retention-days: 14
 
   # ── 1.6 任务 3：Agent 产品层（mate-tech-agent-team）测试进 CI ──────────
   # 此前这 246 条用例从未在任何 workflow 里跑过（CI 只跑 tests/architecture

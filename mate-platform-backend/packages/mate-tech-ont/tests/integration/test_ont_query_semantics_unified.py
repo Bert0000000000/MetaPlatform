@@ -46,7 +46,11 @@ from mate_kernel.ontology.types.interface import Interface
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
-PG_DSN = os.getenv("QSEM_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont")
+PG_DSN = (
+    os.getenv("QSEM_PG_DSN")
+    or os.getenv("VER_PG_DSN")
+    or os.getenv("PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont_test")
+)
 T = "qsem"
 OBJ_P = f"ont.{T}.obj.hr.person.v1"
 OBJ_E = f"ont.{T}.obj.hr.employee.v1"
