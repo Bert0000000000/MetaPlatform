@@ -8,6 +8,7 @@ these regression fixtures seed/read multiple tenants and auxiliary tables.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -72,7 +73,46 @@ def preflight(dsn: str) -> None:
     )
 
 
-def check_junit(path: Path, required: set[str]) -> int:
+def pytest_environment(source: dict[str, str], dsn: str) -> dict[str, str]:
+    env = dict(source)
+    # Mandatory runs may not inherit -k/-m/--deselect/--lf or other selectors.
+    # Keep pyproject source paths, import mode, strictness and temp settings.
+    env.pop("PYTEST_ADDOPTS", None)
+    env.pop("ONT_REQUIRED_COLLECTION_PATH", None)
+    env.update(dict.fromkeys(DSN_KEYS, dsn))
+    env["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(Path(__file__).parent), env.get("PYTHONPATH")))
+    )
+    return env
+
+
+def collect_manifest(files: list[str], env: dict[str, str], manifest: Path) -> list[str]:
+    manifest.unlink(missing_ok=True)
+    collection_env = {**env, "ONT_REQUIRED_COLLECTION_PATH": str(manifest)}
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-p",
+            "ont_required_pytest",
+            *files,
+            "--collect-only",
+            "-q",
+        ],
+        cwd=BACKEND,
+        env=collection_env,
+        check=False,
+    )
+    if result.returncode:
+        raise ValueError(f"Required unfiltered collection failed (pytest exit {result.returncode})")
+    identities = json.loads(manifest.read_text(encoding="utf-8"))["nodeids"]
+    if not identities or len(identities) != len(set(identities)):
+        raise ValueError("Required collection identities are empty or duplicated")
+    return identities
+
+
+def check_junit(path: Path, required: set[str], expected: list[str]) -> int:
     cases = list(ET.parse(path).getroot().iter("testcase"))
     if not cases:
         raise ValueError("Required JUnit contains no executed tests")
@@ -84,6 +124,22 @@ def check_junit(path: Path, required: set[str]) -> int:
     missing = required - executed
     if missing:
         raise ValueError(f"Required suites not executed: {', '.join(sorted(missing))}")
+    identities = []
+    for case in cases:
+        recorded = case.findall("./properties/property[@name='ont_required_nodeid']")
+        if len(recorded) != 1:
+            raise ValueError("JUnit case identity must be recorded exactly once")
+        identities.append(recorded[0].get("value"))
+    if not expected or len(expected) != len(set(expected)):
+        raise ValueError("Expected case identities are empty or duplicated")
+    missing_cases = set(expected) - set(identities)
+    extra_cases = set(identities) - set(expected)
+    if len(identities) != len(set(identities)) or missing_cases or extra_cases:
+        raise ValueError(
+            "Executed case identities do not match unfiltered collection: "
+            f"{len(missing_cases)} missing, {len(extra_cases)} extra, "
+            f"{len(identities) - len(set(identities))} duplicate"
+        )
     return len(cases)
 
 
@@ -101,18 +157,27 @@ def main() -> int:
         report.parent.mkdir(parents=True, exist_ok=True)
         # A previous successful report can never substitute for this run.
         report.unlink(missing_ok=True)
-        env = dict(os.environ)
-        env.update(dict.fromkeys(DSN_KEYS, dsn))
+        env = pytest_environment(dict(os.environ), dsn)
         suites = ("test_tenant_isolation_hard",) if args.rls else SUITES
         directory = "security" if args.rls else "integration"
         files = [f"packages/mate-tech-ont/tests/{directory}/{suite}.py" for suite in suites]
+        expected = collect_manifest(files, env, report.with_suffix(".collection.json"))
         result = subprocess.run(
-            [sys.executable, "-m", "pytest", *files, "-q", f"--junitxml={report}"],
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                "-p",
+                "ont_required_pytest",
+                *files,
+                "-q",
+                f"--junitxml={report}",
+            ],
             cwd=BACKEND,
             env=env,
             check=False,
         )
-        count = check_junit(report, set(suites))
+        count = check_junit(report, set(suites), expected)
         if result.returncode:
             return result.returncode
         print(

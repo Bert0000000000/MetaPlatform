@@ -1,6 +1,7 @@
 """Required gates must fail on missing, skipped, or incomplete evidence."""
 
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
@@ -50,7 +51,7 @@ def test_empty_skipped_and_failed_junit_cannot_pass(tmp_path, child):
     )
     report.write_text(f"<testsuites><testsuite>{case}</testsuite></testsuites>")
     with pytest.raises(ValueError):
-        gate().check_junit(report, {"test_ont_migration_plan"})
+        gate().check_junit(report, {"test_ont_migration_plan"}, ["required"])
 
 
 def test_missing_required_suite_is_rejected(tmp_path):
@@ -59,15 +60,18 @@ def test_missing_required_suite_is_rejected(tmp_path):
         '<testsuites><testsuite><testcase classname="test_other" name="test_ok"/></testsuite></testsuites>'
     )
     with pytest.raises(ValueError, match="not executed"):
-        gate().check_junit(report, {"test_ont_migration_plan"})
+        gate().check_junit(report, {"test_ont_migration_plan"}, ["required"])
 
 
 def test_executed_successful_required_suite_is_accepted(tmp_path):
     report = tmp_path / "result.xml"
-    report.write_text(
-        '<testsuites><testsuite><testcase classname="packages.tests.test_ont_migration_plan.TestMigration" name="test_ok"/></testsuite></testsuites>'
+    write_identity_junit(report, ["test_ont_migration_plan.py::test_ok"])
+    assert (
+        gate().check_junit(
+            report, {"test_ont_migration_plan"}, ["test_ont_migration_plan.py::test_ok"]
+        )
+        == 1
     )
-    assert gate().check_junit(report, {"test_ont_migration_plan"}) == 1
 
 
 @pytest.mark.parametrize(
@@ -97,3 +101,69 @@ def test_provisioner_rejects_unsafe_targets_before_mutation(admin, test):
 
     with pytest.raises(ValueError):
         validate_test_target(admin, test)
+
+
+def write_identity_junit(path, identities):
+    import xml.etree.ElementTree as ET
+
+    root = ET.Element("testsuites")
+    suite = ET.SubElement(root, "testsuite")
+    for identity in identities:
+        case = ET.SubElement(suite, "testcase", classname="test_ont_migration_plan", name=identity)
+        props = ET.SubElement(case, "properties")
+        ET.SubElement(props, "property", name="ont_required_nodeid", value=identity)
+    ET.ElementTree(root).write(path)
+
+
+@pytest.mark.parametrize(
+    "actual",
+    [
+        ["test_ont_migration_plan.py::test_kept"],
+        ["test_ont_migration_plan.py::test_kept", "test_ont_migration_plan.py::test_kept"],
+        [
+            "test_ont_migration_plan.py::test_kept",
+            "test_ont_migration_plan.py::test_required",
+            "test_ont_migration_plan.py::test_extra",
+        ],
+    ],
+)
+def test_missing_duplicate_or_extra_individual_execution_is_rejected(tmp_path, actual):
+    expected = [
+        "test_ont_migration_plan.py::test_kept",
+        "test_ont_migration_plan.py::test_required",
+    ]
+    report = tmp_path / "result.xml"
+    write_identity_junit(report, actual)
+    with pytest.raises(ValueError, match="identit"):
+        gate().check_junit(report, {"test_ont_migration_plan"}, expected)
+
+
+def test_parameterized_case_identity_must_match_exactly(tmp_path):
+    expected = [
+        "test_ont_migration_plan.py::test_param[first]",
+        "test_ont_migration_plan.py::test_param[second]",
+    ]
+    report = tmp_path / "result.xml"
+    write_identity_junit(report, expected)
+    assert gate().check_junit(report, {"test_ont_migration_plan"}, expected) == 2
+
+
+def test_unfiltered_collection_ignores_inherited_pytest_selectors(tmp_path):
+    test_file = tmp_path / "test_ont_migration_plan.py"
+    test_file.write_text(
+        "import pytest\n@pytest.mark.parametrize('value', [1,2])\ndef test_param(value): assert value\ndef test_required(): pass\n"
+    )
+    module = gate()
+    env = module.pytest_environment(
+        {
+            **os.environ,
+            "PYTEST_ADDOPTS": "-k absent --deselect=test_ont_migration_plan.py::test_required",
+        },
+        "explicit-target",
+    )
+    assert "PYTEST_ADDOPTS" not in env
+    identities = module.collect_manifest([str(test_file)], env, tmp_path / "collection.json")
+    assert len(identities) == 3
+    assert any(identity.endswith("test_required") for identity in identities)
+    assert any(identity.endswith("test_param[1]") for identity in identities)
+    assert any(identity.endswith("test_param[2]") for identity in identities)

@@ -326,7 +326,9 @@ jobs:
         if: always()
         with:
           name: ontology-rls-required-results
-          path: .ci/ont-rls.xml
+          path: |
+            .ci/ont-rls.xml
+            .ci/ont-rls.collection.json
           if-no-files-found: error
           retention-days: 14
 
@@ -373,7 +375,9 @@ jobs:
         if: always()
         with:
           name: ontology-postgres-required-results
-          path: .ci/ont-postgres.xml
+          path: |
+            .ci/ont-postgres.xml
+            .ci/ont-postgres.collection.json
           if-no-files-found: error
           retention-days: 14
 
