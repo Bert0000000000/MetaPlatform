@@ -189,3 +189,6 @@ infra/trino/etc/catalog/iceberg.properties
 # SOP-Bench 原始数据（CC BY-NC 4.0）+ 本地临时件（含 token，不入库）
 .tmp/
 scripts/mock/business_mock.sql
+
+# Local task archives contain runtime fixtures and execution logs
+.superpowers/archives/

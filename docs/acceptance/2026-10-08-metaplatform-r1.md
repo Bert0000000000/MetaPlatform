@@ -1,6 +1,6 @@
 # MetaPlatform R1 本地验收记录
 
-> 状态：C0–C2 实现、本地验证及任务审查通过；全分支最终审查待完成。
+> 状态：R1（C0–C2）本地技术验收完成；任务审查与全分支最终审查通过，无未解决 Critical / Important。
 > 范围：已接受路线图的准备工作与 R1（C0–C2），不代表 R2–R6、远程 CI、部署或业务试点通过。
 
 ## 来源与变更
@@ -43,6 +43,8 @@ C2 的真实 RED 已保存：58 条采集/执行，34 条预期失败、24 条�
 
 原始成功 JUnit 也已检查并保存：[数据库](evidence/2026-10-08-metaplatform-r1/ont-postgres.xml)、[RLS](evidence/2026-10-08-metaplatform-r1/ont-rls.xml)、[门禁行为](evidence/2026-10-08-metaplatform-r1/ci-gate-behavior.xml)、[浏览器](evidence/2026-10-08-metaplatform-r1/migration-browser.xml)；没有嵌入输出或环境数据。
 
+最终可选 null 契约修复后的 [34 条契约测试](evidence/2026-10-08-metaplatform-r1/contract-tests.xml) 也已再次通过，15.82 秒、零跳过、无警告；不再仅依赖修复前的契约测试记录。
+
 ## 环境与资源隔离
 
 | 用途 | 本次独立目标 | 角色 / 范围 |
@@ -51,6 +53,10 @@ C2 的真实 RED 已保存：58 条采集/执行，34 条预期失败、24 条�
 | RLS 专项 | `127.0.0.1:55484/metaplatform_ont_test`，任务 native PostgreSQL | `mate_ont_test`，NOSUPERUSER / NOBYPASSRLS；九张核心表 FORCE RLS |
 | 浏览器数据库 | `127.0.0.1:55484/codex_r1_ontology` | `codex_r1_app`，NOSUPERUSER / NOBYPASSRLS |
 | 浏览器服务 | 前端 59250、gateway 58100、auth 58101、Ont 58007、Keycloak 55381、Redis 55379 | 本工作树源码；签名校验启用；公开测试 realm；不用现有业务服务 |
+
+以上为测试时目标。完成验证后，本任务 native 进程和四个专用容器/匿名卷已清理，测试端口已关闭；本工作树、源码、锁定依赖、既有服务和其他工作树保留。原始成功 XML、清单及审查结论已移出临时任务目录并入库。
+
+临时任务目录的递归删除被自动审批以 `blocked by policy` 拒绝，随后完成保留全部文件的可恢复归档：`.superpowers/archives/2026-10-08-metaplatform-r1-implementation`（Git 忽略）。没有删掉该目录的文件；活跃 SDD 目录已移出，历史本地工具/日志仍可恢复。
 
 数据库角色、版本、扩展和 FORCE RLS 属性已通过只读 SQL 复核。辅助版本、迁移记录、overlay 和 mapping 表不在九表 FORCE RLS 清单内，迁移仍须显式过滤租户。浏览器使用 hash embedder，停用同步定时器；不覆盖外部 Provider、Neo4j v1 或 Agent 写入。
 
@@ -90,7 +96,9 @@ mate-platform-backend/.venv/Scripts/python.exe scripts/ci/verify_migration_brows
 
 - C0：[独立任务审查](evidence/2026-10-08-metaplatform-r1/c0-review.md)通过；Git LF/CRLF 提示为非阻断格式通知。
 - C1：初审发现逐条测试完整性缺陷；`473b9051` 修复后[独立复审](evidence/2026-10-08-metaplatform-r1/c1-fix-review.md)确认已解决，未引入新问题。
-- C2：完成真实数据库及浏览器验证，[独立任务审查](evidence/2026-10-08-metaplatform-r1/c2-review.md) Approved，无未解决 Critical / Important；全分支最终审查待完成。
+- C2：完成真实数据库及浏览器验证，[独立任务审查](evidence/2026-10-08-metaplatform-r1/c2-review.md) Approved，无未解决 Critical / Important。
+- [全分支最终审查](evidence/2026-10-08-metaplatform-r1/final-review.md)：范围 `e965d866..d1e11382`，技术集成就绪（Ready to merge — Yes），没有集成前必修问题。后续仅登记审查结论、补存同一最终代码的契约测试 XML、临时资源清理及归档忽略规则，不改实现。
+- 本轮只有一个控制端判断：[字段共存时保守中止](evidence/2026-10-08-metaplatform-r1/rulings.md)，空值/同值场景可能需要人工处理；数据不自动覆盖。
 - 契约 lint 通过且无错误；Redocly 36 条、Spectral 100 条警告定位在迁移路径之外，没有独立重跑历史基线来证明相同数量。锁定 npm 依赖安装产生的弃用提示也已记录；没有改依赖/锁文件。
 - 远程 GitHub CI / required branch protection：未执行或更改；本地绿色不是远程合并准入证明。
 - 部署、业务验收与试点：未执行。模型回滚仍只恢复模型，不恢复迁移数据。
