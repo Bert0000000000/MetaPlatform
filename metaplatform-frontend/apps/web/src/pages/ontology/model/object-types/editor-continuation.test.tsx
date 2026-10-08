@@ -111,6 +111,24 @@ function mount() {
   render(<RouterProvider router={router} />);
   return router;
 }
+it.each(['', '   '])('warns about identity-unavailable page restoration and retains modal dirty protection (%j)', async (id) => {
+  auth.user = { id, tenantId: 'tenant' };
+  const router = mount();
+  const drawer = await screen.findByRole('dialog', { name: '模型编辑器' });
+  expect(await within(drawer).findByRole('alert')).toHaveTextContent(/身份不可用.*跨页.*无法恢复/);
+  expect(within(drawer).getByRole('link', { name: '重新登录' })).toHaveAttribute('href', '/login');
+  expect(within(drawer).getByRole('button', { name: '保存（整体 upsert）' })).toBeEnabled();
+  fireEvent.change(screen.getByPlaceholderText('例如：客户'), { target: { value: 'unknown personal input' } });
+  expect(screen.queryByText(/未保存输入已保留在当前会话/)).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+  expect(await screen.findByRole('dialog', { name: '未保存的修改' })).toBeVisible();
+  await act(async () => { await router.navigate('/other'); });
+  auth.user = { id: id ? '' : '   ', tenantId: 'tenant' };
+  await act(async () => { await router.navigate(-1); });
+  await screen.findByRole('dialog', { name: '模型编辑器' });
+  expect(screen.getByPlaceholderText('例如：客户')).toHaveValue('');
+  expect(screen.queryByText(/未保存输入已保留在当前会话/)).toBeNull();
+});
 async function candidate() {
   await screen.findByRole('dialog', { name: '模型编辑器' });
   fireEvent.change(screen.getByPlaceholderText('例如：客户'), {
