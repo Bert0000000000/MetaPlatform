@@ -6672,7 +6672,7 @@ paths:
             type: string
   /api/v1/dashboard/auth/login:
     post:
-      summary: 'Workbench login (DEV: returns synthetic tokens, NOT real IAM)'
+      summary: 'Workbench login via Keycloak; provider tokens and best-effort UserInfo identity'
       tags:
         - dashboard
       security: []
@@ -6700,7 +6700,7 @@ paths:
         '400':
           description: Missing username or password
       operationId: dashboardPostDashboardAuthLogin
-      description: 'Workbench login (DEV: returns synthetic tokens, NOT real IAM)'
+      description: 'Workbench login via Keycloak; provider tokens and best-effort UserInfo identity'
       x-mate-owner: business-workbench
       x-mate-permission: dashboard.post
       x-mate-requirements:
@@ -8646,7 +8646,7 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/iam/auth/login:
     post:
-      summary: Username + password (bcrypt) -> access + refresh JWT
+      summary: Username + password via Keycloak -> provider access + refresh tokens; UserInfo identity is best-effort
       tags:
         - iam
       security: []
@@ -8666,7 +8666,7 @@ paths:
         '401':
           description: Bad credentials or disabled user
       operationId: iamPostIamAuthLogin
-      description: Username + password (bcrypt) -> access + refresh JWT
+      description: Username + password via Keycloak -> provider access + refresh tokens; UserInfo identity is best-effort
       x-mate-owner: security-iam
       x-mate-permission: iam.post
       x-mate-requirements:
