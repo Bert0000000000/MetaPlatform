@@ -72,10 +72,12 @@ export default function OverviewPage() {
   // 概念完整性 J：治理卡补执行总量 + 最近活动（设计规格 §7.1 补齐）
   const [runsCount, setRunsCount] = useState<number | null>(null);
   const [lastActivity, setLastActivity] = useState<string | null>(null);
+  const [readErrors, setReadErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
+    setReadErrors({});
 
     // 六类基元一荣俱荣：任一失败说明内核读不通，整页给失败态而不是逐块空态。
     const [ot, lt, at, fn, ifc, ax] = await Promise.allSettled([
@@ -101,6 +103,10 @@ export default function OverviewPage() {
       interface: ifc.status === 'fulfilled' ? ifc.value.length : null,
       axiom: ax.status === 'fulfilled' ? ax.value.length : null,
     });
+    const failed: Record<string, string> = {};
+    for (const [label, result] of [['关系', lt], ['动作', at], ['函数', fn], ['接口', ifc], ['公理', ax]] as const) {
+      if (result.status === 'rejected') failed[label] = result.reason instanceof Error ? result.reason.message : String(result.reason);
+    }
 
     // 三块侧栏数据各自独立降级：慢/挂不影响概览主结论。
     const [auditRes, syncRes, wipRes, lintRes, runsRes] = await Promise.allSettled([
@@ -110,6 +116,10 @@ export default function OverviewPage() {
       lintAntiPatterns(),
       listActionAudit(200),
     ]);
+    for (const [label, result] of [['审计', auditRes], ['同步', syncRes], ['草稿', wipRes], ['模型检查', lintRes], ['执行统计', runsRes]] as const) {
+      if (result.status === 'rejected') failed[label] = result.reason instanceof Error ? result.reason.message : String(result.reason);
+    }
+    setReadErrors(failed);
     setAudit(auditRes.status === 'fulfilled' ? auditRes.value : []);
     setSync(syncRes.status === 'fulfilled' ? syncRes.value : []);
     setDrafts(wipRes.status === 'fulfilled' ? wipRes.value.length : null);
@@ -230,11 +240,26 @@ export default function OverviewPage() {
               type="primary"
               onClick={() => navigate('/ontology/model/object-types')}
             >
-              去语义模型
+              继续模型建设
             </Button>
           </>
         }
       />
+
+      <section className="mp-onto-ov-card mp-mb-4" aria-label="建设下一步">
+        <h2 className="mp-onto-ov-card-title">继续本体建设</h2>
+        <p>先核对模型定义，再绑定数据、配置业务动作与检查发布。各步骤使用已有资源与实际结果。</p>
+        <div className="mp-onto-ov-jumps">
+          <JumpCard title="定义模型" desc="对象、属性与关系" onClick={() => navigate('/ontology/model/graph')} />
+          <JumpCard title="绑定数据" desc="来源声明与物化样本" onClick={() => navigate('/ontology/data/mappings')} />
+          <JumpCard title="检查与发布" desc={drafts === null ? '草稿读取未完成' : `${drafts} 条实际草稿；发布前核对影响`} onClick={() => navigate('/ontology/governance/drafts')} />
+        </div>
+        {!!Object.keys(readErrors).length && <div role="alert" className="mp-read-warning">
+          {Object.entries(readErrors).map(([label, reason]) => <p key={label}>{label}读取未完成 · {reason}</p>)}
+          <Button onClick={() => void load()}>重试未完成读取</Button>
+        </div>}
+        {syncFailures.map(row => <p key={row.class_rid}>同步阻断 · {row.class_rid} · {row.last_error || '服务端未提供错误详情'}</p>)}
+      </section>
 
       {noPrimitives ? (
         <EmptyState
@@ -285,7 +310,7 @@ export default function OverviewPage() {
                     执行记录 <ArrowRight size={14} strokeWidth={1.5} />
                   </Button>
                 </div>
-                {audit.length === 0 ? (
+                {readErrors['审计'] ? <p>审计记录不可用，请重试未完成读取。</p> : audit.length === 0 ? (
                   <div className="mp-onto-ov-empty">本租户还没有经 Action 落库的变更。</div>
                 ) : (
                   <ul className="mp-onto-ov-list">
@@ -348,7 +373,7 @@ export default function OverviewPage() {
                     同步任务 <ArrowRight size={14} strokeWidth={1.5} />
                   </Button>
                 </div>
-                {sync.length === 0 ? (
+                {readErrors['同步'] ? <p>同步状态不可用，请重试未完成读取。</p> : sync.length === 0 ? (
                   <div className="mp-onto-ov-empty">
                     调度器尚未跑过同步任务，或本租户还没有接数据源。
                   </div>
@@ -356,7 +381,7 @@ export default function OverviewPage() {
                   <>
                     <div className="mp-onto-ov-sync">
                       <span className="mp-onto-ov-sync-ok">
-                        {sync.length - syncFailures.length} 正常
+                        {sync.length - syncFailures.length} 条未记录连续失败
                       </span>
                       <span
                         className={
@@ -382,7 +407,7 @@ export default function OverviewPage() {
                   改用治理面真实数据：草稿数 + 反模式发现数。Agent 服务关闭时本页不受影响。 */}
               <section className="mp-onto-ov-card">
                 <div className="mp-onto-ov-card-head">
-                  <h3 className="mp-onto-ov-card-title">治理与健康</h3>
+                  <h3 className="mp-onto-ov-card-title">治理读取与检查</h3>
                   <Button
                     theme="borderless"
                     type="primary"

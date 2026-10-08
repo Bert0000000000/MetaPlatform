@@ -79,34 +79,38 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [summaryReady, setSummaryReady] = useState(false);
   const [stats, setStats] = useState<DashboardStat[]>([]);
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
   const [activeAgents, setActiveAgents] = useState<ActiveAgent[]>([]);
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
   const [pending, setPending] = useState<ApprovalTask[]>([]);
+  const [pendingError, setPendingError] = useState('');
+  const [pendingLoading, setPendingLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const loadSummary = useCallback(async () => {
     setLoading(true);
     setError('');
-    const [summaryRes, pendingRes] = await Promise.allSettled([
-      getDashboardSummary(),
-      getPendingTasks(),
-    ]);
-    if (summaryRes.status === 'fulfilled') {
-      const s = summaryRes.value;
+    try {
+      const s = await getDashboardSummary();
       setStats(s.stats ?? []);
       setRecentTasks(s.recentTasks ?? []);
       setActiveAgents(s.activeAgents ?? []);
       setQuickLinks(s.quickLinks ?? []);
-    } else {
-      setError(
-        summaryRes.reason instanceof Error ? summaryRes.reason.message : String(summaryRes.reason),
-      );
-    }
-    setPending(pendingRes.status === 'fulfilled' ? (pendingRes.value.items ?? []) : []);
-    setLoading(false);
+      setSummaryReady(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally { setLoading(false); }
   }, []);
+  const loadPending = useCallback(async () => {
+    setPendingLoading(true);
+    setPendingError('');
+    try { setPending((await getPendingTasks()).items ?? []); }
+    catch (e) { setPendingError(e instanceof Error ? e.message : String(e)); }
+    finally { setPendingLoading(false); }
+  }, []);
+  const load = useCallback(() => Promise.allSettled([loadSummary(), loadPending()]), [loadSummary, loadPending]);
 
   useEffect(() => {
     void load();
@@ -132,8 +136,8 @@ export default function DashboardPage() {
    * 三态渲染：加载中（且尚无数据）→ 占位；否则空 → 空态；否则内容。
    * 直接在「是否为空」上分支会让加载期间先闪一次假空态。
    */
-  const body = (isEmpty: boolean, emptyNode: ReactNode, content: ReactNode) =>
-    loading && isEmpty ? (
+  const body = (isEmpty: boolean, emptyNode: ReactNode, content: ReactNode, busy = loading) =>
+    busy && isEmpty ? (
       <div className="mp-home-loading">
         <Spin size="small" />
       </div>
@@ -142,6 +146,8 @@ export default function DashboardPage() {
     ) : (
       content
     );
+  const summaryBody = (isEmpty: boolean, emptyNode: ReactNode, content: ReactNode) =>
+    error && !summaryReady ? <p>汇总读取未完成，请重试汇总。</p> : body(isEmpty, emptyNode, content);
 
   const displayName = user?.realName ?? user?.username ?? '当前用户';
   const today = useMemo(
@@ -160,7 +166,7 @@ export default function DashboardPage() {
       <PageHeader
         title={`${greeting()}，${displayName}`}
         desc={
-          pending.length > 0
+          pendingError ? `${today} · 审批读取未完成` : pendingLoading ? `${today} · 正在读取审批` : pending.length > 0
             ? `${today} · ${pending.length} 项审批等待你确认`
             : `${today} · 暂无待办审批`
         }
@@ -191,14 +197,16 @@ export default function DashboardPage() {
           title="工作台数据加载失败"
           desc={error}
           actions={
-            <Button theme="solid" type="primary" onClick={() => void load()}>
+            <Button theme="solid" type="primary" onClick={() => void loadSummary()}>
               重试
             </Button>
           }
         />
-      ) : (
+      ) : null}
+      {error && summaryReady && <p role="status">下方保留上次成功读取的汇总，请重试后核对。</p>}
+      {
         <>
-          <div className="mp-home-kpis">
+          <div className="mp-home-kpis" hidden={!!error && !summaryReady}>
             {stats.length === 0 && !loading ? (
               <Card>
                 <span className="mp-home-kpi-label">暂无统计口径</span>
@@ -245,7 +253,7 @@ export default function DashboardPage() {
                   </Button>
                 }
               >
-                {body(
+                {summaryBody(
                   recentTasks.length === 0,
                   <EmptyState
                     illustration="no-content"
@@ -277,14 +285,14 @@ export default function DashboardPage() {
 
               <Card
                 className="mp-home-card-links"
-                title="快捷入口"
+                title="继续工作"
                 headerExtraContent={
                   <Button theme="borderless" type="primary" size="small" onClick={() => navigate('/apps/mine')}>
                     全部应用
                   </Button>
                 }
               >
-                {body(
+                {summaryBody(
                   quickLinks.length === 0,
                   <EmptyState illustration="no-content" title="暂无快捷入口" desc="常用入口会出现在这里。" />,
                   <div className="mp-home-links">
@@ -322,7 +330,8 @@ export default function DashboardPage() {
                   ) : undefined
                 }
               >
-                {body(
+                {pendingError ? <div role="alert"><p>{pendingError}</p><Button loading={pendingLoading} onClick={() => void loadPending()}>重试审批</Button>{pending.length > 0 && <p>下方保留上次读取的审批，请重试后确认。</p>}</div> : null}
+                {pendingError && pending.length === 0 ? null : pendingLoading && pending.length === 0 ? <div className="mp-home-loading"><Spin size="small" /></div> : body(
                   pending.length === 0,
                   <EmptyState
                     illustration="no-content"
@@ -367,7 +376,8 @@ export default function DashboardPage() {
                         }
                       />
                     )}
-                  />
+                  />,
+                  pendingLoading
                 )}
               </Card>
 
@@ -380,9 +390,9 @@ export default function DashboardPage() {
                   </Button>
                 }
               >
-                {body(
+                {summaryBody(
                   activeAgents.length === 0,
-                  <EmptyState illustration="no-content" title="暂无在线员工" desc="招聘并启用数字员工后会出现在这里。" />,
+                  <EmptyState illustration="no-content" title="暂无员工状态" desc="员工的实际状态会显示在这里。" />,
                   <List
                     dataSource={activeAgents}
                     split={false}
@@ -411,7 +421,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </>
-      )}
+      }
     </>
   );
 }

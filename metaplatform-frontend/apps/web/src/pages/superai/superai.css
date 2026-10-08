@@ -1,6 +1,19 @@
 /*
  * SuperAI 域共享样式（D 骨架流程详情 + E 骨架列表页）。
- */
+*/
+.mp-chat-workspace { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; padding: var(--mp-space-5); }
+.mp-chat-columns { display: flex; flex: 1; min-height: 0; min-width: 0; border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-medium); overflow: hidden; background: var(--semi-color-bg-1); }
+.mp-chat-columns > .mp-split-main { flex: 1; min-width: 0; }
+.mp-chat-sessions { order: -1; width: 220px; flex: none; overflow: auto; padding: var(--mp-space-3); border-right: 1px solid var(--semi-color-border); }
+.mp-chat-context { width: 210px; flex: none; overflow: auto; padding: var(--mp-space-3); border-left: 1px solid var(--semi-color-border); background: var(--semi-color-fill-0); }
+.mp-chat-sessions h2, .mp-chat-context h2 { font-size: 14px; margin: 0 0 var(--mp-space-3); }
+.mp-chat-context dl { font-size: 12px; }
+.mp-chat-context dt { color: var(--semi-color-text-2); margin-top: var(--mp-space-3); }
+.mp-chat-context dd { margin: var(--mp-space-1) 0; overflow-wrap: anywhere; }
+.mp-chat-context p { color: var(--semi-color-text-2); font-size: 12px; line-height: 1.6; }
+.mp-chat-session-link { border: 0; padding: 0; background: transparent; color: inherit; font-family: inherit; cursor: pointer; text-align: left; max-width: 100%; }
+@media (max-width: 1180px) { .mp-chat-context { width: 150px; } .mp-chat-sessions { width: 180px; } }
+@media (max-width: 720px) { .mp-chat-workspace { padding: var(--mp-space-3); overflow: auto; } .mp-chat-columns { flex-direction: column; overflow: auto; } .mp-chat-sessions, .mp-chat-context { width: auto; flex: none; max-height: 220px; border: 0; border-bottom: 1px solid var(--semi-color-border); } .mp-chat-columns > .mp-split-main { min-height: 420px; flex: none; } }
 
 /* ---------- 执行计划：状态四卡 ---------- */
 .mp-exec-kpis {

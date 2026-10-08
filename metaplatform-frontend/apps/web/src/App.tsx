@@ -19,9 +19,9 @@ import { kiRoutes } from './routes/ki';
 const SuperaiOrderReviewPage = lazy(() => import('./pages/superai/OrderReviewPage'));
 
 /**
- * 新信息架构（11 域 → 8 域，DESIGN-SPEC §2）。
+ * 七个一级产品入口与常驻 SuperAI；功能组和当前组页面导航来自单一注册表。
  * 本文件只负责「新 IA 路由注册」；旧路径 301 全部集中在 src/routes/legacy-redirects.tsx。
- * 页内 tab 的定义在 src/components/shell/domains.tsx（单一事实源）。
+ * 功能组与页面导航的定义在 src/components/shell/domains.tsx（单一事实源）。
  */
 
 // ---------- 平台管理 ----------

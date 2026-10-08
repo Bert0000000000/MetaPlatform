@@ -165,7 +165,13 @@
   flex: 1;
   min-width: 0;
   max-width: 46%;
+  display: flex;
+  overflow-x: auto;
+  gap: var(--mp-space-2);
+  align-items: center;
 }
+.mp-topnav-link { display: flex; flex: none; align-items: center; gap: var(--mp-space-1); min-height: 36px; padding: 0 var(--mp-space-2); color: var(--semi-color-text-2); text-decoration: none; white-space: nowrap; font-size: 13px; }
+.mp-topnav-link[aria-current='page'] { color: var(--semi-color-primary); background: var(--semi-color-primary-light-default); border-radius: var(--semi-border-radius-small); }
 
 .mp-crumbs {
   min-width: 0;

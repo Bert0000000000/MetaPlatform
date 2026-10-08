@@ -1,5 +1,4 @@
 import {
-  propSlug,
   type KernelObjectType,
   type KernelLinkType,
 } from '@/api/ont/kernel';
@@ -25,8 +24,8 @@ export default function ModelInspector({
       <small>资源属性 INSPECTOR</small>
       {type ? (
         <>
-          <h2>{type.display_name || propSlug(type.rid)}</h2>
-          <code>{propSlug(type.rid)}</code>
+          <h2>{type.display_name || type.rid}</h2>
+          <code>{type.rid}</code>
           <p>{type.description || '暂无描述'}</p>
           <dl>
             <dt>标识</dt>
@@ -39,7 +38,7 @@ export default function ModelInspector({
                 .map(
                   (r) =>
                     type.properties.find((p) => p.rid === r)?.title ||
-                    propSlug(r),
+                    r,
                 )
                 .join(' + ')}
             </dd>
@@ -50,7 +49,7 @@ export default function ModelInspector({
           <ul>
             {type.properties.map((p) => (
               <li key={p.rid}>
-                {p.title || propSlug(p.rid)} <code>{p.format}</code>
+                {p.title || p.rid} <code>{p.format}</code>
               </li>
             ))}
           </ul>
@@ -59,7 +58,7 @@ export default function ModelInspector({
           <ul>
             {links.map((l) => (
               <li key={l.rid}>
-                {propSlug(l.rid)} · {l.cardinality}
+                {l.rid} · {l.cardinality}
               </li>
             ))}
           </ul>

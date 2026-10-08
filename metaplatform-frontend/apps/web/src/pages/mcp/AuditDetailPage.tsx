@@ -1,3 +1,4 @@
+import PageHeader from '@/components/skeleton/PageHeader';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -62,9 +63,7 @@ export default function AuditDetailPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/ki/mcp/audit')}>
           返回
         </Button>
-        <Typography.Title heading={4} className="mp-m-0">
-          审计详情：{log.toolName}
-        </Typography.Title>
+        <PageHeader title={`审计详情：${log.toolName}`} />
         <Tag color={STATUS_MAP[log.status].color}>{STATUS_MAP[log.status].label}</Tag>
       </Space>
 

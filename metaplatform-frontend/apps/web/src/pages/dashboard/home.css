@@ -1,7 +1,13 @@
 /*
  * 工作台域共享样式（A 骨架 bento + E 骨架列表页）。
  * 只做版式语义；表格/筛选/抽屉外壳一律走 P0 骨架组件。
- */
+*/
+.mp-home-grid { padding-bottom: var(--mp-space-4); }
+@media (max-width: 600px) {
+  .mp-home-kpis { grid-template-columns: minmax(0, 1fr); }
+  .mp-home-links { grid-template-columns: minmax(0, 1fr); }
+  .mp-home-todo { flex-wrap: wrap; }
+}
 
 /* ---------- 概览 bento ---------- */
 .mp-home-kpis {

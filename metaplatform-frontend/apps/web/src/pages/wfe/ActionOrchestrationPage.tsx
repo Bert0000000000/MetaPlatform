@@ -1,3 +1,4 @@
+import PageHeader from '@/components/skeleton/PageHeader';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, Col, Input, Row, Space, Tag, Toast, Typography } from '@douyinfe/semi-ui';
 import { useParams } from 'react-router-dom';
@@ -183,7 +184,7 @@ export default function ActionOrchestrationPage() {
       <Space vertical align="start" spacing="medium" className="mp-w-full">
         <div className="mp-w-full mp-flex mp-justify-between mp-gap-4 mp-wrap" >
           <div>
-            <Typography.Title heading={3} className="mp-m-0">行动编排</Typography.Title>
+            <PageHeader title="行动编排" />
             <Typography.Text type="secondary">服务端版本化 Plan 定义 · 发布后按不可变版本运行</Typography.Text>
           </div>
           <Space>

@@ -1,3 +1,4 @@
+import PageHeader from '@/components/skeleton/PageHeader';
 // AnalysisPage - 分析工作台（L6 应用层，Palantir Quiver 对位）。
 //
 // 点击式图表分析（不写 SQL / DSL，纯点选聚合）：
@@ -204,6 +205,8 @@ export default function AnalysisPage() {
   };
 
   return (
+    <>
+    <PageHeader title="分析工作台" desc="按实际对象类型与属性执行聚合分析" />
     <div className="mp-w-full mp-flex mp-flex-1 mp-gap-5 mp-items-start" >
       {/* 左栏：数据源选择 */}
       <div className="mp-flex mp-gap-4 mp-shrink-0 mp-flex-col mp-onto-side-col">
@@ -384,5 +387,6 @@ export default function AnalysisPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

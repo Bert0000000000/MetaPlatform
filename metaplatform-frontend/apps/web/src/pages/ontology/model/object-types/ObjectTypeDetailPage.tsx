@@ -17,7 +17,6 @@ import {
   createObjectType,
   saveSchemaWip,
   extractDestructiveConfirm,
-  propSlug,
   type KernelObjectType,
   type KernelObjectTypeCreate,
   type KernelLinkType,
@@ -267,15 +266,15 @@ export default function ObjectTypeDetailPage() {
                   )
                 }
               >
-                {t.display_name || propSlug(t.rid)}
-                <small>{propSlug(t.rid)}</small>
+                {t.display_name || t.rid}
+                <small>{t.rid}</small>
               </button>
             )),
         )}
       </aside>
       <div className="mw-detail-main">
         <ResourceDetailLayout
-          title={type?.display_name || propSlug(rid)}
+          title={type?.display_name || rid}
           desc={`${type?.type_group || '未分组'} · ${rid}`}
           tabs={TABS}
           tabType="line"
@@ -340,17 +339,17 @@ export default function ObjectTypeDetailPage() {
               <div className="mw-property-heading">
                 <h3>属性定义 · {type.properties.length} 属性</h3>
                 <span>主键 · {type.primary_key.map((r) =>
-                  type.properties.find((p) => p.rid === r)?.title || propSlug(r),
+                  type.properties.find((p) => p.rid === r)?.title || r,
                 ).join(' + ') || '未提供'}</span>
               </div>
               <DataTablePro
                 columns={[
                   { title: '属性业务名', dataIndex: 'title', width: 170 },
                   {
-                    title: '机器标识',
+                    title: '属性标识',
                     dataIndex: 'rid',
                     width: 210,
-                    render: (v: string) => propSlug(v),
+                    render: (v: string) => v,
                   },
                   { title: '数据类型', dataIndex: 'format', width: 100 },
                   {
@@ -373,7 +372,7 @@ export default function ObjectTypeDetailPage() {
                     width: 90,
                     render: (v: string) => (
                       <button
-                        aria-label={`编辑属性 ${type.properties.find((p) => p.rid === v)?.title || propSlug(v)}`}
+                        aria-label={`编辑属性 ${type.properties.find((p) => p.rid === v)?.title || v}`}
                         onClick={() => edit({ expandPropRid: v })}
                       >
                         编辑
@@ -398,7 +397,7 @@ export default function ObjectTypeDetailPage() {
                   {
                     title: '关系',
                     dataIndex: 'rid',
-                    render: (v: string) => propSlug(v),
+                    render: (v: string) => v,
                   },
                   { title: '来源类型', dataIndex: 'src' },
                   { title: '目标类型', dataIndex: 'dst' },
@@ -498,7 +497,7 @@ export default function ObjectTypeDetailPage() {
                           )
                         }
                       >
-                        {a.title || propSlug(a.rid)}
+                        {a.title || a.rid}
                       </button>
                     </p>
                   ))
@@ -512,8 +511,8 @@ export default function ObjectTypeDetailPage() {
               <dl className="mp-onto-detail-list">
                 <dt>业务名</dt>
                 <dd>{type.display_name}</dd>
-                <dt>机器名</dt>
-                <dd>{propSlug(type.rid)}</dd>
+                <dt>资源标识</dt>
+                <dd>{type.rid}</dd>
                 <dt>主键</dt>
                 <dd>{type.primary_key.join(' + ')}</dd>
                 <dt>父类型</dt>

@@ -1,4 +1,4 @@
-import { propSlug, type KernelObjectType } from '@/api/ont/kernel';
+import { type KernelObjectType } from '@/api/ont/kernel';
 
 /** Resource selection only; the parent owns the DTOs, filter and URL. */
 export default function ModelResourceTree({ types, selectedRid, query, incomplete, onQuery, onSelect, onOpen }: {
@@ -25,7 +25,7 @@ export default function ModelResourceTree({ types, selectedRid, query, incomplet
         <section key={group} aria-label={group}>
           <h3><span>{group}</span><small>{resources.length}</small></h3>
           {resources.map((type) => (
-            <button key={type.rid} aria-label={`选择资源 ${type.display_name || propSlug(type.rid)}`}
+            <button key={type.rid} aria-label={`选择资源 ${type.display_name || type.rid}`}
               aria-pressed={selectedRid === type.rid} title={type.rid}
               onClick={() => onSelect(type.rid)} onDoubleClick={() => onOpen(type.rid)}
               onKeyDown={(e) => {
@@ -34,7 +34,7 @@ export default function ModelResourceTree({ types, selectedRid, query, incomplet
                   onOpen(type.rid);
                 }
               }}>
-              <span>{type.display_name || propSlug(type.rid)}</span>
+              <span>{type.display_name || type.rid}</span>
               <small>{type.rid.match(/\.v\d+$/)?.[0].slice(1) || '版本未提供'}</small>
             </button>
           ))}

@@ -51,7 +51,7 @@ const DEFAULT_TAGS: Array<{ label: string; icon?: React.ReactNode }> = [
 
 export default function SharedLoginPage(props: SharedLoginPageProps) {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
 
   const brandTitle = props.brandTitle ?? "MetaPlatform";
   const brandSubtitle = props.brandSubtitle ?? "Ontology";
@@ -73,10 +73,10 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
   const [ssoLoading, setSsoLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.id?.trim() && user?.tenantId?.trim()) {
       navigate(redirectTo, { replace: true });
     }
-  }, [isAuthenticated, navigate, redirectTo]);
+  }, [isAuthenticated, user?.id, user?.tenantId, navigate, redirectTo]);
 
   useEffect(() => {
     listEnabledSsoProviders().then(setSsoProviders).catch(() => setSsoProviders([]));

@@ -12,6 +12,13 @@ function cell(value: unknown): string {
       ? JSON.stringify(value)
       : String(value);
 }
+function descriptor(value: unknown): { label?: string; type?: string; rid?: string } {
+  if (typeof value === 'string') return { type: value };
+  if (!value || typeof value !== 'object') return {};
+  const field = value as Record<string, unknown>;
+  const actual = (key: string) => typeof field[key] === 'string' ? field[key] as string : undefined;
+  return { label: actual('title') || actual('slug'), type: actual('type') || actual('format') || actual('type_id'), rid: actual('rid') };
+}
 /** Type-scoped GET state survives source-editor composition and selection. */
 export function useMaterializationSamples(typeRid: string) {
   const [result, setResult] = useState<MaterializationResult>();
@@ -84,14 +91,15 @@ export default function MaterializationSamples({
               <table className="mp-mapping-table">
                 <thead>
                   <tr>
-                    {columns.map((name) => (
-                      <th key={name}>
+                    {columns.map((name) => {
+                      const field = descriptor(result.schema[name]);
+                      return <th key={name}>
+                        {field.label && <span>{field.label}</span>}
                         <code>{name}</code>
-                        {result.schema[name] && (
-                          <small>{cell(result.schema[name])}</small>
-                        )}
-                      </th>
-                    ))}
+                        {field.type && <small>{field.type}</small>}
+                        {field.rid && <details><summary>属性标识</summary><code>{field.rid}</code></details>}
+                      </th>;
+                    })}
                   </tr>
                 </thead>
                 <tbody>

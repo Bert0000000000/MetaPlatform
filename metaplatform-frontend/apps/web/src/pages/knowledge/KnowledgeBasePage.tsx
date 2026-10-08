@@ -53,7 +53,7 @@ export default function KnowledgeBasePage() {
     () =>
       listKb().catch((e: Error) => {
         report(e);
-        return [];
+        throw e;
       }),
     [reloadTick],
     { initialData: [] },
@@ -94,7 +94,7 @@ export default function KnowledgeBasePage() {
     <>
       <PageHeader
         title="知识库"
-        desc={`${kbs?.length ?? 0} 个知识库 · 向量检索 + RAG`}
+        desc={error ? '知识库读取失败' : loading ? '正在读取知识库…' : `${kbs?.length ?? 0} 个知识库 · 向量检索 + RAG`}
         actions={
           <>
             <Button icon={<RefreshCw size={15} strokeWidth={1.5} />} loading={loading} onClick={() => void reload()}>

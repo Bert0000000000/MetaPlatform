@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import {
-  propSlug,
   type KernelObjectType,
   type KernelLinkType,
 } from '@/api/ont/kernel';
@@ -100,7 +99,7 @@ export default function ModelGraphCanvas({
                       d={`M${a.x + 230},${a.y + 95} C${a.x + 265},${a.y + 95} ${b.x - 35},${b.y + 95} ${b.x},${b.y + 95}`}
                     />
                     <text x={(a.x + b.x + 230) / 2} y={(a.y + b.y) / 2 + 85}>
-                      {propSlug(l.rid)}
+                      {l.rid}
                     </text>
                   </g>
                 );
@@ -109,7 +108,7 @@ export default function ModelGraphCanvas({
             {types.map((t) => (
               <button
                 key={t.rid}
-                aria-label={`选择模型 ${t.display_name || propSlug(t.rid)}`}
+                aria-label={`选择模型 ${t.display_name || t.rid}`}
                 aria-pressed={selectedRid === t.rid}
                 className={`mw-model-card ${selectedRid === t.rid ? 'is-selected' : ''}`}
                 style={{ left: point(t.rid).x, top: point(t.rid).y }}
@@ -154,13 +153,13 @@ export default function ModelGraphCanvas({
                   drag.current = null;
                 }}
               >
-                <strong>{t.display_name || propSlug(t.rid)}</strong>
-                <small>{propSlug(t.rid)}</small>
+                <strong>{t.display_name || t.rid}</strong>
+                <small>{t.rid}</small>
                 <ul>
                   {t.properties.slice(0, 4).map((p) => (
                     <li key={p.rid}>
                       <span>
-                        {p.primary_key ? '⌑' : '·'} {p.title || propSlug(p.rid)}
+                        {p.primary_key ? '⌑' : '·'} {p.title || p.rid}
                       </span>
                       <code>{p.format}</code>
                     </li>

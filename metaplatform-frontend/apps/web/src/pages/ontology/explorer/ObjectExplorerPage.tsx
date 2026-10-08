@@ -16,7 +16,7 @@ import {
   type KernelProperty,
   type SearchAroundGroup,
 } from '@/api/ont/kernel';
-import { DataTablePro, EmptyState, FilterBar, SheetDetail, SplitPane } from '@/components/skeleton';
+import { DataTablePro, EmptyState, FilterBar, PageHeader, SheetDetail, SplitPane } from '@/components/skeleton';
 import { setOntologySelection } from '../hooks/assistantContext';
 import ActionFormDrawer from './ActionFormDrawer';
 import ProposalConfirmDrawer from '../components/ProposalConfirmDrawer';
@@ -443,6 +443,7 @@ export default function ObjectExplorerPage() {
 
   return (
     <div className="mp-page-full mp-explorer">
+      <PageHeader title="对象浏览" desc="读取实际对象与关系，通过提案确认业务动作" className="mp-explorer-page-head" />
       <SplitPane ariaLabel="对象浏览器" defaultWidth={248} pane={typePane}>
         <div className="mp-explorer-list">
           <div className="mp-explorer-list-head">

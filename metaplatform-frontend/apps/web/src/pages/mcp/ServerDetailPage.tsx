@@ -1,3 +1,4 @@
+import PageHeader from '@/components/skeleton/PageHeader';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -151,9 +152,7 @@ export default function ServerDetailPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/ki/mcp/servers')}>
           返回
         </Button>
-        <Typography.Title heading={4} className="mp-m-0">
-          {server.name}
-        </Typography.Title>
+        <PageHeader title={server.name} />
         <Tag color={STATUS_MAP[server.status].color}>{STATUS_MAP[server.status].label}</Tag>
       </Space>
 

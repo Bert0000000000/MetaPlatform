@@ -1,5 +1,5 @@
-import { Avatar, Badge, Breadcrumb, Button, Dropdown, Input, Tabs, Tag } from '@douyinfe/semi-ui';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Avatar, Badge, Breadcrumb, Button, Dropdown, Input, Tag } from '@douyinfe/semi-ui';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Layers, LogOut, MessageSquare, Search, Settings, Sparkles } from 'lucide-react';
 import { useAuth } from '@mate/shared';
 import { DOMAINS, navigationBreadcrumb, primaryDomains, resolveDomain } from './domains';
@@ -10,7 +10,7 @@ const ENV_LABEL =
 
 /**
  * 顶栏（DESIGN-SPEC §3）：面包屑 ∥ ⌘K 入口 · 环境徽标 · 通知 · 布局切换 · 用户。
- * 顶栏一级导航模式时，七入口以横向 tab 呈现，rail 隐藏（显隐由 CSS 控制）。
+ * 顶栏一级导航模式时，七入口以可横向滚动的普通链接呈现。
  */
 export default function TopBar() {
   const navigate = useNavigate();
@@ -29,16 +29,9 @@ export default function TopBar() {
         <span className="mp-platform-brand-mark"><Layers size={19} strokeWidth={1.5} /></span>
         <span className="mp-platform-brand-name">MetaPlatform</span>
       </button>
-      <Tabs
-        className="mp-topnav"
-        type="line"
-        activeKey={domain?.key ?? ''}
-        tabList={primaryDomains().map((d) => ({ tab: d.label, itemKey: d.key, icon: d.icon }))}
-        onChange={(key) => {
-          const target = DOMAINS.find((d) => d.key === key);
-          if (target) navigate(target.path);
-        }}
-      />
+      <nav className="mp-topnav" aria-label="平台顶部导航">
+        {primaryDomains().map(entry => <Link className="mp-topnav-link" key={entry.key} to={entry.path} aria-current={domain?.key === entry.key ? 'page' : undefined}>{entry.icon}{entry.label}</Link>)}
+      </nav>
 
       <Breadcrumb
         className="mp-crumbs"
@@ -65,7 +58,7 @@ export default function TopBar() {
           readonly
           aria-label="打开命令面板"
           onClick={() => setCommandOpen(true)}
-          onFocus={() => setCommandOpen(true)}
+          onKeyDown={event => { if (event.key === 'Enter') setCommandOpen(true); }}
         />
 
         <Tag className="mp-env-chip" color="amber" type="light">

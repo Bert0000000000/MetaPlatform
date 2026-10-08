@@ -1,3 +1,4 @@
+import PageHeader from '@/components/skeleton/PageHeader';
 // MapPage - 地理空间探索（L6 应用层，Palantir Map 对位）。
 //
 // 瓦片式轻量地图（不引入 leaflet 等第三方库）：
@@ -441,6 +442,8 @@ export default function MapPage() {
   const typeListLoading = loadingTypes;
 
   return (
+    <>
+    <PageHeader title="对象地图" desc="从当前对象类型读取地理属性与实例" />
     <div className="mp-flex mp-gap-5 mp-items-start" >
       {/* 左栏：类型选择 */}
       <div className="mp-shrink-0 mp-w-240" >
@@ -706,5 +709,6 @@ export default function MapPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

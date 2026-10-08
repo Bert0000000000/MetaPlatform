@@ -1,12 +1,13 @@
 /*
  * 数字员工域共享样式（C 骨架卡片网格 + E 骨架列表页）。
  * 只做版式语义；表格/筛选/抽屉外壳一律走 P0 骨架组件。
- */
+*/
+.mp-agent-name { padding: 0; border: 0; background: transparent; font-family: inherit; text-align: left; cursor: pointer; }
 
 /* ---------- 员工卡片网格（C 骨架） ---------- */
 .mp-agents-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: var(--mp-space-3);
   align-items: stretch;
 }
