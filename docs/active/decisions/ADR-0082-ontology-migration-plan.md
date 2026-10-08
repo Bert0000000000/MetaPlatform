@@ -117,6 +117,17 @@ WHERE class_rid = ANY(<被下线的旧rids>) AND tenant_id = <租户>;
 - 执行根据家族内真实快照的 `from_checksum` 和当前 live 重建规范计划，仅允许
   显式 rename、drops=preserve/drop、pk_missing=abort/skip。未知字段、非法类型、
   伪造校验和/目标/format/reattach、越界属性或扩大步骤范围返回 422。
+- R1 将 `POST /api/v1/ont/v2/object-types/{rid}/migration/run` 请求中 `plan`
+  的 `class_rid`、`from_checksum`、`renames`、`coercions`、`pk_rederive`、`drops`、
+  `reattach`、`warnings` 八个字段全部设为必填；适用的空对象、空数组和 null
+  仍按完整规范计划表达。此为明确接受的安全性兼容过渡，属于破坏性契约收紧，
+  不声明向后兼容。曾发送不完整计划的客户端须先调用 assess，再将评估返回的
+  完整计划交给 run；当前默认页面已遵循此路径。服务端不补齐缺失字段，
+  不放宽未知字段或伪造计划校验。
+  两条 oasdiff CI 门共用
+  [精确诊断清单](../../../mate-platform-backend/contracts/openapi/oasdiff-r1-approved-errors.txt)，
+  仅批准该方法、路径与八条新增必填请求属性的完整诊断；保留 `--fail-on ERR`，
+  其他字段、接口和破坏性错误仍阻断。后续扩大过渡范围须先修订 ADR 并重新评审。
 - 执行前按 tenant 和家族 class_rid 成员资格锁定实例集合；全部步骤、来源、覆盖层、
   PK/关系端点重写共用该集合（PK 重写后更新集合中的 RID）；数据源映射按同租户家族限定。
   RID 前缀不作为成员资格依据。drop 同时移除目标来源、覆盖及映射中的旧键。

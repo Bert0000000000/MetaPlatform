@@ -1,0 +1,8 @@
+POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/class_rid`
+POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/from_checksum`
+POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/renames`
+POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/coercions`
+POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/pk_rederive`
+POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/drops`
+POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/reattach`
+POST /api/v1/ont/v2/object-types/{rid}/migration/run added the new required request property `plan/warnings`

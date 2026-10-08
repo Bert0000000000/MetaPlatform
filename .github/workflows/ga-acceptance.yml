@@ -113,6 +113,8 @@ jobs:
           base: .ci/base.yaml
           revision: mate-platform-backend/contracts/openapi/generated/bundled.yaml
           fail-on: "ERR"
+          # ADR-0082 §2.7: only eight exact required-plan diagnostics are approved.
+          err-ignore: mate-platform-backend/contracts/openapi/oasdiff-r1-approved-errors.txt
 
   # rule 8: helm template + kubeconform
   ga-008-helm:

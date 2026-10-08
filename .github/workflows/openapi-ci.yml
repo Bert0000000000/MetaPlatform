@@ -100,7 +100,8 @@ jobs:
         shell: bash
         run: |
           if git show "origin/${{ github.base_ref }}:mate-platform-backend/contracts/openapi/generated/bundled.yaml" > /tmp/base-openapi.yaml 2>/dev/null; then
-            docker run --rm -v "$PWD:/repo" -v /tmp:/tmp tufin/oasdiff:latest breaking /tmp/base-openapi.yaml /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml --fail-on ERR
+            # ADR-0082 §2.7: only eight exact required-plan diagnostics are approved.
+            docker run --rm -v "$PWD:/repo" -v /tmp:/tmp tufin/oasdiff:latest breaking /tmp/base-openapi.yaml /repo/mate-platform-backend/contracts/openapi/generated/bundled.yaml --fail-on ERR --err-ignore /repo/mate-platform-backend/contracts/openapi/oasdiff-r1-approved-errors.txt
           else
             echo "No canonical base contract exists; establishing the first oasdiff baseline."
           fi
