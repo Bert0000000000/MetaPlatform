@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 > 状态：Accepted；2026-10-08 用户已确认具体设计并授权实施，随后选择按产品重设计文档切换七个一级入口；更新全平台原型后明确选择“七入口，全平台对齐”。使用本聊天当前隔离工作树。
-> 顺序：Task 1 原壳基线及其审查修复 → Task 7 七入口修订 → Task 2 模型基线及审查修复 → Task 8 全平台新壳 → Task 9 新版模型工作区 → Task 3 映射 → Task 4 发布 → Task 5 全平台一致性/集成 → Task 6 验收。后补任务编号保留以追踪既有证据，不重新实施已完成基线。
+> 顺序：Task 1 原壳基线及其审查修复 → Task 7 七入口修订 → Task 2 模型基线及审查修复 → Task 8 全平台新壳 → Task 10 真实登录身份读取前置修复 → Task 9 新版模型工作区 → Task 3 映射 → Task 4 发布 → Task 5 全平台一致性/集成 → Task 6 验收。后补任务编号保留以追踪既有证据，不重新实施已完成基线。
 
 **Goal:** 按更新的全平台原型对齐 MetaPlatform 所有现有模块的页面结构、视觉与交互，保留用户选定的七入口并接入现有后端。
 
@@ -45,6 +45,19 @@
 - [ ] 390px 组栏局部滚动，页面导航可展开；真实 Tab、Escape、选择后焦点行为继承 Task 1 修复，不靠测试注入 focus。1024px 与暗色模式仍可辨认；不新增 `.semi-*` 覆盖。
 - [ ] 使用同源元数据生成可读面包屑和搜索；保留治理/admin 双前缀、探索助手 canonical context、旧 aliases/query/hash。新壳不存业务事实或伪造工作区/环境状态。
 - [ ] 跑导航/设置 focused unit 与 typecheck，self-review 后提交。实际四尺寸与全入口浏览器交 Task 5/6。
+
+## Task 10: 真实登录用户信息与编辑身份前置修复
+
+**Files:** `mate-platform-backend/services/auth-service/src/mate_auth_service/main.py` 及对应当前测试；`metaplatform-frontend/packages/shared/src/components/SharedLoginPage.tsx` 与行为测试；`apps/web/src/pages/ontology/hooks/editorSession.tsx`、现有编辑器身份不可用提示和覆盖测试；必要登录契约核对（不新增端点/字段/角色）。
+
+**Interfaces:** 现有 IAM/dashboard password grant 登录已调用 OIDC userinfo，但遗漏 `openid` 导致当前 provider 返回 403/空用户 ID。消费已有 AuthResponse.userId/user.id、accessToken 和真实 tenant 上下文；产出正常登录的稳定用户 ID 与按身份隔离编辑会话。保留当前后台最佳努力响应、签名校验和授权语义。
+
+- [ ] 以已保存的独立 provider 比较探针为 RED 前置证据：省略范围时 userinfo403/无 subject，openid 时 userinfo200/有 subject；不打印令牌、口令或私人信息。补登录 HTTP 边界测试检查实际 password grant 请求及返回用户 ID。
+- [ ] 补齐现有 IAM 和 dashboard 人员登录的 OIDC 身份信息范围；不请求新增角色/权限，不为 token 注入用户/tenant，不更换 provider，不改 legacy/signature 标志，不扩大身份协议。
+- [ ] UI 正常/SSO 登录缺少有效用户 ID 或令牌时不建立空 ID 的个人会话，明确错误与重试，保留用户输入；成功路径复用真实 DTO，不用用户名/演示账户伪造 ID。
+- [ ] 编辑缓存拒绝空用户 ID/空 tenant；身份不可用时明确跨页输入无法恢复、给出保存/重新登录路径，modal dirty guard 仍有效。补两个同 tenant 无有效 ID 的缓存隔离测试，禁止复用先前个人缓存。
+- [ ] 运行 Source auth、SharedLogin 和受影响 editor focused 测试/typecheck，自查并按明确文件提交；契约 DTO/接口不变时记录核对而不机械改契约。
+- [ ] Controller 仅重载已确认所有权的独立 auth，执行真实 IAM 登录→稳定用户 ID→设置成功读取 light→浏览器四尺寸；没有 ID 时必须失败而非伪造 UI 身份。保留原 core/migration 与最终完整回归。
 
 ## Task 9: 更新原型的模型资源树与工作区层次
 
