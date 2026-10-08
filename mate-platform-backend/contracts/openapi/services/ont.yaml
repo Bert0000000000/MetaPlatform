@@ -1713,6 +1713,7 @@ paths:
         ADR-0082：迁移评估（只读）。baseline → 目标定义的分类变更 + SQL 级
         影响计数 + 计划草案。baseline 缺省 = 家族上一条与目标不同的版本快照；
         target_payload（ObjectTypeDTO）缺省 = 当前 live，传草稿 = 发布前预演。
+        baseline、target_payload、options 允许 null，含义与省略相同；baseline 空字符串也表示默认基线。
         baseline、快照内定义、target 必须属于当前 tenant/slug 家族；跨租户 403，
         跨家族、未知字段/选项或非法类型 422，引用不存在 404。
         body: {baseline?, target_payload?, options? {rename?, drops?, pk_missing?}}；
@@ -1726,10 +1727,10 @@ paths:
             schema:
               type: object
               properties:
-                baseline: { type: string }
-                target_payload: { type: object, additionalProperties: true }
+                baseline: { type: [string, "null"] }
+                target_payload: { type: [object, "null"], additionalProperties: true }
                 options:
-                  type: object
+                  type: [object, "null"]
                   additionalProperties: false
                   properties:
                     rename: { type: object, additionalProperties: { type: string } }
