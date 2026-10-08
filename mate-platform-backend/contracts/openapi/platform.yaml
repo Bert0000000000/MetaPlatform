@@ -643,12 +643,20 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1validate
   /api/v1/ont/v2/object-types/wip:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1wip
+  /api/v1/ont/v2/object-types/wip/{rid}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1wip~1{rid}
+  /api/v1/ont/v2/object-types/wip/{rid}/apply:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1wip~1{rid}~1apply
   /api/v1/ont/v2/object-types/{rid}:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}
+  /api/v1/ont/v2/object-types/{rid}/branch:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1branch
   /api/v1/ont/v2/object-types/{rid}/datasources:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1datasources
   /api/v1/ont/v2/object-types/{rid}/datasources/sync:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1datasources~1sync
+  /api/v1/ont/v2/object-types/{rid}/diff:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1diff
   /api/v1/ont/v2/object-types/{rid}/materialization:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1materialization
   /api/v1/ont/v2/object-types/{rid}/migration/assess:
@@ -659,6 +667,8 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1migration~1runs
   /api/v1/ont/v2/object-types/{rid}/properties:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1properties
+  /api/v1/ont/v2/object-types/{rid}/rollback:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1rollback
   /api/v1/ont/v2/proposals/{proposal_id}:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1proposals~1{proposal_id}
   /api/v1/ont/v2/proposals/{proposal_id}/confirm:

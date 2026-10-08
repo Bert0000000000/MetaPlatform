@@ -3866,3 +3866,18 @@ requirements:
     - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-ONT-BUILDER-PUBLICATION:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2SchemaWip
+    - ontApplyV2SchemaWip
+    - ontDiscardV2SchemaWip
+    - ontBranchV2ObjectType
+    - ontDiffV2ObjectType
+    - ontRollbackV2ObjectType
+    handler: mate_tech_ont.main:app#ontApplyV2SchemaWip
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted

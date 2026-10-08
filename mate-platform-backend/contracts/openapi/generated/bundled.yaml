@@ -12678,6 +12678,142 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SchemaWipSaveV2'
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: ontListV2SchemaWip
+      operationId: ontListV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - rid
+                    - author
+                    - payload
+                  properties:
+                    rid:
+                      type: string
+                    author:
+                      type: string
+                    payload:
+                      $ref: '#/components/schemas/ObjectTypeCreateV2'
+                    created_at:
+                      type: string
+                    base_checksum:
+                      type: string
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/wip/{rid}:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: ontDiscardV2SchemaWip
+      operationId: ontDiscardV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/wip/{rid}/apply:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: ontApplyV2SchemaWip
+      operationId: ontApplyV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectTypeV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+      parameters:
+        - in: query
+          name: confirm_name
+          schema:
+            type: string
+            default: ''
+        - in: query
+          name: expected_checksum
+          schema:
+            type: string
+            default: ''
   /api/v1/ont/v2/object-types/{rid}:
     parameters:
       - in: path
@@ -12755,6 +12891,57 @@ paths:
           $ref: '#/components/responses/Error404'
         '409':
           description: Delete protection (recent reads / remaining instances)
+  /api/v1/ont/v2/object-types/{rid}/branch:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: ontBranchV2ObjectType
+      operationId: ontBranchV2ObjectType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectTypeV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - new_rid
+              properties:
+                new_rid:
+                  type: string
+                note:
+                  type: string
   /api/v1/ont/v2/object-types/{rid}/datasources:
     parameters:
       - in: path
@@ -12875,6 +13062,51 @@ paths:
           $ref: '#/components/responses/Error404'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/{rid}/diff:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - ont
+      summary: ontDiffV2ObjectType
+      operationId: ontDiffV2ObjectType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+      parameters:
+        - in: query
+          name: against
+          required: true
+          schema:
+            type: string
   /api/v1/ont/v2/object-types/{rid}/materialization:
     parameters:
       - in: path
@@ -13244,6 +13476,55 @@ paths:
           $ref: '#/components/responses/Error409'
         '422':
           $ref: '#/components/responses/Error422'
+  /api/v1/ont/v2/object-types/{rid}/rollback:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: ontRollbackV2ObjectType
+      operationId: ontRollbackV2ObjectType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectTypeV2'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - from_rid
+              properties:
+                from_rid:
+                  type: string
   /api/v1/ont/v2/proposals/{proposal_id}:
     parameters:
       - in: path
