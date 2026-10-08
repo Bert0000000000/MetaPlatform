@@ -1,6 +1,6 @@
 /** Builder V2 workspace navigation; run against the isolated validation target. */
 import { expect, test, type Page } from '@playwright/test';
-import { injectAuth } from './helpers/auth';
+import { builderAuth } from './helpers/builder-auth';
 
 process.env.E2E_LOGIN_TIMEOUT_MS ||= '120000';
 
@@ -19,13 +19,13 @@ async function gotoApp(page: Page, path: string): Promise<void> {
 }
 
 test.describe('Ontology IA v2 · 工作区导航', () => {
-  test.beforeEach(async ({ context, page }) => { await injectAuth(context, page); });
+  test.beforeEach(async ({ page }) => { await builderAuth(page); });
 
   test('六域均可达，工作区显示侧栏和上下文，planned 页面不进入导航', async ({ page }) => {
     for (const [label, , canonical] of WORKSPACE_DOMAINS) {
       await gotoApp(page, canonical);
       const nav = page.getByRole('navigation', { name: '本体工作区导航' });
-      await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
+      await expect(page.getByRole('navigation', { name: '工作区功能组' }).getByRole('link', { name: label, exact: true })).toBeVisible();
       await expect(page.getByRole('navigation', { name: '本体上下文' })).toContainText(label);
       await expect(page.locator('.mp-pagetabs')).toHaveCount(0);
       await expect(nav.getByText('保存的查询')).toHaveCount(0);
@@ -49,7 +49,7 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
 
   test('点击功能域打开真实默认页', async ({ page }) => {
     await gotoApp(page, '/ontology');
-    await page.getByRole('navigation', { name: '本体工作区导航' }).getByRole('link', { name: '业务动作', exact: true }).click();
+    await page.getByRole('navigation', { name: '工作区功能组' }).getByRole('link', { name: '业务动作', exact: true }).click();
     await expect(page).toHaveURL(/\/ontology\/logic\/actions$/);
   });
 
@@ -67,7 +67,7 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await gotoApp(page, path);
     const nav = page.getByRole('navigation', { name: '本体工作区导航' });
     await expect(nav.getByRole('link', { name: '对象类型', exact: true })).toHaveAttribute('aria-current', 'page');
-    await expect(nav.getByRole('link', { name: '概览', exact: true })).not.toHaveAttribute('aria-current');
+    await expect(page.getByRole('navigation', { name: '工作区功能组' }).getByRole('link', { name: '概览', exact: true })).not.toHaveAttribute('aria-current');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect.poll(() => new URL(page.url()).pathname).toBe(path);
     await expect(nav.getByRole('link', { name: '对象类型', exact: true })).toHaveAttribute('aria-current', 'page');
@@ -80,7 +80,7 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await expect(page).toHaveURL(/\/ontology\/explore\/objects$/);
     await expect(page.getByRole('button', { name: '刷新类型清单' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: '本体工作区导航' })).toHaveCount(0);
-    await expect(page.locator('.mp-pagetabs').getByRole('tab', { name: 'ObjectSet 构建器' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: '工作区页面导航' }).getByRole('link', { name: 'ObjectSet 构建器' })).toBeVisible();
   });
 
   test('390px 可展开导航并通过键盘进入关系类型，无文档横向溢出', async ({ page }) => {
@@ -88,11 +88,12 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await page.goto('/ontology/model/graph', { waitUntil: 'domcontentloaded' });
     const toggle = page.getByRole('button', { name: '展开本体导航' });
     await expect(toggle).toBeVisible();
-    await toggle.focus();
+    for (let step = 0; step < 40 && !await toggle.evaluate(node => node === document.activeElement); step++) await page.keyboard.press('Tab');
+    await expect(toggle).toBeFocused();
     await page.keyboard.press('Enter');
     const nav = page.getByRole('navigation', { name: '本体工作区导航' });
-    await expect(nav.getByRole('link', { name: '概览', exact: true })).toBeFocused();
-    for (const name of ['业务模型', '模型工作台', '对象类型', '关系类型']) {
+    await expect(nav.getByRole('link', { name: '模型工作台', exact: true })).toBeFocused();
+    for (const name of ['对象类型', '关系类型']) {
       await page.keyboard.press('Tab');
       await expect(nav.getByRole('link', { name, exact: true })).toBeFocused();
     }
@@ -103,17 +104,17 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await expect(closedToggle).toBeVisible();
     await expect(closedToggle).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(nav.getByRole('link', { name: '概览', exact: true })).toBeFocused();
+    await expect(nav.getByRole('link', { name: '模型工作台', exact: true })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(closedToggle).toHaveAttribute('aria-expanded', 'false');
     await expect(closedToggle).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
-  test('离开本体后其他域仍显示 PageTabs', async ({ page }) => {
+  test('离开本体后其他域显示自己的功能组和页面', async ({ page }) => {
     await gotoApp(page, '/ontology/model/graph');
     await page.goto('/home', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('.mp-pagetabs').getByRole('tab', { name: '概览', exact: true })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: '工作区页面导航' }).getByRole('link', { name: '概览', exact: true })).toBeVisible();
     await expect(page.getByRole('navigation', { name: '本体工作区导航' })).toHaveCount(0);
   });
 
@@ -121,25 +122,25 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await page.addInitScript(() => localStorage.setItem('mp_nav_mode', 'side'));
     await gotoApp(page, '/home');
     const names = ['工作台', '业务应用', '对象探索', '本体工作室', '数字员工', '连接与知识', '治理与管理'];
-    await expect(page.getByRole('menuitem')).toHaveText(names);
+    await expect(page.getByRole('navigation', { name: '平台导航' }).getByRole('link')).toHaveText(names);
     const paths = ['/home', '/apps/mine', '/ontology/explore/objects', '/ontology/model/graph', '/agents', '/ki/kb', '/gov/business'];
     for (let index = 0; index < names.length; index++) {
-      await page.getByRole('menuitem', { name: names[index], exact: true }).click();
+      await page.getByRole('navigation', { name: '平台导航' }).getByRole('link', { name: names[index], exact: true }).click();
       await expect.poll(() => new URL(page.url()).pathname).toBe(paths[index]);
     }
     await page.getByRole('button', { name: '切换导航布局' }).click();
-    await expect(page.locator('.mp-topnav').getByRole('tab')).toHaveText(names);
-    await page.locator('.mp-topnav').getByRole('tab', { name: '对象探索', exact: true }).click();
+    await expect(page.locator('.mp-topnav').getByRole('link')).toHaveText(names);
+    await page.locator('.mp-topnav').getByRole('link', { name: '对象探索', exact: true }).click();
     await expect(page).toHaveURL(/\/ontology\/explore\/objects$/);
     await expect(page.getByRole('navigation', { name: '本体工作区导航' })).toHaveCount(0);
     await page.getByRole('button', { name: '打开 SuperAI Copilot' }).click();
     await expect(page.locator('#app')).toHaveAttribute('data-copilot', 'open');
     await page.getByRole('button', { name: '打开 SuperAI 会话' }).click();
     await expect(page).toHaveURL(/\/superai\/chat$/);
-    await expect(page.locator('.mp-pagetabs').getByRole('tab', { name: '会话', exact: true })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: '工作区页面导航' }).getByRole('link', { name: '会话', exact: true })).toBeVisible();
     for (const path of ['/superai/plans', '/superai/schedules', '/superai/cost', '/superai/templates', '/admin/org/users', '/gov/tech/components']) {
       await gotoApp(page, path);
-      await expect(page.locator('.mp-pagetabs')).toBeVisible();
+      await expect(page.getByRole('navigation', { name: '工作区页面导航' })).toBeVisible();
     }
   });
 
@@ -149,6 +150,6 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await expect(page.getByRole('navigation', { name: '本体上下文' })).toContainText('运行与质量');
     await gotoApp(page, '/ontology/governance/security');
     await expect(page.getByRole('navigation', { name: '本体工作区导航' })).toHaveCount(0);
-    await expect(page.locator('.mp-pagetabs').getByRole('tab', { name: '权限策略', exact: true })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: '工作区页面导航' }).getByRole('link', { name: '权限策略', exact: true })).toBeVisible();
   });
 });

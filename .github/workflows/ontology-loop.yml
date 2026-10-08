@@ -111,6 +111,37 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 scripts/ci/verify_migration_browser.py --junit metaplatform-frontend/test-results/migration.xml
 
+      - name: Collect exact Builder V2 browser inventory
+        if: ${{ !cancelled() }}
+        working-directory: metaplatform-frontend
+        run: |
+          pnpm exec playwright test --config playwright.builder.config.ts --list
+          python3 ../scripts/ci/verify_builder_browser.py --list test-results/builder-list.json
+
+      - name: Execute Builder V2 page and navigation behavior
+        if: ${{ !cancelled() }}
+        working-directory: metaplatform-frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:9200
+          E2E_GATEWAY_URL: http://127.0.0.1:8100/api/v1
+          E2E_IAM_LOGIN_URL: http://127.0.0.1:8100/api/v1/iam/auth/login
+        run: |
+          pnpm exec playwright test --config playwright.builder.config.ts --workers=1
+          python3 ../scripts/ci/verify_builder_browser.py --list test-results/builder-list.json --junit test-results/builder.xml
+
+      - name: Upload safe Builder V2 inventory and result artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: builder-v2-safe-results
+          path: |
+            metaplatform-frontend/test-results/builder-list.json
+            metaplatform-frontend/test-results/builder.xml
+            metaplatform-frontend/test-results/builder-results.json
+            metaplatform-frontend/test-results/builder-artifacts/**/*.png
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Dump container logs
         if: failure()
         run: |
