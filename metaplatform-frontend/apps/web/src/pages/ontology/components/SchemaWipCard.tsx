@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@mate/shared';
 import {
   applySchemaWip,
   assessMigration,
@@ -18,12 +19,27 @@ import {
 import { resourceError } from '../hooks/resourceErrors';
 import { resourceUrl, safeReturnTo } from '../hooks/resourceContext';
 import VersionHistory from './VersionHistory';
+import { useMutationLock, type MutationLock } from '../hooks/mutationLock';
+import { objectTypeFamily } from '../hooks/objectTypeFamily';
+import { editorIdentity } from '../hooks/editorSession';
 
 /** One tenant-scoped WIP list; stored base_checksum is never overridden. */
 export default function SchemaWipCard({
   typeRef,
   onPublished,
-}: { typeRef?: string; onPublished?: (type: KernelObjectType) => void } = {}) {
+  mutationLock,
+}: {
+  typeRef?: string;
+  onPublished?: (type: KernelObjectType) => void;
+  mutationLock?: MutationLock;
+} = {}) {
+  const standaloneLock = useMutationLock();
+  const mutation = mutationLock ?? standaloneLock;
+  const command = useRef<symbol | null>(null);
+  const { user } = useAuth();
+  const identity = editorIdentity(user);
+  const currentIdentity = useRef(identity);
+  currentIdentity.current = identity;
   const [params, setParams] = useSearchParams();
   const requested =
     typeRef ?? (params.get('typeRef') || params.get('class') || '');
@@ -50,9 +66,12 @@ export default function SchemaWipCard({
   const revision = draft ? JSON.stringify(draft) : '';
   const current = useRef(revision);
   current.current = revision;
+  const scope = JSON.stringify([identity, requested, selected]);
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
   const reset = useCallback(() => {
     request.current++;
-    setBusy('');
+    if (!command.current) setBusy('');
     setPreflight(null);
     setImpact(null);
     setNewType(false);
@@ -63,29 +82,35 @@ export default function SchemaWipCard({
     setMessage('');
     setPublished(null);
   }, []);
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (internalRead = false) => {
+    if (mutation.locked() && !internalRead) return;
     const n = ++listRequest.current;
+    const identityAtRead = currentIdentity.current;
+    const fresh = () => n === listRequest.current && identityAtRead === currentIdentity.current;
     reset();
     setLoading(true);
     setListError('');
     try {
       const rows = await listSchemaWip();
-      if (n !== listRequest.current) return;
+      if (!fresh()) return;
       setWips(rows);
       setSelected((cur) => cur || requested || rows[0]?.rid || '');
     } catch (e) {
-      if (n === listRequest.current) setListError(resourceError(e));
+      if (fresh()) setListError(resourceError(e));
     } finally {
-      if (n === listRequest.current) setLoading(false);
+      if (fresh()) setLoading(false);
     }
-  }, [reset]);
+  }, [reset, mutation.locked]);
   useEffect(() => {
-    void reload();
+    setWips([]);
+    reset();
+    // Identity changes may read fresh WIP, but cannot release an outstanding write.
+    void reload(true);
     return () => {
       listRequest.current++;
       request.current++;
     };
-  }, [reload]);
+  }, [reload, identity, reset]);
   useEffect(() => {
     if (requested) {
       reset();
@@ -93,6 +118,7 @@ export default function SchemaWipCard({
     }
   }, [requested, reset]);
   const pick = (rid: string) => {
+    if (mutation.locked()) return;
     reset();
     setSelected(rid);
     const next = new URLSearchParams(params);
@@ -105,11 +131,12 @@ export default function SchemaWipCard({
     !!preflight?.valid &&
     (!!impact || newType);
   const precheck = async () => {
-    if (!draft) return;
+    if (!draft || mutation.locked()) return;
     reset();
     const n = ++request.current,
       rev = revision;
-    const fresh = () => n === request.current && rev === current.current;
+    const fresh = () =>
+      n === request.current && rev === current.current && scope === currentScope.current;
     setBusy('validate');
     try {
       const checked = await validateObjectTypeModel(draft.payload);
@@ -119,11 +146,9 @@ export default function SchemaWipCard({
       // A complete active read must succeed before absence can mean a new family.
       const active = await listObjectTypes();
       if (!fresh()) return;
-      const family = (rid: string) => {
-        const p = rid.split('.');
-        return `${p[1]}.${p.at(-2)}`;
-      };
-      let existing = active.some((t) => family(t.rid) === family(draft.rid));
+      let existing = active.some(
+        (t) => objectTypeFamily(t.rid) === objectTypeFamily(draft.rid),
+      );
       if (!existing) {
         // Archived types are omitted from the active list. A successful exact read is
         // still an instance target; only an explicit 404 proves this RID is absent.
@@ -154,9 +179,14 @@ export default function SchemaWipCard({
   };
   const apply = async (name = '') => {
     if (!draft || !valid || busy || loading) return;
+    const release = mutation.acquire();
+    if (!release) return;
+    const token = Symbol();
+    command.current = token;
     const n = ++request.current,
       rev = revision;
-    const fresh = () => n === request.current && rev === current.current;
+    const fresh = () =>
+      n === request.current && rev === current.current && scope === currentScope.current;
     setBusy('apply');
     setError('');
     setMessage('');
@@ -196,24 +226,40 @@ export default function SchemaWipCard({
         setConfirmInput('');
       } else setError(resourceError(e));
     } finally {
-      if (fresh()) setBusy('');
+      if (command.current === token) {
+        command.current = null;
+        setBusy('');
+      }
+      release();
     }
   };
   const discard = async () => {
-    if (!draft || !window.confirm(`丢弃草稿 ${draft.rid}？该操作不可恢复。`))
+    if (
+      mutation.locked() || busy || loading || !draft ||
+      !window.confirm(`丢弃草稿 ${draft.rid}？该操作不可恢复。`)
+    )
       return;
+    const release = mutation.acquire();
+    if (!release) return;
+    const token = Symbol();
+    command.current = token;
     reset();
     const n = ++request.current,
       rev = revision;
-    const fresh = () => n === request.current && rev === current.current;
+    const fresh = () =>
+      n === request.current && rev === current.current && scope === currentScope.current;
     setBusy('discard');
     try {
       await discardSchemaWip(draft.rid);
-      if (fresh()) await reload();
+      if (fresh()) await reload(true);
     } catch (e) {
       if (fresh()) setError(resourceError(e));
     } finally {
-      if (fresh()) setBusy('');
+      if (command.current === token) {
+        command.current = null;
+        setBusy('');
+      }
+      release();
     }
   };
   const returnTo = safeReturnTo(params.get('returnTo'));
@@ -226,6 +272,7 @@ export default function SchemaWipCard({
           <select
             aria-label="目标草稿"
             value={selected}
+            disabled={mutation.pending}
             onChange={(e) => pick(e.target.value)}
           >
             <option value="">选择草稿</option>
@@ -239,7 +286,7 @@ export default function SchemaWipCard({
             ))}
           </select>
         </label>
-        <button className="mp-onto-btn" onClick={() => void reload()}>
+        <button className="mp-onto-btn" disabled={mutation.pending} onClick={() => void reload()}>
           刷新草稿
         </button>
         {returnTo && <Link to={returnTo}>返回模型</Link>}
@@ -339,21 +386,21 @@ export default function SchemaWipCard({
           <div className="mp-publication-actions">
             <button
               className="mp-onto-btn"
-              disabled={!!busy || loading}
+              disabled={mutation.pending || !!busy || loading}
               onClick={() => void precheck()}
             >
               校验草稿
             </button>
             <button
               className="mp-onto-btn mp-onto-btn--primary"
-              disabled={!valid || !!busy || loading || !!confirm}
+              disabled={mutation.pending || !valid || !!busy || loading || !!confirm}
               onClick={() => void apply()}
             >
               确认发布
             </button>
             <button
               className="mp-onto-btn"
-              disabled={!!busy || loading}
+              disabled={mutation.pending || !!busy || loading}
               onClick={() => void discard()}
             >
               丢弃
@@ -408,11 +455,11 @@ export default function SchemaWipCard({
                 value={confirmInput}
                 placeholder={`输入 ${confirm.confirm_with} 以确认`}
                 onChange={(e) => setConfirmInput(e.target.value)}
-                disabled={!!busy}
+                disabled={mutation.pending || !!busy}
               />
               <button
                 disabled={
-                  !valid ||
+                  mutation.pending || !valid ||
                   !!busy ||
                   confirmInput.trim() !== confirm.confirm_with
                 }
@@ -421,8 +468,9 @@ export default function SchemaWipCard({
                 重发（确认）
               </button>
               <button
-                disabled={!!busy}
+                disabled={mutation.pending || !!busy}
                 onClick={() => {
+                  if (mutation.locked()) return;
                   setConfirm(null);
                   setConfirmInput('');
                 }}

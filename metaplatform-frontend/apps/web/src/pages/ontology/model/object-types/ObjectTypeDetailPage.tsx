@@ -33,6 +33,7 @@ import ObjectTypeEditorV2Drawer, {
   type ObjectTypeEditorPrefill,
 } from '../../components/ObjectTypeEditorV2Drawer';
 import VersionHistory from '../../components/VersionHistory';
+import { objectTypeFamily } from '../../hooks/objectTypeFamily';
 import { resourceUrl, safeReturnTo } from '../../hooks/resourceContext';
 import { resourceError } from '../../hooks/resourceErrors';
 import '../graph/model-workbench.css';
@@ -470,8 +471,7 @@ export default function ObjectTypeDetailPage() {
                 currentChecksum={
                   !errors.resources && !pending.resources ? types.find(
                     (t) =>
-                      t.rid.replace(/\.v\d+$/, '') ===
-                      rid.replace(/\.v\d+$/, ''),
+                      objectTypeFamily(t.rid) === objectTypeFamily(rid),
                   )?.checksum : undefined
                 }
               />

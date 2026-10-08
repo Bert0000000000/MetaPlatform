@@ -8,13 +8,14 @@ import {
   act,
 } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Link } from 'react-router-dom';
 import { AxiosError, type AxiosRequestConfig } from 'axios';
 import SchemaWipCard from '../components/SchemaWipCard';
 import ReleasesPage from './releases/ReleasesPage';
 const http = vi.hoisted(() => ({
   handler: undefined as unknown as (c: AxiosRequestConfig) => Promise<unknown>,
   requests: [] as AxiosRequestConfig[],
+  user: { id: 'reviewer', tenantId: 'tenant' },
 }));
 vi.hoisted(() => {
   HTMLCanvasElement.prototype.getContext = (() => ({
@@ -40,7 +41,7 @@ vi.mock('@/api/client', async () => {
     }),
   };
 });
-vi.mock('@mate/shared', () => ({ toast: vi.fn() }));
+vi.mock('@mate/shared', () => ({ toast: vi.fn(), useAuth: () => ({ user: http.user }) }));
 vi.mock('@/contexts/SettingsContext', () => ({
   useSettings: () => ({ resolvedTheme: 'light' }),
 }));
@@ -102,7 +103,107 @@ function deferred<T>() {
   const promise = new Promise<T>((r) => (resolve = r));
   return { promise, resolve };
 }
+it.each(['apply', 'discard'])('keeps standalone %s owned through refresh, selection and actual settlement', async (command) => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const late = deferred<unknown>();
+  const handler = http.handler;
+  http.handler = (c) => c.url?.endsWith(command === 'apply' ? '/apply' : `wip/${rid}`) && c.method !== 'get'
+    ? late.promise
+    : c.url === '/ont/v2/object-types/wip'
+      ? Promise.resolve([wip, { ...wip, rid: other, payload: { ...payload, rid: other } }])
+      : handler(c);
+  mountCard();
+  await check();
+  fireEvent.click(screen.getByRole('button', { name: command === 'apply' ? '确认发布' : '丢弃' }));
+  await waitFor(() => expect(http.requests.some((c) => command === 'apply' ? c.url?.endsWith('/apply') : c.method === 'delete')).toBe(true));
+  const reads = http.requests.length;
+  fireEvent.click(screen.getByRole('button', { name: '刷新草稿' }));
+  fireEvent.change(screen.getByRole('combobox', { name: '目标草稿' }), { target: { value: other } });
+  fireEvent.click(screen.getByRole('button', { name: '校验草稿' }));
+  fireEvent.click(screen.getByRole('button', { name: '确认发布' }));
+  fireEvent.click(screen.getByRole('button', { name: '丢弃' }));
+  expect(http.requests).toHaveLength(reads);
+  expect(screen.getByRole('combobox', { name: '目标草稿' })).toHaveValue(rid);
+  expect(await screen.findByRole('button', { name: '校验草稿' })).toBeDisabled();
+  await act(async () => late.resolve(command === 'apply' ? live : undefined));
+  if (command === 'apply') await screen.findByText(/发布成功/);
+  await waitFor(() => expect(screen.getByRole('button', { name: '刷新草稿' })).toBeEnabled());
+  confirm.mockRestore();
+});
+it.each(['apply', 'discard'])('embedded %s blocks branch, rollback and migration, and unlocks after server failure', async (command) => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const late = deferred<unknown>();
+  const handler = http.handler;
+  http.handler = async (c) => {
+    if ((command === 'apply' && c.url?.endsWith('/apply')) || (command === 'discard' && c.method === 'delete')) {
+      await late.promise;
+      return fail(409, 'owned command refused');
+    }
+    if (c.url?.endsWith('/migration/assess')) return {
+      ...assessment,
+      counts: { ...assessment.counts, pk_missing: 1 },
+      plan: { ...assessment.plan, drops: { policy: 'preserve', props: ['removed-prop'] }, pk_rederive: { old_pk: [], new_pk: ['id'], on_missing: 'abort' } },
+    };
+    return handler(c);
+  };
+  render(<MemoryRouter initialEntries={[`/?typeRef=${rid}`]}><ReleasesPage /></MemoryRouter>);
+  await waitFor(() => expect(screen.getByRole('button', { name: '发布新版本' })).toBeEnabled());
+  fireEvent.change(screen.getByRole('combobox', { name: '恢复模型快照' }), { target: { value: 'ont.tenant.ver.customer.v1' } });
+  fireEvent.click(screen.getByRole('button', { name: '评估影响' }));
+  await screen.findByRole('button', { name: '执行迁移' });
+  await check();
+  // Keep competing events in one render batch: the ref lock must precede disabling UI.
+  act(() => {
+    fireEvent.click(screen.getByRole('button', { name: command === 'apply' ? '确认发布' : '丢弃' }));
+    for (const name of ['发布新版本', '回滚', '执行迁移']) {
+      fireEvent.click(screen.getByRole('button', { name }));
+    }
+  });
+  await waitFor(() => expect(http.requests.some((c) => command === 'apply' ? c.url?.endsWith('/apply') : c.method === 'delete')).toBe(true));
+  fireEvent.change(screen.getByRole('combobox', { name: '无后继属性处置' }), { target: { value: 'drop' } });
+  fireEvent.change(screen.getByRole('combobox', { name: 'PK 缺失实例' }), { target: { value: 'skip' } });
+  for (const name of ['发布新版本', '回滚', '执行迁移']) {
+    const button = screen.getByRole('button', { name });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+  }
+  expect(http.requests.some((c) => /\/(branch|rollback|migration\/run)$/.test(c.url || ''))).toBe(false);
+  await act(async () => late.resolve(undefined));
+  await screen.findByText(/409.*owned command refused/);
+  expect(screen.getByRole('button', { name: '发布新版本' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '校验草稿' })).toBeEnabled();
+  expect(screen.getByRole('combobox', { name: '恢复模型快照' })).toHaveValue('ont.tenant.ver.customer.v1');
+  expect(screen.getByRole('combobox', { name: '无后继属性处置' })).toHaveValue('preserve');
+  expect(screen.getByRole('combobox', { name: 'PK 缺失实例' })).toHaveValue('abort');
+  confirm.mockRestore();
+});
+it('parent branch keeps child writes blocked through failure and then permits publication', async () => {
+  const late = deferred<unknown>();
+  const handler = http.handler;
+  http.handler = async (c) => {
+    if (c.url?.endsWith('/branch')) { await late.promise; return fail(409, 'branch refused'); }
+    return handler(c);
+  };
+  render(<MemoryRouter initialEntries={[`/?typeRef=${rid}`]}><ReleasesPage /></MemoryRouter>);
+  await check();
+  await waitFor(() => expect(screen.getByRole('button', { name: '发布新版本' })).toBeEnabled());
+  act(() => {
+    fireEvent.click(screen.getByRole('button', { name: '发布新版本' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认发布' }));
+    fireEvent.click(screen.getByRole('button', { name: '丢弃' }));
+  });
+  expect(screen.getByRole('button', { name: '确认发布' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '确认发布' }));
+  fireEvent.click(screen.getByRole('button', { name: '丢弃' }));
+  expect(http.requests.some((c) => c.url?.endsWith('/apply') || c.method === 'delete')).toBe(false);
+  await act(async () => late.resolve(undefined));
+  await screen.findByText(/409.*branch refused/);
+  expect(screen.getByRole('button', { name: '确认发布' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: '确认发布' }));
+  await screen.findByText(/发布成功：原客户/);
+});
 beforeEach(() => {
+  http.user = { id: 'reviewer', tenantId: 'tenant' };
   http.requests = [];
   http.handler = async (c) => {
     const url = c.url!;
@@ -145,6 +246,26 @@ beforeEach(() => {
     addEventListener() {},
     removeEventListener() {},
   }));
+});
+it('identity changes suppress the old command outcome while retaining ownership until failure settles', async () => {
+  const late = deferred<unknown>();
+  const handler = http.handler;
+  http.handler = async (c) => {
+    if (c.url?.endsWith('/apply')) { await late.promise; return fail(409, 'previous identity refused'); }
+    return handler(c);
+  };
+  const view = mountCard();
+  await check();
+  fireEvent.click(screen.getByRole('button', { name: '确认发布' }));
+  await waitFor(() => expect(http.requests.some((c) => c.url?.endsWith('/apply'))).toBe(true));
+  http.user = { id: 'new-reviewer', tenantId: 'tenant' };
+  view.rerender(<MemoryRouter><SchemaWipCard /></MemoryRouter>);
+  expect(await screen.findByRole('button', { name: '校验草稿' })).toBeDisabled();
+  await act(async () => late.resolve(undefined));
+  expect(screen.queryByText(/previous identity refused/)).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.getByRole('button', { name: '校验草稿' })).toBeEnabled());
+  expect(screen.getByRole('button', { name: '确认发布' })).toBeDisabled();
+  await check();
 });
 afterEach(() => {
   cleanup();
@@ -283,7 +404,7 @@ it('release history reuses immutable snapshot and ignores old type response afte
   expect(screen.queryByText(/陈旧响应/)).not.toBeInTheDocument();
   await screen.findByText('真实快照');
 });
-it('changing draft selection hides old validation and late successful apply', async () => {
+it('external resource navigation hides old validation and late successful apply', async () => {
   const late = deferred<unknown>();
   const handler = http.handler;
   http.handler = (c) =>
@@ -299,12 +420,11 @@ it('changing draft selection hides old validation and late successful apply', as
       : c.url?.endsWith('/apply')
         ? late.promise
         : handler(c);
-  mountCard();
+  render(<MemoryRouter initialEntries={[`/?typeRef=${rid}`]}><Link to={`/?typeRef=${other}`}>外部资源导航</Link><SchemaWipCard /></MemoryRouter>);
   await check();
   fireEvent.click(screen.getByRole('button', { name: '确认发布' }));
-  fireEvent.change(screen.getByRole('combobox', { name: '目标草稿' }), {
-    target: { value: other },
-  });
+  await waitFor(() => expect(http.requests.some((c) => c.url?.endsWith('/apply'))).toBe(true));
+  fireEvent.click(screen.getByRole('link', { name: '外部资源导航' }));
   await act(async () => late.resolve(live));
   expect(screen.getByRole('button', { name: '确认发布' })).toBeDisabled();
   expect(screen.queryByText(/发布成功/)).not.toBeInTheDocument();

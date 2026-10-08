@@ -9,7 +9,7 @@ import {
   RefreshCw,
   Undo2,
 } from 'lucide-react';
-import { toast } from '@mate/shared';
+import { toast, useAuth } from '@mate/shared';
 import {
   assessMigration,
   branchObjectType,
@@ -28,6 +28,9 @@ import {
 import { EmptyState, PageHeader } from '@/components/skeleton';
 import VersionHistory from '../../components/VersionHistory';
 import SchemaWipCard from '../../components/SchemaWipCard';
+import { useMutationLock } from '../../hooks/mutationLock';
+import { objectTypeFamily } from '../../hooks/objectTypeFamily';
+import { editorIdentity } from '../../hooks/editorSession';
 import { resourceError } from '../../hooks/resourceErrors';
 import { resourceUrl, safeReturnTo } from '../../hooks/resourceContext';
 import '../governance.css';
@@ -49,11 +52,6 @@ const DIFF_VALUE_CLASS: Record<string, string> = {
   changed: 'mp-text-warning',
 };
 
-const family = (rid: string) => {
-  const p = rid.split('.');
-  return `${p[1]}.${p.at(-2)}`;
-};
-
 const shortRid = (rid: string, n = 14): string =>
   rid.length > n ? `${rid.slice(0, n)}…` : rid;
 
@@ -70,6 +68,10 @@ const shortRid = (rid: string, n = 14): string =>
  * <p>回滚只回滚**模型定义**：不动实例数据，也不补偿已发生的副作用。
  */
 export default function ReleasesPage() {
+  const { user } = useAuth();
+  const identity = editorIdentity(user);
+  const currentIdentity = useRef(identity);
+  currentIdentity.current = identity;
   const [params, setParams] = useSearchParams();
   const requested = params.get('typeRef') || params.get('class') || '';
   const [types, setTypes] = useState<KernelObjectType[]>([]);
@@ -86,8 +88,8 @@ export default function ReleasesPage() {
   const [rollbackFrom, setRollbackFrom] = useState('');
   const [busy, setBusy] = useState('');
   // A write remains in flight until its promise settles, independently of read/display resets.
-  const mutation = useRef(false);
-  const [mutationPending, setMutationPending] = useState(false);
+  const mutation = useMutationLock();
+  const mutationPending = mutation.pending;
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   // 存量适配（ADR-0082）：评估结果 + 可编辑计划副本 + 运行历史
@@ -112,7 +114,7 @@ export default function ReleasesPage() {
   const [branchMode, setBranchMode] = useState('version');
   const [copySlug, setCopySlug] = useState('');
   const invalidate = () => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     operations.current++;
     setBusy('');
     setErr('');
@@ -120,50 +122,56 @@ export default function ReleasesPage() {
     setDiffResult(null);
   };
   const editBranch = (value: string) => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     invalidate();
     setBranchEdited(true);
     setBranchRid(value);
   };
   const editDiff = (field: 'base' | 'against', value: string) => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     invalidate();
     field === 'base' ? setDiffBase(value) : setDiffAgainst(value);
   };
   const editRollback = (value: string) => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     invalidate();
     setRollbackFrom(value);
   };
 
   const reloadTypes = useCallback(async () => {
     const n = ++typeReads.current;
+    const scope = currentIdentity.current;
+    const fresh = () => n === typeReads.current && scope === currentIdentity.current;
     setTypesError('');
     setTypesLoading(true);
     try {
       const ts = await listObjectTypes();
-      if (n !== typeReads.current) return;
+      if (!fresh()) return;
       setTypes(ts);
       setVerRid((cur) => cur || requested || ts[0]?.rid || '');
     } catch (e) {
-      if (n === typeReads.current) setTypesError(`stale · ${resourceError(e)}`);
+      if (fresh()) setTypesError(`stale · ${resourceError(e)}`);
     } finally {
-      if (n === typeReads.current) setTypesLoading(false);
+      if (fresh()) setTypesLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    setTypes([]);
+    setMsg('');
+    setErr('');
     void reloadTypes();
     return () => {
       typeReads.current++;
       reads.current++;
       operations.current++;
     };
-  }, [reloadTypes]);
+  }, [reloadTypes, identity]);
 
   const loadDetail = useCallback(async (rid: string) => {
     const n = ++reads.current;
-    const fresh = () => n === reads.current && rid === currentRid.current;
+    const scope = currentIdentity.current;
+    const fresh = () => n === reads.current && rid === currentRid.current && scope === currentIdentity.current;
     if (!rid) {
       setLive(null);
       setRuns([]);
@@ -209,7 +217,7 @@ export default function ReleasesPage() {
       reads.current++;
       operations.current++;
     };
-  }, [verRid, loadDetail]);
+  }, [verRid, loadDetail, identity]);
   useEffect(() => {
     if (requested && requested !== currentRid.current) {
       operations.current++;
@@ -239,7 +247,7 @@ export default function ReleasesPage() {
   const draftPublished = useCallback(
     (type: KernelObjectType) => {
       if (type.rid !== currentRid.current) return;
-      if (!mutation.current) {
+      if (!mutation.locked()) {
         operations.current++;
         setBusy('');
       }
@@ -254,7 +262,7 @@ export default function ReleasesPage() {
 
   /** 用户主动切换类型才清提示；发布/回滚后的自动重载不清（否则成功消息被吞掉）。 */
   const pickType = (rid: string) => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     reads.current++;
     invalidate();
     setVerRid(rid);
@@ -271,7 +279,7 @@ export default function ReleasesPage() {
 
   /** 草稿 page 的 publish 是 POST /object-types/wip/{rid}/apply；此处是**已发布类型**的版本操作。 */
   const doBranch = async () => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     if (!verRid) {
       setErr('请先选择类型');
       return;
@@ -286,9 +294,9 @@ export default function ReleasesPage() {
       target = branchRid.trim(),
       n = ++operations.current;
     const fresh = () =>
-      n === operations.current && source === currentRid.current;
-    mutation.current = true;
-    setMutationPending(true);
+      n === operations.current && source === currentRid.current && identity === currentIdentity.current;
+    const release = mutation.acquire();
+    if (!release) return;
     setBusy('branch');
     setErr('');
     setMsg('');
@@ -297,7 +305,7 @@ export default function ReleasesPage() {
     try {
       const ot = await branchObjectType(source, target);
       if (!fresh()) return;
-      const same = family(source) === family(ot.rid);
+      const same = objectTypeFamily(source) === objectTypeFamily(ot.rid);
       toast('发布成功', 'success');
       setBranchRid('');
       await reloadTypes();
@@ -313,14 +321,13 @@ export default function ReleasesPage() {
     } catch (e) {
       if (fresh()) setErr(resourceError(e));
     } finally {
-      mutation.current = false;
-      setMutationPending(false);
+      release();
       if (fresh()) setBusy('');
     }
   };
 
   const doDiff = async () => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     const base = diffBase.trim() || verRid;
     const against = diffAgainst.trim();
     if (!base || !against) {
@@ -334,7 +341,7 @@ export default function ReleasesPage() {
     const source = verRid,
       n = ++operations.current;
     const fresh = () =>
-      n === operations.current && source === currentRid.current;
+      n === operations.current && source === currentRid.current && identity === currentIdentity.current;
     setBusy('diff');
     setErr('');
     setMsg('');
@@ -350,7 +357,7 @@ export default function ReleasesPage() {
   };
 
   const doRollback = async () => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     if (!verRid) {
       setErr('请先选择类型');
       return;
@@ -372,9 +379,9 @@ export default function ReleasesPage() {
       from = rollbackFrom.trim(),
       n = ++operations.current;
     const fresh = () =>
-      n === operations.current && source === currentRid.current;
-    mutation.current = true;
-    setMutationPending(true);
+      n === operations.current && source === currentRid.current && identity === currentIdentity.current;
+    const release = mutation.acquire();
+    if (!release) return;
     setBusy('rollback');
     setErr('');
     setMsg('');
@@ -393,15 +400,14 @@ export default function ReleasesPage() {
     } catch (e) {
       if (fresh()) setErr(resourceError(e));
     } finally {
-      mutation.current = false;
-      setMutationPending(false);
+      release();
       if (fresh()) setBusy('');
     }
   };
 
   /** 存量适配评估（只读）：上一条版本快照 → 当前生效 的真实影响计数 + 计划草案。 */
   const doAssess = async () => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     if (!verRid) {
       setErr('请先选择类型');
       return;
@@ -409,7 +415,7 @@ export default function ReleasesPage() {
     const source = verRid,
       n = ++operations.current;
     const fresh = () =>
-      n === operations.current && source === currentRid.current;
+      n === operations.current && source === currentRid.current && identity === currentIdentity.current;
     setBusy('assess');
     setErr('');
     setMsg('');
@@ -434,7 +440,7 @@ export default function ReleasesPage() {
 
   /** 执行存量适配：确认框带摘要（含信息损失警告）；PK 冲突/缺失 fail-closed 由后端拦。 */
   const doRunMigration = async () => {
-    if (mutation.current) return;
+    if (mutation.locked()) return;
     if (!verRid || !assessment || !plan) return;
     const c = assessment.counts;
     const lossNote =
@@ -454,9 +460,9 @@ export default function ReleasesPage() {
     const source = verRid,
       n = ++operations.current;
     const fresh = () =>
-      n === operations.current && source === currentRid.current;
-    mutation.current = true;
-    setMutationPending(true);
+      n === operations.current && source === currentRid.current && identity === currentIdentity.current;
+    const release = mutation.acquire();
+    if (!release) return;
     setBusy('migrate');
     setErr('');
     setMsg('');
@@ -477,15 +483,14 @@ export default function ReleasesPage() {
     } catch (e) {
       if (fresh()) setErr(resourceError(e));
     } finally {
-      mutation.current = false;
-      setMutationPending(false);
+      release();
       if (fresh()) setBusy('');
     }
   };
 
   const activeChecksum =
     !typesError && !typesLoading
-      ? types.find((t) => family(t.rid) === family(verRid))?.checksum
+      ? types.find((t) => objectTypeFamily(t.rid) === objectTypeFamily(verRid))?.checksum
       : undefined;
   const currentVersion = versions.find(
     (v) => !!activeChecksum && v.checksum === activeChecksum,
@@ -502,7 +507,7 @@ export default function ReleasesPage() {
             className="mp-onto-btn"
             disabled={detailBusy || mutationPending}
             onClick={() => {
-              if (mutation.current) return;
+              if (mutation.locked()) return;
               invalidate();
               setAssessment(null);
               setPlan(null);
@@ -577,7 +582,11 @@ export default function ReleasesPage() {
           </Link>
         )}
         {verRid && (
-          <SchemaWipCard typeRef={verRid} onPublished={draftPublished} />
+          <SchemaWipCard
+            typeRef={verRid}
+            onPublished={draftPublished}
+            mutationLock={mutation}
+          />
         )}
 
         {/* ① 当前生效 —— 家族中 checksum 与此一致的那条快照 */}
@@ -609,6 +618,7 @@ export default function ReleasesPage() {
           <section>
             <h3>统一版本历史</h3>
             <VersionHistory
+              key={identity}
               rid={verRid}
               currentChecksum={activeChecksum}
               refreshKey={historyRefresh}
@@ -654,7 +664,7 @@ export default function ReleasesPage() {
               aria-label="发布方式"
               value={branchMode}
               onChange={(e) => {
-                if (mutation.current) return;
+                if (mutation.locked()) return;
                 invalidate();
                 setBranchMode(e.target.value);
                 setBranchEdited(false);
@@ -673,7 +683,7 @@ export default function ReleasesPage() {
                 aria-label="副本机器名"
                 value={copySlug}
                 onChange={(e) => {
-                  if (mutation.current) return;
+                  if (mutation.locked()) return;
                   invalidate();
                   setCopySlug(e.target.value);
                   const p = verRid.split('.');
@@ -980,15 +990,16 @@ export default function ReleasesPage() {
                         disabled={!!busy}
                         className="mp-onto-input"
                         value={plan.drops.policy}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          if (mutation.locked()) return;
                           setPlan({
                             ...plan,
                             drops: {
                               ...plan.drops,
                               policy: e.target.value as 'preserve' | 'drop',
                             },
-                          })
-                        }
+                          });
+                        }}
                       >
                         <option value="preserve">
                           保留键（默认，不丢数据）
@@ -1005,7 +1016,8 @@ export default function ReleasesPage() {
                           disabled={!!busy}
                           className="mp-onto-input"
                           value={plan.pk_rederive.on_missing}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            if (mutation.locked()) return;
                             setPlan({
                               ...plan,
                               pk_rederive: plan.pk_rederive
@@ -1016,8 +1028,8 @@ export default function ReleasesPage() {
                                       | 'skip',
                                   }
                                 : null,
-                            })
-                          }
+                            });
+                          }}
                         >
                           <option value="abort">整单中止（默认）</option>
                           <option value="skip">跳过这些实例并报告</option>
