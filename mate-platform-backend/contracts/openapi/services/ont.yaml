@@ -1789,7 +1789,46 @@ paths:
               additionalProperties: false
               required: [plan, expected_checksum]
               properties:
-                plan: { type: object, additionalProperties: true }
+                plan:
+                  type: object
+                  additionalProperties: false
+                  required: [class_rid, from_checksum, renames, coercions, pk_rederive, drops, reattach, warnings]
+                  properties:
+                    class_rid: { type: string }
+                    from_checksum: { type: string, minLength: 1 }
+                    renames: { type: object, additionalProperties: { type: string } }
+                    coercions:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required: [prop_rid, from_format, to_format]
+                        properties:
+                          prop_rid: { type: string }
+                          from_format: { type: string }
+                          to_format: { type: string }
+                    pk_rederive:
+                      type: [object, "null"]
+                      additionalProperties: false
+                      required: [old_pk, new_pk, on_missing]
+                      properties:
+                        old_pk: { type: array, items: { type: string } }
+                        new_pk: { type: array, items: { type: string } }
+                        on_missing: { type: string, enum: [abort, skip] }
+                    drops:
+                      type: object
+                      additionalProperties: false
+                      required: [policy, props]
+                      properties:
+                        policy: { type: string, enum: [preserve, drop] }
+                        props: { type: array, items: { type: string } }
+                    reattach:
+                      type: [object, "null"]
+                      additionalProperties: false
+                      required: [to]
+                      properties:
+                        to: { type: string }
+                    warnings: { type: array, items: { type: string } }
                 expected_checksum: { type: string }
       responses:
         "200":
