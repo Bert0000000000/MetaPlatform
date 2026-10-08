@@ -70,14 +70,30 @@ describe('本体建设工作区导航', () => {
     expect(getOntologyContextSnapshot().navigation?.url).toBe('/ontology/model/graph');
   });
 
-  it('导航展开按钮有可操作状态，选择页面后收起', () => {
-    renderShell('/ontology/model/graph');
+  it('键盘展开进入导航，选择后返回可见按钮，Escape 也恢复焦点', () => {
+    const router = renderShell('/ontology/model/graph');
     const toggle = screen.getByRole('button', { name: '展开本体导航' });
+    const nav = screen.getByRole('navigation', { name: '本体工作区导航' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.click(toggle);
+    toggle.focus();
+    // jsdom does not perform native button/link activation after keydown;
+    // dispatch the keyboard-generated click. Actual Tab traversal is covered by Playwright.
+    fireEvent.keyDown(toggle, { key: 'Enter' });
+    fireEvent.click(toggle, { detail: 0 });
     expect(screen.getByRole('button', { name: '收起本体导航' })).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.click(screen.getByRole('link', { name: '关系类型' }));
+    const firstLink = within(nav).getByRole('link', { name: '总览' });
+    expect(firstLink).toHaveFocus();
+    fireEvent.keyDown(firstLink, { key: 'Enter' });
+    fireEvent.click(firstLink, { detail: 0 });
+    expect(router.state.location.pathname).toBe('/ontology');
     expect(screen.getByRole('button', { name: '展开本体导航' })).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+    expect(toggle).toBeVisible();
+    fireEvent.click(toggle, { detail: 0 });
+    expect(firstLink).toHaveFocus();
+    fireEvent.keyDown(firstLink, { key: 'Escape' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
   });
 
   it('其他域继续呈现可点击 PageTabs，离开本体清空上下文', async () => {

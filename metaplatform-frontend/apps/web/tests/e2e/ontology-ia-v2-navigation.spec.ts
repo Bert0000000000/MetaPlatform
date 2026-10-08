@@ -86,12 +86,25 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await page.goto('/ontology/model/graph', { waitUntil: 'domcontentloaded' });
     const toggle = page.getByRole('button', { name: '展开本体导航' });
     await expect(toggle).toBeVisible();
-    await toggle.click();
-    const link = page.getByRole('navigation', { name: '本体工作区导航' }).getByRole('link', { name: '关系类型', exact: true });
-    await link.focus();
+    await toggle.focus();
+    await page.keyboard.press('Enter');
+    const nav = page.getByRole('navigation', { name: '本体工作区导航' });
+    await expect(nav.getByRole('link', { name: '总览', exact: true })).toBeFocused();
+    for (const name of ['语义模型', '模型工作台', '对象类型', '关系类型']) {
+      await page.keyboard.press('Tab');
+      await expect(nav.getByRole('link', { name, exact: true })).toBeFocused();
+    }
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/ontology\/model\/link-types$/);
-    await expect(page.getByRole('button', { name: '展开本体导航' })).toHaveAttribute('aria-expanded', 'false');
+    const closedToggle = page.getByRole('button', { name: '展开本体导航' });
+    await expect(closedToggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(closedToggle).toBeVisible();
+    await expect(closedToggle).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(nav.getByRole('link', { name: '总览', exact: true })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(closedToggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(closedToggle).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 

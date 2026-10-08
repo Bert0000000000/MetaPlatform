@@ -1,11 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
+import type { RefObject } from 'react';
 import { ONTOLOGY_NAV, ontologyGroupDefaultPath, resolveOntologyNav } from '../navigation';
 
-export default function OntologySideNav({ onNavigate }: { onNavigate: () => void }) {
+export default function OntologySideNav({ onNavigate, navRef }: {
+  onNavigate: () => void;
+  navRef: RefObject<HTMLElement | null>;
+}) {
   const { pathname } = useLocation();
   const match = resolveOntologyNav(pathname);
   return (
-    <nav id="ontology-workspace-nav" className="mp-onto-sidenav" aria-label="本体工作区导航">
+    <nav ref={navRef} id="ontology-workspace-nav" className="mp-onto-sidenav" aria-label="本体工作区导航">
       <div className="mp-onto-sidenav-head">
         <strong>本体建设</strong><span>ONTOLOGY WORKSPACE</span>
       </div>

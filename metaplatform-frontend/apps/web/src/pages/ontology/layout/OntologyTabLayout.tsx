@@ -14,16 +14,30 @@ export default function OntologyTabLayout() {
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => setNavOpen(false), [location.pathname, location.search]);
+  const navRef = useRef<HTMLElement>(null);
+  const navOpenRef = useRef(navOpen);
+  navOpenRef.current = navOpen;
+  const closeNav = () => {
+    setNavOpen(false);
+    // Desktop sidebar selection must not focus its hidden narrow-screen toggle.
+    if (navOpen) toggleRef.current?.focus();
+  };
+  useEffect(() => {
+    // Browser history can close the narrow menu without selecting a link.
+    if (navOpenRef.current && navRef.current?.contains(document.activeElement)) toggleRef.current?.focus();
+    setNavOpen(false);
+  }, [location.pathname, location.search]);
+  useEffect(() => {
+    if (navOpen) navRef.current?.querySelector<HTMLAnchorElement>('a[href]')?.focus();
+  }, [navOpen]);
   return (
     <div className="mp-page-full mp-onto-workspace" data-nav-open={navOpen}
       onKeyDown={event => {
         if (event.key === 'Escape' && navOpen) {
-          setNavOpen(false);
-          toggleRef.current?.focus();
+          closeNav();
         }
       }}>
-      <OntologySideNav onNavigate={() => setNavOpen(false)} />
+      <OntologySideNav navRef={navRef} onNavigate={closeNav} />
       <div className="mp-onto-workspace-main">
         <OntologyContextBar navOpen={navOpen} onToggleNav={() => setNavOpen(open => !open)} toggleRef={toggleRef} />
         <div className="mp-onto-workspace-content">
