@@ -4,6 +4,7 @@ import { Bell, Layers, LogOut, Search, Settings } from 'lucide-react';
 import { useAuth } from '@mate/shared';
 import { DOMAINS, resolveDomain, resolveDomainTab, resolveSubTab } from './domains';
 import { useShell } from './ShellContext';
+import { ontologyBreadcrumb } from '@/pages/ontology/navigation';
 
 const ENV_LABEL =
   (import.meta.env.VITE_ENV_LABEL as string | undefined) ?? (import.meta.env.PROD ? 'PRODUCTION' : 'DEV');
@@ -27,11 +28,18 @@ export default function TopBar() {
     ...(tab && tab.label !== domain?.label ? [{ name: tab.label, path: tab.path }] : []),
     ...(sub && sub.sub.label !== tab?.label ? [{ name: sub.sub.label }] : []),
   ];
+  const displayCrumbs = domain?.key === 'ontology'
+    ? [{ name: domain.label, path: domain.path }, ...ontologyBreadcrumb(location.pathname)]
+    : crumbs;
 
   const displayName = user?.realName ?? user?.username ?? '当前用户';
 
   return (
     <>
+      <button type="button" className="mp-platform-brand" onClick={() => navigate('/home')} aria-label="MetaPlatform 工作台">
+        <span className="mp-platform-brand-mark"><Layers size={19} strokeWidth={1.5} /></span>
+        <span className="mp-platform-brand-name">MetaPlatform</span>
+      </button>
       <Tabs
         className="mp-topnav"
         type="line"
@@ -46,7 +54,7 @@ export default function TopBar() {
       <Breadcrumb
         className="mp-crumbs"
         compact
-        routes={crumbs}
+        routes={displayCrumbs}
         onClick={(item) => {
           const path = (item as { path?: string }).path;
           if (path) navigate(path);

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ontologyDomainTabs, ontologyWorkspaceDefaultPath, resolveOntologyNav } from '@/pages/ontology/navigation';
 import {
   BookOpen,
   Bot,
@@ -79,73 +80,9 @@ export const DOMAINS: DomainDef[] = [
     key: 'ontology',
     label: '本体',
     icon: <Share2 size={ICON_SIZE} strokeWidth={1.5} />,
-    path: '/ontology',
-    // 2026-09-24（用户决策）：本体导航改回与全站一致的横向 tab 模式——
-    // 主 tab = 六大功能组（path 指组根，由路由 redirect 到默认子页），
-    // children 胶囊行 = 各组子页面（与 ki/gov/admin 域同构）。
-    // IA v2 的全部正式 URL / 路由即状态 / 子页拆分成果保留不变
-    // （ADR-0069 附录）；细粒度 ⌘K 索引仍来自 pages/ontology/navigation.ts。
-    tabs: [
-      { key: 'overview', label: '总览', path: '/ontology' },
-      {
-        key: 'model',
-        label: '语义模型',
-        path: '/ontology/model',
-        children: [
-          { key: 'object-types', label: '对象类型', path: '/ontology/model/object-types' },
-          { key: 'link-types', label: '关系类型', path: '/ontology/model/link-types' },
-          { key: 'interfaces', label: '接口', path: '/ontology/model/interfaces' },
-          { key: 'axioms', label: '公理', path: '/ontology/model/axioms' },
-          { key: 'graph', label: '模型图谱', path: '/ontology/model/graph' },
-          { key: 'validation', label: '模型校验', path: '/ontology/model/validation' },
-        ],
-      },
-      {
-        key: 'data',
-        label: '数据映射',
-        path: '/ontology/data',
-        children: [
-          { key: 'mappings', label: '对象映射', path: '/ontology/data/mappings' },
-          { key: 'sync', label: '同步任务', path: '/ontology/data/sync' },
-          { key: 'lineage', label: '本体血缘', path: '/ontology/data/lineage' },
-        ],
-      },
-      {
-        key: 'explore',
-        label: '对象与查询',
-        path: '/ontology/explore',
-        children: [
-          { key: 'objects', label: '对象浏览', path: '/ontology/explore/objects' },
-          { key: 'analysis', label: '聚合分析', path: '/ontology/explore/analysis' },
-          { key: 'map', label: '地图视图', path: '/ontology/explore/map' },
-        ],
-      },
-      {
-        key: 'logic',
-        label: '动作与函数',
-        path: '/ontology/logic',
-        children: [
-          { key: 'actions', label: '动作类型', path: '/ontology/logic/actions' },
-          { key: 'functions', label: '函数', path: '/ontology/logic/functions' },
-          { key: 'designer', label: 'Action 编排', path: '/ontology/logic/designer' },
-          { key: 'runs', label: '执行记录', path: '/ontology/logic/runs' },
-        ],
-      },
-      {
-        key: 'governance',
-        label: '发布与治理',
-        path: '/ontology/governance',
-        children: [
-          { key: 'drafts', label: '草稿', path: '/ontology/governance/drafts' },
-          { key: 'releases', label: '版本与发布', path: '/ontology/governance/releases' },
-          { key: 'usage', label: '使用量', path: '/ontology/governance/usage' },
-          { key: 'lint', label: '模型检查', path: '/ontology/governance/lint' },
-          { key: 'security', label: '安全策略', path: '/ontology/governance/security' },
-          { key: 'import-export', label: '导入导出', path: '/ontology/governance/import-export' },
-          { key: 'audit', label: '审计', path: '/ontology/governance/audit' },
-        ],
-      },
-    ],
+    path: ontologyWorkspaceDefaultPath(),
+    navigationMode: 'workspace',
+    tabs: ontologyDomainTabs(),
   },
   {
     key: 'agents',
@@ -334,6 +271,10 @@ export function resolveDomain(pathname: string): DomainDef | undefined {
  * /apps/order-review 等），此时不该硬指到某个 tab 上。
  */
 export function resolveDomainTab(domain: DomainDef, pathname: string): DomainTab | undefined {
+  if (domain.key === 'ontology') {
+    const match = resolveOntologyNav(pathname);
+    return domain.tabs.find(tab => tab.key === match?.group.key);
+  }
   return domain.tabs
     .filter((t) => pathname === t.path || pathname.startsWith(`${t.path}/`))
     .sort((a, b) => b.path.length - a.path.length)[0];

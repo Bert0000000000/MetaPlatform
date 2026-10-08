@@ -179,6 +179,43 @@
   white-space: nowrap;
 }
 
+/* Platform positioning zone uses the existing Semi always-dark theme scope. */
+.mp-platform-brand {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--mp-space-2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--semi-color-text-0);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+}
+.mp-platform-brand-mark {
+  display: grid;
+  place-items: center;
+  width: var(--mp-subtab-h);
+  height: var(--mp-subtab-h);
+  border-radius: var(--semi-border-radius-small);
+  background: var(--semi-color-primary);
+  color: var(--semi-color-primary-on);
+}
+.mp-platform-brand:focus-visible { outline: 2px solid var(--semi-color-primary); outline-offset: 4px; }
+@media (max-width: 1024px) {
+  .mp-searchbar { width: 180px; }
+  .mp-platform-brand-name { display: none; }
+  .mp-topnav { max-width: 35%; }
+}
+@media (max-width: 640px) {
+  .mp-main .mp-topbar { gap: var(--mp-space-2); padding: 0 var(--mp-space-2); }
+  .mp-searchbar { width: var(--mp-subtab-h); }
+  .mp-searchbar .mp-kbd, .mp-user-name, .mp-env-chip, .mp-topbar .mp-crumbs { display: none; }
+  .mp-topbar-right { min-width: 0; gap: var(--mp-space-1); }
+  .mp-app[data-nav='top'] .mp-topnav { max-width: calc(100vw - 200px); overflow: auto; }
+}
+
 /* ---------- 页内 tab ---------- */
 .mp-pagetabs {
   flex: none;

@@ -31,14 +31,15 @@ function ShellFrame() {
       className="mp-app"
       data-nav={navMode}
       data-copilot={copilotOpen ? 'open' : 'closed'}
+      data-workspace={domain?.navigationMode === 'workspace'}
     >
       <Layout hasSider className="mp-shell">
-        <Layout.Sider className="mp-rail-sider">
+        <Layout.Sider className="mp-rail-sider semi-always-dark">
           <IconRail active={domain} />
         </Layout.Sider>
 
         <Layout className="mp-main">
-          <Layout.Header className="mp-topbar">
+          <Layout.Header className="mp-topbar semi-always-dark">
             <TopBar />
           </Layout.Header>
 

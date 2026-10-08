@@ -1,19 +1,35 @@
 import { Outlet } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import OntologyDomainShell from '../shell/OntologyDomainShell';
+import OntologySideNav from './OntologySideNav';
+import OntologyContextBar from './OntologyContextBar';
+import './workspace.css';
 
 /**
- * 本体域 tab 模式布局（2026-09-24 用户决策：与全站一致的横向导航）。
- *
- * <p>导航呈现回归 AppShell 的 PageTabs：主 tab = 六大功能组（domains.tsx），
- * children 胶囊行 = 各组子页面——与 ki/gov/admin 域同构。本布局只保留域壳
- * （全幅页高度约束 / gutter / ADR-0065 S2 导航上下文写入）。
- *
- * <p>IA v2 的全部正式 URL 与「路由即状态」成果不变（ADR-0069 附录）。
+ * 本体建设工作区（ADR-0069 2026-10-08）；保留布局文件名以兼容路由引用。
+ * DomainShell 仍包裹全部页面，负责 ADR-0065 的路由/打开记录上下文。
  */
 export default function OntologyTabLayout() {
+  const location = useLocation();
+  const [navOpen, setNavOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => setNavOpen(false), [location.pathname, location.search]);
   return (
-    <OntologyDomainShell>
-      <Outlet />
-    </OntologyDomainShell>
+    <div className="mp-page-full mp-onto-workspace" data-nav-open={navOpen}
+      onKeyDown={event => {
+        if (event.key === 'Escape' && navOpen) {
+          setNavOpen(false);
+          toggleRef.current?.focus();
+        }
+      }}>
+      <OntologySideNav onNavigate={() => setNavOpen(false)} />
+      <div className="mp-onto-workspace-main">
+        <OntologyContextBar navOpen={navOpen} onToggleNav={() => setNavOpen(open => !open)} toggleRef={toggleRef} />
+        <div className="mp-onto-workspace-content">
+          <OntologyDomainShell><Outlet /></OntologyDomainShell>
+        </div>
+      </div>
+    </div>
   );
 }

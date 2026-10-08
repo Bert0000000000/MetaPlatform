@@ -2,6 +2,7 @@ import { lazy } from 'react';
 import { Navigate, Route, useSearchParams } from 'react-router-dom';
 import '@/pages/ontology/ontology.css';
 import OntologyTabLayout from '@/pages/ontology/layout/OntologyTabLayout';
+import { ontologyWorkspaceDefaultPath } from '@/pages/ontology/navigation';
 import OverviewPage from '@/pages/ontology/overview/OverviewPage';
 import ObjectExplorerPage from '@/pages/ontology/explorer/ObjectExplorerPage';
 import ObjectMappingsPage from '@/pages/ontology/data/mappings/ObjectMappingsPage';
@@ -74,10 +75,11 @@ function OntologyIndexRoute() {
 export const ontologyRoutes = (
   <Route path="ontology" element={<OntologyTabLayout />}>
     <Route index element={<OntologyIndexRoute />} />
+    <Route path="overview" element={<Navigate to="/ontology" replace />} />
 
     {/* 语义模型（IA2-2 已拆分）：基元各成独立页；:rid 详情四个真 Tab 进 URL */}
     <Route path="model">
-      <Route index element={<Navigate to="object-types" replace />} />
+      <Route index element={<Navigate to={ontologyWorkspaceDefaultPath()} replace />} />
       <Route path="object-types" element={<ObjectTypesPage />} />
       <Route path="object-types/:rid" element={<ObjectTypeDetailPage />} />
       <Route path="object-types/:rid/:tab" element={<ObjectTypeDetailPage />} />

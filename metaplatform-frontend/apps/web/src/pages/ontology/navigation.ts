@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react';
-import type { PaletteEntry } from '@/components/shell/domains';
+import type { DomainTab, PaletteEntry } from '@/components/shell/domains';
 
 /** 图标以组件类型登记（保持本模块为纯 .ts 配置，不写 JSX）。 */
 export type OntologyNavIcon = ComponentType<{
@@ -19,8 +19,7 @@ export type OntologyNavIcon = ComponentType<{
  * 本体工作区导航的**单一事实源**（ADR-0069 §2.3 / IA v2 设计规格 §2.3）。
  *
  * <p>同一份配置驱动：⌘K 细粒度索引、planned 状态登记与测试路径矩阵
- * （2026-09-24 起主导航呈现回归 PageTabs，其结构在 domains.tsx 的 tabs+children；
- * 本模块继续作为子页细粒度索引与预留项登记的事实源）。
+ * 以及六域工作区、面包屑与兼容 tabs 元数据（2026-10-08 呈现决定）。
  * 禁止在 Shell / 页面里散落硬编码本体路径。
  *
  * <p>`status` 语义（设计规格 §2.5「不展示假功能」）：
@@ -41,6 +40,8 @@ export interface OntologyNavItem {
   label: string;
   /** 功能域自身可直达（总览）；分组域由第一个 active 子项承载。 */
   path?: string;
+  /** 保留正式别名，别名不重复进入导航或搜索。 */
+  aliases?: string[];
   icon?: OntologyNavIcon;
   status: OntologyNavStatus;
   /** ⌘K 检索关键词（中英同义词），随条目拼接。 */
@@ -53,6 +54,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
     key: 'overview',
     label: '总览',
     path: '/ontology',
+    aliases: ['/ontology/overview'],
     icon: Layers,
     status: 'active',
     keywords: 'overview 总览 概览 首页 landing',
@@ -63,6 +65,13 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
     icon: Shapes,
     status: 'active',
     children: [
+      {
+        key: 'graph',
+        label: '模型工作台',
+        path: '/ontology/model/graph',
+        status: 'active',
+        keywords: 'graph 图谱 可视化 模型图 模型工作台',
+      },
       {
         key: 'object-types',
         label: '对象类型',
@@ -79,24 +88,17 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
       },
       {
         key: 'interfaces',
-        label: '接口',
+        label: '接口定义',
         path: '/ontology/model/interfaces',
         status: 'active',
         keywords: 'interface 接口',
       },
       {
         key: 'axioms',
-        label: '公理',
+        label: '公理与约束',
         path: '/ontology/model/axioms',
         status: 'active',
         keywords: 'axiom 公理 约束',
-      },
-      {
-        key: 'graph',
-        label: '模型图谱',
-        path: '/ontology/model/graph',
-        status: 'active',
-        keywords: 'graph 图谱 可视化 模型图',
       },
       {
         key: 'validation',
@@ -193,7 +195,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
       },
       {
         key: 'functions',
-        label: '函数',
+        label: '函数管理',
         path: '/ontology/logic/functions',
         status: 'active',
         keywords: 'function 函数',
@@ -234,7 +236,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
     children: [
       {
         key: 'drafts',
-        label: '草稿',
+        label: '变更草稿',
         path: '/ontology/governance/drafts',
         status: 'active',
         keywords: 'draft 草稿 wip schema 暂存',
@@ -262,7 +264,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
       },
       {
         key: 'security',
-        label: '安全策略',
+        label: '权限策略',
         path: '/ontology/governance/security',
         status: 'active',
         keywords: 'security 安全策略 policy',
@@ -276,7 +278,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
       },
       {
         key: 'audit',
-        label: '审计',
+        label: '操作审计',
         path: '/ontology/governance/audit',
         status: 'active',
         keywords: 'audit 审计',
@@ -298,18 +300,20 @@ function pathMatches(pathname: string, path: string): boolean {
 
 /** 当前路由对应的导航节点（最长路径优先，避免组前缀抢先命中）。 */
 export function resolveOntologyNav(pathname: string): OntologyNavMatch | undefined {
-  const itemPaths: Array<{ group: OntologyNavItem; item: OntologyNavItem }> = [];
+  const matches: Array<{ match: OntologyNavMatch; length: number }> = [];
   for (const group of ONTOLOGY_NAV) {
-    if (group.path && pathMatches(pathname, group.path)) {
-      return { group };
+    if (group.status !== 'active') continue;
+    // A direct domain page (overview) is exact; it must not swallow unknown subpaths.
+    for (const path of [group.path, ...(group.aliases ?? [])]) {
+      if (path && pathname === path) matches.push({ match: { group }, length: path.length });
     }
     for (const item of group.children ?? []) {
-      if (item.path) itemPaths.push({ group, item });
+      if (item.status === 'active' && item.path && pathMatches(pathname, item.path)) {
+        matches.push({ match: { group, item }, length: item.path.length });
+      }
     }
   }
-  return itemPaths
-    .filter(({ item }) => pathMatches(pathname, item.path as string))
-    .sort((a, b) => (b.item.path as string).length - (a.item.path as string).length)[0];
+  return matches.sort((a, b) => b.length - a.length)[0]?.match;
 }
 
 /** 功能域默认路径：自身 path，否则第一个 active 子项（设计规格 §4.3）。 */
@@ -317,6 +321,25 @@ export function ontologyGroupDefaultPath(group: OntologyNavItem): string {
   if (group.path) return group.path;
   const first = (group.children ?? []).find((c) => c.status === 'active' && c.path);
   return first?.path as string;
+}
+
+/** The construction entry follows the first active semantic-model page. */
+export function ontologyWorkspaceDefaultPath(): string {
+  return ontologyGroupDefaultPath(ONTOLOGY_NAV.find(group => group.key === 'model')!);
+}
+
+/** Compatibility metadata for Shell/Copilot; workspace navigation remains the visible UI. */
+export function ontologyDomainTabs(): DomainTab[] {
+  return ONTOLOGY_NAV.filter(group => group.status === 'active').map(group => {
+    const children = (group.children ?? []).filter(item => item.status === 'active' && item.path)
+      .map(item => ({ key: item.key, label: item.label, path: item.path! }));
+    const defaultPath = ontologyGroupDefaultPath(group);
+    return {
+      key: group.key, label: group.label,
+      path: group.path ?? defaultPath.slice(0, defaultPath.lastIndexOf('/')),
+      ...(children.length ? { children } : {}),
+    };
+  });
 }
 
 export interface OntologyCrumb {
@@ -341,6 +364,7 @@ export function ontologyBreadcrumb(pathname: string): OntologyCrumb[] {
 export function ontologyPaletteEntries(): PaletteEntry[] {
   const out: PaletteEntry[] = [];
   for (const group of ONTOLOGY_NAV) {
+    if (group.status !== 'active') continue;
     if (group.path && group.status === 'active') {
       out.push({
         key: `ontology:${group.key}`,

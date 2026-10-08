@@ -61,6 +61,7 @@ export default function IconRail({ active }: IconRailProps) {
   return (
     <Nav
       className="mp-rail-nav"
+      aria-label="平台导航"
       mode="vertical"
       isCollapsed
       items={items}
