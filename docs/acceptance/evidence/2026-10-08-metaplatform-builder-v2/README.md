@@ -1,6 +1,6 @@
 # Builder V2 安全证据
 
-日期：2026-10-09（Asia/Shanghai）；稳定实施 source `f892895200d57312fbb753866271d82f4d52af83`，限定最终修复复审规格/质量 Approved、两 P2 关闭，控制器已确认。这里仅跟踪严格 allowlist 的结果/版本/截图，详细说明见 [验收文档](../../2026-10-08-metaplatform-builder-v2.md)。**当前本地 gates/视觉交互已实际通过；Task6最终交接/关闭仍待控制器。**
+日期：2026-10-09（Asia/Shanghai）；稳定实施 source `f892895200d57312fbb753866271d82f4d52af83`，限定最终修复复审规格/质量 Approved、两 P2 关闭，控制器已确认。这里仅跟踪严格 allowlist 的结果/版本/截图，详细说明见 [验收文档](../../2026-10-08-metaplatform-builder-v2.md)。**当前本地 gates/视觉交互、最终限定复审与运行交接均已完成。**
 
 | 文件 | 来源与含义 |
 |---|---|
@@ -31,7 +31,7 @@
 | `visual-inspection.json` | 实际52像素检视，逐页/尺寸观察与窄屏局部裁切限制 |
 | `narrow-interaction.json` | 六次探针事实；第5次整次exit1/真实partial和第6次完整1/1 exit0分开，不把probe时序当产品bug |
 
-只复制明确PNG/安全JSON allowlist。原private helpers/日志/失败XML保持ignored。前包已提交 `b3456cd8`，Task6仍IN_PROGRESS；本地窄屏交互已实际通过，最终证据交接/运行区保留与goal关闭待控制器。
+只复制明确PNG/安全JSON allowlist。原private helpers/日志/失败XML保持ignored。证据包已提交 `b3456cd8`、`f9b52bb6`；Task6本地门禁、视觉交互、限定复审及控制器运行保留/交接已完成。临时SDD删除被自动审批审查以 `blocked by policy` 拒绝，原目录与固定目录副本保留；未重试删除，不影响本地原型完成，不声明CI/部署/业务验收。
 
 | 补证文件 | 来源与含义 |
 |---|---|
@@ -41,3 +41,5 @@
 | `narrow-source-verification.json` | probe后生产diff为空、当前2220源hash匹配实际core回执；不是重跑heavygate |
 | `current-ui-login.json` | 控制器独立CUA真实UIlogin/settings匹配和继承reload/profile/copilot边界；无token/个人ID/roleclaim |
 | `screenshots/narrow-attempt-05/`、`screenshots/narrow-attempt-06/` | 原failed05四图、成功06五图（四种view，query/explore同实际路径各留）；原52/32/failed8均不替换 |
+| `task6-final-review.json` | b345..f9唯一限定证据复审，规格/质量Approved、0Critical/Important/Minor，原P3关闭 |
+| `runtime-retention.json` | 543份运行资料复制与回读、15助手路径/语法检查、原四服务保留；临时目录删除被policy拒绝，原目录和固定目录副本均保留 |

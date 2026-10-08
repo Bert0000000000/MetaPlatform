@@ -1,0 +1,28 @@
+{
+  "goal": "01a11b4d-ab28-7ed0-9a89-929e5fae1374",
+  "implementation_source": "f892895200d57312fbb753866271d82f4d52af83",
+  "observed_at_utc": "2026-10-08T22:07:59.2956262Z",
+  "preserved_files": 543,
+  "preserved_bytes": 20223516,
+  "copy_and_readback_verified": true,
+  "relocated_helpers": 15,
+  "python_ast_checked": 11,
+  "powershell_syntax_checked": 1,
+  "node_syntax_checked": 3,
+  "historical_gate_and_failure_receipts_unchanged": true,
+  "native_config_reads_startup_only": true,
+  "original_and_stable_native_argv_ownership_guards_preserved": true,
+  "stable_runtime_git_ignored": true,
+  "live_services": {
+    "auth": 56966,
+    "vite": 39419,
+    "ontology": 20407,
+    "gateway": 8819
+  },
+  "services_stopped_or_restarted_during_retention": false,
+  "all_existing_worktrees_and_databases_preserved": true,
+  "owned_sdd_scratch_removed": false,
+  "cleanup_action": "exact guarded deletion of this plan scratch",
+  "cleanup_outcome": "CreateProcess rejected before execution; blocked by policy",
+  "fallback": "Retain original scratch and verified stable copy; do not retry deletion or bypass policy"
+}

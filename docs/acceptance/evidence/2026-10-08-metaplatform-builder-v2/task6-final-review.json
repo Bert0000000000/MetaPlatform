@@ -1,0 +1,13 @@
+{
+  "implementation_source": "f892895200d57312fbb753866271d82f4d52af83",
+  "review_base": "b3456cd818c013400dc45cdcbccf01fd0181051d",
+  "review_head": "f9b52bb62e052f77256e4f8ba392c2c095e0950f",
+  "report_sha256": "3d9726e0262cb856c34913662f0e6e1b2981c438ee9a222dc6c22c3ad8d509bf",
+  "scoped_spec_verdict": "Approved",
+  "scoped_quality_verdict": "Approved",
+  "critical": 0,
+  "important": 0,
+  "minor": 0,
+  "previous_p3": "closed",
+  "kind": "one scoped Task6 evidence rereview, not another production review or gate run"
+}

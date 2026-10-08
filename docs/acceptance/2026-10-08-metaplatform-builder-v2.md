@@ -1,6 +1,6 @@
 # MetaPlatform Builder V2 本地验收与复现
 
-更新：2026-10-09（Asia/Shanghai）。**状态：验收进行中，未满足全部退出条件。** 本文只登记当前工作树的源码、实际执行与明确边界，不声明 PR/主干 CI、部署、业务验收或 GA。运行回执必须与下表的 source commit 对应；早期绿色结果不能替代最终运行。
+更新：2026-10-09（Asia/Shanghai）。**状态：原型对齐的本地验收与交接完成。** 本文只登记当前工作树的源码、实际执行与明确边界，不声明 PR/主干 CI、部署、业务验收或 GA。运行回执必须与下表的 source commit 对应；早期绿色结果不能替代最终运行。
 
 ## 范围与源码
 
@@ -24,13 +24,13 @@
 | Builder / 受影响 IA | 通过 | `f8928952`；原完整 21/21，零 failure/error/skip，128.641s；701 文件指纹一致，21 精确身份核对 exit0 | [builder.json](evidence/2026-10-08-metaplatform-builder-v2/builder.json)；控制器原 runner 实跑，不冒称新公共入口 Builder 已运行 |
 | 四尺寸截图 | 52 named-ready 视图已像素检查；新增窄屏原生交互通过 | Ont20 + 平台代表32；另保留原 Builder gate32 和失败8图 | [清单](evidence/2026-10-08-metaplatform-builder-v2/screenshot-manifest.json)、[像素检查](evidence/2026-10-08-metaplatform-builder-v2/visual-inspection.json)、[窄屏交互](evidence/2026-10-08-metaplatform-builder-v2/narrow-interaction.json)；不以无整页溢出认证所有局部控件 |
 | 契约工具 | 通过，字节适用当前源 | 控制器在 `158ab236` 实际 contract 7/7、validate_contracts exit 0；`158..f892` backend/contract/gate 未变 | [contracts.json](evidence/2026-10-08-metaplatform-builder-v2/contracts.json)；JUnit 7 项安全投影，validator exit 来源为控制器确认而非本证据 Agent 重跑 |
-| 全分支最终审查 | 源码 findings 已关闭；运行条件保留 | 整分支首审加唯一限定最终修复复审，两 P2 addressed；规格/质量 Approved | [review.json](evidence/2026-10-08-metaplatform-builder-v2/review.json)；合入评估 conditional，未认证最终运行/证据退出 |
+| 全分支最终审查 | 源码 findings 与本地证据复审完成 | 整分支首审加唯一限定最终修复复审，两 P2 addressed；规格/质量 Approved | [review.json](evidence/2026-10-08-metaplatform-builder-v2/review.json)；本地实际运行另有回执；不认证CI/部署/业务验收 |
 
 早期 PG 123/123、core 9/9、migration 2/2 是旧源码基线，不能填充本表。上述 PG 绿色来自新的完整原六组运行（migration77、sync9、atomic5、cardinality3、versions16、query13），collection/JUnit 由原 gate 逐条核对，耗时 242.203s。当前公开回执保留真正执行的 `158ab236` source，而以只读后端 1419 文件指纹与空 diff 证明对当前 f892 字节适用。
 
 PG 先前有预检连接失败、122/123 的 fixture connection error、122/123 的 legacy interface assertion，以及另一 setup case 的 unexpected connection close；[先前失败投影](evidence/2026-10-08-metaplatform-builder-v2/postgres-latest-failed.json) 与完整私有失败尝试均保留。原 focused 查询 1/1 没有替代完整回归。最终同一独立 DB/角色以显式 `sslmode=disable/gssencmode=disable` 运行；之前 prefer/disable 实际连接均 SSL=false，这不是 TLS 降级或 SSL 根因证据。安全检查没有确认服务重启/OOM/PANIC 原因，接口读取错误是否关联 assertion 未证实。Windows 端口转发/传输只是调查方向，**没有确认根因**。Linux container runner 尝试在 ownership inspect 500 前失败，没有创建/执行该 gate；没有重启共享 Docker Desktop/WSL。
 
-外部状态一度恢复，真实 IAM200 后完成当前 core9、migration2、Builder21 与52视图。随后只读窄屏探针两次前 UI provider 失败，最后一次授权 bounded retry 严格登录仍504；停止重试、无服务变更。先前同 CID Keycloak/IAM504 与 CreateProcess policy拒绝JWKS探针保留历史，不证明根因或永久恢复。随后实际独立CUA登录200/身份与个人设置匹配产生新provider可用性证据，第5/6次窄屏探针严格前置通过；第6次全项通过。Task6仍待控制器最终证据交接/运行区保留与goal关闭，不宣布全部退出条件完成。
+外部状态一度恢复，真实 IAM200 后完成当前 core9、migration2、Builder21 与52视图。随后只读窄屏探针两次前 UI provider 失败，最后一次授权 bounded retry 严格登录仍504；停止重试、无服务变更。先前同 CID Keycloak/IAM504 与 CreateProcess policy拒绝JWKS探针保留历史，不证明根因或永久恢复。随后实际独立CUA登录200/身份与个人设置匹配产生新provider可用性证据，第5/6次窄屏探针严格前置通过；第6次全项通过。控制器已完成最终限定证据复审与运行资料保留；Task6本地退出条件已达，临时目录保留例外见末尾。
 
 Builder 旧完整 21/21 后曾出现 14 通过/7 失败及 16 通过/5 失败；失败发生在登录前置（504/504/504），未达到产品断言。现有 builder-only helper 对 502/503/504 最多三次尝试并逐项记录 HTTP 状态；401/403/422、缺身份或断言失败不重试成绿色、不 skip。其它错误 selector/DTO 假设和被拒绝的 RID 尝试也保留，正向 fixture 修正不算产品问题已修复。
 
@@ -112,8 +112,10 @@ $pnpm = Join-Path $env:APPDATA 'npm/node_modules/pnpm/bin/pnpm.cjs'
 
 独立 [CUA实际UI登录](evidence/2026-10-08-metaplatform-builder-v2/current-ui-login.json) 为另一证据：本轮IAB59260预填表单真实login200/nonblank UserInfo-backed ID、签名tenant，authenticated-page reload后settingsGET200请求/响应/真实loginID和bearer匹配、实际light。初挂载登录页的SettingsProvider需authenticated-page reload才观察到该settingsGET，是继承限制；profile默认u-1/超级管理员呈现不能用作实际身份/角色授权proof。未拦截copilot上游DNS失败也保留限界，此证据不认证该非Ont服务。CUA没有保存/传输token，不以其代替独立native探针自身的严格前置。
 
-Task6证据增量 `041..b345` 复审Approved，0Critical/0Important/1Minor；唯一README旧“未提交”状态已修正，实际包已提交b345。本次交互补证待控制器限定复审，运行区最终保留与交接/关闭goal仍由控制器完成。
+Task6证据增量 `041..b345` 复审Approved，0Critical/0Important/1Minor；唯一README旧“未提交”状态已修正，实际包已提交b345。交互补证 `b345..f9b52bb6` 唯一限定复审的规格与质量均Approved，0Critical/Important/Minor，原P3关闭，见 [最终证据复审](evidence/2026-10-08-metaplatform-builder-v2/task6-final-review.json)。控制器已完成运行保留与本地交接。
 
 本轮预览 [http://127.0.0.1:59260](http://127.0.0.1:59260) 保留。独立 ports：gateway58110、auth58111、Ont58017、PG55493、Keycloak55389、Redis55387；容器 `codex-242e-builder-v2-*`，goal `01a11b4d-ab28-7ed0-9a89-929e5fae1374`。不使用/重启其它工作树、共享服务或 DB，不释放端口。Docker host source-mount 曾 ENOMEM，仅本轮已确认拥有的 API 尝试停止；当前 native source，不能以旧 image 版本冒称当前源码。
 
-Task 6 未完成，计划/SDD 运行目录和全部既有服务/数据/工作树继续保留。最终安全证据入 Git 后，控制器可将仍需的 helper/private runtime 显式镜像到 Git ignored `.superpowers/runtime/builder-v2`，逐个验证 absolute 源/目标路径和文件 allowlist、更新 helper 路径且不重启预览；**目前该镜像尚未执行**。compose/private config/raw log/auth-state/HAR/trace 不入公共证据；不删除现存工作树，不 reset/prune/remove/递归清理共享资源。一次 helper 源读取意外显示了源码公开演示 fixture 字面量，未读取/持久化 private-config、JWT 或私人环境值；后续只做内部字段 allowlist 提取。
+Task 6 的本地退出条件已达。控制器将543份运行助手、配置和历史记录显式复制到Git ignored `.superpowers/runtime/builder-v2`，逐个核验absolute路径与SHA回读；15个运行助手路径已更新并完成Python11/PowerShell1/Node3语法检查，原live argv与未来stable argv所有权检查均保留。native配置仅启动时读取，四个原服务session仍运行，未重启/停止服务或修改数据库/其他工作树。[运行保留回执](evidence/2026-10-08-metaplatform-builder-v2/runtime-retention.json) 仅含安全元数据；compose/private config/raw log/auth-state/HAR/trace不入公共证据。一次helper源读取意外显示了源码公开演示fixture字面量，未读取/持久化private-config、JWT或私人环境值；后续只做内部字段allowlist提取。
+
+临时目录清理由 subagent-driven-development 技能的“delete this plan's workspace”触发。自动审批审查在进程执行前拒绝了仅本轮已核验SDD目录的删除，返回原因仅为 `blocked by policy`；保留原目录和已核验固定目录副本，不重试删除或绕过策略。原型实现、实际本地门禁与预览交接已完成，此资料保留例外不外推为CI、部署或业务验收。
