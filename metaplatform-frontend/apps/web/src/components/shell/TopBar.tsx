@@ -1,8 +1,8 @@
 import { Avatar, Badge, Breadcrumb, Button, Dropdown, Input, Tabs, Tag } from '@douyinfe/semi-ui';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Layers, LogOut, Search, Settings } from 'lucide-react';
+import { Bell, Layers, LogOut, MessageSquare, Search, Settings, Sparkles } from 'lucide-react';
 import { useAuth } from '@mate/shared';
-import { DOMAINS, resolveDomain, resolveDomainTab, resolveSubTab } from './domains';
+import { DOMAINS, primaryDomains, resolveDomain, resolveDomainTab, resolveSubTab } from './domains';
 import { useShell } from './ShellContext';
 import { ontologyBreadcrumb } from '@/pages/ontology/navigation';
 
@@ -16,7 +16,7 @@ const ENV_LABEL =
 export default function TopBar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setCommandOpen, navMode, toggleNavMode } = useShell();
+  const { setCommandOpen, openCopilot, navMode, toggleNavMode } = useShell();
   const { user, logout } = useAuth();
 
   const domain = resolveDomain(location.pathname);
@@ -44,7 +44,7 @@ export default function TopBar() {
         className="mp-topnav"
         type="line"
         activeKey={domain?.key ?? ''}
-        tabList={DOMAINS.map((d) => ({ tab: d.label, itemKey: d.key, icon: d.icon }))}
+        tabList={primaryDomains().map((d) => ({ tab: d.label, itemKey: d.key, icon: d.icon }))}
         onChange={(key) => {
           const target = DOMAINS.find((d) => d.key === key);
           if (target) navigate(target.path);
@@ -62,6 +62,11 @@ export default function TopBar() {
       />
 
       <div className="mp-topbar-right">
+        <Button theme="borderless" type="tertiary" icon={<Sparkles size={17} />}
+          aria-label="打开 SuperAI Copilot" title="SuperAI Copilot" onClick={openCopilot} />
+        <Button theme="borderless" type="tertiary" icon={<MessageSquare size={17} />}
+          aria-label="打开 SuperAI 会话" title="SuperAI 完整会话"
+          onClick={() => navigate(DOMAINS.find(entry => entry.key === 'superai')!.path)} />
         <Input
           className="mp-searchbar"
           prefix={<Search size={15} strokeWidth={1.5} />}

@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 import { Navigate, Route, useSearchParams } from 'react-router-dom';
 import '@/pages/ontology/ontology.css';
-import OntologyTabLayout from '@/pages/ontology/layout/OntologyTabLayout';
+import OntologyTabLayout, { ModelValidationAliasRoute } from '@/pages/ontology/layout/OntologyTabLayout';
 import { ontologyWorkspaceDefaultPath } from '@/pages/ontology/navigation';
 import OverviewPage from '@/pages/ontology/overview/OverviewPage';
 import ObjectExplorerPage from '@/pages/ontology/explorer/ObjectExplorerPage';
@@ -11,7 +11,6 @@ import OntologyLineagePage from '@/pages/ontology/data/lineage/OntologyLineagePa
 import DraftsPage from '@/pages/ontology/governance/drafts/DraftsPage';
 import ReleasesPage from '@/pages/ontology/governance/releases/ReleasesPage';
 import UsagePage from '@/pages/ontology/governance/usage/UsagePage';
-import LintPage from '@/pages/ontology/governance/lint/LintPage';
 import SecurityPage from '@/pages/ontology/governance/security/SecurityPage';
 import ImportExportPage from '@/pages/ontology/governance/import-export/ImportExportPage';
 import AuditPage from '@/pages/ontology/governance/audit/AuditPage';
@@ -131,7 +130,7 @@ export const ontologyRoutes = (
       <Route path="drafts" element={<DraftsPage />} />
       <Route path="releases" element={<ReleasesPage />} />
       <Route path="usage" element={<UsagePage />} />
-      <Route path="lint" element={<LintPage />} />
+      <Route path="lint" element={<ModelValidationAliasRoute />} />
       <Route path="security" element={<SecurityPage />} />
       <Route path="import-export" element={<ImportExportPage />} />
       <Route path="audit" element={<AuditPage />} />

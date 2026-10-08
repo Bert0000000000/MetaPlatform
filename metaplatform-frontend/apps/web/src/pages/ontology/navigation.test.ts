@@ -23,7 +23,8 @@ describe('本体导航路径解析', () => {
     expect(DOMAINS.find(d => d.key === 'explore')?.tabs.map(c => c.path))
       .toContain('/ontology/explore/objectset');
     const entries = ontologyPaletteEntries();
-    expect(entries.find(e => e.key === 'ontology:model:graph')?.label).toBe('本体工作室 · 模型工作台');
+    expect(entries.find(e => e.key === 'ontology:model:graph')?.label).toBe('模型工作台');
+    expect(buildNavigationIndex().find(e => e.key === 'ontology:model:graph')?.label).toBe('本体工作室 · 模型工作台');
     expect(entries.some(e => e.key.endsWith('saved-queries') || e.key.endsWith('approvals'))).toBe(false);
   });
 });

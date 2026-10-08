@@ -1,10 +1,19 @@
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import OntologyDomainShell from '../shell/OntologyDomainShell';
 import OntologySideNav from './OntologySideNav';
 import OntologyContextBar from './OntologyContextBar';
 import './workspace.css';
+import { resolveDomain } from '@/components/shell/domains';
+import { resolveOntologyNav } from '../navigation';
+
+/** Existing model-check deep link uses the same validation resource and retains route context. */
+export function ModelValidationAliasRoute() {
+  const location = useLocation();
+  const target = resolveOntologyNav(location.pathname)!.item!.path!;
+  return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
+}
 
 /**
  * 本体建设工作区（ADR-0069 2026-10-08）；保留布局文件名以兼容路由引用。
@@ -30,6 +39,10 @@ export default function OntologyTabLayout() {
   useEffect(() => {
     if (navOpen) navRef.current?.querySelector<HTMLAnchorElement>('a[href]')?.focus();
   }, [navOpen]);
+  // Exploration and shared policy pages keep ontology context/height without construction navigation.
+  if (resolveDomain(location.pathname)?.key !== 'ontology') {
+    return <OntologyDomainShell><Outlet /></OntologyDomainShell>;
+  }
   return (
     <div className="mp-page-full mp-onto-workspace" data-nav-open={navOpen}
       onKeyDown={event => {

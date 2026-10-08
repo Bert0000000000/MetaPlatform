@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import AppShell from './AppShell';
-import OntologyTabLayout from '@/pages/ontology/layout/OntologyTabLayout';
+import OntologyTabLayout, { ModelValidationAliasRoute } from '@/pages/ontology/layout/OntologyTabLayout';
 import { getOntologyContextSnapshot } from '@/pages/ontology/hooks/assistantContext';
 import { streamAgentChat } from '@/api/superai/chat';
 
@@ -39,6 +39,7 @@ function renderShell(path: string) {
     children: [
       { path: '/ontology', element: <OntologyTabLayout />, children: [
         { index: true, element: <h1>总览内容</h1> },
+        { path: 'governance/lint', element: <ModelValidationAliasRoute /> },
         { path: '*', element: <h1>本体资源内容</h1> },
       ] },
       { path: '/home', element: <h1>工作台内容</h1> },
@@ -177,5 +178,15 @@ describe('本体建设工作区导航', () => {
     fireEvent.change(search, { target: { value: '会话' } });
     fireEvent.keyDown(search, { key: 'Enter' });
     expect(router.state.location.pathname).toBe('/superai/chat');
+  });
+
+  it('旧模型检查路径通过真实别名组件进入同一校验页并保留查询与片段', async () => {
+    const router = renderShell('/ontology/governance/lint?typeRef=ont.t.obj.customer.v1&class=legacy#findings');
+    await act(async () => {});
+    expect(router.state.location.pathname).toBe('/ontology/model/validation');
+    expect(router.state.location.search).toBe('?typeRef=ont.t.obj.customer.v1&class=legacy');
+    expect(router.state.location.hash).toBe('#findings');
+    expect(screen.getByRole('navigation', { name: '本体上下文' })).toHaveTextContent('运行与质量');
+    expect(screen.getByRole('link', { name: '模型校验' })).toHaveAttribute('aria-current', 'page');
   });
 });

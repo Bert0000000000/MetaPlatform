@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, Command, CornerDownLeft, Search } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { buildNavigationIndex, type PaletteEntry } from './domains';
-import { ontologyPaletteEntries } from '@/pages/ontology/navigation';
 import { useShell } from './ShellContext';
 
 const RECENT_KEY = 'mp_cmdk_recent';
@@ -51,12 +50,7 @@ export default function CommandPalette() {
   const listRef = useRef<HTMLDivElement>(null);
 
   const entries = useMemo<CommandEntry[]>(() => {
-    // ADR-0069：本体域的细粒度索引来自 ONTOLOGY_NAV（active 子页面，中文关键词），
-    // 替换 domains.tabs 的粗粒度 tab 条目；其余域不变。
-    const nav: PaletteEntry[] = [
-      ...buildNavigationIndex().filter((e) => !e.key.startsWith('tab:ontology:')),
-      ...ontologyPaletteEntries(),
-    ];
+    const nav = buildNavigationIndex();
     const byKey = new Map(nav.map((e) => [e.key, e]));
     const recent: CommandEntry[] = recentKeys
       .map((k) => byKey.get(k))

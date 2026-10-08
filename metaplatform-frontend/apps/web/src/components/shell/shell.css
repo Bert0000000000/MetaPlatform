@@ -116,7 +116,8 @@
 }
 
 .mp-topnav {
-  flex: none;
+  flex: 1;
+  min-width: 0;
   max-width: 46%;
 }
 
@@ -213,7 +214,7 @@
   .mp-searchbar { width: var(--mp-subtab-h); }
   .mp-searchbar .mp-kbd, .mp-user-name, .mp-env-chip, .mp-topbar .mp-crumbs { display: none; }
   .mp-topbar-right { min-width: 0; gap: var(--mp-space-1); }
-  .mp-app[data-nav='top'] .mp-topnav { max-width: calc(100vw - 200px); overflow: auto; }
+  .mp-app[data-nav='top'] .mp-topnav { max-width: none; overflow: auto; }
 }
 
 /* ---------- 页内 tab ---------- */

@@ -19,7 +19,7 @@ export default function OntologyContextBar({ navOpen, onToggleNav, toggleRef }: 
       {navOpen ? <X size={18} /> : <Menu size={18} />}
     </button>
     <nav aria-label="本体上下文"><ol className="mp-onto-crumbs">
-      <li><Link to={ontologyWorkspaceDefaultPath()}>本体</Link></li>
+      <li><Link to={ontologyWorkspaceDefaultPath()}>本体工作室</Link></li>
       {crumbs.map((crumb, index) => <li key={`${crumb.name}-${index}`}>
         <ChevronRight size={13} aria-hidden="true" />
         {crumb.path && index < crumbs.length - 1

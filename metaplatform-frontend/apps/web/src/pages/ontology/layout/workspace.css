@@ -44,6 +44,7 @@
 .mp-onto-nav-group-link { font-weight: 600; }
 .mp-onto-nav-group[data-active='true'] > .mp-onto-nav-group-link { color: var(--semi-color-primary); }
 .mp-onto-nav-children { list-style: none; padding: 0 0 0 var(--mp-space-6); margin: var(--mp-space-1) 0; }
+.mp-onto-nav-advanced { margin-left: auto; color: var(--semi-color-text-2); font-size: 10px; }
 .mp-onto-nav-children a[aria-current='page'], .mp-onto-nav-group-link[aria-current='page'] {
   background: var(--semi-color-primary-light-default);
   color: var(--semi-color-primary);

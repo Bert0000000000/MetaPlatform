@@ -2,7 +2,7 @@ import { Nav } from '@douyinfe/semi-ui';
 import { useNavigate } from 'react-router-dom';
 import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
-import { DOMAINS, type DomainDef, type DomainKey } from './domains';
+import { DOMAINS, primaryDomains, type DomainDef, type DomainKey } from './domains';
 import { useShell } from './ShellContext';
 
 export interface IconRailProps {
@@ -20,7 +20,7 @@ export default function IconRail({ active }: IconRailProps) {
   const { toggleCopilot, copilotOpen } = useShell();
   const { resolvedTheme, setTheme } = useSettings();
 
-  const items = DOMAINS.map((d) => ({
+  const items = primaryDomains().map((d) => ({
     itemKey: d.key,
     text: d.label,
     icon: d.icon,
