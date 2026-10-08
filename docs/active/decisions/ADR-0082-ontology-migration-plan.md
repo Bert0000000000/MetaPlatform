@@ -111,6 +111,9 @@ WHERE class_rid = ANY(<被下线的旧rids>) AND tenant_id = <租户>;
 - 家族键沿用 `(tenant, slug)`。live、baseline 引用、版本行的 class_rid 及其
   definition、target 草稿必须属于该租户和家族；快照读取显式按租户过滤。
   跨租户引用返回 403，同租户跨家族或非法定义返回 422，未找到返回 404。
+- 评估请求的可选 `baseline`、`target_payload`、`options` 允许 null，与省略字段
+  同义（现有前端默认序列化方式）；空字符串 baseline 也保留默认基线语义。
+  非 null 的字段仍按引用、ObjectType 对象、选项对象严格校验。
 - 执行根据家族内真实快照的 `from_checksum` 和当前 live 重建规范计划，仅允许
   显式 rename、drops=preserve/drop、pk_missing=abort/skip。未知字段、非法类型、
   伪造校验和/目标/format/reattach、越界属性或扩大步骤范围返回 422。
