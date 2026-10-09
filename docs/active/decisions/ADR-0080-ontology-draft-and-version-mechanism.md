@@ -149,3 +149,26 @@
 - `ont_type_version` 中 ONT-VERSION-MECHANISM **之前**的旧血缘行保持原样、被读路径跳过；
   不做数据回填（它们不携带定义，回填无源）。
 - 并发保护是**乐观**的：不做悲观锁；库不一致时以先提交者为准，后提交者收到 409。
+
+## 6. 2026-10-09 兼容纠正：草稿丢弃路由
+
+2026-09-23 的“不新增端点”是原版本机制实施批的范围。本补记纠正既有草稿丢弃操作的
+规范入口与路由登记，不改变草稿、发布版本或正式对象的仓储语义。
+
+- 草稿丢弃的规范入口为 `DELETE /api/v1/ont/v2/object-types/{rid}/wip`，保持
+  `operationId: ontDiscardV2SchemaWip`。只删除该 RID 的 WIP，保留已发布的 ObjectType。
+- 原 `DELETE /api/v1/ont/v2/object-types/wip/{rid}` 保留为兼容别名，与规范入口调用
+  **同一 handler**，保留相同租户校验及响应。已有前端调用可继续使用原路径；不要求
+  运行中的服务或预览立即切换入口。
+- 两个草稿丢弃路由必须登记在通配 `DELETE /object-types/{rid:path}` 之前，否则旧入口
+  会被解释为删除 `wip/<rid>` 类型，并错误地返回跨租户拒绝。
+- 公开 OpenAPI 的 `paths` 只登记规范入口；兼容别名使用 `include_in_schema=False`，
+  其方法、完整路径、废弃标记及 schema 可见性必须在规范操作的 description 与
+  `x-mate-compatibility-aliases` 中明确登记。保留真实兼容功能与文档，不关闭或忽略
+  `no-ambiguous-paths`。该规则只比较路径形状，无法利用 HTTP 方法及 RID 约束区分
+  `wip/{rid}` 与 `{rid}/branch` 等接口。
+- 回归必须通过真实 HTTP 路由验证：规范入口和旧别名都丢弃 WIP且保留正式定义、拒绝
+  外租户请求；正式对象 DELETE 仍调用原行为。契约验证规范 operationId、兼容记录及
+  生成物，traceability 的 operationId 与需求映射保持不变。
+
+这项纠正的源码与契约测试是本地证据；运行服务的行为、远端 CI 和部署验收分别记录。
