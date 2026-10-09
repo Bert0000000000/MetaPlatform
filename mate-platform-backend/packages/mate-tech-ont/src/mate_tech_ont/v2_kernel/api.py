@@ -745,6 +745,43 @@ class BackingDatasourceDTO(BaseModel):
 
 
 @router.delete(
+    "/object-types/{rid:path}/wip",
+    response_model=dict,
+    summary="Discard staged schema WIP",
+    operation_id="ontDiscardV2SchemaWip",
+    openapi_extra={
+        "x-mate-compatibility-aliases": [
+            {
+                "method": "DELETE",
+                "path": "/api/v1/ont/v2/object-types/wip/{rid}",
+                "deprecated": True,
+                "includeInSchema": False,
+            }
+        ]
+    },
+)
+@router.delete(
+    "/object-types/wip/{rid:path}",
+    response_model=dict,
+    operation_id="ontDiscardV2SchemaWipCompatibility",
+    deprecated=True,
+    include_in_schema=False,
+)
+async def discard_schema_wip(rid: str, request: Request) -> dict:
+    """Discard schema WIP while retaining the published ObjectType.
+
+    Compatibility alias: DELETE /api/v1/ont/v2/object-types/wip/{rid}.
+    Both routes share this handler and tenant guard. They must precede the
+    ObjectType DELETE catch-all so the compatibility route cannot delete a type.
+    """
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
+    ok = await _call_scoped(request, "delete_schema_wip", rid)
+    return {"rid": rid, "discarded": bool(ok)}
+
+
+@router.delete(
     "/object-types/{rid:path}",
     response_model=dict,
     operation_id="ontDeleteV2ObjectType",
@@ -1657,19 +1694,6 @@ async def apply_schema_wip(
     saved = await _upsert_object_type_gated(dto, request, ctx)
     await _call_scoped(request, "delete_schema_wip", rid)
     return _ot_to_dto(saved)
-
-
-@router.delete(
-    "/object-types/wip/{rid:path}",
-    response_model=dict,
-    operation_id="ontDiscardV2SchemaWip",
-)
-async def discard_schema_wip(rid: str, request: Request) -> dict:
-    ctx = _ctx(request)
-    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
-        raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
-    ok = await _call_scoped(request, "delete_schema_wip", rid)
-    return {"rid": rid, "discarded": bool(ok)}
 
 
 def _assert_publishable(ot: ObjectType) -> None:
