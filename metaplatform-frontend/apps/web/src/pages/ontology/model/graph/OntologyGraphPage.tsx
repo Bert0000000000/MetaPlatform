@@ -3,14 +3,13 @@ import OntologyGraphView from '../OntologyGraphView';
 import '../../ontology.css';
 
 /**
- * 模型图谱（IA2-2 成正式路由 /ontology/model/graph）。
- * 节点是对象类型，边是关系类型 —— 本体即图谱（09-17 由数据中心迁入概念建模，
- * IA v2 随语义模型组获得正式 URL）。视图本体只移动不重写。
+ * 模型工作台（保留 IA2-2 正式路由 /ontology/model/graph）。
+ * 使用真实对象类型卡片、关系连线与 Inspector；实例图仍沿用各自的 ForceGraph。
  */
 export default function OntologyGraphPage() {
   return (
     <>
-      <PageHeader title="模型图谱" desc="节点是对象类型，边是关系类型 —— 本体即图谱" />
+      <PageHeader title="模型工作台" desc="定义对象、属性与关系，校验真实模型定义" />
       <OntologyGraphView />
     </>
   );

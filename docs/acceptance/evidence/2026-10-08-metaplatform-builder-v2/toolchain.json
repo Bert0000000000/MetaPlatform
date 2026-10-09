@@ -1,0 +1,22 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "evidence_kind": "tool versions and workspace lock fingerprints; no test result",
+  "python": "3.12.13",
+  "node": "v22.23.3",
+  "pnpm": "11.15.1",
+  "uv": "uv 0.12.0 (b88d7c5c4 2026-07-28 x86_64-pc-windows-msvc)",
+  "python_packages": {
+    "fastapi": "0.140.4",
+    "starlette": "1.3.1",
+    "uvicorn": "0.51.0",
+    "httpx": "0.28.1",
+    "psycopg": "3.3.4",
+    "pytest": "9.1.1"
+  },
+  "workspace_lock_sha256": {
+    "mate-platform-backend/uv.lock": "c705cfab4e7536cdeab41dbafbe954491b9d7e4fa1f28a2eb9c62b4743051aa0",
+    "metaplatform-frontend/pnpm-lock.yaml": "97a7948584f73c92f32cf50b14f54677cb453977d5e3575f043937c297cf7f68",
+    "mate-platform-backend/contracts/package-lock.json": "e60799a439e390def60e486333dd9b8e11b95f1a8c57a0bf3adbcc6e538dda00"
+  },
+  "recorded_date": "2026-10-09 Asia/Shanghai"
+}

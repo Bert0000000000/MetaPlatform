@@ -1,0 +1,53 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "status": "PASSED_LOCAL_NATIVE_PROBE",
+  "attempts": [
+    {
+      "attempt": 1,
+      "exit_code": 1,
+      "classification": "Probe sampled final geometry before native wheel/trial settle; preserved failure does not establish product defect"
+    },
+    {
+      "attempt": 2,
+      "exit_code": 1,
+      "classification": "Actual native focus/local-scroll and final trial actionability observed; CSS-state comparison failed restoration measurement; no product defect established",
+      "observed_local_container": "mp-chat-columns",
+      "client_width": 286,
+      "scroll_width": 680,
+      "scroll_left_after_native_focus": 213,
+      "final_post_settle_x": 227.46875,
+      "final_trial_actionable": true
+    },
+    {
+      "attempt": 3,
+      "exit_code": 1,
+      "classification": "Strict real provider auth before UI failed; no behavior receipt"
+    },
+    {
+      "attempt": 4,
+      "exit_code": 1,
+      "classification": "Authorized bounded retry: login HTTP504 before UI; stopped without another retry; no behavior receipt"
+    },
+    {
+      "attempt": 5,
+      "exit_code": 1,
+      "classification": "Actual strict identity/settings succeeded; chat semantic restoration/type native action/query/explore partial proof; whole attempt failed at immediate gov width sample before actual180ms CSS transition settled; failure preserved"
+    },
+    {
+      "attempt": 6,
+      "exit_code": 0,
+      "classification": "Full native probe passes after named collapsed/restored geometry settle; unchanged greater-width/actionability/restoration assertions",
+      "results": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  ],
+  "pending": [],
+  "mutations": "No settings PUT/message send/DB writes in read-only captures/probes; no direct scrollLeft assignment",
+  "preservation": "Original failed JSON/PNG/XML/private logs retained in ignored runtime; no stale geometry copied as new successful proof",
+  "narrow_panel_limitation": "Initial clipped local panes still need explicit collapse/native scrolling; actual query/explore and gov collapse/control trial/restoration verified. This is local current-source UI evidence, not live ARCH service integration.",
+  "actual_completion_receipt": "narrow-completion.json"
+}

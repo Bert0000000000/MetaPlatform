@@ -1,0 +1,886 @@
+{
+  "sourceCommit": "f892895200d57312fbb753866271d82f4d52af83",
+  "checkoutHead": "041cb1582eb74595b5cbb1c1f615a3dd39e3053b",
+  "evidenceKind": "twenty current-source real Ont read-only ready captures; no HTTP substitutions; independent actual write acceptance remains in Builder gate",
+  "authentication": {
+    "actualUserInfoBackedId": true,
+    "signedTenant": true,
+    "inventedIdOrRoles": false
+  },
+  "selectedModel": {
+    "rid": "ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+    "properties": 1,
+    "materializedCount": 2,
+    "backingSources": 1
+  },
+  "records": [
+    {
+      "page": "graph",
+      "width": 1440,
+      "height": 1000,
+      "route": "/ontology/model/graph?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual complete model/link list; selected actual Inspector rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "graph-1440.png"
+    },
+    {
+      "page": "graph",
+      "width": 1920,
+      "height": 1080,
+      "route": "/ontology/model/graph?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual complete model/link list; selected actual Inspector rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "graph-1920.png"
+    },
+    {
+      "page": "graph",
+      "width": 1024,
+      "height": 900,
+      "route": "/ontology/model/graph?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual complete model/link list; selected actual Inspector rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "graph-1024.png"
+    },
+    {
+      "page": "graph",
+      "width": 390,
+      "height": 844,
+      "route": "/ontology/model/graph?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual complete model/link list; selected actual Inspector rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "graph-390.png"
+    },
+    {
+      "page": "type",
+      "width": 1440,
+      "height": 1000,
+      "route": "/ontology/model/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/properties",
+      "ready": [
+        "actual type and seven auxiliary requests successful; actual property table rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/datasources",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/materialization",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/action-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/value-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/interfaces",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "type-1440.png"
+    },
+    {
+      "page": "type",
+      "width": 1920,
+      "height": 1080,
+      "route": "/ontology/model/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/properties",
+      "ready": [
+        "actual type and seven auxiliary requests successful; actual property table rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/datasources",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/materialization",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/action-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/value-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/interfaces",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "type-1920.png"
+    },
+    {
+      "page": "type",
+      "width": 1024,
+      "height": 900,
+      "route": "/ontology/model/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/properties",
+      "ready": [
+        "actual type and seven auxiliary requests successful; actual property table rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/datasources",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/materialization",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/action-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/value-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/interfaces",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "type-1024.png"
+    },
+    {
+      "page": "type",
+      "width": 390,
+      "height": 844,
+      "route": "/ontology/model/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/properties",
+      "ready": [
+        "actual type and seven auxiliary requests successful; actual property table rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/link-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/datasources",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/materialization",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/action-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/value-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/interfaces",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "type-390.png"
+    },
+    {
+      "page": "mapping",
+      "width": 1440,
+      "height": 1000,
+      "route": "/ontology/data/mappings?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual type/binding/materialization reads successful; saved source and count2 rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/datasources",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/materialization",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "mapping-1440.png"
+    },
+    {
+      "page": "mapping",
+      "width": 1920,
+      "height": 1080,
+      "route": "/ontology/data/mappings?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual type/binding/materialization reads successful; saved source and count2 rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/datasources",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/materialization",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "mapping-1920.png"
+    },
+    {
+      "page": "mapping",
+      "width": 1024,
+      "height": 900,
+      "route": "/ontology/data/mappings?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual type/binding/materialization reads successful; saved source and count2 rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/datasources",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/materialization",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "mapping-1024.png"
+    },
+    {
+      "page": "mapping",
+      "width": 390,
+      "height": 844,
+      "route": "/ontology/data/mappings?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual type/binding/materialization reads successful; saved source and count2 rendered"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/datasources",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/materialization",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "mapping-390.png"
+    },
+    {
+      "page": "query",
+      "width": 1440,
+      "height": 1000,
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual selected-class individuals read returned2; rendered2/2 table"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/individuals",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "query-1440.png"
+    },
+    {
+      "page": "query",
+      "width": 1920,
+      "height": 1080,
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual selected-class individuals read returned2; rendered2/2 table"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/individuals",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "query-1920.png"
+    },
+    {
+      "page": "query",
+      "width": 1024,
+      "height": 900,
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual selected-class individuals read returned2; rendered2/2 table"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/individuals",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "query-1024.png"
+    },
+    {
+      "page": "query",
+      "width": 390,
+      "height": 844,
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual selected-class individuals read returned2; rendered2/2 table"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/individuals",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "query-390.png"
+    },
+    {
+      "page": "release",
+      "width": 1440,
+      "height": 1000,
+      "route": "/ontology/governance/releases?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual WIP/types/version reads successful; publication/current-live visible; draft loader hidden"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/wip",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/versions/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000,
+        "scrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "documentHeight": 1000
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "release-1440.png"
+    },
+    {
+      "page": "release",
+      "width": 1920,
+      "height": 1080,
+      "route": "/ontology/governance/releases?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual WIP/types/version reads successful; publication/current-live visible; draft loader hidden"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/wip",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/versions/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "documentHeight": 1080
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "release-1920.png"
+    },
+    {
+      "page": "release",
+      "width": 1024,
+      "height": 900,
+      "route": "/ontology/governance/releases?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual WIP/types/version reads successful; publication/current-live visible; draft loader hidden"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/wip",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/versions/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 1024,
+        "height": 900,
+        "scrollWidth": 1024,
+        "bodyScrollWidth": 1024,
+        "documentHeight": 900
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "release-1024.png"
+    },
+    {
+      "page": "release",
+      "width": 390,
+      "height": 844,
+      "route": "/ontology/governance/releases?typeRef=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "ready": [
+        "actual WIP/types/version reads successful; publication/current-live visible; draft loader hidden"
+      ],
+      "requiredReads": [
+        {
+          "path": "/api/v1/ont/v2/object-types",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/object-types/wip",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/ont/v2/versions/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+          "status": 200
+        }
+      ],
+      "preference": {
+        "requestHasActualUserId": true,
+        "responseMatchesActualUser": true,
+        "expectedTheme": "light",
+        "resolvedTheme": "light"
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "documentHeight": 844
+      },
+      "documentOverflow": false,
+      "pageErrors": [],
+      "apiFailures": [],
+      "mutations": [],
+      "screenshot": "release-390.png"
+    }
+  ]
+}

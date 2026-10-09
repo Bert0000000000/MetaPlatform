@@ -19,7 +19,7 @@ security:
 paths:
   /api/v1/dashboard/auth/login:
     post:
-      summary: "Workbench login (DEV: returns synthetic tokens, NOT real IAM)"
+      summary: "Workbench login via Keycloak; provider tokens and best-effort UserInfo identity"
       tags:
         - dashboard
       security: []
@@ -47,7 +47,7 @@ paths:
         "400":
           description: Missing username or password
       operationId: dashboardPostDashboardAuthLogin
-      description: "Workbench login (DEV: returns synthetic tokens, NOT real IAM)"
+      description: "Workbench login via Keycloak; provider tokens and best-effort UserInfo identity"
       x-mate-owner: business-workbench
       x-mate-permission: dashboard.post
       x-mate-requirements:

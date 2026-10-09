@@ -1,0 +1,238 @@
+{
+  "sourceCommit": "f892895200d57312fbb753866271d82f4d52af83",
+  "width": 390,
+  "height": 844,
+  "route": "/ontology/model/object-types/ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1/properties",
+  "target": "审阅与发布",
+  "interaction": "ordinary native Tab from page start, then native click actionability trial; no mutation/navigation",
+  "actualUserInfoBackedIdentity": true,
+  "settingsMatchActualUser": true,
+  "tabs": 28,
+  "before": {
+    "bounds": {
+      "x": 311,
+      "y": 329.5,
+      "width": 106,
+      "height": 37
+    },
+    "containers": [
+      {
+        "className": "mp-page-head",
+        "overflowX": "visible",
+        "clientWidth": 238,
+        "scrollWidth": 302,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-onto-resource-detail",
+        "overflowX": "visible",
+        "clientWidth": 238,
+        "scrollWidth": 302,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mw-detail-main",
+        "overflowX": "visible",
+        "clientWidth": 262,
+        "scrollWidth": 314,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mw-detail ",
+        "overflowX": "visible",
+        "clientWidth": 262,
+        "scrollWidth": 314,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-onto-shell-main",
+        "overflowX": "visible",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-page-full mp-onto-shell",
+        "overflowX": "visible",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-page",
+        "overflowX": "auto",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-shell semi-layout semi-layout-has-sider",
+        "overflowX": "visible",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-app",
+        "overflowX": "hidden",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      }
+    ],
+    "focused": false,
+    "documentOverflow": false
+  },
+  "afterTab": {
+    "bounds": {
+      "x": 311,
+      "y": 329.5,
+      "width": 106,
+      "height": 37
+    },
+    "containers": [
+      {
+        "className": "mp-page-head",
+        "overflowX": "visible",
+        "clientWidth": 238,
+        "scrollWidth": 302,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-onto-resource-detail",
+        "overflowX": "visible",
+        "clientWidth": 238,
+        "scrollWidth": 302,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mw-detail-main",
+        "overflowX": "visible",
+        "clientWidth": 262,
+        "scrollWidth": 314,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mw-detail ",
+        "overflowX": "visible",
+        "clientWidth": 262,
+        "scrollWidth": 314,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-onto-shell-main",
+        "overflowX": "visible",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-page-full mp-onto-shell",
+        "overflowX": "visible",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-page",
+        "overflowX": "auto",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-shell semi-layout semi-layout-has-sider",
+        "overflowX": "visible",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-app",
+        "overflowX": "hidden",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      }
+    ],
+    "focused": true,
+    "documentOverflow": false
+  },
+  "afterTrial": {
+    "bounds": {
+      "x": 284,
+      "y": 329.5,
+      "width": 106,
+      "height": 37
+    },
+    "containers": [
+      {
+        "className": "mp-page-head",
+        "overflowX": "visible",
+        "clientWidth": 238,
+        "scrollWidth": 302,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-onto-resource-detail",
+        "overflowX": "visible",
+        "clientWidth": 238,
+        "scrollWidth": 302,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mw-detail-main",
+        "overflowX": "visible",
+        "clientWidth": 262,
+        "scrollWidth": 314,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mw-detail ",
+        "overflowX": "visible",
+        "clientWidth": 262,
+        "scrollWidth": 314,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-onto-shell-main",
+        "overflowX": "visible",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-page-full mp-onto-shell",
+        "overflowX": "visible",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-page",
+        "overflowX": "auto",
+        "clientWidth": 312,
+        "scrollWidth": 339,
+        "scrollLeft": 27
+      },
+      {
+        "className": "mp-shell semi-layout semi-layout-has-sider",
+        "overflowX": "visible",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      },
+      {
+        "className": "mp-app",
+        "overflowX": "hidden",
+        "clientWidth": 390,
+        "scrollWidth": 766,
+        "scrollLeft": 0
+      }
+    ],
+    "focused": true,
+    "documentOverflow": false
+  },
+  "nativeClickActionable": true,
+  "limitation": "Very long actual display name is initially clipped; tail action uses local horizontal scrolling"
+}

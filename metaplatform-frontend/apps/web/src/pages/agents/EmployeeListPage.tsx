@@ -25,7 +25,7 @@ import './agents.css';
  *
  * 数据面沿用 src/api/dw/employees；详情走右侧非模态 SheetDetail（完整页 /agents/:code 仍可深链）。
  * 说明：原页在页内还有一套「内部/外部」作用域切换，与新 IA 的「员工 / 外部员工 · A2A」两个
- * 顶级 tab 重复（控件预算 ≤2），这里去掉页内切换，外部员工交给隔壁 tab。
+ * 页面导航入口重复（控件预算 ≤2），这里去掉页内切换，外部员工使用同组的独立页面。
  */
 export default function EmployeeListPage() {
   const navigate = useNavigate();
@@ -71,9 +71,7 @@ export default function EmployeeListPage() {
     });
   }, [employees, keyword, statusFilter, roleCategory]);
 
-  // 注意：EMPLOYEE_STATUS_MAP 里还有 ENABLED/DISABLED，那是 API 拦截器
-  // remapUserStatus 运行时改写出来的值，不在 EmployeeStatus 类型里。
-  const onlineCount = useMemo(() => employees.filter((e) => e.status === 'ACTIVE').length, [employees]);
+  const activeCount = useMemo(() => employees.filter((e) => e.status === 'ACTIVE').length, [employees]);
 
   const toggle = useCallback(
     async (employee: Employee) => {
@@ -107,7 +105,7 @@ export default function EmployeeListPage() {
     <>
       <PageHeader
         title="数字员工"
-        desc={`${employees.length} 名员工 · ${onlineCount} 名在线`}
+        desc={error ? '员工读取未完成' : loading ? '正在读取员工' : `${employees.length} 名员工 · ${activeCount} 名已启用`}
         actions={
           <>
             <Button

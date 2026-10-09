@@ -1,46 +1,204 @@
-/*
- * 背挂数据源声明表单（IA2-3 随 BackingDatasourcePanel 自 datacenter.css 拆出）。
- */
-
-/* ---------- 数据接入工具条 ---------- */
-.mp-dc-ingest-bar {
+.mp-mapping-workspace {
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: var(--mp-space-2);
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 20px 24px;
+  color: var(--semi-color-text-0);
+}
+.mp-mapping-toolbar {
+  display: flex;
   flex-wrap: wrap;
-  margin-bottom: var(--mp-space-3);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
 }
-
-.mp-dc-ingest-select {
-  min-width: 320px;
-}
-
-/* ---------- 声明数据源表单 ---------- */
-.mp-dc-form {
+.mp-mapping-toolbar label {
   display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-4);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
-
-.mp-dc-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-2);
+.mp-mapping-toolbar select {
+  max-width: 100%;
+  min-height: 32px;
+  border: 1px solid var(--semi-color-border);
+  border-radius: 6px;
+  padding: 5px 28px 5px 8px;
+  color: var(--semi-color-text-0);
+  background: var(--semi-color-bg-2);
 }
-
-.mp-dc-field-label {
+.mp-mapping-type-label {
+  margin-left: auto;
+}
+.mp-mapping-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.mp-mapping-source,
+.mp-mapping-target {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  align-content: start;
+}
+.mp-mapping-card {
+  min-width: 0;
+  background: var(--semi-color-bg-2);
+  border: 1px solid var(--semi-color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 16px;
+}
+.mp-mapping-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+.mp-mapping-card p {
   font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.mp-mapping-card [role='alert'] {
+  color: var(--semi-color-danger);
+}
+.mp-mapping-card [role='status'] {
+  color: var(--semi-color-primary);
+}
+.mp-mapping-fields {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+.mp-mapping-fields label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.mp-mapping-fields p {
+  margin: -8px 0 0;
+}
+.mp-mapping-muted {
+  color: var(--semi-color-text-2);
+  font-size: 12px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.mp-mapping-card dl {
+  font-size: 12px;
+  display: grid;
+  gap: 8px;
+}
+.mp-mapping-card dt {
   color: var(--semi-color-text-2);
 }
-
-.mp-dc-map-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--mp-space-2);
+.mp-mapping-card dd {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
 }
-
-.mp-dc-map-arrow {
+.mp-mapping-table-scroll {
+  overflow-x: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.mp-mapping-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 12px;
-  color: var(--semi-color-text-3);
+  text-align: left;
+}
+.mp-mapping-properties .mp-mapping-table {
+  min-width: 530px;
+}
+.mp-mapping-table th {
+  color: var(--semi-color-text-2);
+  font-weight: 500;
+}
+.mp-mapping-table th,
+.mp-mapping-table td {
+  border-bottom: 1px solid var(--semi-color-border);
+  padding: 14px 10px;
+  vertical-align: middle;
+}
+.mp-mapping-table td:first-child {
+  min-width: 160px;
+}
+.mp-mapping-table code {
+  display: block;
+  font-size: 11px;
+  color: var(--semi-color-text-2);
+  overflow-wrap: anywhere;
+}
+.mp-mapping-table small {
+  display: block;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.mp-mapping-table strong {
+  display: block;
+  margin-bottom: 6px;
+}
+.mp-mapping-table td:last-child {
+  white-space: nowrap;
+}
+.mp-mapping-optional {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  margin-bottom: 7px;
+}
+.mp-mapping-unknown {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  padding: 12px 0;
+}
+.mp-mapping-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 16px;
+}
+.mp-mapping-samples .mp-mapping-toolbar {
+  justify-content: space-between;
+}
+.mp-mapping-samples h3 {
+  margin: 0;
+}
+.mp-mapping-sync {
+  font-size: 12px;
+}
+.mp-mapping-sync > div {
+  border-top: 1px solid var(--semi-color-border);
+  padding-top: 10px;
+}
+@media (max-width: 1024px) {
+  .mp-mapping-layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+}
+@media (max-width: 680px) {
+  .mp-mapping-workspace {
+    padding: 0 10px 16px;
+  }
+  .mp-mapping-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mp-mapping-type-label {
+    margin-left: 0;
+  }
+  .mp-mapping-toolbar label {
+    width: 100%;
+  }
+  .mp-mapping-toolbar select {
+    min-width: 0;
+    width: 100%;
+  }
 }

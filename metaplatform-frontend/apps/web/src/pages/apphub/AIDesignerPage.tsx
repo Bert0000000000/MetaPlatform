@@ -41,6 +41,7 @@ import type {
 import type { FormField, FlowNode } from '@/api/apphub/types';
 import type { DashboardWidget } from '@/api/apphub/pages';
 import { PageRoot } from '@mate/shared';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './apps.css';
 
 const { Sider, Content } = Layout;
@@ -703,20 +704,15 @@ export default function AIDesignerPage() {
   };
 
   return (
-    <PageRoot>
-      <div
-        className="mp-justify-between mp-mb-4 mp-flex-center"
-      >
-        <Space>
+    <PageRoot header={
+      <PageHeader
+        title={<><RobotOutlined /> AI 设计器</>}
+        desc="描述业务需求并预览生成结果，设计副本保存在当前浏览器。"
+        actions={
+        <Space wrap>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')}>
             返回
           </Button>
-          <Typography.Text strong className="mp-text-lg">
-            <RobotOutlined /> AI 设计器
-          </Typography.Text>
-        </Space>
-
-        <Space>
           <Tooltip content="开启后 AI 将自动生成表单+流程+页面完整应用">
             <Space>
               <Switch checked={mode === 'full'} onChange={handleModeChange} />
@@ -728,7 +724,7 @@ export default function AIDesignerPage() {
             disabled={currentArtifacts.length === 0}
             onClick={handleApply}
           >
-            应用到当前应用
+            保存设计副本
           </Button>
           <Button
             type="primary"
@@ -736,7 +732,7 @@ export default function AIDesignerPage() {
             disabled={!hasFullApp}
             onClick={handleCreateApp}
           >
-            一键创建应用
+            保存本地应用
           </Button>
           <Button
             icon={<ExportOutlined />}
@@ -745,12 +741,13 @@ export default function AIDesignerPage() {
           >
             导出为模板
           </Button>
-        </Space>
-      </div>
+        </Space>}
+      />
+    }>
 
-      <Layout className="mp-hidden mp-flex-1 mp-app-bg-none">
+      <Layout className="mp-app-designer-workspace">
         <Sider
-          className="mp-mr-4 mp-w-240 mp-app-bg-none"
+          className="mp-app-designer-sessions"
         >
           {/* 会话列表（替代旧 antd Conversations）：新建 + 列表项 */}
           <div className="mp-h-full mp-flex mp-gap-2 mp-flex-col" >
@@ -764,14 +761,16 @@ export default function AIDesignerPage() {
             </Button>
             <div className="mp-flex-1 mp-overflow-auto mp-min-h-0" >
               {sessions.map((s) => (
-                <div
+                <button
+                  type="button"
+                  aria-pressed={s.key === activeKey}
                   key={s.key}
                   onClick={() => handleActiveChange(s.key)}
                   title={s.label}
                   className={`mp-clickable mp-ellipsis mp-mb-1 mp-text-body mp-text-1 mp-py-2 mp-px-3 mp-rounded-sm mp-app-session${s.key === activeKey ? ' mp-app-session-active' : ''}`}
                 >
                   {s.label}
-                </div>
+                </button>
               ))}
               {sessions.length === 0 && (
                 <Typography.Text type="tertiary" className="mp-text-center mp-text-sm mp-block mp-py-4">
@@ -782,10 +781,10 @@ export default function AIDesignerPage() {
           </div>
         </Sider>
 
-        <Content className="mp-flex mp-gap-4 mp-min-w-0" >
+        <Content className="mp-app-designer-content" >
           <Card
             bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-            className="mp-flex mp-flex-1 mp-flex-col"
+            className="mp-app-designer-chat"
           >
             {currentSession ? (
               <Chat
@@ -813,17 +812,17 @@ export default function AIDesignerPage() {
                 sendHotKey="enter"
               />
             ) : (
-              <Empty description="请选择或新建对话" className="mp-app-m-auto" />
+              <EmptyState illustration="idle" title="开始应用设计" desc="新建对话后，描述需要的表单、流程或页面。" actions={<Button type="primary" onClick={handleCreateSession}>新建对话</Button>} />
             )}
           </Card>
 
           <Card
             title="产物与应用预览"
             bodyStyle={{ overflow: 'auto' }}
-            className="mp-overflow-auto mp-app-w-420"
+            className="mp-app-designer-preview"
           >
             {currentArtifacts.length === 0 ? (
-              <Empty description="暂无产物，与 AI 对话生成" />
+              <EmptyState title="暂无设计产物" desc="与 AI 对话生成后，可在此预览表单、流程与页面。" />
             ) : (
               <Tabs
                 activeKey={previewTab}

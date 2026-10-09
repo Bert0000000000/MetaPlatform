@@ -1,0 +1,185 @@
+{
+  "at_utc": "2026-10-09",
+  "dynamic": [
+    {
+      "pattern": "/agents/tasks/:taskId",
+      "route": "/agents/tasks/dw-task-1",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/agents/collab/:id",
+      "route": "/agents/collab/ui-audit-absent-20261009",
+      "kind": "absent",
+      "note": "Registered session catalog is not a collaboration-task catalog; exercise an explicitly absent task"
+    },
+    {
+      "pattern": "/agents/:employeeId",
+      "route": "/agents/dw-emp-default-3",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/agents/:employeeId/capabilities",
+      "route": "/agents/dw-emp-default-3/capabilities",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/superai/plans/:definitionId",
+      "route": "/superai/plans/ui-audit-absent-20261009",
+      "kind": "absent",
+      "note": "No existing workflow definition context collected; verify readable failure state"
+    },
+    {
+      "pattern": "/ki/kb/:kbId",
+      "route": "/ki/kb/kb-ops",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ki/mcp/tools/:id",
+      "route": "/ki/mcp/tools/kb_search",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ki/mcp/tools/:id/edit",
+      "route": "/ki/mcp/tools/kb_search/edit",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ki/mcp/resources/:id",
+      "route": "/ki/mcp/resources/ui-audit-absent-20261009",
+      "kind": "unsupported",
+      "note": "Backend declares registered-resource listing only; detail/write routes are stubs"
+    },
+    {
+      "pattern": "/ki/mcp/servers/:id",
+      "route": "/ki/mcp/servers/srv-ontology-engine",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ki/mcp/servers/:id/edit",
+      "route": "/ki/mcp/servers/srv-ontology-engine/edit",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ki/mcp/clients/:id",
+      "route": "/ki/mcp/clients/ui-audit-absent-20261009",
+      "kind": "absent",
+      "note": "Current client catalog is empty; no client or credential was created"
+    },
+    {
+      "pattern": "/ki/mcp/clients/:id/edit",
+      "route": "/ki/mcp/clients/ui-audit-absent-20261009/edit",
+      "kind": "absent",
+      "note": "Current client catalog is empty; verify load failure prevents empty overwrite"
+    },
+    {
+      "pattern": "/ki/mcp/audit/detail/:id",
+      "route": "/ki/mcp/audit/detail/ui-audit-absent-20261009",
+      "kind": "absent",
+      "note": "Verify absence handling without invoking a tool to manufacture audit data"
+    },
+    {
+      "pattern": "/gov/data/entities/:id",
+      "route": "/gov/data/entities/de-order-detail",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ontology/model/object-types/:rid",
+      "route": "/ontology/model/object-types/ont.tenant-default.obj.builder.builder-e2e-1791480073118.v1",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ontology/model/object-types/:rid/:tab",
+      "route": "/ontology/model/object-types/ont.tenant-default.obj.builder.builder-e2e-1791480073118.v1/properties",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ontology/explore/objects/:rid?",
+      "route": "/ontology/explore/objects",
+      "kind": "optional-base",
+      "note": "Existing type selected by UI; selected type currently has no instances"
+    },
+    {
+      "pattern": "/ontology/logic/actions/:rid",
+      "route": "/ontology/logic/actions/ont.tenant-default.act.core-e2e-tag.v1",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ontology/logic/actions/:rid/:tab",
+      "route": "/ontology/logic/actions/ont.tenant-default.act.core-e2e-tag.v1/parameters",
+      "kind": "existing",
+      "note": "Actual context from current backend GET"
+    },
+    {
+      "pattern": "/ontology/logic/functions/:rid",
+      "route": "/ontology/logic/functions/ont.tenant-default.fn.ui-audit-absent-20261009.v1",
+      "kind": "absent",
+      "note": "Function catalog is empty; verify missing-resource state"
+    },
+    {
+      "pattern": "/ontology/logic/functions/:rid/:tab",
+      "route": "/ontology/logic/functions/ont.tenant-default.fn.ui-audit-absent-20261009.v1/signatures",
+      "kind": "absent",
+      "note": "Function catalog is empty; loaded signature data remains unexercised"
+    }
+  ],
+  "app_views": [
+    {
+      "route": "/apps/mine?app=app-arch",
+      "kind": "existing"
+    },
+    {
+      "route": "/apps/mine?app=app-arch&tab=lifecycle",
+      "kind": "existing"
+    },
+    {
+      "route": "/apps/mine?app=app-arch&tab=versions",
+      "kind": "existing"
+    },
+    {
+      "route": "/apps/mine?app=app-arch&module=mod-arch-apps&tab=form-designer",
+      "kind": "metadata-only"
+    },
+    {
+      "route": "/apps/mine?app=app-arch&module=mod-arch-apps&tab=flow-designer",
+      "kind": "metadata-only"
+    },
+    {
+      "route": "/apps/market?tid=tpl-approval-multi",
+      "kind": "existing"
+    },
+    {
+      "route": "/apps/market?mp=1",
+      "kind": "existing"
+    },
+    {
+      "route": "/apps/market?mp=1&tid=ui-audit-absent-20261009",
+      "kind": "absent"
+    },
+    {
+      "route": "/apps/templates?submit=1",
+      "kind": "form"
+    },
+    {
+      "route": "/apps/mine?tab=page&page=ui-audit-absent-20261009",
+      "kind": "absent"
+    }
+  ],
+  "limitations": [
+    "Eight dynamic cases exercise absence/unavailable states, not successfully loaded records.",
+    "Form/flow designer has actual module metadata but no backend configuration/write contract.",
+    "No existing page definition was collected; page designer absence is checked.",
+    "Release record view is checked through the existing app detail tab, with an empty release list."
+  ]
+}

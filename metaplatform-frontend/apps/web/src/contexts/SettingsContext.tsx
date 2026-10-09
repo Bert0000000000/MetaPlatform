@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   timezone: 'Asia/Shanghai',
   dateFormat: 'YYYY-MM-DD HH:mm:ss',
   defaultPage: '/dashboard',
-  theme: 'dark',
+  theme: 'light',
   layout: ['metrics', 'approvals', 'workers', 'notifications'],
 };
 

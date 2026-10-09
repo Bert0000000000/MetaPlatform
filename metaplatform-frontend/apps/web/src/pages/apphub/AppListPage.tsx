@@ -28,13 +28,9 @@ const SORT_OPTIONS = [
 /** 「全部」在 Tabs 里也要有个 itemKey（activeKey 不能为 undefined）。 */
 const ALL_DOMAINS_KEY = '__all__';
 
-/**
- * 应用版本。src/api/apphub/apps.ts 的 mapApp 把后端 `version` 映射进了
- * `AppItem.updatedAt`（字段命名失真，但 API 层本批不动）。这里集中一处读取，
- * 将来 mapper 修正为真实 `version` 字段时只需改这里。
- */
+/** 应用目录直接展示服务端版本，时间字段不参与版本推断。 */
 function appVersion(app: AppItem): string {
-  return app.updatedAt || '—';
+  return app.version || '—';
 }
 
 export default function AppListPage() {
@@ -47,6 +43,8 @@ export default function AppListPage() {
   const [manageOpen, setManageOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [groupsError, setGroupsError] = useState('');
+  const [domainsError, setDomainsError] = useState('');
   const [keyword, setKeyword] = useState('');
   const [group, setGroup] = useState<string | undefined>();
   const [domain, setDomain] = useState<string | undefined>();
@@ -71,25 +69,29 @@ export default function AppListPage() {
 
   const loadDomains = useCallback(async (): Promise<BusinessDomain[]> => {
     setDomainsLoading(true);
+    setDomainsError('');
     try {
       const list = await listDomains();
       setDomains(list);
       return list;
-    } catch {
-      setDomains([]);
-      return [];
+    } catch (e) {
+      setDomainsError(e instanceof Error ? e.message : String(e));
+      throw e;
     } finally {
       setDomainsLoading(false);
     }
   }, []);
+  const loadGroups = useCallback(async () => {
+    setGroupsError('');
+    try { setGroups(await listGroups()); }
+    catch (e) { setGroupsError(e instanceof Error ? e.message : String(e)); }
+  }, []);
 
   useEffect(() => {
     void load();
-    listGroups()
-      .then(setGroups)
-      .catch(() => setGroups([]));
-    void loadDomains();
-  }, [load, loadDomains]);
+    void loadGroups();
+    void loadDomains().catch(() => {});
+  }, [load, loadGroups, loadDomains]);
 
   /** 域码 → 该域下的应用数。既用于 chip 上的计数，也解释「为什么删不掉」。 */
   const domainAppCounts = useMemo(() => {
@@ -169,9 +171,9 @@ export default function AppListPage() {
             )}
           </span>
           <div className="mp-app-head-main">
-            <div className="mp-app-name" onClick={() => openApp(app.appId)}>
+            <button type="button" className="mp-app-name" onClick={() => openApp(app.appId)}>
               {app.name}
-            </div>
+            </button>
             <div className="mp-app-code">
               {app.code}
               {app.businessDomain ? ` · ${domainNames[app.businessDomain] ?? app.businessDomain}` : ''}
@@ -182,6 +184,8 @@ export default function AppListPage() {
         <p className="mp-app-desc">{app.description || '暂无描述'}</p>
 
         <div className="mp-app-meta">
+          <Button size="small" onClick={() => openDesign(app.appId)}>设计应用</Button>
+          <Button size="small" theme="solid" type="primary" onClick={() => openApp(app.appId)}>打开应用</Button>
           {app.group ? <Tag size="small">{categoryLabel(app.group)}</Tag> : null}
           <Tag size="small" color="blue">
             v{appVersion(app)}
@@ -230,7 +234,7 @@ export default function AppListPage() {
     <>
       <PageHeader
         title="应用中心"
-        desc={`${apps.length} 个已注册应用`}
+        desc={error ? '应用读取未完成' : loading ? '正在读取应用' : `${apps.length} 个已注册应用`}
         actions={
           <>
             <Button
@@ -263,9 +267,9 @@ export default function AppListPage() {
         <Button onClick={() => navigate('/apps/market')}>浏览模板市场</Button>
       </div>
 
-      {/* 业务域 tab（卡片式）。用 Semi Tabs type="card"，不自己画：
-          卡片页签与下方内容区相连，视觉上是一个完整的分类容器。
-          控件预算（DESIGN-SPEC §5 ≤2 种）正好用满：壳的主 tab 行 + 这一行。 */}
+      {groupsError && <div role="alert" className="mp-read-warning"><span>{groupsError}</span><Button onClick={() => void loadGroups()}>重试分类</Button></div>}
+      {domainsError && <div role="alert" className="mp-read-warning"><span>{domainsError}</span><Button loading={domainsLoading} onClick={() => void loadDomains().catch(() => {})}>重试业务域</Button></div>}
+      {/* 业务域分类独立于壳的功能组与页面导航。 */}
       <Tabs
         type="card"
         className="mp-domain-tabs"
@@ -401,6 +405,8 @@ export default function AppListPage() {
         domains={domains}
         appCounts={domainAppCounts}
         loading={domainsLoading}
+        error={domainsError}
+        onRetry={() => void loadDomains().catch(() => {})}
         onChanged={async () => {
           const list = await loadDomains();
           // 域被删掉后，原来选中的 chip 已不存在，回到「全部」，

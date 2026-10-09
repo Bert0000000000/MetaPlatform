@@ -1,0 +1,75 @@
+{
+  "sourceCommit": "f892895200d57312fbb753866271d82f4d52af83",
+  "records": [
+    {
+      "page": "query",
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "actualSettingsMatch": true,
+      "nativeTabs": 28,
+      "before": {
+        "x": 327,
+        "y": 179.5,
+        "width": 63,
+        "height": 664.5,
+        "clientWidth": 63,
+        "scrollWidth": 63,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "afterCollapse": {
+        "x": 305.234375,
+        "y": 179.5,
+        "width": 84.765625,
+        "height": 664.5,
+        "clientWidth": 85,
+        "scrollWidth": 85,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "targetBounds": {
+        "x": 0,
+        "y": 434.25,
+        "width": 80.546875,
+        "height": 17
+      },
+      "nativeKeyboardCollapseAndRestore": true,
+      "targetTrialActionable": true,
+      "boundary": "actual Ont query2"
+    },
+    {
+      "page": "explore",
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "actualSettingsMatch": true,
+      "nativeTabs": 28,
+      "before": {
+        "x": 327,
+        "y": 179.5,
+        "width": 63,
+        "height": 664.5,
+        "clientWidth": 63,
+        "scrollWidth": 63,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "afterCollapse": {
+        "x": 305.234375,
+        "y": 179.5,
+        "width": 84.765625,
+        "height": 664.5,
+        "clientWidth": 85,
+        "scrollWidth": 85,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "targetBounds": {
+        "x": 0,
+        "y": 434.25,
+        "width": 80.546875,
+        "height": 17
+      },
+      "nativeKeyboardCollapseAndRestore": true,
+      "targetTrialActionable": true,
+      "boundary": "actual Ont query2"
+    }
+  ]
+}

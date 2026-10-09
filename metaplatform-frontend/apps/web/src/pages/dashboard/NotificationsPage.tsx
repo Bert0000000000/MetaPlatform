@@ -202,7 +202,7 @@ export default function NotificationsPage() {
               renderItem={(item: NotificationItem) => (
                 <List.Item
                   key={item.id}
-                  main={
+                  children={
                     <span className="mp-home-feed-row">
                       <span className="mp-home-feed-main">
                         <span className="mp-home-feed-title">{item.title}</span>

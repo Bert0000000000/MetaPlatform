@@ -102,7 +102,7 @@ export default function ToolDrawer({ open, toolId, onClose, onSaved }: ToolDrawe
     <SideSheet
       visible={open}
       title={toolId ? (name ? `编辑工具：${name}` : '编辑工具') : '创建工具'}
-      width={DRAWER_W}
+      width={`min(${DRAWER_W}px, 100vw)`}
       onCancel={onClose}
       footer={
         <>
@@ -139,7 +139,7 @@ export default function ToolDrawer({ open, toolId, onClose, onSaved }: ToolDrawe
         因此 loading / error 一律用类名隐藏，不卸载。
       */}
       <div className={loading || loadError ? 'mp-mcp-hidden' : undefined}>
-        <Form form={form}>
+        <Form form={form} className="mp-mcp-tool-form">
           <Form.Input
             field="name"
             label="工具名称"
@@ -182,6 +182,7 @@ export default function ToolDrawer({ open, toolId, onClose, onSaved }: ToolDrawe
                     <Form.Input
                       field={`${f.field}[name]`}
                       noLabel
+                      className="mp-mcp-param-input"
                       rules={[{ required: true, message: '名称' }]}
                       placeholder="参数名"
                     />
@@ -189,6 +190,7 @@ export default function ToolDrawer({ open, toolId, onClose, onSaved }: ToolDrawe
                       field={`${f.field}[type]`}
                       noLabel
                       initValue="string"
+                      style={{ width: '100%', minWidth: 0 }}
                       optionList={TYPE_OPTIONS}
                     />
                     <Form.Checkbox field={`${f.field}[required]`} noLabel initValue={false}>
@@ -197,6 +199,7 @@ export default function ToolDrawer({ open, toolId, onClose, onSaved }: ToolDrawe
                     <Form.Input
                       field={`${f.field}[description]`}
                       noLabel
+                      className="mp-mcp-param-input"
                       placeholder="描述（可选）"
                     />
                     <Button

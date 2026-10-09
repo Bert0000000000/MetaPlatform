@@ -16,6 +16,18 @@ import {
 
 const SESSION = 'emp-console-1';
 
+function isUnopenedSession(cause: unknown): boolean {
+  if (!cause || typeof cause !== 'object') return false;
+  const error = cause as {
+    status?: number;
+    payload?: { detail?: unknown };
+    response?: { status?: number; data?: { detail?: unknown } };
+  };
+  // This endpoint's documented 404 means an absent or expired session; other 404s stay errors.
+  return (error.response?.status ?? error.status) === 404
+    && (error.response?.data?.detail ?? error.payload?.detail) === `session '${SESSION}' not open`;
+}
+
 interface MountedRow {
   key: string;
   name: string;
@@ -33,11 +45,14 @@ export default function OrchestrationConsolePage() {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<EvolutionStatus>();
   const [statusError, setStatusError] = useState('');
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [sessionAbsent, setSessionAbsent] = useState(false);
   const [mountName, setMountName] = useState('');
   const [mountRef, setMountRef] = useState('');
   const [propName, setPropName] = useState('');
   const [busy, setBusy] = useState(false);
   const [runLog, setRunLog] = useState<string[]>([]);
+  const canOpenSession = sessionAbsent && !statusLoading && !busy;
 
   const log = useCallback((line: string) => {
     setRunLog((prev) => [`${new Date().toLocaleTimeString()}  ${line}`, ...prev].slice(0, 30));
@@ -45,13 +60,19 @@ export default function OrchestrationConsolePage() {
 
   const refresh = useCallback(async () => {
     setStatusError('');
+    setStatusLoading(true);
+    setSessionAbsent(false);
     try {
       setStatus(await evolutionStatus(SESSION));
       setOpen(true);
     } catch (e) {
       setOpen(false);
       setStatus(undefined);
-      setStatusError(e instanceof Error ? e.message : String(e));
+      const absent = isUnopenedSession(e);
+      setSessionAbsent(absent);
+      if (!absent) setStatusError((e instanceof Error ? e.message : String(e)) || '会话状态读取失败');
+    } finally {
+      setStatusLoading(false);
     }
   }, []);
 
@@ -72,11 +93,13 @@ export default function OrchestrationConsolePage() {
     }
   };
 
-  const openSess = () =>
-    withBusy(async () => {
+  const openSess = () => {
+    if (!canOpenSession) return;
+    return withBusy(async () => {
       await openSession(SESSION);
       log(`会话 ${SESSION} 已打开`);
     }, '会话已打开');
+  };
 
   const closeSess = () =>
     withBusy(async () => {
@@ -130,7 +153,7 @@ export default function OrchestrationConsolePage() {
         actions={
           <Button
             icon={<RefreshCw size={15} strokeWidth={1.5} />}
-            loading={busy}
+            loading={busy || statusLoading}
             onClick={() => void refresh()}
           >
             刷新
@@ -144,11 +167,11 @@ export default function OrchestrationConsolePage() {
           headerExtraContent={
             <Space>
               {!open ? (
-                <Button onClick={openSess} loading={busy}>
+                <Button onClick={openSess} loading={busy} disabled={!canOpenSession}>
                   打开会话
                 </Button>
               ) : (
-                <Button type="danger" onClick={closeSess} loading={busy}>
+                <Button type="danger" onClick={closeSess} loading={busy} disabled={statusLoading}>
                   关闭会话（还原）
                 </Button>
               )}
@@ -159,7 +182,7 @@ export default function OrchestrationConsolePage() {
             <Banner
               type="warning"
               closeIcon={null}
-              description={`未能读取会话状态（${statusError}）。可尝试「打开会话」或刷新。`}
+              description={`未能读取会话状态（${statusError}）。请刷新重试；确认会话未打开后才可打开。`}
             />
           ) : null}
           <div className="mp-exec-col">
@@ -167,12 +190,14 @@ export default function OrchestrationConsolePage() {
               <Typography.Text>
                 会话 <Tag type="light" color="blue">{SESSION}</Tag>
               </Typography.Text>
-              {open ? (
+              {statusLoading ? (
+                <Tag type="light">读取中</Tag>
+              ) : open ? (
                 <Tag type="light" color="green">
                   OPEN · 快照角色 {status?.snapshot_roles.length ?? 0}
                 </Tag>
               ) : (
-                <Tag type="light">未打开</Tag>
+                <Tag type="light">{statusError ? '读取失败' : '未打开'}</Tag>
               )}
             </Space>
 
@@ -222,9 +247,11 @@ export default function OrchestrationConsolePage() {
               </>
             ) : (
               <EmptyState
-                illustration="idle"
-                title="会话未打开"
-                desc="打开会话后才能挂载能力或发起进化提案。"
+                illustration={statusError ? 'failure' : 'idle'}
+                title={statusLoading ? '正在读取会话状态' : statusError ? '会话状态读取失败' : '会话尚未打开'}
+                desc={statusLoading ? '读取成功后显示会话能力。' : statusError
+                  ? '请刷新重试；读取成功后显示会话能力。'
+                  : '点击「打开会话」后才能挂载能力或发起进化提案。'}
               />
             )}
           </div>

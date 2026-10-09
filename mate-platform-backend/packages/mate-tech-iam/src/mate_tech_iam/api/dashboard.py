@@ -1125,7 +1125,7 @@ _DEFAULT_SETTINGS: dict[str, Any] = {
     "timezone": "Asia/Shanghai",
     "dateFormat": "YYYY-MM-DD HH:mm:ss",
     "defaultPage": "/dashboard",
-    "theme": "dark",
+    "theme": "light",
     "layout": ["metrics", "approvals", "workers", "notifications"],
 }
 

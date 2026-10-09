@@ -1,11 +1,11 @@
-import { Card, Tag, Typography, Button, Space, Rating } from '@douyinfe/semi-ui';
+import { Card, Tag, Typography, Button, Space } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   DownloadOutlined,
   EyeOutlined,
   AppstoreOutlined,
 } from '@ant-design/icons';
-import type { TemplateItem } from '@/api/apphub/marketplace';
+import { canInstallTemplate, type TemplateItem } from '@/api/apphub/marketplace';
 import '../apps.css';
 
 interface TemplateCardProps {
@@ -49,9 +49,11 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
           theme="borderless"
           type="tertiary"
           icon={<DownloadOutlined />}
+          disabled={!canInstallTemplate(template.templateId)}
+          title={!canInstallTemplate(template.templateId) ? '该模板尚未关联可安装的市场制品' : undefined}
           onClick={() => onInstall(template)}
         >
-          安装
+          {canInstallTemplate(template.templateId) ? '安装' : '安装暂不可用'}
         </Button>,
       ]}
     >
@@ -76,12 +78,6 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
                 <Tag key={t}>{t}</Tag>
               ))}
             </Space>
-            <div className="mp-flex mp-justify-between mp-mt-2">
-              <Rating disabled defaultValue={template.rating} allowHalf />
-              <Typography.Text type="tertiary" className="mp-text-sm">
-                {template.downloadCount} 安装
-              </Typography.Text>
-            </div>
           </div>
         }
       />

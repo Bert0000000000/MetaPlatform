@@ -33,7 +33,7 @@ export default function SheetDetail({
       visible={open}
       onCancel={onClose}
       placement="right"
-      width={width}
+      width={`min(${typeof width === 'number' ? `${width}px` : width}, 100vw)`}
       mask={false}
       closeOnEsc
       footer={footer}

@@ -1,0 +1,18 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "source_tree": "c72290d13930885ca6c2fe990b7c80999d8a9f3f",
+  "prior_gate_source": "158ab2366c7123680520e051ad685e000f5d6716",
+  "recorded_date": "2026-10-09 Asia/Shanghai",
+  "evidence_kind": "read-only source applicability audit; no new test execution",
+  "unchanged_backend_ci_docs_paths": [],
+  "backend_sources": {
+    "sha256": "57a7db1a2dabbff42af28efc9cc53528f01ca444561dfc74f6cda8f443c51f63",
+    "file_count": 1419
+  },
+  "workspace_lock_sha256": {
+    "mate-platform-backend/uv.lock": "c705cfab4e7536cdeab41dbafbe954491b9d7e4fa1f28a2eb9c62b4743051aa0",
+    "metaplatform-frontend/pnpm-lock.yaml": "97a7948584f73c92f32cf50b14f54677cb453977d5e3575f043937c297cf7f68",
+    "mate-platform-backend/contracts/package-lock.json": "e60799a439e390def60e486333dd9b8e11b95f1a8c57a0bf3adbcc6e538dda00"
+  },
+  "applicability": "Original PG123 and contracts7 receipts retain actual158 execution source; backend/contract/gate bytes unchanged at f892"
+}

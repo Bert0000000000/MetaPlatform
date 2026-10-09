@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "scope": "Read-only current native MCP catalog requests; health is not used as business-read evidence. Browser page settlement remains a separate audit.",
+  "captured_utc": "2026-10-09T01:21:25.344291+00:00",
+  "ports": {
+    "mcp": 58210,
+    "gateway": 58110,
+    "vite": 59260,
+    "auth": 58111,
+    "keycloak": 55389
+  },
+  "authentication": {
+    "method": "normal_configured_login",
+    "path": "/api/v1/iam/auth/login",
+    "layer": "gateway",
+    "status": 200,
+    "elapsed_seconds": 0.109,
+    "started_utc": "2026-10-09T01:21:24.365831+00:00",
+    "ended_utc": "2026-10-09T01:21:24.471367+00:00",
+    "normally_issued_access_token": true,
+    "http_method": "POST",
+    "provenance": {
+      "script": ".superpowers/runtime/ui-render-audit-2026-10-09/verify-native-services.py",
+      "source_line": 48,
+      "execution": "The probe compiled the original helper login assignment with the gateway base set to loopback port 58110. Login status, response, and elapsed time came from this assignment; the URL path was not replaced.",
+      "path_confirmed_by": "Read-only AST evaluation of the actual login URL argument."
+    }
+  },
+  "verification": {
+    "started_utc": "2026-10-09T01:21:25.263870+00:00",
+    "insecure_skip_signature": false,
+    "legacy_login_compat": false,
+    "method": "source TokenVerifier.verify against current Keycloak JWKS",
+    "complete_signature_verification": true,
+    "signature_issuer_audience_expiry_checked": true,
+    "required_claims": [
+      "exp",
+      "iat",
+      "iss",
+      "aud"
+    ],
+    "elapsed_seconds": 0.059,
+    "ended_utc": "2026-10-09T01:21:25.322712+00:00"
+  },
+  "requests": [
+    {
+      "layer": "direct-mcp",
+      "path": "/api/v1/mcp/tools",
+      "status": 200,
+      "elapsed_seconds": 0.0,
+      "count": 18,
+      "started_utc": "2026-10-09T01:21:25.325847+00:00",
+      "ended_utc": "2026-10-09T01:21:25.329102+00:00"
+    },
+    {
+      "layer": "direct-mcp",
+      "path": "/api/v1/mcp/resources",
+      "status": 200,
+      "elapsed_seconds": 0.0,
+      "count": 1,
+      "started_utc": "2026-10-09T01:21:25.325847+00:00",
+      "ended_utc": "2026-10-09T01:21:25.329102+00:00"
+    },
+    {
+      "layer": "direct-mcp",
+      "path": "/api/v1/mcp/prompts",
+      "status": 200,
+      "elapsed_seconds": 0.0,
+      "count": 3,
+      "started_utc": "2026-10-09T01:21:25.326360+00:00",
+      "ended_utc": "2026-10-09T01:21:25.329621+00:00"
+    },
+    {
+      "layer": "gateway",
+      "path": "/api/v1/mcp/tools",
+      "status": 200,
+      "elapsed_seconds": 0.016,
+      "count": 18,
+      "started_utc": "2026-10-09T01:21:25.326360+00:00",
+      "ended_utc": "2026-10-09T01:21:25.340016+00:00"
+    },
+    {
+      "layer": "gateway",
+      "path": "/api/v1/mcp/resources",
+      "status": 200,
+      "elapsed_seconds": 0.016,
+      "count": 1,
+      "started_utc": "2026-10-09T01:21:25.326873+00:00",
+      "ended_utc": "2026-10-09T01:21:25.341065+00:00"
+    },
+    {
+      "layer": "gateway",
+      "path": "/api/v1/mcp/prompts",
+      "status": 200,
+      "elapsed_seconds": 0.016,
+      "count": 3,
+      "started_utc": "2026-10-09T01:21:25.326873+00:00",
+      "ended_utc": "2026-10-09T01:21:25.342112+00:00"
+    },
+    {
+      "layer": "vite",
+      "path": "/api/v1/mcp/tools",
+      "status": 200,
+      "elapsed_seconds": 0.016,
+      "count": 18,
+      "started_utc": "2026-10-09T01:21:25.327387+00:00",
+      "ended_utc": "2026-10-09T01:21:25.343230+00:00"
+    },
+    {
+      "layer": "vite",
+      "path": "/api/v1/mcp/resources",
+      "status": 200,
+      "elapsed_seconds": 0.016,
+      "count": 1,
+      "started_utc": "2026-10-09T01:21:25.327387+00:00",
+      "ended_utc": "2026-10-09T01:21:25.343766+00:00"
+    },
+    {
+      "layer": "vite",
+      "path": "/api/v1/mcp/prompts",
+      "status": 200,
+      "elapsed_seconds": 0.016,
+      "count": 3,
+      "started_utc": "2026-10-09T01:21:25.327911+00:00",
+      "ended_utc": "2026-10-09T01:21:25.344291+00:00"
+    }
+  ],
+  "recovery_probe_01_18": {
+    "started_utc": "2026-10-09T01:18:55.515251+00:00",
+    "gateway_login": {
+      "status": 200,
+      "elapsed_seconds": 0.625,
+      "http_method": "POST",
+      "path": "/api/v1/iam/auth/login",
+      "layer": "gateway",
+      "provenance": "Same original helper login assignment; gateway base changed to the stated layer port."
+    },
+    "auth_direct_login": {
+      "status": 200,
+      "elapsed_seconds": 0.625,
+      "http_method": "POST",
+      "path": "/api/v1/iam/auth/login",
+      "layer": "auth-direct",
+      "provenance": "Same original helper login assignment; gateway base changed to the stated layer port."
+    },
+    "requests": [
+      {
+        "layer": "direct-mcp",
+        "path": "/api/v1/mcp/tools",
+        "status": 200,
+        "elapsed_seconds": 0.0,
+        "count": 18
+      },
+      {
+        "layer": "direct-mcp",
+        "path": "/api/v1/mcp/resources",
+        "status": 200,
+        "elapsed_seconds": 0.0,
+        "count": 1
+      },
+      {
+        "layer": "direct-mcp",
+        "path": "/api/v1/mcp/prompts",
+        "status": 200,
+        "elapsed_seconds": 0.0,
+        "count": 3
+      },
+      {
+        "layer": "gateway",
+        "path": "/api/v1/mcp/tools",
+        "status": 200,
+        "elapsed_seconds": 0.015,
+        "count": 18
+      },
+      {
+        "layer": "gateway",
+        "path": "/api/v1/mcp/resources",
+        "status": 200,
+        "elapsed_seconds": 0.015,
+        "count": 1
+      },
+      {
+        "layer": "gateway",
+        "path": "/api/v1/mcp/prompts",
+        "status": 200,
+        "elapsed_seconds": 0.015,
+        "count": 3
+      },
+      {
+        "layer": "vite",
+        "path": "/api/v1/mcp/tools",
+        "status": 200,
+        "elapsed_seconds": 0.015,
+        "count": 18
+      },
+      {
+        "layer": "vite",
+        "path": "/api/v1/mcp/resources",
+        "status": 200,
+        "elapsed_seconds": 0.015,
+        "count": 1
+      },
+      {
+        "layer": "vite",
+        "path": "/api/v1/mcp/prompts",
+        "status": 200,
+        "elapsed_seconds": 0.015,
+        "count": 3
+      }
+    ]
+  },
+  "intermittent_events": [
+    {
+      "source": "subagent actual HTTP probe",
+      "event": "gateway normal login returned 504",
+      "status": 504,
+      "elapsed_seconds": 10.063,
+      "timestamp_note": "Exact UTC was not captured in the retained result; occurred before the repeat probe below.",
+      "http_method": "POST",
+      "path": "/api/v1/iam/auth/login",
+      "layer": "gateway",
+      "provenance": "Original helper login assignment with gateway base on port 58110."
+    },
+    {
+      "source": "subagent actual HTTP probe",
+      "event": "gateway normal login repeat returned 504",
+      "status": 504,
+      "elapsed_seconds": 10.062,
+      "observed_utc": "2026-10-09T01:14:40.801124+00:00",
+      "http_method": "POST",
+      "path": "/api/v1/iam/auth/login",
+      "layer": "gateway",
+      "provenance": "Original helper login assignment with gateway base on port 58110."
+    },
+    {
+      "source": "root agent reported actual bounded probe",
+      "event": "Keycloak discovery timed out after 4 seconds; docker stats returned daemon API 500 after about one minute",
+      "timestamp_note": "Earlier than the root recovery report around 01:18 UTC; exact event UTC not provided."
+    },
+    {
+      "source": "subagent actual bounded probes",
+      "event": "Keycloak discovery and JWKS were responsive; Docker server version RPC completed",
+      "observed_utc": "2026-10-09T01:16:25+00:00",
+      "keycloak_discovery": {
+        "status": 200,
+        "elapsed_seconds": 0.062,
+        "required_shape_present": true
+      },
+      "keycloak_jwks": {
+        "status": 200,
+        "elapsed_seconds": 0.062,
+        "key_count": 2
+      },
+      "docker_server_version_rpc": {
+        "exit_code": 0,
+        "elapsed_seconds": 0.172
+      }
+    },
+    {
+      "source": "root agent report",
+      "event": "Infrastructure recovered without container, WSL, or authentication restart/change",
+      "timestamp_note": "Around 01:18 UTC; root observed Docker Server API version RPC success and Keycloak JWKS 200."
+    }
+  ],
+  "actions": {
+    "services_started": false,
+    "services_stopped": false,
+    "containers_restarted": false,
+    "wsl_restarted": false,
+    "browser_operated": false,
+    "source_changed": false
+  },
+  "source_dependency_evidence": [
+    {
+      "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/api/origin_routes.py",
+      "lines": [
+        147,
+        163
+      ],
+      "finding": "GET tools reads registered static tools and enabled tenant dynamic tool definitions."
+    },
+    {
+      "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/api/origin_routes.py",
+      "lines": [
+        266,
+        275
+      ],
+      "finding": "GET resources and prompts enumerate the existing local registries."
+    },
+    {
+      "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/server.py",
+      "lines": [
+        62,
+        100
+      ],
+      "finding": "Catalog enumeration reads registered definitions. These three GET handlers do not perform remote discovery."
+    },
+    {
+      "file": "mate-platform-backend/packages/mate-platform/src/mate_platform/auth/verifier.py",
+      "lines": [
+        83,
+        116
+      ],
+      "finding": "The independent strict verification checks an accepted RSA algorithm, current JWKS key, signature, configured issuer, configured audience, expiry, and required exp/iat/iss/aud claims."
+    }
+  ],
+  "conclusion": "After recovery the three catalog reads succeed across all three layers using a normally issued, independently fully verified token. Earlier 504 and infrastructure timeouts remain recorded; these probes do not prove that all browser pages had settled or that intermittent infrastructure failures are eliminated.",
+  "metadata_correction": {
+    "corrected_utc": "2026-10-09T01:31:31.854770+00:00",
+    "field": "authentication.path",
+    "incorrect_hand_entered_label": "/api/v1/auth/login",
+    "correct_actual_path": "/api/v1/iam/auth/login",
+    "reason": "The original receipt path label was manually entered and did not match the URL expression actually executed by the probe. Read-only inspection confirmed the helper line 48 executes POST /api/v1/iam/auth/login. This correction changes metadata only; the captured statuses, elapsed values, counts, and verification results remain the original observations.",
+    "no_request_to_incorrect_label_by_this_probe": true,
+    "probe_repeated_for_correction": false
+  }
+}

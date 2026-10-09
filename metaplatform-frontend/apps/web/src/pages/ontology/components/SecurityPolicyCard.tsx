@@ -190,31 +190,37 @@ export default function SecurityPolicyCard() {
                   className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--md"
                 />
               </div>
-              <div className="mp-flex-center mp-gap-2" >
-                <span className="mp-onto-field-label mp-onto-field-label--rid">字段（field）*</span>
-                <input
-                  type="text"
-                  placeholder="过滤字段（属性 slug 或标记字段）"
-                  value={field}
-                  onChange={(e) => setField(e.target.value)}
-                  className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--md"
-                />
-                <span className="mp-onto-field-label mp-onto-field-label--op">操作符 *</span>
-                <select
-                  value={op}
-                  onChange={(e) => setOp(e.target.value)}
-                  className="mp-clickable mp-mono mp-onto-input mp-onto-input--md mp-onto-select--op"
-                >
-                  {ROW_OPS.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-                <span className="mp-onto-field-label mp-onto-field-label--val">值</span>
-                <input
-                  type="text"
-                  placeholder="比较值（truthy 可留空）"
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  className="mp-flex-1 mp-min-w-0 mp-onto-input mp-onto-input--md"
-                />
+              <div className="mp-onto-security-condition" >
+                <label className="mp-onto-security-condition-field">
+                  <span className="mp-onto-field-label mp-onto-field-label--rid">字段（field）*</span>
+                  <input
+                    type="text"
+                    placeholder="过滤字段（属性 slug 或标记字段）"
+                    value={field}
+                    onChange={(e) => setField(e.target.value)}
+                    className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--md"
+                  />
+                </label>
+                <label className="mp-onto-security-condition-field mp-onto-security-condition-op">
+                  <span className="mp-onto-field-label mp-onto-field-label--op">操作符 *</span>
+                  <select
+                    value={op}
+                    onChange={(e) => setOp(e.target.value)}
+                    className="mp-clickable mp-mono mp-onto-input mp-onto-input--md mp-onto-select--op"
+                  >
+                    {ROW_OPS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </label>
+                <label className="mp-onto-security-condition-field">
+                  <span className="mp-onto-field-label mp-onto-field-label--val">值</span>
+                  <input
+                    type="text"
+                    placeholder="比较值（truthy 可留空）"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    className="mp-flex-1 mp-min-w-0 mp-onto-input mp-onto-input--md"
+                  />
+                </label>
               </div>
               <div className="mp-flex-center mp-gap-2" >
                 <span className="mp-onto-field-label mp-onto-field-label--rid">bypass 标记</span>

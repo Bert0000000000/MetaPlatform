@@ -56,6 +56,7 @@ function friendlyPrefix(status: number): string {
  * surfacing hook for use inside a route-level ErrorBoundary.
  */
 export function useApiErrorBoundary(opts: UseApiErrorOptions = {}) {
+  const { onError, silent } = opts;
   const location = useLocation();
   const lastErrorRef = useRef<NormalizedError | null>(null);
   const [lastError, setLastError] = useState<NormalizedError | null>(null);
@@ -65,10 +66,10 @@ export function useApiErrorBoundary(opts: UseApiErrorOptions = {}) {
       const norm = normalize(err);
       lastErrorRef.current = norm;
       setLastError(norm);
-      if (opts.onError) {
-        opts.onError(norm);
+      if (onError) {
+        onError(norm);
       }
-      if (opts.silent) return norm;
+      if (silent) return norm;
       if (norm.status === 401) {
         Toast.error('登录已过期，请重新登录');
         return norm;
@@ -78,7 +79,7 @@ export function useApiErrorBoundary(opts: UseApiErrorOptions = {}) {
       Toast.error(`${header}${detail}`);
       return norm;
     },
-    [opts],
+    [onError, silent],
   );
 
   const dismiss = useCallback(() => {

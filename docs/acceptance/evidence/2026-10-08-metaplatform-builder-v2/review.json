@@ -1,0 +1,18 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "whole_branch_review_base": "9646f018",
+  "whole_branch_review_head": "158ab2366c7123680520e051ad685e000f5d6716",
+  "scoped_final_fix_base": "158ab2366c7123680520e051ad685e000f5d6716",
+  "spec_verdict": "Approved for fix scope",
+  "quality_verdict": "Approved for fix scope",
+  "original_important_p2_findings": 2,
+  "addressed_original_p2": 2,
+  "new_critical_important_in_fix": 0,
+  "controller_confirmation": true,
+  "merge_assessment": "conditional; runtime/evidence exits still pending",
+  "reports_sha256": {
+    "final-review.md": "46b57459e5f88436f432ff75cc8c8b2f5e327749c6260c3dc539e72ea8ab9e62",
+    "final-fix-review.md": "2250512665162c2ca6cce46020b7e3d23616229d80d9963769eeb78188fa7dbb"
+  },
+  "evidence_kind": "read-only source review summary; no browser/CI/deployment/GA certification"
+}

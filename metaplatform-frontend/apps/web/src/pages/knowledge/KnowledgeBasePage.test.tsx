@@ -1,0 +1,22 @@
+import '@testing-library/jest-dom/vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import KnowledgeBasePage from './KnowledgeBasePage';
+import { listKb } from '@/api/kb';
+vi.hoisted(() => { HTMLCanvasElement.prototype.getContext = (() => ({ fillRect() {}, clearRect() {}, getImageData: () => ({ data: new Uint8ClampedArray(4) }) })) as never; });
+vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+Range.prototype.getBoundingClientRect = () => new DOMRect();
+vi.mock('@mate/shared', async (original) => ({ ...await original<object>(), useApiErrorBoundary: () => ({ report: vi.fn() }) }));
+vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ resolvedTheme: 'light' }) }));
+vi.mock('@/api/kb', () => ({ listKb: vi.fn(), createKb: vi.fn() }));
+afterEach(() => { cleanup(); vi.resetAllMocks(); });
+it('shows a failed read instead of a fabricated empty collection and retries', async () => {
+  vi.mocked(listKb).mockRejectedValueOnce(new Error('知识库边界不可用')).mockResolvedValueOnce([]);
+  render(<MemoryRouter><KnowledgeBasePage /></MemoryRouter>);
+  expect(await screen.findByText('知识库加载失败')).toBeVisible();
+  expect(screen.queryByText('还没有知识库')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '重试' }));
+  expect(await screen.findByText('还没有知识库')).toBeVisible();
+  expect(listKb).toHaveBeenCalledTimes(2);
+});

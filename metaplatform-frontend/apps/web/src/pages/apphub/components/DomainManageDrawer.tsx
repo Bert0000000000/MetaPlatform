@@ -25,6 +25,8 @@ interface DomainManageDrawerProps {
   /** 域码 → 归属应用数。用于展示「为什么删不掉」。 */
   appCounts: Record<string, number>;
   loading?: boolean;
+  error?: string;
+  onRetry?: () => void;
   /** 增 / 改 / 删成功后回调，让列表与卡片一起刷新。 */
   onChanged: () => void | Promise<void>;
 }
@@ -35,6 +37,8 @@ export default function DomainManageDrawer({
   domains,
   appCounts,
   loading = false,
+  error = '',
+  onRetry,
   onChanged,
 }: DomainManageDrawerProps) {
   const [newName, setNewName] = useState('');
@@ -140,12 +144,25 @@ export default function DomainManageDrawer({
         </Button>
       </div>
 
+      {error && (
+        <div className="mp-read-warning" role="alert">
+          <strong>业务域读取失败</strong>
+          <span>{error}</span>
+          {domains.length > 0 && <span>保留上次成功读取的业务域，请重试后核对。</span>}
+          {onRetry && <Button loading={loading} onClick={onRetry}>重试业务域</Button>}
+        </div>
+      )}
+      {loading && domains.length > 0 && (
+        <Typography.Paragraph type="tertiary" role="status">
+          正在刷新业务域；下方保留上次成功读取的内容。
+        </Typography.Paragraph>
+      )}
       {loading && domains.length === 0 ? (
         <div className="mp-domain-loading">
           <Spin size="middle" />
         </div>
       ) : domains.length === 0 ? (
-        <Typography.Paragraph type="tertiary">还没有业务域，先新增一个。</Typography.Paragraph>
+        !error && <Typography.Paragraph type="tertiary">还没有业务域，先新增一个。</Typography.Paragraph>
       ) : (
         <ul className="mp-domain-list">
           {domains.map((d) => {

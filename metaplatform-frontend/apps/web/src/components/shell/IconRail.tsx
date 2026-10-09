@@ -1,8 +1,7 @@
-import { Nav } from '@douyinfe/semi-ui';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
-import { DOMAINS, type DomainDef, type DomainKey } from './domains';
+import { primaryDomains, type DomainDef } from './domains';
 import { useShell } from './ShellContext';
 
 export interface IconRailProps {
@@ -10,21 +9,11 @@ export interface IconRailProps {
   active?: DomainDef;
 }
 
-/**
- * 一级图标导航栏（DESIGN-SPEC §3 模式 A）。
- * 用 Semi Nav(vertical + isCollapsed) 承载：仅图标 + 悬浮提示，
- * 底部 Copilot / 主题开关走 Nav footer，与菜单区在视觉上分离。
- */
+/** Dark labeled product rail in the existing Semi dark theme scope. */
 export default function IconRail({ active }: IconRailProps) {
   const navigate = useNavigate();
   const { toggleCopilot, copilotOpen } = useShell();
   const { resolvedTheme, setTheme } = useSettings();
-
-  const items = DOMAINS.map((d) => ({
-    itemKey: d.key,
-    text: d.label,
-    icon: d.icon,
-  }));
 
   const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
 
@@ -59,17 +48,16 @@ export default function IconRail({ active }: IconRailProps) {
   );
 
   return (
-    <Nav
-      className="mp-rail-nav"
-      mode="vertical"
-      isCollapsed
-      items={items}
-      selectedKeys={active ? [active.key as DomainKey] : []}
-      footer={footer}
-      onClick={({ itemKey }) => {
-        const target = DOMAINS.find((d) => d.key === itemKey);
-        if (target) navigate(target.path);
-      }}
-    />
+    <nav className="mp-rail-nav" aria-label="平台导航">
+      <button className="mp-rail-brand" type="button" aria-label="MetaPlatform 工作台" onClick={() => navigate('/home')}>M</button>
+      <div className="mp-rail-entries">
+        {primaryDomains().map(domain => <Link key={domain.key} to={domain.path}
+          className="mp-rail-entry" aria-current={active?.key === domain.key ? 'page' : undefined}
+        >
+          {domain.icon}<span>{domain.label}</span>
+        </Link>)}
+      </div>
+      {footer}
+    </nav>
   );
 }

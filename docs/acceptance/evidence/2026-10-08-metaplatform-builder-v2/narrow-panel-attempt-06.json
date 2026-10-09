@@ -1,0 +1,170 @@
+{
+  "sourceCommit": "f892895200d57312fbb753866271d82f4d52af83",
+  "records": [
+    {
+      "page": "query",
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "actualSettingsMatch": true,
+      "nativeTabs": 28,
+      "before": {
+        "x": 327,
+        "y": 179.5,
+        "width": 63,
+        "height": 664.5,
+        "clientWidth": 63,
+        "scrollWidth": 63,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "paneBefore": {
+        "x": 78,
+        "y": 179.5,
+        "width": 248,
+        "height": 664.5,
+        "clientWidth": 247,
+        "scrollWidth": 247,
+        "scrollLeft": 0,
+        "overflowX": "hidden"
+      },
+      "afterCollapse": {
+        "x": 78,
+        "y": 179.5,
+        "width": 312,
+        "height": 664.5,
+        "clientWidth": 312,
+        "scrollWidth": 312,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "restoredPane": {
+        "x": 78,
+        "y": 179.5,
+        "width": 248,
+        "height": 664.5,
+        "clientWidth": 247,
+        "scrollWidth": 247,
+        "scrollLeft": 0,
+        "overflowX": "hidden"
+      },
+      "targetBounds": {
+        "x": 155,
+        "y": 434.25,
+        "width": 80.546875,
+        "height": 17
+      },
+      "nativeKeyboardCollapseAndRestore": true,
+      "targetTrialActionable": true,
+      "boundary": "actual Ont query2"
+    },
+    {
+      "page": "explore",
+      "route": "/ontology/explore/objects?class=ont.tenant-default.obj.crm.builder-e2e-write-1791492228026-d12bc2de.v1",
+      "actualSettingsMatch": true,
+      "nativeTabs": 28,
+      "before": {
+        "x": 327,
+        "y": 179.5,
+        "width": 63,
+        "height": 664.5,
+        "clientWidth": 63,
+        "scrollWidth": 63,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "paneBefore": {
+        "x": 78,
+        "y": 179.5,
+        "width": 248,
+        "height": 664.5,
+        "clientWidth": 247,
+        "scrollWidth": 247,
+        "scrollLeft": 0,
+        "overflowX": "hidden"
+      },
+      "afterCollapse": {
+        "x": 78,
+        "y": 179.5,
+        "width": 312,
+        "height": 664.5,
+        "clientWidth": 312,
+        "scrollWidth": 312,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "restoredPane": {
+        "x": 78,
+        "y": 179.5,
+        "width": 248,
+        "height": 664.5,
+        "clientWidth": 247,
+        "scrollWidth": 247,
+        "scrollLeft": 0,
+        "overflowX": "hidden"
+      },
+      "targetBounds": {
+        "x": 155,
+        "y": 434.25,
+        "width": 80.546875,
+        "height": 17
+      },
+      "nativeKeyboardCollapseAndRestore": true,
+      "targetTrialActionable": true,
+      "boundary": "actual Ont query2"
+    },
+    {
+      "page": "gov",
+      "route": "/gov/business",
+      "actualSettingsMatch": true,
+      "nativeTabs": 33,
+      "before": {
+        "x": 382.140625,
+        "y": 342.5,
+        "width": 0,
+        "height": 489.5,
+        "clientWidth": 0,
+        "scrollWidth": 68,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "paneBefore": {
+        "x": 90,
+        "y": 342.5,
+        "width": 291.140625,
+        "height": 489.5,
+        "clientWidth": 290,
+        "scrollWidth": 290,
+        "scrollLeft": 0,
+        "overflowX": "hidden"
+      },
+      "afterCollapse": {
+        "x": 90,
+        "y": 342.5,
+        "width": 288,
+        "height": 489.5,
+        "clientWidth": 288,
+        "scrollWidth": 288,
+        "scrollLeft": 0,
+        "overflowX": "visible"
+      },
+      "restoredPane": {
+        "x": 90,
+        "y": 342.5,
+        "width": 300,
+        "height": 489.5,
+        "clientWidth": 299,
+        "scrollWidth": 299,
+        "scrollLeft": 0,
+        "overflowX": "hidden"
+      },
+      "targetBounds": {
+        "x": 208,
+        "y": 557.5,
+        "width": 52,
+        "height": 32
+      },
+      "nativeKeyboardCollapseAndRestore": true,
+      "targetTrialActionable": true,
+      "boundary": "declared503 unavailable ARCH; no real service success claim"
+    }
+  ]
+}

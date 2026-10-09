@@ -1,0 +1,40 @@
+{
+  "observed_at_utc": "2026-10-08T21:44:02Z",
+  "implementation_source": "f892895200d57312fbb753866271d82f4d52af83",
+  "evidence_checkout": "b3456cd818c013400dc45cdcbccf01fd0181051d",
+  "source_diff_backend_frontend": "empty",
+  "mechanism": "CUA normal login-page button in existing task-owned IAB tab2; CDP network observation only",
+  "base_url": "http://127.0.0.1:59260",
+  "login": {
+    "http_status": 200,
+    "actual_response_user_id_nonblank": true,
+    "response_user_object_id_matches_user_id": true,
+    "token_subject_present": false,
+    "signed_tenant_claim_present": true,
+    "synthetic_identity_or_role_injected": false
+  },
+  "settings_after_authenticated_page_reload": {
+    "http_status": 200,
+    "request_user_id_matches_actual_login": true,
+    "response_user_id_matches_actual_login": true,
+    "request_bearer_matches_actual_login_token": true,
+    "theme": "light",
+    "applied_dom_theme": "light"
+  },
+  "limits": [
+    "Initial login-page-mounted SettingsProvider does not reread settings upon login; authenticated full page reload supplied the actual matching settings GET",
+    "Existing dashboard profile/default role display was not used as personal identity or role authorization proof",
+    "Unmocked copilot conversation list failed with upstream DNS resolution error; this is not a toolbar interaction pass or live copilot integration proof",
+    "This receipt is a UI login/availability observation, not canonical browser-gate reexecution"
+  ],
+  "preservation": {
+    "normal_browser_viewport_restored": true,
+    "final_preview_path": "/ontology/model/graph",
+    "final_preview_document_overflow": false,
+    "preview_tab_marked_deliverable": true,
+    "network_observer_disabled": true,
+    "private_response_and_event_variables_cleared": true,
+    "settings_put_or_business_write_or_message_send": false,
+    "other_preview_9250_not_operated": true
+  }
+}

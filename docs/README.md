@@ -16,6 +16,10 @@
 
 ## 📁 目录结构
 
+当前全平台界面依据 [Builder V2 已接受设计](superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)与[实施计划](superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)；七入口与常驻 SuperAI 采用顶部功能组、当前组左侧页面导航，覆盖历史八入口及阶段侧栏/PageTabs 呈现。导航单源为 [ADR-0069](active/decisions/ADR-0069-ontology-ia-v2-workspace-navigation.md)的全平台功能组附录、[IA v2 规格](active/specs/2026-09-18-ontology-ia-v2-design.md) §12 与 [平台导航规格修订](active/specs/2026-09-14-ui-redesign/DESIGN-SPEC.md)。
+
+[Builder V2 active 页面模式清单](active/acceptance/builder-v2-active-page-coverage.md)逐项登记当前路由、真实页面/共享 wrapper、局部适配及代表验证边界；源码归类与 HTTP 边界浏览器不替代正式后端验收。
+
 ### 🟢 `active/` — 当前活跃（v3.x / v4 增量）
 
 | 子目录                                       | 内容                          |

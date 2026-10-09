@@ -61,7 +61,7 @@ function PortalRow({ portal, internal }: { portal: PortalItem; internal: boolean
   const Icon = portalIcon(portal.icon);
   return (
     <List.Item
-      main={
+      children={
         <div className="mp-home-feed-row">
           <Avatar size="small" color="light-blue">
             <Icon size={16} strokeWidth={1.5} />
@@ -140,7 +140,7 @@ export default function PortalPage() {
   const renderLoading = (_: number, index: number) => (
     <List.Item
       key={`loading-${index}`}
-      main={
+      children={
         <>
           <Skeleton.Title />
           <Skeleton.Paragraph rows={2} />

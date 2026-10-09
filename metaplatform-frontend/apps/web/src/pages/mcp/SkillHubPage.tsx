@@ -30,7 +30,7 @@ import {
   uploadSkill,
   type Skill,
 } from '@/api/mcphub/skills';
-import { EmptyState } from '@/components/skeleton';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './mcp.css';
 
 const FORM_DRAWER_W = 480;
@@ -197,7 +197,7 @@ export default function SkillHubPage() {
 
   return (
     <Card
-      title="SKILL HUB"
+      title={<PageHeader title="SKILL HUB" />}
       headerExtraContent={
         <Space>
           <Input

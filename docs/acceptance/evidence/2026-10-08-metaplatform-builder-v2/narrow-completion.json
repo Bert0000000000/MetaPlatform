@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "f892895200d57312fbb753866271d82f4d52af83",
+  "attempt": 6,
+  "status": "passed",
+  "actualUserInfoBackedIdentity": true,
+  "signedTenant": true,
+  "settingsMatchActualUser": true,
+  "chatSemanticModeClickAndRestore": true,
+  "chatTeamClickAndRestore": true,
+  "typeNativeTabAndTrial": true,
+  "panelNativeCollapseAndRestore": true,
+  "pageErrors": [],
+  "apiFailures": [
+    {
+      "path": "/api/v1/agent-team/runs",
+      "status": 503,
+      "boundary": true
+    },
+    {
+      "path": "/api/v1/arch/capabilities/tree",
+      "status": 503,
+      "boundary": true
+    }
+  ],
+  "mutations": []
+}

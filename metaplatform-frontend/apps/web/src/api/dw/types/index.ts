@@ -112,11 +112,11 @@ export const ROLE_CATEGORY_MAP: Record<RoleCategory, { label: string; color: str
 
 export const EMPLOYEE_STATUS_MAP: Record<string, { label: string; color: string }> = {
   DRAFT: { label: '草稿', color: 'default' },
-  ACTIVE: { label: '在线', color: 'success' },
+  ACTIVE: { label: '已启用', color: 'success' },
   INACTIVE: { label: '已停用', color: 'default' },
   ARCHIVED: { label: '已归档', color: 'text' },
   // remapUserStatus interceptor converts ACTIVE→ENABLED, INACTIVE→DISABLED
-  ENABLED: { label: '在线', color: 'success' },
+  ENABLED: { label: '已启用', color: 'success' },
   DISABLED: { label: '已停用', color: 'default' },
 };
 

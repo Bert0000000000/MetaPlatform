@@ -1,3 +1,4 @@
+import PageHeader from '@/components/skeleton/PageHeader';
 // AnalysisPage - 分析工作台（L6 应用层，Palantir Quiver 对位）。
 //
 // 点击式图表分析（不写 SQL / DSL，纯点选聚合）：
@@ -204,7 +205,9 @@ export default function AnalysisPage() {
   };
 
   return (
-    <div className="mp-w-full mp-flex mp-flex-1 mp-gap-5 mp-items-start" >
+    <>
+    <PageHeader title="分析工作台" desc="按实际对象类型与属性执行聚合分析" />
+    <div className="mp-w-full mp-flex mp-flex-1 mp-gap-5 mp-items-start mp-onto-explore-layout" >
       {/* 左栏：数据源选择 */}
       <div className="mp-flex mp-gap-4 mp-shrink-0 mp-flex-col mp-onto-side-col">
         <Card className="mp-h-fit">
@@ -278,7 +281,7 @@ export default function AnalysisPage() {
       </div>
 
       {/* 中间：分析画布 */}
-      <div className="mp-flex mp-flex-1 mp-gap-4 mp-flex-col" >
+      <div className="mp-flex mp-flex-1 mp-gap-4 mp-flex-col mp-onto-explore-main" >
         {/* 配置行 */}
         <Card bodyStyle={{ padding: '14px 16px' }}>
           <div className="mp-flex-center mp-wrap mp-gap-2" >
@@ -384,5 +387,6 @@ export default function AnalysisPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

@@ -2,23 +2,16 @@ import { Layout } from '@douyinfe/semi-ui';
 import { Outlet, useLocation } from 'react-router-dom';
 import IconRail from './IconRail';
 import TopBar from './TopBar';
-import PageTabs from './PageTabs';
+import WorkspaceNavigation from './WorkspaceNavigation';
 import CommandPalette from './CommandPalette';
 import CopilotDock from './CopilotDock';
 import { ShellProvider, useShell } from './ShellContext';
 import { resolveDomain } from './domains';
 import './shell.css';
 
-/**
- * 应用壳 v2（DESIGN-SPEC §3）：Semi Layout 承载。
- * ┌──┬──────────────────────────────┐
- * │R │ Header：面包屑 ∥ ⌘K · 环境 · 通知 · 布局切换 · 用户
- * │A ├──────────────────────────────┤
- * │I │ PageTabs（主 tab + 子 tab 胶囊）
- * │L │ Outlet（页内内容）
- * └──┴──────────────────────────────┘ + CopilotDock（右，可收起）+ CommandPalette（⌘K）
- *
- * 布局模式（side|top）挂在 #app 的 data-nav 上，由 CSS 控制 rail / 顶栏横排的显隐。
+/** Seven product entries → workspace groups → current-group pages → resource detail tabs.
+ * Semi Layout retains full-height descendants and the existing Copilot/command palette.
+ * Persisted side/top mode controls the primary entry surface through data-nav.
  */
 function ShellFrame() {
   const location = useLocation();
@@ -31,9 +24,10 @@ function ShellFrame() {
       className="mp-app"
       data-nav={navMode}
       data-copilot={copilotOpen ? 'open' : 'closed'}
+      data-workspace={domain?.navigationMode === 'workspace'}
     >
       <Layout hasSider className="mp-shell">
-        <Layout.Sider className="mp-rail-sider">
+        <Layout.Sider className="mp-rail-sider semi-always-dark">
           <IconRail active={domain} />
         </Layout.Sider>
 
@@ -43,10 +37,9 @@ function ShellFrame() {
           </Layout.Header>
 
           <Layout.Content className="mp-content">
-            <PageTabs />
-            <div className="mp-page">
+            <WorkspaceNavigation>
               <Outlet />
-            </div>
+            </WorkspaceNavigation>
           </Layout.Content>
         </Layout>
 

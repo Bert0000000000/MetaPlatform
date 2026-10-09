@@ -16,7 +16,7 @@ import {
   type KernelProperty,
   type SearchAroundGroup,
 } from '@/api/ont/kernel';
-import { DataTablePro, EmptyState, FilterBar, SheetDetail, SplitPane } from '@/components/skeleton';
+import { DataTablePro, EmptyState, FilterBar, PageHeader, SheetDetail, SplitPane } from '@/components/skeleton';
 import { setOntologySelection } from '../hooks/assistantContext';
 import ActionFormDrawer from './ActionFormDrawer';
 import ProposalConfirmDrawer from '../components/ProposalConfirmDrawer';
@@ -55,6 +55,7 @@ export default function ObjectExplorerPage() {
   const [types, setTypes] = useState<KernelObjectType[]>([]);
   const [typesLoading, setTypesLoading] = useState(true);
   const [typesError, setTypesError] = useState('');
+  const typesRequestRef = useRef(0);
   const [typeQuery, setTypeQuery] = useState('');
 
   const [selectedRid, setSelectedRid] = useState<string>(searchParams.get('class') ?? '');
@@ -67,6 +68,7 @@ export default function ObjectExplorerPage() {
     const raw = Number(searchParams.get('page') ?? '1');
     return Number.isFinite(raw) && raw > 0 ? raw : 1;
   });
+  const [historyRevision, setHistoryRevision] = useState(0);
   const [selectedKeys, setSelectedKeys] = useState<Array<string | number>>([]);
 
   const [detail, setDetail] = useState<KernelIndividual | null>(null);
@@ -85,20 +87,22 @@ export default function ObjectExplorerPage() {
 
   // ── 类型清单 ──
   const loadTypes = useCallback(async () => {
+    const request = ++typesRequestRef.current;
     setTypesLoading(true);
     setTypesError('');
     try {
       const list = await listObjectTypes();
-      setTypes(list);
+      if (request === typesRequestRef.current) setTypes(list);
     } catch (e) {
-      setTypesError(e instanceof Error ? e.message : String(e));
+      if (request === typesRequestRef.current) setTypesError(e instanceof Error ? e.message : String(e));
     } finally {
-      setTypesLoading(false);
+      if (request === typesRequestRef.current) setTypesLoading(false);
     }
   }, []);
 
   useEffect(() => {
     void loadTypes();
+    return () => { typesRequestRef.current += 1; };
   }, [loadTypes]);
 
   // 无显式选中时落到第一个类型
@@ -121,7 +125,6 @@ export default function ObjectExplorerPage() {
     setIndsLoading(true);
     setIndsError('');
     setSelectedKeys([]);
-    setPage(1);
     (async () => {
       try {
         const rows = await listIndividuals({ classRid: selectedRid, limit: LOAD_LIMIT, offset: 0 });
@@ -140,8 +143,17 @@ export default function ObjectExplorerPage() {
     };
   }, [selectedRid]);
 
+  useEffect(() => {
+    // 返回未提交的 lazy 导航前，Router context 的 location/key 可保持不变。
+    const onPopState = () => setHistoryRevision(value => value + 1);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   // 同步 URL（?class= / ?q= / ?page=）便于「新标签页打开」深链（IA2-4：页码进 URL）
   useEffect(() => {
+    // Suspense 可保留旧路由树；只有浏览器仍在本页时才能回写 query。
+    if (window.location.pathname !== location.pathname) return;
     const next = new URLSearchParams(searchParams);
     if (selectedRid && selectedRid !== next.get('class')) next.set('class', selectedRid);
     if (keyword) {
@@ -154,7 +166,7 @@ export default function ObjectExplorerPage() {
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
     // searchParams 由本次写入驱动，无需作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRid, keyword, page]);
+  }, [selectedRid, keyword, page, historyRevision]);
 
   // 旧深链 ?id=<rid>（IA2-1 之前的形态）→ replace 到段路由 /objects/:rid
   useEffect(() => {
@@ -420,8 +432,9 @@ export default function ObjectExplorerPage() {
             motion={false}
             onSelect={(key: unknown) => {
               const next = String(key);
-              if (next.startsWith('domain:')) return;
+              if (next.startsWith('domain:') || next === selectedRid) return;
               setSelectedRid(next);
+              setPage(1);
             }}
             renderLabel={(label: unknown, node: unknown) => {
               const n = node as { key?: string; count?: number };
@@ -443,6 +456,7 @@ export default function ObjectExplorerPage() {
 
   return (
     <div className="mp-page-full mp-explorer">
+      <PageHeader title="对象浏览" desc="读取实际对象与关系，通过提案确认业务动作" className="mp-explorer-page-head" />
       <SplitPane ariaLabel="对象浏览器" defaultWidth={248} pane={typePane}>
         <div className="mp-explorer-list">
           <div className="mp-explorer-list-head">

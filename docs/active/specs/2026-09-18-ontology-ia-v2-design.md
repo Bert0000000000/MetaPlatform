@@ -15,7 +15,7 @@
 把 `概览 / 概念建模 / 对象浏览 / 数据中心 / 分析应用 / 运行治理` 六个横向 Tab，
 重构为语义清晰、职责互斥、支持深链接的本体工作区：
 
-```
+```text
 本体
 ├── 总览
 ├── 语义模型
@@ -93,7 +93,7 @@ export interface DomainDef {
 
 > 首版只渲染 `active`；`planned` 只登记不渲染。
 
-```
+```text
 本体
 ├── 总览                       active
 ├── 语义模型
@@ -147,7 +147,7 @@ Dashboard：从本体导航移除，`DashboardPage.tsx` 保留文件（最终归
 
 ### 4.1 目标正式路由
 
-```
+```text
 /ontology                              总览（落地页）
 
 /ontology/model                     → redirect /ontology/model/object-types
@@ -193,6 +193,7 @@ Dashboard：从本体导航移除，`DashboardPage.tsx` 保留文件（最终归
 ```
 
 约束：
+
 - 详情路由先注册；暂无独立组件的详情 Tab 用同一详情组件按 tab 渲染。
 - `:rid` 用 URL-safe 编码 + 统一解码辅助函数（复用 `pages/ontology/rid.ts` 惯例）。
 - 对象详情可继续以 Sheet 呈现（React Router background location），深链直达时展示
@@ -247,7 +248,7 @@ Dashboard：从本体导航移除，`DashboardPage.tsx` 保留文件（最终归
 
 ### 5.1 OntologyWorkspaceLayout
 
-```
+```text
 ┌──────────────────────────────────────────────────────┐
 │ ContextBar：本体名 / Release / 搜索 / 创建资源        │
 ├───────────────┬──────────────────────────────────────┤
@@ -333,6 +334,7 @@ feature migration → cleanup → acceptance evidence。
 ### 7.2 测试方案
 
 **新增（IA2-0 已落红）**：
+
 - `src/components/shell/ontology-navigation-mode.test.tsx`（vitest 契约）：
   ontology 域声明 `navigationMode: 'workspace'`；PageTabs 在本体路由渲染为空；
   非 workspace 域不受影响
@@ -346,7 +348,8 @@ feature migration → cleanup → acceptance evidence。
 `context-navigate.spec.ts` 的 `/ontology/objects` 用例随 ROUTE_VIEWS 扩展更新。
 
 **回归命令**（apps/web 下）：
-```
+
+```bash
 pnpm typecheck && pnpm build && pnpm test:unit && node scripts/check_classes.mjs
 npx playwright test tests/e2e/ontology-ia-v2-*.spec.ts   # 需 9250 dev server + 8100 网关
 ```
@@ -364,19 +367,23 @@ npx playwright test tests/e2e/ontology-ia-v2-*.spec.ts   # 需 9250 dev server +
 ## 8. 验收标准
 
 ### 8.1 信息架构
+
 六大功能域命名顺序正确；本体不显示全局横向 PageTabs；工作区有独立左侧导航；
 语义模型不含 Action/Function；数据映射不含全局资产门户；对象与查询不含正式
 Dashboard；动作与函数有独立入口；发布与治理不含 Agent 回归指标。
 
 ### 8.2 路由
+
 每个 active 子页面有正式 URL；刷新不丢位置；前进后退正常；面包屑正确；
 ⌘K 可搜索；旧路径全部可达新路径；无路由循环；无重复注册。
 
 ### 8.3 功能
+
 对象消费闭环、Action 编排、版本/Diff/Rollback、数据映射与同步、分析与地图
 均不退化；Agent 服务不可用不影响本体页面。
 
 ### 8.4 工程
+
 无 `.semi-*` 覆盖；无新增静态 inline style；无 Mock 冒充；无空壳正式页面；
 无跳过的 P0 测试；typecheck / build / unit / E2E 通过；验收证据落档。
 
@@ -385,3 +392,27 @@ Dashboard；动作与函数有独立入口；发布与治理不含 Agent 回归�
 同 ADR-0069 §2.5 / §4 / 不变量 5。PR 切分：PR-1 foundation（IA2-0+IA2-1）→
 PR-2 semantic-model → PR-3 data → PR-4 explore → PR-5 logic → PR-6 governance →
 PR-7 cleanup-acceptance；每 PR 文件范围明确、不混 Agent 改动、有测试与回滚说明。
+
+## 10. 2026-10-08 建设工作区呈现更新（Accepted）
+
+依据 [ADR-0069 的 2026-10-08 决定](../decisions/ADR-0069-ontology-ia-v2-workspace-navigation.md)与[已接受 Builder V2 设计](../../superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)，本体恢复独立六域左侧导航，其他域保留横向 PageTabs；覆盖 2026-09-24 横向呈现决定，保留历史和全部正式 URL/深链成果。
+
+`ONTOLOGY_NAV` 统一派生 active 导航、面包屑、命令搜索及兼容 tabs；路径按最长匹配，资源详情不落入总览。语义模型首项及组根默认页为“模型工作台” `/ontology/model/graph`，一级本体入口同路由；`/ontology` 总览保留，新增 `/ontology/overview` 别名。标签使用接口定义、公理与约束、函数管理、变更草稿、权限策略、操作审计，保留聚合分析、地图、Action 编排和使用量。
+
+桌面采用深色平台定位区、白色工作区导航和上下文面包屑；390px 提供可折叠导航并保持键盘访问，内容局部滚动。路由及打开记录仍由 `OntologyDomainShell` 写入 assistant context，不增加业务事实或虚构工作区状态。
+
+当前验证资源、命令与本地/真实服务/CI/部署/业务验收边界以[对齐实施计划](../../superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)为准；§7 中历史共享端口和旧基线不得作为本轮通过证据。
+
+## 11. 2026-10-08 用户后补七入口修订（Accepted）
+
+[已接受修订设计](../../superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)覆盖 §10 的八入口呈现与原六域归组。一级菜单依次为工作台、业务应用、对象探索、本体工作室、数字员工、连接与知识、治理与管理；SuperAI 常驻能力和完整 `/superai/*` 路由保留。
+
+本体六组按概览、业务模型、数据接入、业务动作、变更发布、运行与质量组织；同步、模型校验、执行记录、审计、使用量进入运行与质量，模型检查旧入口复用模型校验。接口/公理、函数/编排继续可达。对象浏览、ObjectSet、聚合和地图以原 `/ontology/explore/*` 归入对象探索，不在建设侧栏重复；`OntologyDomainShell` 的上下文与高度约束继续生效。
+
+`/gov/*`、`/admin/*` 合并至治理与管理，现有 `/ontology/governance/security` 也由该入口发现并沿用同一策略实现。最长 route-prefix 决定所属产品域。菜单、tabs、搜索和面包屑由现有导航声明派生；保留全部现有有效 URL 与旧深链。此修订不增加后台业务语义、不复制权限事实、不创建前端角色，权限以现行服务端授权为准。实现与浏览器验收分别记录，执行入口见[计划 Task 7](../../superpowers/plans/2026-10-08-metaplatform-builder-v2-alignment.md)。
+
+## 12. 2026-10-08 全平台原型呈现更新（Accepted）
+
+按[已接受设计 §4.1/5/10](../../superpowers/specs/2026-10-08-metaplatform-builder-v2-alignment-design.md)及[ADR-0069 最新附录](../decisions/ADR-0069-ontology-ia-v2-workspace-navigation.md)，覆盖 §10/11 的阶段侧栏/PageTabs 呈现：七入口和 SuperAI 均采用顶部功能组、当前组左侧页面导航、资源内详情页签。保留本体六组职责及全部正式 URL；不重复建设导航，`OntologyDomainShell` 继续管理高度和助手上下文。
+
+`domains.tsx` 统一派生各域组/页面、最长路径匹配、命令索引和可读面包屑；本体元数据仍来自 `ONTOLOGY_NAV`。真实已注册的长尾页面保持可发现，详情沿用所属资源页，planned/无后台支持原型页不进入导航。side/top 和已存主题继续有效，新用户 light；390px 组栏局部滚动，页面导航展开/选择/Escape 焦点行为保留。颜色使用主题令牌，禁止新增 Semi 内部覆盖及虚构工作区状态。源码覆盖及 focused unit 见 Task 8 工作区；浏览器四尺寸/全入口验收见 Task 5/6。

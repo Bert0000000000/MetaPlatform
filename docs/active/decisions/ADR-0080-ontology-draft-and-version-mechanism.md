@@ -149,3 +149,45 @@
 - `ont_type_version` 中 ONT-VERSION-MECHANISM **之前**的旧血缘行保持原样、被读路径跳过；
   不做数据回填（它们不携带定义，回填无源）。
 - 并发保护是**乐观**的：不做悲观锁；库不一致时以先提交者为准，后提交者收到 409。
+
+## 6. 2026-10-09 兼容纠正：草稿丢弃路由
+
+2026-09-23 的“不新增端点”是原版本机制实施批的范围。本补记纠正既有草稿丢弃操作的
+规范入口与路由登记，不改变草稿、发布版本或正式对象的仓储语义。
+
+- 草稿丢弃的规范入口为 `DELETE /api/v1/ont/v2/object-types/{rid}/wip`，保持
+  `operationId: ontDiscardV2SchemaWip`。只删除该 RID 的 WIP，保留已发布的 ObjectType。
+- 原 `DELETE /api/v1/ont/v2/object-types/wip/{rid}` 保留为兼容别名，与规范入口调用
+  **同一 handler**，保留相同租户校验及响应。已有前端调用可继续使用原路径；不要求
+  运行中的服务或预览立即切换入口。
+- 两个草稿丢弃路由必须登记在通配 `DELETE /object-types/{rid:path}` 之前，否则旧入口
+  会被解释为删除 `wip/<rid>` 类型，并错误地返回跨租户拒绝。
+- 公开 OpenAPI 的 `paths` 只登记规范入口；兼容别名使用 `include_in_schema=False`，
+  其方法、完整路径、废弃标记及 schema 可见性必须在规范操作的 description 与
+  `x-mate-compatibility-aliases` 中明确登记。保留真实兼容功能与文档，不关闭或忽略
+  `no-ambiguous-paths`。该规则只比较路径形状，无法利用 HTTP 方法及 RID 约束区分
+  `wip/{rid}` 与 `{rid}/branch` 等接口。
+- 回归必须通过真实 HTTP 路由验证：规范入口和旧别名都丢弃 WIP且保留正式定义、拒绝
+  外租户请求；正式对象 DELETE 仍调用原行为。契约验证规范 operationId、兼容记录及
+  生成物，traceability 的 operationId 与需求映射保持不变。
+
+这项纠正的源码与契约测试是本地证据；运行服务的行为、远端 CI 和部署验收分别记录。
+
+## 7. 2026-10-09 兼容纠正：属性输入与显示响应
+
+属性请求与属性显示响应使用独立契约，避免请求的可选标题改变历史响应保证。
+
+- 请求保留既有 `PropertyDTO` 的空标题能力。未提供 `title` 或显式提供空串，都按请求
+  原值写入；不把显示回退写回 `Property.title`。请求 `format` 枚举完整覆盖内核既有的
+  15 项 `PropertyFormat`，包括原七项以及地理、时序、媒体、struct、vector 格式；
+  数组由已有 `array` 字段声明，不把 value-type 注册表里的 `type_id` 当作新 format。
+- 属性显示响应保留 `title` 非空保证：唯一序列化入口 `_prop_to_dto` 使用原始非空
+  `Property.title`，空标题则显示该属性的完整 RID。嵌套 struct 字段递归使用同一入口；
+  ObjectType、LinkType、Interface、ActionType、类 inspect 不另设回退规则。
+- 回退仅作用于响应 DTO 的显示标题，不修改原始 `Property.title`、持久化定义、
+  `definition_checksum`、已发布不可变版本快照或迁移计划。响应中的 `checksum` 仍对应
+  存储定义，不能从包含显示回退的 DTO 重新推导。无需修改或回填存量空标题。
+- 响应 `format` 保持既有 DTO 的字符串语义，文档列明已实现格式；请求使用真实的有限
+  枚举。保留原七种格式的读写兼容，不虚构后端未实现格式，也不放宽 oasdiff 忽略清单。
+- 验证须覆盖全部 15 种请求格式、原七种格式往返、空标题与嵌套标题的实际 HTTP 响应，
+  并核对原定义、校验和及版本快照不变。契约及两套 oasdiff 使用原门禁与原忽略清单。

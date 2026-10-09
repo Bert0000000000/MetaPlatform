@@ -18,7 +18,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   AIChatDialogue,
   AIChatInput,
-  Sidebar,
   Avatar,
   Button,
   Typography,
@@ -52,6 +51,7 @@ import {
   IconUserCircle,
 } from '@douyinfe/semi-icons';
 import EmptyState from '@/components/skeleton/EmptyState';
+import PageHeader from '@/components/skeleton/PageHeader';
 import {
   streamChat,
   streamAgentChat,
@@ -439,6 +439,7 @@ export default function ChatPage() {
   // 起始为空列表：会话一律来自后端 conversations 接口，不预置任何演示数据。
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
+  const [conversationsError, setConversationsError] = useState('');
   const [activeId, setActiveId] = useState<string>(() => '');
   const [streamingMap, setStreamingMap] = useState<Record<string, string>>({});
   const [agentMode, setAgentMode] = useState(false);
@@ -460,6 +461,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [sessionPanelVisible, setSessionPanelVisible] = useState(true);
+  const [contextVisible, setContextVisible] = useState(true);
   const [currentModel, setCurrentModel] = useState('doubao-pro-32k');
   // 用户手动改选过模型后，后台 default_model 加载完成不再覆盖选择
   const modelTouchedRef = useRef(false);
@@ -490,8 +492,10 @@ export default function ChatPage() {
   const activeSession = sessions.find((s) => s.id === activeId) ?? sessions[0];
 
   // --- 后端对接：会话列表加载 ---
-  useEffect(() => {
-    listConversations()
+  const loadConversations = useCallback(() => {
+    setConversationsLoading(true);
+    setConversationsError('');
+    return listConversations()
       .then((convs) => {
         if (convs.length === 0) return;
         setSessions((prev) => {
@@ -501,13 +505,14 @@ export default function ChatPage() {
         });
         setActiveId((prev) => (convs.some((c) => c.id === prev) ? prev : convs[0]?.id ?? prev));
       })
-      .catch(() => {
-        Toast.warning('会话列表加载失败');
+      .catch((e) => {
+        setConversationsError(e instanceof Error ? e.message : '会话列表加载失败');
       })
       .finally(() => {
         setConversationsLoading(false);
       });
   }, []);
+  useEffect(() => { void loadConversations(); }, [loadConversations]);
 
   // --- 后端对接：历史消息加载（仅 conv-* 会话，加载一次） ---
   useEffect(() => {
@@ -1226,10 +1231,13 @@ export default function ChatPage() {
   // 无活动会话：加载中给加载态，加载完成后给诚实空态（两者视觉可区分）
   if (!activeSession) {
     return (
-      <div className="mp-split mp-page-full">
+      <div className="mp-chat-workspace mp-page-full">
+        <PageHeader title="会话工作台" desc="会话、对话与实际运行上下文" />
         <div className="mp-split-main">
           {conversationsLoading ? (
             <PageLoading tip="正在加载会话…" />
+          ) : conversationsError ? (
+            <EmptyState illustration="failure" title="会话列表加载失败" desc={conversationsError} actions={<Button onClick={() => void loadConversations()}>重试会话</Button>} />
           ) : (
             <EmptyState
               illustration="no-content"
@@ -1254,7 +1262,13 @@ export default function ChatPage() {
 
   // ============ 渲染 ============
   return (
-    <div className="mp-split mp-page-full">
+    <div className="mp-chat-workspace mp-page-full">
+      <PageHeader title="会话工作台" desc="会话、对话与实际运行上下文" actions={<>
+        <Button aria-pressed={sessionPanelVisible} onClick={() => setSessionPanelVisible((v) => !v)}>会话列表</Button>
+        <Button aria-pressed={contextVisible} onClick={() => setContextVisible((v) => !v)}>运行上下文</Button>
+      </>} />
+      {conversationsError && <div role="alert" className="mp-read-warning"><span>会话列表读取失败 · {conversationsError} · 保留已读取会话</span><Button onClick={() => void loadConversations()}>重试会话</Button></div>}
+      <div className="mp-chat-columns">
       {/* ===== 左：对话区 ===== */}
       <div className="mp-split-main">
         {/* chat-topbar：侧栏开关 + 对话标题 + 运行状态。
@@ -1522,17 +1536,8 @@ export default function ChatPage() {
 
       {/* ===== 右：会话历史 Sidebar（官方配置） ===== */}
       {sessionPanelVisible && (
-        <Sidebar
-          visible
-          resizable
-          title="会话历史"
-          showClose
-          defaultSize={{ width: 260 }}
-          minWidth={200}
-          maxWidth={360}
-          onCancel={() => setSessionPanelVisible(false)}
-          options={[{ key: 'toolbar', icon: null, name: null }]}
-          renderOptionItem={() => (
+        <aside className="mp-chat-sessions" aria-label="会话列表">
+          <h2>会话与任务</h2>
             <>
               {/* 调度任务：页面右上角的独立区域（在「新建会话」之上）。紧凑竖排，
                   点「详情」用 SheetDetail 打开与工作台同一个完整视图。 */}
@@ -1560,8 +1565,6 @@ export default function ChatPage() {
                 onChange={(v) => setSearchKeyword(v)}
               />
             </>
-          )}
-          renderMainContent={() => (
             <>
               {(() => {
                 const groups: Array<{ label: string; items: ChatSession[] }> = [];
@@ -1591,11 +1594,11 @@ export default function ChatPage() {
                               }
                               main={
                                 <>
-                                  <div>
+                                  <button type="button" className="mp-chat-session-link" onClick={() => handleSelectConversation(s.id)} aria-current={s.id === activeId ? 'true' : undefined}>
                                     <Typography.Text strong ellipsis={{ showTooltip: true }}>
                                       {s.title}
                                     </Typography.Text>
-                                  </div>
+                                  </button>
                                   <Space spacing={6}>
                                     <Typography.Text type="tertiary" size="small">
                                       {new Date(s.updatedAt).toLocaleString('zh-CN', {
@@ -1644,9 +1647,14 @@ export default function ChatPage() {
                 );
               })()}
             </>
-          )}
-        />
+        </aside>
       )}
+      {contextVisible && <aside className="mp-chat-context" aria-label="运行上下文">
+        <h2>运行上下文</h2>
+        <dl><dt>当前会话</dt><dd>{activeSession.title}</dd><dt>会话保存</dt><dd>{isBackendConversation(activeSession.id) ? '服务端会话' : '仅当前页面，尚未写入后端'}</dd><dt>模型选择</dt><dd>{availableModels.length ? currentModel : '模型配置未读取或不可用'}</dd><dt>引用</dt><dd>{references.length}</dd><dt>运行标识</dt><dd>{teamRunId || '尚未启动任务运行'}</dd></dl>
+        <p>模型回复、工具证据与提案以实际请求结果为准。执行提案须经人工确认。</p>
+      </aside>}
+      </div>
 
       {/* 提案确认抽屉（复用本体域状态机：preview + preflight → confirm → execute） */}
       <ProposalConfirmDrawer

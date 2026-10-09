@@ -15,10 +15,12 @@ export interface AppItem {
    * 与 `group`（技术分类 platform/knowledge/data/business）是两条独立的分类轴。
    */
   businessDomain: string;
-  status: AppStatus;
-  moduleCount: number;
-  createdAt: string;
-  updatedAt: string;
+  version?: string;
+  /** 可选读取事实；当前应用目录可能未提供生命周期、模块数或时间。 */
+  status?: AppStatus;
+  moduleCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /** 业务域（应用中心业务域 tab 的分类实体，可增 / 可改 / 可删）。 */

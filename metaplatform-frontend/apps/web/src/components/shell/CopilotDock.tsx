@@ -126,10 +126,15 @@ export default function CopilotDock() {
 
     // 上下文在**发送这一刻**组装：navigation 取当前路由，selection 取本体域 store
     // 里最新的那份（只有对象浏览器在发布；其它域为空，就不落 selection 键）。
+    const ontologySnapshot = getOntologyContextSnapshot();
+    // Product labels may change, but the ontology shell remains authoritative for semantic
+    // view/open-record context. Match its URL so a stale snapshot cannot override another page.
+    const ontologyNavigation = ontologySnapshot.navigation;
     const context = buildAssistantContextEnvelope({
       interaction: interactionRef.current,
-      navigation: navigationRef.current,
-      selection: getOntologyContextSnapshot().selection,
+      navigation: ontologyNavigation?.url === navigationRef.current?.url
+        ? ontologyNavigation : navigationRef.current,
+      selection: ontologySnapshot.selection,
     });
 
     try {

@@ -14,6 +14,8 @@
 // dev 模式 Semi 交互组件 onClick 被截 noop —— 全部原生元素 + 内联样式。
 
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@mate/shared';
+import { discardEditorInput,editorIdentity,editorInputKey,readEditorInput,retainEditorInput } from '../hooks/editorSession';
 import { AlertTriangle, ChevronDown, ChevronRight, Plus, Trash2, X } from 'lucide-react';
 import {
   propSlug, slugAndVersionOfObjectType,
@@ -71,12 +73,27 @@ export interface ObjectTypeEditorV2DrawerProps {
   onCreateNameBlur?: (name: string, slug: string, domain: string) => void;
   /** 相似扫描进行中（create 概念名旁的提示）。 */
   prechecking?: boolean;
+  /** True backend WIP stage handler; never calls direct upsert. */
+  onSaveDraft?: (payload: KernelObjectTypeCreate) => Promise<string | null>;
+  onDirtyChange?: (dirty: boolean) => void;
+  auxiliaryErrors?: string[];
+  auxiliaryLoading?: boolean;
+  onRetryAuxiliary?: () => void;
+  externalError?: string;
+  /** Caller-owned similarity continuation shares the form's write lock. */
+  externalSubmitting?: boolean;
 }
 
 interface RenderHintRow {
   key: string;
   k: string;
   v: string;
+}
+
+interface EditorInput {
+  displayName:string;slug:string;domain:string;description:string;parentClass:string;
+  interfacesSel:string[];status:string;typeGroup:string;renderHints:RenderHintRow[];marking:string[];
+  propDrafts:PropertyDraft[];expanded:string|null;baseline:string;liveDefinition:string;
 }
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -89,8 +106,13 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
 
 export default function ObjectTypeEditorV2Drawer({
   open, mode, objectType, objectTypes, linkTypes, interfaces, valueTypes,
-  tenant, domainOptions, prefill, onClose, onSubmit, onCreateNameBlur, prechecking,
+  tenant, domainOptions, prefill, onClose, onSubmit, onCreateNameBlur, prechecking, onSaveDraft, onDirtyChange, auxiliaryErrors, auxiliaryLoading, onRetryAuxiliary, externalError, externalSubmitting = false,
 }: ObjectTypeEditorV2DrawerProps) {
+  const {user}=useAuth();
+  const identity=editorIdentity(user);
+  const sessionKey=editorInputKey(identity,mode,objectType?.rid);
+  const [loadedSessionKey,setLoadedSessionKey]=useState('');
+  const [sessionNotice,setSessionNotice]=useState('');
   const [displayName, setDisplayName] = useState('');
   const [slug, setSlug] = useState('');
   const [domain, setDomain] = useState(domainOptions[0]?.code ?? 'crm');
@@ -105,10 +127,42 @@ export default function ObjectTypeEditorV2Drawer({
   const [propDrafts, setPropDrafts] = useState<PropertyDraft[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const busy = submitting || externalSubmitting;
   const [error, setError] = useState('');
   // G33：409 破坏性变更二段确认（页面 onSubmit 返回 DestructiveConfirmDetail 时激活）
   const [destructive, setDestructive] = useState<DestructiveConfirmDetail | null>(null);
   const [confirmInput, setConfirmInput] = useState('');
+  const [closeRequested, setCloseRequested] = useState(false);
+  const initial = useRef('');
+  const baselineLive = useRef('');
+  const submitGeneration = useRef(0);
+  useEffect(()=>()=>{submitGeneration.current++;},[open,mode,objectType?.rid,identity]);
+  const snapshot = (name:string, sl:string, dom:string, desc:string, parent:string, ifcs:string[], st:string, group:string, hints:RenderHintRow[], marks:string[], drafts:PropertyDraft[]) =>
+    JSON.stringify({name,sl,dom,desc,parent,ifcs,st,group,hints:hints.map(h=>[h.k,h.v]),marks,drafts:drafts.map(({uid:_uid,...d})=>d)});
+  const current = snapshot(displayName,slug,domain,description,parentClass,interfacesSel,status,typeGroup,renderHints,marking,propDrafts);
+  const dirty = open && !!initial.current && current !== initial.current;
+  useEffect(()=>{
+    if (!open || loadedSessionKey!==sessionKey) return;
+    if (dirty) retainEditorInput<EditorInput>(identity,sessionKey,{displayName,slug,domain,description,parentClass,interfacesSel,status,typeGroup,renderHints,marking,propDrafts,expanded,baseline:initial.current,liveDefinition:baselineLive.current});
+    else discardEditorInput(sessionKey);
+  },[open,loadedSessionKey,sessionKey,identity,dirty,current,expanded]);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty,onDirtyChange]);
+  useEffect(() => {
+    if (!open || !dirty) return;
+    const warn = (e:BeforeUnloadEvent) => {e.preventDefault();e.returnValue='';};
+    window.addEventListener('beforeunload',warn);
+    return () => window.removeEventListener('beforeunload',warn);
+  },[open,dirty]);
+  useEffect(() => {
+    if (!open) return;
+    const escape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || busy) return;
+      e.preventDefault();
+      if (dirty) setCloseRequested(true); else onClose();
+    };
+    window.addEventListener('keydown',escape);
+    return () => window.removeEventListener('keydown',escape);
+  },[open,dirty,busy,onClose]);
 
   const vts = valueTypes.length > 0 ? valueTypes : FALLBACK_VALUE_TYPES;
 
@@ -137,13 +191,27 @@ export default function ObjectTypeEditorV2Drawer({
 
   // 打开/切换目标时初始化表单
   useEffect(() => {
-    if (!open) return;
+    // This caller keeps a closed drawer mounted. Do not re-retain its old fields
+    // on the next open before initialization/restoration has finished.
+    if (!open) { setLoadedSessionKey(''); return; }
     setError('');
     setSubmitting(false);
     setExpanded(null);
     setDestructive(null);
     setConfirmInput('');
+    setCloseRequested(false);
     const pf = prefillRef.current;
+    const saved=readEditorInput<EditorInput>(identity,sessionKey);
+    setLoadedSessionKey(sessionKey);
+    setSessionNotice('');
+    if(saved){
+      setDisplayName(saved.displayName);setSlug(saved.slug);setDomain(saved.domain);setDescription(saved.description);setParentClass(saved.parentClass);setInterfacesSel(saved.interfacesSel);setStatus(saved.status);setTypeGroup(saved.typeGroup);setRenderHints(saved.renderHints);setMarking(saved.marking);setPropDrafts(saved.propDrafts);setExpanded(saved.expanded);
+      initial.current=saved.baseline;
+      baselineLive.current=saved.liveDefinition;
+      setSessionNotice(`未保存输入已保留在当前会话，尚未提交后端${saved.liveDefinition!==JSON.stringify(objectType)?'。当前生效定义已变化，请重新核对并校验；旧确认已失效。':''}`);
+      return;
+    }
+    baselineLive.current=JSON.stringify(objectType);
     if (mode === 'edit' && objectType) {
       setDisplayName(objectType.display_name ?? '');
       setDescription(objectType.description ?? '');
@@ -163,6 +231,7 @@ export default function ObjectTypeEditorV2Drawer({
         if (hit) setExpanded(hit.uid);
       }
       setPropDrafts(drafts);
+      initial.current = snapshot(objectType.display_name??'',slug,domain,objectType.description??'',objectType.parent_class??'',objectType.interfaces??[],objectType.status||'active',objectType.type_group??'',(objectType.render_hints??[]).map(([k,v],i)=>({key:String(i),k,v})),objectType.marking??[],objectType.properties.map(draftFromProperty));
     } else if (mode === 'create') {
       setDisplayName('');
       setSlug('');
@@ -176,12 +245,14 @@ export default function ObjectTypeEditorV2Drawer({
       setRenderHints([]);
       // 新概念自动带一个主键属性（概念必有主键；kind 段用 prop —— ClassRef 正则只认 prop）
       const pk = { ...emptyPropertyDraft('id'), nullable: false, primaryKey: true };
-      pk.rid = makePropRid('id');
+      // Initialization must use the reset values, not the previous mounted form's slug/domain.
+      pk.rid = `ont.${tenant}.prop.${domainOptions[0]?.code ?? 'crm'}.<slug>-id.v1`;
       setPropDrafts([pk]);
       setExpanded(pk.uid);
+      initial.current = snapshot('','',domainOptions[0]?.code??'crm','','',[],'active','',[],[],[pk]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, objectType?.rid, prefillKey]);
+  }, [open, mode, objectType?.rid, prefillKey, identity]);
 
   // create 模式：概念 slug/领域变化 → 联动重算新建属性的 rid 预览
   useEffect(() => {
@@ -191,6 +262,7 @@ export default function ObjectTypeEditorV2Drawer({
   }, [slug, domain, open, mode]);
 
   if (!open) return null;
+  const requestClose = () => { if (busy) return; if (dirty) setCloseRequested(true); else {discardEditorInput(sessionKey);onClose();} };
 
   const updatePropDraft = (uid: string, next: PropertyDraft) => {
     setPropDrafts((ds) => ds.map((d) => {
@@ -223,10 +295,12 @@ export default function ObjectTypeEditorV2Drawer({
   };
 
   /** 提交（整体 upsert）。confirmNameVal 非空 = 破坏性 409 后的确认重发（payload 顶层加 confirm_name）。 */
-  const submit = async (confirmNameVal?: string) => {
+  const submit = async (confirmNameVal?: string, asDraft = false) => {
+    if (busy) return;
     if (mode === 'edit' && !objectType) return;
     const errs: string[] = [];
     if (!displayName.trim()) errs.push('概念显示名必填');
+    if (mode === 'create' && !tenant) errs.push('认证租户不可用，不能生成模型标识');
     if (mode === 'create' && !/^[a-z0-9_-]+$/.test(slug.trim())) {
       errs.push('slug 必填，仅限小写字母 / 数字 / 下划线 / 连字符');
     }
@@ -267,8 +341,10 @@ export default function ObjectTypeEditorV2Drawer({
     setSubmitting(true);
     setError('');
     setDestructive(null);
+    const gen=++submitGeneration.current;
     try {
-      const result = await onSubmit(payload, mode);
+      const result = asDraft && onSaveDraft ? await onSaveDraft(payload) : await onSubmit(payload, mode);
+      if(gen!==submitGeneration.current) return;
       if (result && typeof result === 'object') {
         // 409 destructive_confirm_required：抽屉底部展开二段确认区
         setDestructive(result);
@@ -276,10 +352,17 @@ export default function ObjectTypeEditorV2Drawer({
       } else if (result) {
         setError(result);
       } else {
+        initial.current = current;
+        discardEditorInput(sessionKey);
+        onDirtyChange?.(false);
         onClose();
       }
+    } catch (e) {
+      if(gen!==submitGeneration.current) return;
+      const { response } = e as { response?: { status?: number; data?: { detail?: unknown } } };
+      setError(`${response?.status ? `${response.status} · ` : ''}${typeof response?.data?.detail === 'string' ? response.data.detail : e instanceof Error ? e.message : '保存失败'}`);
     } finally {
-      setSubmitting(false);
+      if(gen===submitGeneration.current) setSubmitting(false);
     }
   };
 
@@ -291,11 +374,12 @@ export default function ObjectTypeEditorV2Drawer({
 
   return (
     <div
-      onClick={() => !submitting && onClose()}
+      onClick={requestClose}
       className="mp-flex mp-justify-end mp-onto-drawer-mask mp-onto-drawer-mask--top"
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        role="dialog" aria-modal="true" aria-label="模型编辑器"
         className="mp-h-full mp-flex-col mp-onto-drawer-panel mp-onto-drawer-panel--fixed"
       >
         {/* Header */}
@@ -308,13 +392,20 @@ export default function ObjectTypeEditorV2Drawer({
               {mode === 'create' ? '新建概念（ObjectType）' : `编辑概念：${objectType?.display_name ?? ''}`}
             </h3>
           </div>
-          <button type="button" onClick={onClose} aria-label="关闭" className="mp-border mp-text-2 mp-bg-1 mp-rounded-sm mp-onto-close-btn mp-onto-close-btn--sm">
+          <button type="button" onClick={requestClose} disabled={busy} aria-label="关闭" className="mp-border mp-text-2 mp-bg-1 mp-rounded-sm mp-onto-close-btn mp-onto-close-btn--sm">
             <X className="mp-icon-14" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="mp-flex-1 mp-overflow-y-auto mp-py-4 mp-px-5" >
+        <fieldset disabled={busy} onClickCapture={busy ? (event)=>{event.preventDefault();event.stopPropagation();} : undefined} className="mp-flex-1 mp-overflow-y-auto mp-py-4 mp-px-5 mp-border-none mp-m-0" >
+          {externalSubmitting && <p role="status">相似概念续接写入中，请等待当前提交完成。</p>}
+          {auxiliaryLoading && <p role="status">正在读取编辑辅助信息；已有参考值与输入保持不变。</p>}
+          {sessionNotice && <p role="status">{sessionNotice}</p>}
+          {!identity && <p role="alert" className="mp-text-danger">身份不可用，跨页后未保存输入无法恢复。请先保存当前输入，或复制备份后<a href="/login">重新登录</a>。</p>}
+          {externalError && <p role="alert" className="mp-text-danger">{externalError}</p>}
+          {dirty && identity && !sessionNotice && <p role="status">未保存输入已保留在当前会话，尚未提交后端。离开后重新打开可继续编辑。</p>}
+          {auxiliaryErrors?.length ? <div role="alert" className="mp-text-danger">partial · 编辑辅助信息读取失败：{auxiliaryErrors.join('；')} {onRetryAuxiliary && <button type="button" onClick={onRetryAuxiliary}>重试编辑辅助信息</button>}</div> : null}
           {/* ── 基础信息 ── */}
           <div className="mp-mb-5">
             <div className="mp-onto-section-title">基础信息</div>
@@ -366,6 +457,7 @@ export default function ObjectTypeEditorV2Drawer({
                 <div className="mp-onto-field-label mp-onto-field-label--stacked">概念显示名 *</div>
                 <input
                   type="text"
+                  aria-label="概念显示名"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="mp-w-full mp-onto-input mp-onto-input--lg"
@@ -560,7 +652,7 @@ export default function ObjectTypeEditorV2Drawer({
               );
             })}
           </div>
-        </div>
+        </fieldset>
 
         {/* Footer */}
         <div className="mp-border mp-shrink-0 mp-py-3 mp-px-5" >
@@ -593,7 +685,7 @@ export default function ObjectTypeEditorV2Drawer({
                 <button
                   type="button"
                   onClick={() => void submit(confirmInput.trim())}
-                  disabled={submitting || !confirmInput.trim()}
+                  disabled={busy || !confirmInput.trim()}
                   className="mp-fw-600 mp-onto-btn mp-onto-btn--md mp-onto-btn--solid-danger"
                 >
                   {submitting ? '重发中…' : '确认重发'}
@@ -601,7 +693,7 @@ export default function ObjectTypeEditorV2Drawer({
                 <button
                   type="button"
                   onClick={() => { setDestructive(null); setConfirmInput(''); }}
-                  disabled={submitting}
+                  disabled={busy}
                   className="mp-onto-btn mp-onto-btn--md"
                 >
                   取消
@@ -618,22 +710,28 @@ export default function ObjectTypeEditorV2Drawer({
           <div className="mp-flex mp-justify-end mp-gap-2">
             <button
               type="button"
-              onClick={onClose}
-              disabled={submitting}
+              onClick={requestClose}
+              disabled={busy}
               className="mp-onto-btn mp-onto-btn--lg"
             >
               取消
             </button>
+            {onSaveDraft && <button type="button" onClick={() => void submit(undefined,true)} disabled={busy} className="mp-onto-btn mp-onto-btn--lg">保存草稿（WIP）</button>}
             <button
               type="button"
               onClick={() => void submit()}
-              disabled={submitting}
+              disabled={busy}
               className="mp-fw-600 mp-onto-btn mp-onto-btn--lg mp-onto-btn--solid"
             >
               {submitting ? '保存中…' : '保存（整体 upsert）'}
             </button>
           </div>
         </div>
+        {closeRequested && <div role="dialog" aria-modal="true" aria-label="未保存的修改" className="mp-p-4 mp-border mp-bg-1">
+          <p>存在未保存的修改。继续编辑或明确放弃后关闭。</p>
+          <button type="button" disabled={busy} onClick={() => setCloseRequested(false)} className="mp-onto-btn mp-onto-btn--lg">继续编辑</button>
+          <button type="button" disabled={busy} onClick={() => {if(busy)return;discardEditorInput(sessionKey);onDirtyChange?.(false);onClose();}} className="mp-onto-btn mp-onto-btn--lg">放弃修改并关闭</button>
+        </div>}
       </div>
     </div>
   );

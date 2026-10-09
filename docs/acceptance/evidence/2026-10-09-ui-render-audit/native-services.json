@@ -1,0 +1,183 @@
+{
+  "at": "2026-10-09T02:18:42Z",
+  "health": [
+    {
+      "service": "arch",
+      "port": 58200,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "apphub",
+      "port": 58201,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "dw",
+      "port": 58202,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "etl",
+      "port": 58203,
+      "path": "/api/v1/etl/health",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "scheduler",
+      "port": 58204,
+      "path": "/api/v1/scheduler/health",
+      "status": 200,
+      "elapsed": 0.031
+    },
+    {
+      "service": "metrics",
+      "port": 58205,
+      "path": "/api/v1/metrics/health",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "llmgw",
+      "port": 58206,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "agent",
+      "port": 58207,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "rag",
+      "port": 58208,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.015
+    },
+    {
+      "service": "app-kb",
+      "port": 58209,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.015
+    },
+    {
+      "service": "mcp",
+      "port": 58210,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.015
+    },
+    {
+      "service": "obs",
+      "port": 58211,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.015
+    },
+    {
+      "service": "copilot",
+      "port": 58212,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.015
+    },
+    {
+      "service": "data",
+      "port": 58213,
+      "path": "/api/v1/data/health",
+      "status": 200,
+      "elapsed": 0.031
+    },
+    {
+      "service": "a2a",
+      "port": 58214,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "wfe",
+      "port": 58215,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "orchestrator",
+      "port": 58216,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "iam-admin",
+      "port": 58217,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "service": "agent-team",
+      "port": 58218,
+      "path": "/healthz",
+      "status": 200,
+      "elapsed": 0.0
+    }
+  ],
+  "auth": [
+    {
+      "path": "/api/v1/iam/auth/login",
+      "status": 200,
+      "elapsed": 0.094
+    },
+    {
+      "path": "/api/v1/iam/auth/refresh",
+      "status": 200,
+      "elapsed": 0.047,
+      "accessTokenPresent": true
+    }
+  ],
+  "business": [
+    {
+      "path": "/api/v1/agent-team/profiles",
+      "status": 200,
+      "elapsed": 0.031,
+      "count": 3
+    },
+    {
+      "path": "/api/v1/arch/capabilities",
+      "status": 200,
+      "elapsed": 0.0,
+      "count": 15
+    },
+    {
+      "path": "/api/v1/dw/extract",
+      "status": 200,
+      "elapsed": 0.015,
+      "count": 0
+    },
+    {
+      "path": "/api/v1/dw/traces",
+      "status": 200,
+      "elapsed": 0.0,
+      "count": 0
+    },
+    {
+      "path": "/api/v1/agent-team/profiles",
+      "via": "vite59260",
+      "status": 200,
+      "elapsed": 0.016
+    }
+  ]
+}

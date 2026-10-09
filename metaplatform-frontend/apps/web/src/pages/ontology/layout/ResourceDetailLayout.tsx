@@ -15,6 +15,7 @@ export interface ResourceDetailLayoutProps {
   /** 局部 Tab（一行封顶，设计规格 §2.1 资源详情级约束）。 */
   tabs?: ResourceDetailTab[];
   activeTab?: string;
+  tabType?: 'button' | 'line';
   onTabChange?: (key: string) => void;
   children: ReactNode;
 }
@@ -34,6 +35,7 @@ export default function ResourceDetailLayout({
   actions,
   tabs,
   activeTab,
+  tabType = 'button',
   onTabChange,
   children,
 }: ResourceDetailLayoutProps) {
@@ -42,7 +44,8 @@ export default function ResourceDetailLayout({
       <PageHeader title={title} desc={desc} actions={actions} />
       {tabs && tabs.length > 0 ? (
         <Tabs
-          type="button"
+          type={tabType}
+          collapsible="auto"
           activeKey={activeTab ?? tabs[0].key}
           tabList={tabs.map((t) => ({ tab: t.label, itemKey: t.key }))}
           onChange={(key) => onTabChange?.(key)}

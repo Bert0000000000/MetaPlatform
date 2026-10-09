@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Tag, Typography, Button, Space, Rating, Input, Select, Empty, Tooltip, Spin, Toast } from '@douyinfe/semi-ui';
+import { Card, Tag, Typography, Button, Space, Input, Select, Tooltip, Spin, Toast } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import * as Icons from '@ant-design/icons';
-import {
-  TEMPLATE_CATEGORIES,
-  CATEGORY_COLOR,
-  CATEGORY_LABEL,
-  type TemplateCategory,
-} from './data/templates';
-import { listTemplates, installTemplate, type TemplateItem } from '@/api/apphub/marketplace';
+import { EmptyState, PageHeader } from '@/components/skeleton';
+import { canInstallTemplate, listTemplates, installTemplate, type TemplateItem } from '@/api/apphub/marketplace';
 import './apps.css';
 
 type SortBy = 'newest' | 'popular' | 'rating';
+const TEMPLATE_TYPES = [
+  { value: 'workflow', label: '工作流' },
+  { value: 'form', label: '表单' },
+  { value: 'approval', label: '审批' },
+];
+const TYPE_COLORS: Record<string, TagColor> = { workflow: 'purple', form: 'blue', approval: 'orange' };
 
 // Semi Tag 颜色名与 antd 色名差异修正（gold → yellow）
 const SEMI_TAG_COLOR: Record<string, string> = { gold: 'yellow', default: 'grey' };
@@ -36,42 +37,48 @@ function CheckableTag({
   children: React.ReactNode;
 }) {
   return (
-    <span
+    <button
+      type="button"
+      aria-pressed={checked}
       onClick={onChange}
       className={`mp-clickable mp-border mp-text-body mp-py-1 mp-px-3 mp-rounded-sm mp-app-chip${checked ? ' mp-app-chip-on' : ''}`}
     >
       {children}
-    </span>
+    </button>
   );
 }
 
 export default function MarketPage() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
-  const [category, setCategory] = useState<TemplateCategory | undefined>(undefined);
+  const [category, setCategory] = useState<string | undefined>(undefined);
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    let cancelled = false;
     const fetchTemplates = async () => {
       setLoading(true);
+      setError(null);
       try {
         const data = await listTemplates({
           keyword: keyword.trim() || undefined,
           category,
         });
-        setTemplates(data);
-      } catch {
-        setTemplates([]);
-        Toast.error('加载模板列表失败');
+        if (!cancelled) setTemplates(data);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : '加载模板列表失败');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchTemplates();
-  }, [keyword, category]);
+    return () => { cancelled = true; };
+  }, [keyword, category, refreshKey]);
 
   const filtered = useMemo(() => {
     let list = [...templates];
@@ -85,10 +92,11 @@ export default function MarketPage() {
     try {
       const result = await installTemplate(t.templateId);
       if (result.success) {
-        Toast.success(`已安装模板：${t.name}`);
+        if (result.alreadyInstalled) Toast.info(`该模板已安装：${t.name}`);
+        else Toast.success(`已安装模板：${t.name}`);
         setInstalledIds((prev) => new Set([...prev, t.templateId]));
       } else {
-        Toast.info('该模板已安装，可在"我的模板"中查看');
+        Toast.error(result.error || '安装失败，请稍后重试');
       }
     } catch {
       Toast.error('安装失败，请稍后重试');
@@ -98,10 +106,11 @@ export default function MarketPage() {
   const tagColor = (c: string | undefined): TagColor => (SEMI_TAG_COLOR[c ?? ''] ?? c ?? 'grey') as TagColor;
 
   return (
-    <div>
+    <div className="mp-apps-page">
+      <PageHeader title="应用市场" desc="浏览当前可用的工作流、表单与审批模板。" />
       <Card className="mp-mb-4">
-        <div className="mp-gap-3 mp-flex-center">
-          <div className="mp-flex-1">
+        <div className="mp-app-market-filter">
+          <div className="mp-app-market-search">
             <Input
               prefix={<Icons.SearchOutlined />}
               placeholder="按名称、描述、标签搜索模板"
@@ -115,9 +124,7 @@ export default function MarketPage() {
             onChange={(v) => setSortBy(v as SortBy)}
             className="mp-w-140"
             optionList={[
-              { label: '最新', value: 'newest' },
-              { label: '最热', value: 'popular' },
-              { label: '评分最高', value: 'rating' },
+              { label: '目录顺序', value: 'newest' },
             ]}
           />
         </div>
@@ -126,7 +133,7 @@ export default function MarketPage() {
             <CheckableTag checked={!category} onChange={() => setCategory(undefined)}>
               全部
             </CheckableTag>
-            {TEMPLATE_CATEGORIES.map((c) => (
+            {TEMPLATE_TYPES.map((c) => (
               <CheckableTag
                 key={c.value}
                 checked={category === c.value}
@@ -139,20 +146,30 @@ export default function MarketPage() {
         </div>
       </Card>
 
-      <Typography.Text type="tertiary" className="mp-mb-3 mp-block" >
+      {!loading && !error && <Typography.Text type="tertiary" className="mp-mb-3 mp-block" >
         共 {filtered.length} 个模板
-      </Typography.Text>
+      </Typography.Text>}
 
       {loading ? (
         <div className="mp-text-center mp-p-9">
-          <Spin />
+          <Spin tip="正在读取模板…" />
+        </div>
+      ) : error ? (
+        <div role="alert">
+          <EmptyState illustration="failure" title="模板列表读取失败" desc={error} actions={<Button type="primary" onClick={() => setRefreshKey((key) => key + 1)}>重试</Button>} />
         </div>
       ) : filtered.length === 0 ? (
-        <Empty description="没有匹配的模板" />
+        <EmptyState
+          illustration={keyword.trim() || category ? 'no-result' : 'no-content'}
+          title={keyword.trim() || category ? '没有匹配的模板' : '暂无模板'}
+          desc={keyword.trim() || category ? '尝试其他关键词或清除筛选条件。' : '当前模板目录为空，可以稍后刷新。'}
+          actions={<Button onClick={() => { setKeyword(''); setCategory(undefined); setRefreshKey((key) => key + 1); }}>{keyword.trim() || category ? '清除筛选' : '刷新模板'}</Button>}
+        />
       ) : (
         <Row gutter={[16, 16]}>
           {filtered.map((t) => {
             const installed = installedIds.has(t.templateId);
+            const installable = canInstallTemplate(t.templateId);
             return (
               <Col key={t.templateId} xs={24} sm={12} md={8} lg={6}>
                 <Card
@@ -160,7 +177,7 @@ export default function MarketPage() {
                   cover={
                     <div
                       className="mp-justify-center mp-text-xl mp-flex-center mp-app-cover mp-app-cover-hover"
-                      onClick={() => navigate(`/market/${t.templateId}`)}
+                      onClick={() => navigate(`/apps/market?tid=${encodeURIComponent(t.templateId)}`)}
                     >
                       {renderIcon(t.icon)}
                     </div>
@@ -171,20 +188,20 @@ export default function MarketPage() {
                         theme="borderless"
                         type="primary"
                         icon={<Icons.EyeOutlined />}
-                        onClick={() => navigate(`/market/${t.templateId}`)}
+                        onClick={() => navigate(`/apps/market?tid=${encodeURIComponent(t.templateId)}`)}
                       >
                         详情
                       </Button>
                     </Tooltip>,
-                    <Tooltip content={installed ? '已安装' : '一键安装到我的模板'} key="install">
+                    <Tooltip content={!installable ? '该模板尚未关联可安装的市场制品' : installed ? '已安装' : '安装市场制品'} key="install">
                       <Button
                         theme="borderless"
                         type="primary"
                         icon={<Icons.DownloadOutlined />}
-                        disabled={installed}
+                        disabled={installed || !installable}
                         onClick={() => handleInstall(t)}
                       >
-                        {installed ? '已安装' : '安装'}
+                        {installed ? '已安装' : installable ? '安装' : '安装暂不可用'}
                       </Button>
                     </Tooltip>,
                   ]}
@@ -193,8 +210,8 @@ export default function MarketPage() {
                     title={
                       <Space>
                         <Typography.Text strong>{t.name}</Typography.Text>
-                        <Tag color={tagColor(CATEGORY_COLOR[t.category as TemplateCategory])}>
-                          {CATEGORY_LABEL[t.category as TemplateCategory] ?? t.category}
+                        <Tag color={tagColor(TYPE_COLORS[t.category])}>
+                          {TEMPLATE_TYPES.find((type) => type.value === t.category)?.label ?? t.category}
                         </Tag>
                       </Space>
                     }
@@ -212,12 +229,6 @@ export default function MarketPage() {
                             <Tag key={tag}>{tag}</Tag>
                           ))}
                         </Space>
-                        <div className="mp-justify-between mp-flex-center">
-                          <Rating disabled value={t.rating} allowHalf className="mp-text-sm" />
-                          <Typography.Text type="tertiary" className="mp-text-sm">
-                            {t.usageCount ?? t.downloadCount} 次使用
-                          </Typography.Text>
-                        </div>
                         {t.author && (
                           <Typography.Text type="tertiary" className="mp-text-sm">
                             作者：{t.author}

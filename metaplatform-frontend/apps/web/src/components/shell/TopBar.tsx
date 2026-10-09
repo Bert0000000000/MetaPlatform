@@ -1,8 +1,8 @@
-import { Avatar, Badge, Breadcrumb, Button, Dropdown, Input, Tabs, Tag } from '@douyinfe/semi-ui';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Layers, LogOut, Search, Settings } from 'lucide-react';
+import { Avatar, Badge, Breadcrumb, Button, Dropdown, Input, Tag } from '@douyinfe/semi-ui';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Bell, Layers, LogOut, MessageSquare, Search, Settings, Sparkles } from 'lucide-react';
 import { useAuth } from '@mate/shared';
-import { DOMAINS, resolveDomain, resolveDomainTab, resolveSubTab } from './domains';
+import { DOMAINS, navigationBreadcrumb, primaryDomains, resolveDomain } from './domains';
 import { useShell } from './ShellContext';
 
 const ENV_LABEL =
@@ -10,43 +10,34 @@ const ENV_LABEL =
 
 /**
  * 顶栏（DESIGN-SPEC §3）：面包屑 ∥ ⌘K 入口 · 环境徽标 · 通知 · 布局切换 · 用户。
- * 顶栏一级导航模式（模式 B）时，8 个域以横向 tab 呈现，rail 隐藏（显隐由 CSS 控制）。
+ * 顶栏一级导航模式时，七入口以可横向滚动的普通链接呈现。
  */
 export default function TopBar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setCommandOpen, navMode, toggleNavMode } = useShell();
+  const { setCommandOpen, openCopilot, navMode, toggleNavMode } = useShell();
   const { user, logout } = useAuth();
 
   const domain = resolveDomain(location.pathname);
-  const tab = domain ? resolveDomainTab(domain, location.pathname) : undefined;
-  const sub = domain ? resolveSubTab(domain, location.pathname) : undefined;
-
-  const crumbs = [
-    domain ? { name: domain.label, path: domain.path } : { name: 'Mate Platform' },
-    ...(tab && tab.label !== domain?.label ? [{ name: tab.label, path: tab.path }] : []),
-    ...(sub && sub.sub.label !== tab?.label ? [{ name: sub.sub.label }] : []),
-  ];
+  const displayCrumbs = navigationBreadcrumb(location.pathname);
 
   const displayName = user?.realName ?? user?.username ?? '当前用户';
 
   return (
     <>
-      <Tabs
-        className="mp-topnav"
-        type="line"
-        activeKey={domain?.key ?? ''}
-        tabList={DOMAINS.map((d) => ({ tab: d.label, itemKey: d.key, icon: d.icon }))}
-        onChange={(key) => {
-          const target = DOMAINS.find((d) => d.key === key);
-          if (target) navigate(target.path);
-        }}
-      />
+      <button type="button" className="mp-platform-brand" onClick={() => navigate('/home')} aria-label="MetaPlatform 工作台">
+        <span className="mp-platform-brand-mark"><Layers size={19} strokeWidth={1.5} /></span>
+        <span className="mp-platform-brand-name">MetaPlatform</span>
+      </button>
+      <nav className="mp-topnav" aria-label="平台顶部导航">
+        {primaryDomains().map(entry => <Link className="mp-topnav-link" key={entry.key} to={entry.path} aria-current={domain?.key === entry.key ? 'page' : undefined}>{entry.icon}{entry.label}</Link>)}
+      </nav>
 
       <Breadcrumb
         className="mp-crumbs"
+        aria-label={domain?.key === 'ontology' ? '本体上下文' : '工作区上下文'}
         compact
-        routes={crumbs}
+        routes={displayCrumbs}
         onClick={(item) => {
           const path = (item as { path?: string }).path;
           if (path) navigate(path);
@@ -54,6 +45,11 @@ export default function TopBar() {
       />
 
       <div className="mp-topbar-right">
+        <Button theme="borderless" type="tertiary" icon={<Sparkles size={17} />}
+          aria-label="打开 SuperAI Copilot" title="SuperAI Copilot" onClick={openCopilot} />
+        <Button theme="borderless" type="tertiary" icon={<MessageSquare size={17} />}
+          aria-label="打开 SuperAI 会话" title="SuperAI 完整会话"
+          onClick={() => navigate(DOMAINS.find(entry => entry.key === 'superai')!.path)} />
         <Input
           className="mp-searchbar"
           prefix={<Search size={15} strokeWidth={1.5} />}
@@ -62,7 +58,7 @@ export default function TopBar() {
           readonly
           aria-label="打开命令面板"
           onClick={() => setCommandOpen(true)}
-          onFocus={() => setCommandOpen(true)}
+          onKeyDown={event => { if (event.key === 'Enter') setCommandOpen(true); }}
         />
 
         <Tag className="mp-env-chip" color="amber" type="light">

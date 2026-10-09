@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Form, SideSheet, Spin, Toast } from '@douyinfe/semi-ui';
 import { EyeOutlined, SaveOutlined } from '@ant-design/icons';
-import { createResource, getResource, updateResource } from '@/api/mcphub/resources';
+import { createResource, getResource, updateResource, RESOURCE_MANAGEMENT_AVAILABLE } from '@/api/mcphub/resources';
 import ContentPreview from './ContentPreview';
 import type { McpResource, McpResourceCreateRequest } from '@/api/mcphub/types';
 import { EmptyState } from '@/components/skeleton';
@@ -60,7 +60,7 @@ export default function ResourceDrawer({
     setPreviewMode(false);
     setLoadError(null);
 
-    if (!resourceId) {
+    if (!RESOURCE_MANAGEMENT_AVAILABLE || !resourceId) {
       form.reset();
       return;
     }
@@ -84,6 +84,7 @@ export default function ResourceDrawer({
   }, [open, resourceId, form]);
 
   const handleSubmit = async () => {
+    if (!RESOURCE_MANAGEMENT_AVAILABLE) return;
     const values = await form.validate();
     setSubmitting(true);
     try {
@@ -104,8 +105,10 @@ export default function ResourceDrawer({
   return (
     <SideSheet
       visible={open}
-      title={resourceId ? `编辑资源：${resource?.name ?? ''}` : '添加资源'}
-      width={DRAWER_W}
+      title={RESOURCE_MANAGEMENT_AVAILABLE
+        ? resourceId ? `编辑资源：${resource?.name ?? ''}` : '添加资源'
+        : resourceId ? '编辑资源（未接入）' : '添加资源（未接入）'}
+      width={`min(${DRAWER_W}px, 100vw)`}
       onCancel={onClose}
       footer={
         <>
@@ -116,7 +119,7 @@ export default function ResourceDrawer({
             icon={<SaveOutlined />}
             loading={submitting}
             // 预览态下表单未挂载，无可提交内容，保存置灰（与原整页表单一致：预览时看不到保存）
-            disabled={previewMode || loading || !!loadError}
+            disabled={!RESOURCE_MANAGEMENT_AVAILABLE || previewMode || loading || !!loadError}
             onClick={() => void handleSubmit()}
           >
             保存
@@ -124,6 +127,10 @@ export default function ResourceDrawer({
         </>
       }
     >
+      {!RESOURCE_MANAGEMENT_AVAILABLE ? <div className="mp-read-warning" role="status">
+        <strong>资源表单仅供审阅，尚未接入保存。</strong>
+        <span>当前支持注册资源列表，资源详情与创建、编辑、删除尚不可用。</span>
+      </div> : null}
       {loading ? (
         <div className="mp-text-center mp-p-8">
           <Spin />

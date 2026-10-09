@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Spin, Tag, Toast, Tooltip } from '@douyinfe/semi-ui';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button, Card, Select, Spin, Tag, Toast, Tooltip } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { RefreshCw } from 'lucide-react';
 import { listKnowledge, promoteFeedback } from '@/api/dw/learning';
-import type { LearnedKnowledge } from '@/api/dw/types';
+import { listEmployees } from '@/api/dw/employees';
+import type { Employee, LearnedKnowledge } from '@/api/dw/types';
 import { DataTablePro, EmptyState, PageHeader, type DataTableProProps } from '@/components/skeleton';
 import '@/pages/agents/agents.css';
 
@@ -20,6 +21,7 @@ import '@/pages/agents/agents.css';
  */
 
 type Meta = { label: string; color: TagColor };
+type EmployeePageQuery = NonNullable<Parameters<typeof listEmployees>[0]> & { page: number; size: number };
 
 const TYPE_META: Record<string, Meta> = {
   prompt_fragment: { label: '提示词片段', color: 'blue' },
@@ -36,26 +38,81 @@ function metaOf(map: Record<string, Meta>, key: unknown): Meta {
 
 export default function LearningPage() {
   const [items, setItems] = useState<LearnedKnowledge[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeeId, setEmployeeId] = useState('');
+  const [employeesLoading, setEmployeesLoading] = useState(true);
+  const [employeesError, setEmployeesError] = useState('');
   const [promoting, setPromoting] = useState<string | null>(null);
+  const employeeRequest = useRef(0);
+  const knowledgeRequest = useRef(0);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
+  const loadEmployees = useCallback(async () => {
+    const requestId = ++employeeRequest.current;
+    setEmployeesLoading(true);
+    setEmployeesError('');
     try {
-      const res: LearnedKnowledge[] | { items?: LearnedKnowledge[] } = await listKnowledge('');
-      setItems(Array.isArray(res) ? res : (res?.items ?? []));
+      const all: Employee[] = [];
+      let page = 1;
+      let size = 20;
+      for (;;) {
+        const query: EmployeePageQuery = { page, size };
+        const res = await listEmployees(query);
+        if (requestId !== employeeRequest.current) return;
+        if (res.page !== page || !Number.isInteger(res.pageSize) || res.pageSize < 1
+          || !Number.isInteger(res.total) || res.total < 0) {
+          throw new Error('员工列表分页响应不完整，无法读取全部员工。');
+        }
+        all.push(...res.items);
+        if (all.length >= res.total) break;
+        if (!res.items.length) throw new Error('员工列表分页读取未完成，请重试。');
+        page = res.page + 1;
+        size = res.pageSize;
+      }
+      setEmployees(all);
     } catch (e) {
-      setItems([]);
-      setError(e instanceof Error ? e.message : String(e));
+      if (requestId === employeeRequest.current) {
+        setEmployees([]);
+        setEmployeesError(e instanceof Error ? e.message : String(e));
+      }
     } finally {
-      setLoading(false);
+      if (requestId === employeeRequest.current) setEmployeesLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    void loadEmployees();
+    return () => { employeeRequest.current += 1; };
+  }, [loadEmployees]);
+
+  const load = useCallback(async () => {
+    const requestId = ++knowledgeRequest.current;
+    if (!employeeId) {
+      setItems([]);
+      setError('');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setItems([]);
+    try {
+      const res = await listKnowledge(employeeId);
+      if (requestId === knowledgeRequest.current) setItems(res.items);
+    } catch (e) {
+      if (requestId === knowledgeRequest.current) {
+        setItems([]);
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    } finally {
+      if (requestId === knowledgeRequest.current) setLoading(false);
+    }
+  }, [employeeId]);
+
+  useEffect(() => {
     void load();
+    return () => { knowledgeRequest.current += 1; };
   }, [load]);
 
   const handlePromote = async (feedbackId: string | undefined) => {
@@ -137,24 +194,57 @@ export default function LearningPage() {
       <PageHeader
         title="学习沉淀"
         desc={
-          error
+          error || employeesError
             ? undefined
-            : loading
+            : !employeeId
+              ? '选择数字员工后查看其学习沉淀'
+              : loading
               ? '正在加载学习沉淀…'
               : `共 ${items.length} 条沉淀 · 已同步 ${syncedCount} 条`
         }
         actions={
-          <Button
-            icon={<RefreshCw size={15} strokeWidth={1.5} />}
-            loading={loading}
-            onClick={() => void load()}
-          >
-            刷新
-          </Button>
+          <>
+            <span id="dw-learning-employee-label">数字员工</span>
+            <Select
+              aria-labelledby="dw-learning-employee-label"
+              placeholder="选择数字员工"
+              value={employeeId || undefined}
+              optionList={employees.map((employee) => ({ value: employee.employeeId, label: employee.name }))}
+              loading={employeesLoading}
+              disabled={employeesLoading || !!employeesError}
+              onChange={(value) => setEmployeeId(typeof value === 'string' ? value : '')}
+              style={{ width: 220 }}
+            />
+            <Button
+              icon={<RefreshCw size={15} strokeWidth={1.5} />}
+              loading={loading}
+              disabled={!employeeId}
+              onClick={() => void load()}
+            >
+              刷新
+            </Button>
+          </>
         }
       />
 
-      {error ? (
+      {employeesError ? (
+        <EmptyState
+          illustration="failure"
+          title="员工列表加载失败"
+          desc={employeesError}
+          actions={
+            <Button theme="solid" type="primary" onClick={() => void loadEmployees()}>
+              重试
+            </Button>
+          }
+        />
+      ) : !employeeId ? (
+        <EmptyState
+          illustration="no-content"
+          title="请选择数字员工"
+          desc={employeesLoading ? '正在加载员工列表…' : employees.length ? '选择员工后查看其学习沉淀。' : '暂无可选数字员工。'}
+        />
+      ) : error ? (
         <EmptyState
           illustration="failure"
           title="学习沉淀加载失败"

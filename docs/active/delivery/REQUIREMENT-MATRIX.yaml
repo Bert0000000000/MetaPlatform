@@ -2608,6 +2608,19 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-ONT-BUILDER-MODEL-WORKBENCH:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+      - ontValidateV2Model
+      - ontSaveV2SchemaWip
+      - ontListV2BackingDatasources
+      - ontGetV2Materialization
+    handler: mate_tech_ont.main:app#ontGetV2Materialization
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-ONT-KERNEL01-APPENDOBJECTPROPERTY:
     prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
     service: ont
@@ -3840,5 +3853,31 @@ requirements:
     handler: mate_tech_agent_team.main:app#agentTeamGetArtifact
     tests:
       - mate-platform-backend/packages/mate-tech-agent-team/tests/test_artifacts.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-BUILDER-SOURCE-MAPPING:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontUpsertV2BackingDatasource
+    - ontSyncV2BackingDatasources
+    handler: mate_tech_ont.main:app#ontSyncV2BackingDatasources
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-BUILDER-PUBLICATION:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2SchemaWip
+    - ontApplyV2SchemaWip
+    - ontDiscardV2SchemaWip
+    - ontBranchV2ObjectType
+    - ontDiffV2ObjectType
+    - ontRollbackV2ObjectType
+    handler: mate_tech_ont.main:app#ontApplyV2SchemaWip
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted

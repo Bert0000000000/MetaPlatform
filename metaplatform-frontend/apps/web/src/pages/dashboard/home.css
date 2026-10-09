@@ -1,7 +1,8 @@
 /*
  * 工作台域共享样式（A 骨架 bento + E 骨架列表页）。
  * 只做版式语义；表格/筛选/抽屉外壳一律走 P0 骨架组件。
- */
+*/
+.mp-home-grid { padding-bottom: var(--mp-space-4); }
 
 /* ---------- 概览 bento ---------- */
 .mp-home-kpis {
@@ -89,6 +90,7 @@
   align-items: flex-start;
   gap: var(--mp-space-3);
   min-width: 0;
+  width: 100%;
 }
 
 .mp-home-feed-main {
@@ -97,6 +99,7 @@
 }
 
 .mp-home-feed-title {
+  display: block;
   font-size: 13px;
   color: var(--semi-color-text-0);
   overflow: hidden;
@@ -105,6 +108,8 @@
 }
 
 .mp-home-feed-meta {
+  display: block;
+  overflow-wrap: anywhere;
   font-size: 12px;
   color: var(--semi-color-text-3);
   margin-top: 2px;
@@ -145,6 +150,7 @@
   justify-content: space-between;
   gap: var(--mp-space-3);
   min-width: 0;
+  width: 100%;
 }
 
 .mp-home-todo-main {
@@ -157,6 +163,8 @@
   align-items: center;
   gap: var(--mp-space-1);
   flex: none;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 /* 数字员工状态行 */
@@ -191,4 +199,13 @@
   align-items: center;
   justify-content: center;
   padding: var(--mp-space-6);
+}
+
+@media (max-width: 600px) {
+  .mp-home-kpis,
+  .mp-home-links { grid-template-columns: minmax(0, 1fr); }
+  .mp-home-todo,
+  .mp-home-feed-row { flex-wrap: wrap; }
+  .mp-home-todo-main { flex-basis: 100%; }
+  .mp-home-feed-main { flex: 1 1 120px; }
 }

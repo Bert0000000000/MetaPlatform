@@ -51,7 +51,7 @@
      所以只能靠这个下限对齐。 */
   --mp-app-card-min-h: 132px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   gap: var(--mp-space-3);
   align-items: stretch;
 }
@@ -124,8 +124,8 @@
 }
 
 .mp-app-name {
-  font-weight: 500;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 16px;
   color: var(--semi-color-text-0);
   cursor: pointer;
   overflow: hidden;
@@ -136,6 +136,9 @@
 .mp-app-name:hover {
   color: var(--semi-color-primary);
 }
+.mp-app-name { padding: 0; border: 0; background: transparent; font-family: inherit; text-align: left; max-width: 100%; }
+.mp-app-card { box-shadow: none; }
+@media (max-width: 720px) { .mp-apps-banner { flex-wrap: wrap; padding: var(--mp-space-3); } }
 
 .mp-app-code {
   margin-top: 2px;
@@ -155,7 +158,7 @@
   text-overflow: ellipsis;
   display: -webkit-box;
   /* 卡片压到 240px 后描述更容易折行；限死 1 行才能让同排卡片等高。 */
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -337,10 +340,32 @@
   color: var(--semi-color-text-2);
   background: transparent;
   user-select: none;
+  font-family: inherit;
+  line-height: inherit;
 }
 .mp-app-chip-on {
   color: var(--semi-color-primary);
   background: var(--semi-color-primary-light-default);
+}
+
+.mp-apps-page { min-width: 0; }
+.mp-app-market-filter { display: flex; align-items: center; flex-wrap: wrap; gap: var(--mp-space-3); }
+.mp-app-market-search { flex: 1 1 240px; min-width: 0; }
+.mp-app-template-content { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
+
+.mp-app-designer-workspace { display: flex; flex: 1; min-height: 0; gap: var(--mp-space-4); overflow: hidden; background: transparent; }
+.mp-app-designer-sessions { width: 240px; flex: 0 0 240px; min-width: 0; background: transparent; }
+.mp-app-designer-content { display: flex; flex: 1; min-width: 0; min-height: 0; gap: var(--mp-space-4); }
+.mp-app-designer-chat { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+.mp-app-designer-preview { width: 420px; flex: 0 1 420px; min-width: 0; overflow: auto; }
+.mp-app-session { display: block; width: 100%; border: 0; font-family: inherit; text-align: left; }
+
+@media (max-width: 1100px) {
+  .mp-app-designer-workspace { flex: none; flex-direction: column; overflow: visible; }
+  .mp-app-designer-sessions { width: 100%; flex: none; max-height: 200px; overflow: auto; }
+  .mp-app-designer-content { flex-direction: column; flex: none; }
+  .mp-app-designer-chat { min-height: 360px; flex: none; }
+  .mp-app-designer-preview { width: 100%; flex: none; overflow: visible; }
 }
 
 /* ---------- 业务域 tab（Semi Tabs type="card"） ----------
@@ -487,4 +512,20 @@
 .mp-app-field-on {
   border-color: var(--semi-color-primary);
   background: var(--semi-color-primary-light-default);
+}
+
+.mp-app-module-search { width: min(240px, 100%); }
+.mp-app-builder { container: mp-app-builder / inline-size; min-width: 0; }
+.mp-app-builder-panels { display: flex; flex: 1; min-width: 0; min-height: 0; gap: var(--mp-space-4); }
+.mp-app-builder-panels > * { min-width: 0; max-width: 100%; }
+.mp-app-builder-node-tools { width: 180px; }
+.mp-app-builder-form-tools { width: 240px; }
+.mp-app-builder-properties { width: 320px; flex-shrink: 0; }
+.mp-app-builder-form-properties { width: 360px; flex-shrink: 0; }
+@container mp-app-builder (max-width: 900px) {
+  .mp-app-builder-panels { flex-direction: column; flex: none; overflow: visible; }
+  .mp-app-builder-node-tools,
+  .mp-app-builder-form-tools,
+  .mp-app-builder-properties,
+  .mp-app-builder-form-properties { width: 100%; }
 }

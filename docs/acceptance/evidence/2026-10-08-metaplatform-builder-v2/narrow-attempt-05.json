@@ -1,0 +1,13 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "attempt": 5,
+  "mode": "390-native-read-only-chat-type-query-gov",
+  "exit_code": 1,
+  "seconds": 12.578,
+  "results": {
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  }
+}

@@ -451,9 +451,9 @@ export default function SettingsPage() {
         >
           <div className="mp-home-col">
             <Form form={regionForm} onSubmit={handleSavePreferences}>
-              <Form.Select field="language" label="界面语言" optionList={LANGUAGE_OPTIONS} />
-              <Form.Select field="timezone" label="时区" optionList={TIMEZONE_OPTIONS} />
-              <Form.Select field="dateFormat" label="日期格式" optionList={DATE_FORMAT_OPTIONS} />
+              <Form.Select field="language" label="界面语言" optionList={LANGUAGE_OPTIONS} style={{ width: '100%' }} />
+              <Form.Select field="timezone" label="时区" optionList={TIMEZONE_OPTIONS} style={{ width: '100%' }} />
+              <Form.Select field="dateFormat" label="日期格式" optionList={DATE_FORMAT_OPTIONS} style={{ width: '100%' }} />
             </Form>
             <Text type="secondary">
               日期示例：<Text strong>{formatDateTime(previewDate, settings)}</Text>
@@ -472,12 +472,14 @@ export default function SettingsPage() {
           <Form form={prefsForm} onSubmit={handleSavePreferences}>
             <Form.Select
               field="defaultPage"
+              style={{ width: '100%' }}
               label="默认首页"
               extraText="登录后优先进入的页面"
               optionList={DEFAULT_PAGE_OPTIONS}
             />
             <Form.Select
               field="layout"
+              style={{ width: '100%' }}
               label="工作台组件排列"
               extraText="按选择顺序展示（拖动排序暂未实现）"
               multiple

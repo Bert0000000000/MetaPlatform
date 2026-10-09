@@ -1,0 +1,127 @@
+{
+  "mode": "builder-list",
+  "exit_code": 0,
+  "seconds": 2.375,
+  "source_head": "f892895200d57312fbb753866271d82f4d52af83",
+  "frontend_sources_before": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "frontend_sources_after": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "source_unchanged": true,
+  "base_url": "http://127.0.0.1:59260",
+  "evidence_kind": "actual safe collection only; not test execution or passed browser gate",
+  "collected": 21,
+  "cases": [
+    {
+      "file": "ontology-builder-v2.spec.ts",
+      "title": "real Ont: model selection, dirty editor history restoration, binding samples and same-resource publication",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-builder-v2.spec.ts",
+      "title": "real Ont + explicit HTTP error: create references retry and failed model read stay distinguishable",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-builder-v2.spec.ts",
+      "title": "real Ont + own PG: editor WIP, five-step publication, saved source sync and actual sample query",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "六域均可达，工作区显示侧栏和上下文，planned 页面不进入导航",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "点击关系类型后返回/前进保持 URL、高亮与面包屑",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "点击功能域打开真实默认页",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "域根 redirect 到默认子页，总览别名保留",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "对象资源详情深链刷新保持，侧栏不错误高亮总览",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "对象浏览刷新保持现有页面能力",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "390px 可展开导航并通过键盘进入关系类型，无文档横向溢出",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "离开本体后其他域显示自己的功能组和页面",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "七个产品菜单 side/top 同序可达，SuperAI 常驻与旧会话路由保留",
+      "project": "builder-v2"
+    },
+    {
+      "file": "ontology-ia-v2-navigation.spec.ts",
+      "title": "运行质量别名复用校验且保留 query，统一权限策略不套建设侧栏",
+      "project": "builder-v2"
+    },
+    {
+      "file": "platform-builder-v2.spec.ts",
+      "title": "HTTP boundary: summary and approvals retry independently, app references retain directory, activation is truthful",
+      "project": "builder-v2"
+    },
+    {
+      "file": "platform-builder-v2.spec.ts",
+      "title": "HTTP boundary: session, dialogue and actual context stay reachable without model claims",
+      "project": "builder-v2"
+    },
+    {
+      "file": "platform-builder-v2.spec.ts",
+      "title": "HTTP boundary: seven entry page patterns and SuperAI at 1440px",
+      "project": "builder-v2"
+    },
+    {
+      "file": "platform-builder-v2.spec.ts",
+      "title": "HTTP boundary: seven entry page patterns and SuperAI at 1920px",
+      "project": "builder-v2"
+    },
+    {
+      "file": "platform-builder-v2.spec.ts",
+      "title": "HTTP boundary: seven entry page patterns and SuperAI at 1024px",
+      "project": "builder-v2"
+    },
+    {
+      "file": "platform-builder-v2.spec.ts",
+      "title": "HTTP boundary: seven entry page patterns and SuperAI at 390px",
+      "project": "builder-v2"
+    },
+    {
+      "file": "platform-builder-v2.spec.ts",
+      "title": "real provider negative cache: editor relogin link reaches usable login despite incomplete historical ID",
+      "project": "builder-v2"
+    },
+    {
+      "file": "platform-builder-v2.spec.ts",
+      "title": "real signed settings: theme and navigation preference survive reload and restore original choice",
+      "project": "builder-v2"
+    }
+  ],
+  "config": "playwright.builder.config.ts",
+  "config_sha256": "1f7356dc969feaa45eb3079707a1931283c268ec7613e4eca0c327a9175c33cf"
+}

@@ -732,7 +732,7 @@ export default function AuditStatisticsPage() {
       <PageHeader
         title={<><BarChartOutlined /> 调用审计统计</>}
         actions={
-          <Space>
+          <Space wrap>
                   <Button icon={<ReloadOutlined />} onClick={() => loadStatistics()} loading={loadingStats}>
                     刷新
                   </Button>
@@ -746,10 +746,10 @@ export default function AuditStatisticsPage() {
         }
       />
 
-      <Space className="mp-mb-4" wrap>
+      <div className="mp-mcp-audit-filters mp-mb-4">
         <DatePicker
           type="dateTimeRange"
-          format="YYYY-MM-DD HH:mm"
+          format="yyyy-MM-dd HH:mm"
           value={timeRange.map((d) => d.toDate()) as [Date, Date]}
           onChange={(dates) => {
             const arr = Array.isArray(dates) ? (dates as (Date | string)[]) : [];
@@ -757,7 +757,7 @@ export default function AuditStatisticsPage() {
               setTimeRange([dayjs(arr[0]), dayjs(arr[1])]);
             }
           }}
-          className="mp-w-360"
+          className="mp-mcp-audit-date"
         />
         <Select
           placeholder="工具"
@@ -801,7 +801,7 @@ export default function AuditStatisticsPage() {
             { label: '按天', value: 'day' },
           ]}
         />
-      </Space>
+      </div>
 
       <Row gutter={[16, 16]} className="mp-mb-4">
         <Col xs={24} sm={12} lg={6}>

@@ -1,272 +1,506 @@
-// SchemaWipCard - G33 WIP 暂存视图（GovernancePage「Schema 暂存（WIP）」卡）。
-//
-// GET /ont/v2/object-types/wip → [{rid, author, payload, created_at}]（他人不可见的
-// schema 变更暂存区）。每行两操作：
-//   应用 —— POST /object-types/wip/{rid}/apply；若返回 409 且 detail 是对象
-//     {error:"destructive_confirm_required", changes:[...], confirm_with:"..."}，
-//     展开行内二段确认区（changes 清单 + confirm_with 输入 + 重发；
-//     apply 是 POST，confirm_name 走 query 参数）；
-//   丢弃 —— DELETE /object-types/wip/{rid}。
-//
-// dev 模式 Semi 交互组件 onClick 被截 noop —— 交互元素全部原生 + 内联样式。
-
-import { useCallback, useEffect, useState } from 'react';
-import { Card } from '@douyinfe/semi-ui';
-import { AlertTriangle, Inbox } from 'lucide-react';
-import { toast } from '@mate/shared';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@mate/shared';
 import {
-  applySchemaWip, assessMigration, discardSchemaWip, errDetailText,
-  extractDestructiveConfirm, listSchemaWip, validateObjectTypeModel,
-  type DestructiveConfirmDetail, type MigrationAssessment, type ModelPreflight,
+  applySchemaWip,
+  assessMigration,
+  discardSchemaWip,
+  extractDestructiveConfirm,
+  getObjectType,
+  listObjectTypes,
+  listSchemaWip,
+  validateObjectTypeModel,
+  type DestructiveConfirmDetail,
+  type KernelObjectType,
+  type MigrationAssessment,
+  type ModelPreflight,
   type SchemaWipEntry,
 } from '@/api/ont/kernel';
+import { resourceError } from '../hooks/resourceErrors';
+import { resourceUrl, safeReturnTo } from '../hooks/resourceContext';
+import VersionHistory from './VersionHistory';
+import { useMutationLock, type MutationLock } from '../hooks/mutationLock';
+import { objectTypeFamily } from '../hooks/objectTypeFamily';
+import { editorIdentity } from '../hooks/editorSession';
 
-// 按钮 / 输入统一走 mp-onto-* 类（见 pages/ontology/ontology.css）。
-
-export default function SchemaWipCard() {
-  const [wips, setWips] = useState<SchemaWipEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState('');
-  const [err, setErr] = useState('');
-  const [busyRid, setBusyRid] = useState('');
-  // 行内二段确认（破坏性 409）：confirmRid 标记展开行
-  const [confirmRid, setConfirmRid] = useState('');
-  const [confirmInfo, setConfirmInfo] = useState<DestructiveConfirmDetail | null>(null);
-  const [confirmInput, setConfirmInput] = useState('');
-  // 发布前预检（只读）：静态错误 + 破坏性差异 + 引用解析
-  const [preflightRid, setPreflightRid] = useState('');
+/** One tenant-scoped WIP list; stored base_checksum is never overridden. */
+export default function SchemaWipCard({
+  typeRef,
+  onPublished,
+  mutationLock,
+}: {
+  typeRef?: string;
+  onPublished?: (type: KernelObjectType) => void;
+  mutationLock?: MutationLock;
+} = {}) {
+  const standaloneLock = useMutationLock();
+  const mutation = mutationLock ?? standaloneLock;
+  const command = useRef<symbol | null>(null);
+  const { user } = useAuth();
+  const identity = editorIdentity(user);
+  const currentIdentity = useRef(identity);
+  currentIdentity.current = identity;
+  const [params, setParams] = useSearchParams();
+  const requested =
+    typeRef ?? (params.get('typeRef') || params.get('class') || '');
+  const [wips, setWips] = useState<SchemaWipEntry[]>([]),
+    [selected, setSelected] = useState(requested);
+  const [loading, setLoading] = useState(true),
+    [listError, setListError] = useState('');
+  const [busy, setBusy] = useState(''),
+    [error, setError] = useState(''),
+    [message, setMessage] = useState('');
   const [preflight, setPreflight] = useState<ModelPreflight | null>(null);
-  // 存量影响（ADR-0082）：草稿作为目标的迁移预演（失败=类型尚不存在等 → 不阻塞预检）
-  const [migAssess, setMigAssess] = useState<MigrationAssessment | null>(null);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      setWips(await listSchemaWip());
-    } catch (e) {
-      setErr(errDetailText(e, 'WIP 暂存列表加载失败'));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { void reload(); }, [reload]);
-
-  const clearConfirm = () => {
-    setConfirmRid('');
-    setConfirmInfo(null);
+  const [impact, setImpact] = useState<MigrationAssessment | null>(null);
+  const [newType, setNewType] = useState(false),
+    [checkedRevision, setCheckedRevision] = useState('');
+  const [confirm, setConfirm] = useState<DestructiveConfirmDetail | null>(null),
+    [confirmInput, setConfirmInput] = useState('');
+  const [published, setPublished] = useState<{
+    rid: string;
+    checksum?: string;
+  } | null>(null);
+  const request = useRef(0),
+    listRequest = useRef(0);
+  const draft = wips.find((w) => w.rid === selected);
+  const revision = draft ? JSON.stringify(draft) : '';
+  const current = useRef(revision);
+  current.current = revision;
+  const scope = JSON.stringify([identity, requested, selected]);
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
+  const reset = useCallback(() => {
+    request.current++;
+    if (!command.current) setBusy('');
+    setPreflight(null);
+    setImpact(null);
+    setNewType(false);
+    setCheckedRevision('');
+    setConfirm(null);
     setConfirmInput('');
-  };
-
-  /** 发布前预检（只读，不落库）：先看会报什么错、会不会破坏存量、引用是否解析得到。 */
-  const doPreflight = async (rid: string, payload: Record<string, unknown>) => {
-    setBusyRid(rid); setErr(''); setMsg('');
-    setMigAssess(null);
+    setError('');
+    setMessage('');
+    setPublished(null);
+  }, []);
+  const reload = useCallback(async (internalRead = false) => {
+    if (mutation.locked() && !internalRead) return;
+    const n = ++listRequest.current;
+    const identityAtRead = currentIdentity.current;
+    const fresh = () => n === listRequest.current && identityAtRead === currentIdentity.current;
+    reset();
+    setLoading(true);
+    setListError('');
     try {
-      setPreflight(await validateObjectTypeModel(payload));
-      setPreflightRid(rid);
+      const rows = await listSchemaWip();
+      if (!fresh()) return;
+      setWips(rows);
+      setSelected((cur) => cur || requested || rows[0]?.rid || '');
     } catch (e) {
-      setErr(errDetailText(e, `预检失败：${rid}`));
+      if (fresh()) setListError(resourceError(e));
     } finally {
-      setBusyRid('');
+      if (fresh()) setLoading(false);
     }
-    // 存量影响预演（草稿为目标）：失败不阻塞预检（新类型/无实例场景无意义）
+  }, [reset, mutation.locked]);
+  useEffect(() => {
+    setWips([]);
+    reset();
+    // Identity changes may read fresh WIP, but cannot release an outstanding write.
+    void reload(true);
+    return () => {
+      listRequest.current++;
+      request.current++;
+    };
+  }, [reload, identity, reset]);
+  useEffect(() => {
+    if (requested) {
+      reset();
+      setSelected(requested);
+    }
+  }, [requested, reset]);
+  const pick = (rid: string) => {
+    if (mutation.locked()) return;
+    reset();
+    setSelected(rid);
+    const next = new URLSearchParams(params);
+    next.set('typeRef', rid);
+    setParams(next);
+  };
+  const valid =
+    !!draft &&
+    checkedRevision === revision &&
+    !!preflight?.valid &&
+    (!!impact || newType);
+  const precheck = async () => {
+    if (!draft || mutation.locked()) return;
+    reset();
+    const n = ++request.current,
+      rev = revision;
+    const fresh = () =>
+      n === request.current && rev === current.current && scope === currentScope.current;
+    setBusy('validate');
     try {
-      setMigAssess(await assessMigration(rid, { targetPayload: payload }));
-    } catch {
-      setMigAssess(null);
+      const checked = await validateObjectTypeModel(draft.payload);
+      if (!fresh()) return;
+      setPreflight(checked);
+      if (!checked.valid) return;
+      // A complete active read must succeed before absence can mean a new family.
+      const active = await listObjectTypes();
+      if (!fresh()) return;
+      let existing = active.some(
+        (t) => objectTypeFamily(t.rid) === objectTypeFamily(draft.rid),
+      );
+      if (!existing) {
+        // Archived types are omitted from the active list. A successful exact read is
+        // still an instance target; only an explicit 404 proves this RID is absent.
+        try {
+          await getObjectType(draft.rid);
+          existing = true;
+        } catch (e) {
+          if (
+            (e as { response?: { status?: number } })?.response?.status !== 404
+          )
+            throw e;
+        }
+        if (!fresh()) return;
+      }
+      if (existing) {
+        const result = await assessMigration(draft.rid, {
+          targetPayload: draft.payload,
+        });
+        if (!fresh()) return;
+        setImpact(result);
+      } else setNewType(true);
+      setCheckedRevision(rev);
+    } catch (e) {
+      if (fresh()) setError(`校验或影响读取失败 · ${resourceError(e)}`);
+    } finally {
+      if (fresh()) setBusy('');
     }
   };
-
-  /** 应用 WIP；confirmName 非空 = 二段确认重发（?confirm_name=...）。 */
-  const doApply = async (rid: string, confirmName = '') => {
-    setBusyRid(rid); setErr(''); setMsg('');
+  const apply = async (name = '') => {
+    if (!draft || !valid || busy || loading) return;
+    const release = mutation.acquire();
+    if (!release) return;
+    const token = Symbol();
+    command.current = token;
+    const n = ++request.current,
+      rev = revision;
+    const fresh = () =>
+      n === request.current && rev === current.current && scope === currentScope.current;
+    setBusy('apply');
+    setError('');
+    setMessage('');
     try {
-      const ot = await applySchemaWip(rid, confirmName);
-      setMsg(`已应用 WIP → 正式表：${ot.rid ?? rid}`);
-      toast('WIP 已应用', 'success');
-      clearConfirm();
-      await reload();
+      // A second editor can replace the tenant WIP while this review is open.
+      // Re-read the actual saved revision before applying; never rewrite its baseline.
+      const reviewN = ++listRequest.current;
+      const stored = await listSchemaWip();
+      if (!fresh() || reviewN !== listRequest.current) return;
+      if (JSON.stringify(stored.find((w) => w.rid === draft.rid)) !== rev) {
+        reset();
+        setWips(stored);
+        setError('草稿已变化，请重新校验后发布');
+        return;
+      }
+      // Never pass live checksum or assessment.to_checksum: backend checks the stored baseline.
+      const out = await applySchemaWip(draft.rid, name);
+      if (!fresh()) return;
+      setCheckedRevision('');
+      setConfirm(null);
+      setConfirmInput('');
+      setMessage(`发布成功：${out.display_name} · ${out.rid}`);
+      setPublished(out);
+      onPublished?.(out);
+      const listN = ++listRequest.current;
+      try {
+        const rows = await listSchemaWip();
+        if (fresh() && listN === listRequest.current) setWips(rows);
+      } catch (e) {
+        if (fresh()) setListError(`stale · ${resourceError(e)}`);
+      }
     } catch (e) {
+      if (!fresh()) return;
       const dc = extractDestructiveConfirm(e);
       if (dc) {
-        // 409 破坏性门禁：展开该行的二段确认区
-        setConfirmRid(rid);
-        setConfirmInfo(dc);
+        setConfirm(dc);
         setConfirmInput('');
-      } else {
-        setErr(errDetailText(e, `应用 WIP 失败：${rid}`));
+      } else setError(resourceError(e));
+    } finally {
+      if (command.current === token) {
+        command.current = null;
+        setBusy('');
       }
-    } finally {
-      setBusyRid('');
+      release();
     }
   };
-
-  const doDiscard = async (rid: string) => {
-    if (!window.confirm(`丢弃 WIP 暂存 ${rid}？该操作不可恢复。`)) return;
-    setBusyRid(rid); setErr(''); setMsg('');
+  const discard = async () => {
+    if (
+      mutation.locked() || busy || loading || !draft ||
+      !window.confirm(`丢弃草稿 ${draft.rid}？该操作不可恢复。`)
+    )
+      return;
+    const release = mutation.acquire();
+    if (!release) return;
+    const token = Symbol();
+    command.current = token;
+    reset();
+    const n = ++request.current,
+      rev = revision;
+    const fresh = () =>
+      n === request.current && rev === current.current && scope === currentScope.current;
+    setBusy('discard');
     try {
-      await discardSchemaWip(rid);
-      setMsg(`已丢弃 WIP：${rid}`);
-      if (confirmRid === rid) clearConfirm();
-      await reload();
+      await discardSchemaWip(draft.rid);
+      if (fresh()) await reload(true);
     } catch (e) {
-      setErr(errDetailText(e, `丢弃 WIP 失败：${rid}`));
+      if (fresh()) setError(resourceError(e));
     } finally {
-      setBusyRid('');
+      if (command.current === token) {
+        command.current = null;
+        setBusy('');
+      }
+      release();
     }
   };
-
+  const returnTo = safeReturnTo(params.get('returnTo'));
   return (
-    <Card bodyStyle={{ padding: 0 }}>
-      <div className="mp-gap-2 mp-flex-center mp-border mp-py-3 mp-px-5" >
-        <Inbox className="mp-icon-14" />
-        <h4 className="mp-fw-600 mp-m-0 mp-text-md">Schema 暂存（WIP）</h4>
-        <span className="mp-text-xs mp-text-2">编辑器暂存的 schema 变更 · 应用走破坏性门禁 · 他人不可见</span>
+    <section className="mp-gov-card mp-publication">
+      <div className="mp-publication-toolbar">
+        <h3>草稿发布</h3>
+        <label>
+          目标草稿{' '}
+          <select
+            aria-label="目标草稿"
+            value={selected}
+            disabled={mutation.pending}
+            onChange={(e) => pick(e.target.value)}
+          >
+            <option value="">选择草稿</option>
+            {selected && !draft && (
+              <option value={selected}>{selected}（无当前草稿）</option>
+            )}
+            {wips.map((w) => (
+              <option key={w.rid} value={w.rid}>
+                {String(w.payload.display_name || w.rid)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="mp-onto-btn" disabled={mutation.pending} onClick={() => void reload()}>
+          刷新草稿
+        </button>
+        {returnTo && <Link to={returnTo}>返回模型</Link>}
       </div>
-      <div className="mp-flex mp-gap-2 mp-py-3 mp-px-5 mp-flex-col" >
-        {msg && (
-          <div className="mp-break-all mp-text-sm mp-text-success mp-py-2 mp-px-3 mp-rounded mp-onto-box-success">{msg}</div>
+      <ol className="mp-publication-steps" aria-label="发布步骤">
+        {['变更清单', '定义校验', '影响预览', '确认发布', '结果'].map(
+          (s, i) => (
+            <li
+              key={s}
+              aria-current={
+                (published ? 4 : valid ? 3 : preflight ? 2 : 0) === i
+                  ? 'step'
+                  : undefined
+              }
+            >
+              <span>{i + 1}</span>
+              {s}
+            </li>
+          ),
         )}
-        {err && (
-          <div className="mp-break-all mp-text-sm mp-text-danger mp-py-2 mp-px-3 mp-rounded mp-onto-box-danger">{err}</div>
-        )}
-        {loading ? (
-          <div className="mp-text-center mp-p-6 mp-text-sm mp-text-2">加载 WIP 暂存…</div>
-        ) : wips.length === 0 ? (
-          <div className="mp-text-center mp-p-6 mp-text-sm mp-text-2">
-            无暂存变更 —— 编辑器保存到 WIP 后在此审阅（他人不可见）
+      </ol>
+      {listError && (
+        <div role="alert">
+          {listError}{' '}
+          <button onClick={() => void reload()}>重试草稿读取</button>
+        </div>
+      )}
+      {loading && <p>加载草稿…</p>}
+      {error && (
+        <div role="alert" className="mp-text-danger">
+          {error}
+        </div>
+      )}
+      {message && <div role="status">{message}</div>}
+      {!loading && !listError && !draft && !published && (
+        <p>
+          {selected
+            ? '请求的类型没有当前草稿，未自动选择其他类型。'
+            : '当前没有待发布的 Schema WIP'}
+        </p>
+      )}
+      {draft && (
+        <>
+          <h4>{String(draft.payload.display_name || draft.rid)}</h4>
+          <p>
+            作者 {draft.author || '—'} · 暂存时间 {draft.created_at || '—'} ·
+            模型发布不会执行实例迁移
+          </p>
+          <div className="mp-publication-review">
+            <h4>目标定义</h4>
+            <p>{String(draft.payload.description || '未填写描述')}</p>
+            <p>
+              主键：
+              {Array.isArray(draft.payload.primary_key)
+                ? draft.payload.primary_key.map(String).join('、') || '未指定'
+                : '未指定'}
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>属性</th>
+                  <th>格式</th>
+                  <th>必填</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(Array.isArray(draft.payload.properties)
+                  ? draft.payload.properties
+                  : []
+                ).map((p: Record<string, unknown>) => (
+                  <tr key={String(p.rid)}>
+                    <td>{String(p.title || p.rid)}</td>
+                    <td>{String(p.format || p.type_id || '—')}</td>
+                    <td>{p.nullable ? '否' : '是'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ) : (
-          wips.map((w) => {
-            const busy = busyRid === w.rid;
-            return (
-              <div key={w.rid} className="mp-border mp-py-2 mp-px-3 mp-rounded" >
-                <div className="mp-flex-center mp-wrap mp-gap-2" >
-                  <span className="mp-text-sm mp-break-all mp-mono" >{w.rid}</span>
-                  <span className="mp-text-xs mp-text-2 mp-shrink-0" >
-                    {w.author || '—'}
-                  </span>
-                  <span className="mp-text-xs mp-text-2 mp-shrink-0" >
-                    {w.created_at ? new Date(w.created_at).toLocaleString() : '—'}
-                  </span>
-                  <div className="mp-flex mp-shrink-0 mp-ml-auto mp-gap-1" >
-                    <button
-                      type="button"
-                      onClick={() => void doPreflight(w.rid, w.payload)}
-                      disabled={busy}
-                      className="mp-onto-btn mp-onto-btn--xs"
-                    >
-                      预检
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void doApply(w.rid)}
-                      disabled={busy}
-                      className="mp-onto-btn mp-onto-btn--xs"
-                    >
-                      {busy ? '处理中…' : '应用'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void doDiscard(w.rid)}
-                      disabled={busy}
-                      className="mp-onto-btn mp-onto-btn--xs mp-onto-btn--danger"
-                    >
-                      丢弃
-                    </button>
-                  </div>
-                </div>
-                {/* 发布前预检结果（只读，仅该行展开） */}
-                {preflightRid === w.rid && preflight && (
-                  <div className="mp-flex-col mp-mt-2 mp-gap-1 mp-pt-2 mp-onto-dashed-top">
-                    <div className="mp-fw-600 mp-text-sm">
-                      发布前预检：
-                      {preflight.valid && preflight.destructive.length === 0
-                        ? '可直接发布'
-                        : '需要处理后再发布'}
-                    </div>
-                    {preflight.errors.length > 0 && (
-                      <div className="mp-flex mp-gap-1 mp-flex-col">
-                        {preflight.errors.map((c, i) => (
-                          <div key={i} className="mp-text-xs mp-text-danger mp-break-all mp-mono">
-                            · 模型错误：{c}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {preflight.destructive.map((c, i) => (
-                      <div key={i} className="mp-text-xs mp-text-warning mp-break-all mp-mono">
-                        · 破坏性：{c}（发布需输入 display_name 确认）
-                      </div>
-                    ))}
-                    {preflight.references.unresolved.map((r, i) => (
-                      <div key={i} className="mp-text-xs mp-text-2 mp-break-all mp-mono">
-                        · 引用未解析（不阻断）：{r}
-                      </div>
-                    ))}
-                    <div className="mp-text-xs mp-text-2">
-                      必要依赖 {preflight.references.dependencies.length} 项 · 随发布写入版本快照
-                    </div>
-                    {migAssess && (
-                      <div className="mp-text-xs mp-text-2 mp-mt-1">
-                        存量影响（按本草稿发布后）：受影响实例{' '}
-                        <b>{migAssess.counts.instances_affected ?? 0}</b> 条 · 待重挂{' '}
-                        <b>{migAssess.counts.reattach_pending ?? 0}</b> 条
-                        {Object.keys(migAssess.counts.dangling ?? {}).length > 0
-                          && ` · 悬空键 ${Object.keys(migAssess.counts.dangling ?? {}).length} 个属性`}
-                        {(migAssess.counts.pk_conflicts ?? 0) > 0
-                          && ` · PK 冲突 ${migAssess.counts.pk_conflicts}（迁移会拒执行）`}
-                        。发布后可在「版本与发布 → 存量适配」评估并执行迁移。
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* 破坏性 409 二段确认区（仅该行展开） */}
-                {confirmRid === w.rid && confirmInfo && (
-                  <div className="mp-flex-col mp-mt-2 mp-gap-2 mp-pt-2 mp-onto-dashed-top">
-                    <div className="mp-fw-600 mp-text-sm mp-text-danger mp-flex-center mp-gap-1" >
-                      <AlertTriangle className="mp-shrink-0 mp-icon-12"  />
-                      应用被拦截：包含破坏性变更，需确认后重发
-                    </div>
-                    <div className="mp-flex mp-gap-1 mp-flex-col" >
-                      {confirmInfo.changes.map((c, i) => (
-                        <div key={i} className="mp-text-xs mp-text-danger mp-break-all mp-mono" >
-                          · {c}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mp-gap-2 mp-flex-center">
-                      <input
-                        type="text"
-                        value={confirmInput}
-                        placeholder={`输入 ${confirmInfo.confirm_with} 以确认`}
-                        onChange={(e) => setConfirmInput(e.target.value)}
-                        className="mp-flex-1 mp-min-w-0 mp-mono mp-onto-input mp-onto-input--sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void doApply(w.rid, confirmInput.trim())}
-                        disabled={busy || !confirmInput.trim()}
-                        className="mp-shrink-0 mp-onto-btn mp-onto-btn--xs mp-onto-btn--danger"
-                      >
-                        {busy ? '重发中…' : '重发（确认）'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={clearConfirm}
-                        className="mp-shrink-0 mp-onto-btn mp-onto-btn--xs"
-                      >
-                        取消
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
-      </div>
-    </Card>
+          <details>
+            <summary>高级标识与草稿定义</summary>
+            <p>
+              {draft.rid} · 基线 {draft.base_checksum || '无'}
+            </p>
+            <pre>{JSON.stringify(draft.payload, null, 2)}</pre>
+          </details>
+          <Link
+            to={resourceUrl(
+              `/ontology/model/object-types/${encodeURIComponent(draft.rid)}`,
+              draft.rid,
+              returnTo,
+              params.get('changeRef') || undefined,
+            )}
+          >
+            编辑当前模型
+          </Link>
+          <div className="mp-publication-actions">
+            <button
+              className="mp-onto-btn"
+              disabled={mutation.pending || !!busy || loading}
+              onClick={() => void precheck()}
+            >
+              校验草稿
+            </button>
+            <button
+              className="mp-onto-btn mp-onto-btn--primary"
+              disabled={mutation.pending || !valid || !!busy || loading || !!confirm}
+              onClick={() => void apply()}
+            >
+              确认发布
+            </button>
+            <button
+              className="mp-onto-btn"
+              disabled={mutation.pending || !!busy || loading}
+              onClick={() => void discard()}
+            >
+              丢弃
+            </button>
+          </div>
+          {preflight && (
+            <div>
+              <h4>定义校验：{preflight.valid ? '通过' : '未通过'}</h4>
+              {preflight.errors.map((s, i) => (
+                <p key={i} className="mp-text-danger">
+                  模型错误：{s}
+                </p>
+              ))}
+              {preflight.warnings.map((s, i) => (
+                <p key={i}>警告：{s}</p>
+              ))}
+              {preflight.destructive.map((s, i) => (
+                <p key={i} className="mp-text-warning">
+                  破坏性：{s}（发布仍需服务端二段确认）
+                </p>
+              ))}
+              {preflight.references.unresolved.map((s, i) => (
+                <p key={i}>引用未解析（不阻断）：{s}</p>
+              ))}
+            </div>
+          )}
+          {impact && (
+            <div>
+              <h4>影响预览</h4>
+              <p>
+                受影响实例 {impact.counts.instances_affected ?? 0} · 待重挂{' '}
+                {impact.counts.reattach_pending ?? 0} · PK 冲突{' '}
+                {impact.counts.pk_conflicts ?? 0} · PK 缺失{' '}
+                {impact.counts.pk_missing ?? 0}
+              </p>
+              {impact.changes.map((s) => (
+                <p key={s}>{s}</p>
+              ))}
+              {impact.warnings.map((s) => (
+                <p key={s}>{s}</p>
+              ))}
+            </div>
+          )}
+          {newType && <p>新类型：已完成现有类型读取，无存量实例迁移目标。</p>}
+          {confirm && (
+            <div role="alert">
+              <h4>破坏性变更：需输入当前生效名称确认</h4>
+              {confirm.changes.map((s) => (
+                <p key={s}>{s}</p>
+              ))}
+              <input
+                value={confirmInput}
+                placeholder={`输入 ${confirm.confirm_with} 以确认`}
+                onChange={(e) => setConfirmInput(e.target.value)}
+                disabled={mutation.pending || !!busy}
+              />
+              <button
+                disabled={
+                  mutation.pending || !valid ||
+                  !!busy ||
+                  confirmInput.trim() !== confirm.confirm_with
+                }
+                onClick={() => void apply(confirmInput.trim())}
+              >
+                重发（确认）
+              </button>
+              <button
+                disabled={mutation.pending || !!busy}
+                onClick={() => {
+                  if (mutation.locked()) return;
+                  setConfirm(null);
+                  setConfirmInput('');
+                }}
+              >
+                取消
+              </button>
+            </div>
+          )}
+        </>
+      )}
+      {published && (
+        <>
+          <Link
+            to={resourceUrl(
+              '/ontology/governance/releases',
+              published.rid,
+              returnTo,
+              params.get('changeRef') || undefined,
+            )}
+          >
+            查看发布历史与存量适配
+          </Link>
+          {!onPublished && (
+            <VersionHistory
+              rid={published.rid}
+              currentChecksum={published.checksum}
+            />
+          )}
+        </>
+      )}
+    </section>
   );
 }

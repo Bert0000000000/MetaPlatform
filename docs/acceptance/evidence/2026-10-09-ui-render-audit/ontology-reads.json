@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-09T02:24:26Z",
+  "loginStatus": 200,
+  "reads": [
+    {
+      "port": 58017,
+      "path": "/api/v1/ont/v2/object-types",
+      "status": 200,
+      "elapsed": 0.062
+    },
+    {
+      "port": 58017,
+      "path": "/api/v1/ont/v2/value-types",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "port": 58110,
+      "path": "/api/v1/ont/v2/object-types",
+      "status": 200,
+      "elapsed": 0.031
+    },
+    {
+      "port": 58110,
+      "path": "/api/v1/ont/v2/value-types",
+      "status": 200,
+      "elapsed": 0.0
+    },
+    {
+      "port": 59260,
+      "path": "/api/v1/ont/v2/object-types",
+      "status": 200,
+      "elapsed": 0.047
+    },
+    {
+      "port": 59260,
+      "path": "/api/v1/ont/v2/value-types",
+      "status": 200,
+      "elapsed": 0.0
+    }
+  ]
+}

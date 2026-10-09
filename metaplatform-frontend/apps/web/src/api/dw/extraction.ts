@@ -9,6 +9,17 @@ async function put<T>(url: string, body?: unknown): Promise<T> { return data(awa
 
 import type { ExtractionItem, ExtractionResult, ExtractionType, ExtractionStatus, PageResponse } from './types';
 
+/** Serialized extraction records returned by GET /dw/extract. */
+export interface ExtractionRecord {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  source: string;
+  sourceId: string;
+  extractedFacts: number;
+  extractedAt: string;
+}
+
 export async function extractFromDocument(
   documentId: string,
   employeeId: string,
@@ -46,10 +57,10 @@ export async function getExtractionsByEmployee(
   employeeId: string,
   typeFilter?: ExtractionType,
   statusFilter?: ExtractionStatus,
-): Promise<ExtractionItem[]> {
+): Promise<ExtractionRecord[]> {
   const params: Record<string, unknown> = { employeeId };
   if (typeFilter) params.type = typeFilter;
   if (statusFilter) params.status = statusFilter;
-  const res = await get<PageResponse<ExtractionItem>>('/dw/extract', params);
-  return res?.items ?? [];
+  const res = await get<PageResponse<ExtractionRecord>>('/dw/extract', params);
+  return res.items;
 }

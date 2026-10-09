@@ -7,12 +7,10 @@ interface CategoryFilterProps {
 }
 
 const CATEGORIES: Array<{ label: string; value: TemplateItem['category'] }> = [
-  { label: '全部', value: 'OA' },
-  { label: 'OA', value: 'OA' },
-  { label: 'CRM', value: 'CRM' },
-  { label: 'HR', value: 'HR' },
-  { label: 'Finance', value: 'Finance' },
-  { label: 'Project', value: 'Project' },
+  { label: '全部', value: '全部' },
+  { label: '工作流', value: 'workflow' },
+  { label: '表单', value: 'form' },
+  { label: '审批', value: 'approval' },
 ];
 
 export default function CategoryFilter({ value, onChange }: CategoryFilterProps) {
@@ -25,7 +23,7 @@ export default function CategoryFilter({ value, onChange }: CategoryFilterProps)
         onChange={(e) => onChange(e.target.value === '全部' ? undefined : e.target.value)}
         className="mp-ml-3"
       >
-        <Space>
+        <Space wrap>
           {CATEGORIES.map((c) => (
             <Radio key={c.label} value={c.value}>{c.label}</Radio>
           ))}

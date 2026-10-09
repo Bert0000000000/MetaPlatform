@@ -1,0 +1,40 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "status": "INCOMPLETE",
+  "attempts": [
+    {
+      "attempt": 1,
+      "exit_code": 1,
+      "classification": "Probe sampled final geometry before native wheel/trial settle; preserved failure does not establish product defect"
+    },
+    {
+      "attempt": 2,
+      "exit_code": 1,
+      "classification": "Actual native focus/local-scroll and final trial actionability observed; CSS-state comparison failed restoration measurement; no product defect established",
+      "observed_local_container": "mp-chat-columns",
+      "client_width": 286,
+      "scroll_width": 680,
+      "scroll_left_after_native_focus": 213,
+      "final_post_settle_x": 227.46875,
+      "final_trial_actionable": true
+    },
+    {
+      "attempt": 3,
+      "exit_code": 1,
+      "classification": "Strict real provider auth before UI failed; no behavior receipt"
+    },
+    {
+      "attempt": 4,
+      "exit_code": 1,
+      "classification": "Authorized bounded retry: login HTTP504 before UI; stopped without another retry; no behavior receipt"
+    }
+  ],
+  "pending": [
+    "Actual semantic radio checked change/restoration",
+    "Team mode real click/restoration",
+    "type390 review/publish tail native Tab and trial actionability"
+  ],
+  "mutations": "No settings PUT/message send/DB writes in read-only captures/probes; no direct scrollLeft assignment",
+  "preservation": "Original failed JSON/PNG/XML/private logs retained in ignored runtime; no stale geometry copied as new successful proof",
+  "narrow_panel_limitation": "Query/explore390 initial object pane and gov390 right pane require local operation; pixel observation alone does not certify all pane controls"
+}

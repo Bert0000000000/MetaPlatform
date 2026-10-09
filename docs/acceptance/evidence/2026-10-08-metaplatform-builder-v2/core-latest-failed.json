@@ -1,0 +1,86 @@
+{
+  "mode": "core",
+  "exit_code": 1,
+  "seconds": 43.687,
+  "source_head": "158ab2366c7123680520e051ad685e000f5d6716",
+  "frontend_sources_before": {
+    "sha256": "4c0af47b1e4ba84abf60227ab31040628060b410b70465febea73fa29d79d53f",
+    "file_count": 699
+  },
+  "frontend_sources_after": {
+    "sha256": "4c0af47b1e4ba84abf60227ab31040628060b410b70465febea73fa29d79d53f",
+    "file_count": 699
+  },
+  "source_unchanged": true,
+  "base_url": "http://127.0.0.1:59260",
+  "results": {
+    "tests": 9,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 8
+  },
+  "case_status": [
+    {
+      "name": "建模：ObjectType（含层级）→ LinkType → ActionType，读回一致",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": "0",
+      "status": "failed"
+    },
+    {
+      "name": "数据映射与同步：声明背挂源 → 同步 → 逐字段对账",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": null,
+      "status": "skipped"
+    },
+    {
+      "name": "对象与关系查询：个体列表 + 关系写入 + 一跳遍历",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": null,
+      "status": "skipped"
+    },
+    {
+      "name": "Proposal：提议（预检通过）→ 确认 → 执行 → 落库 + 审计可见",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": null,
+      "status": "skipped"
+    },
+    {
+      "name": "违规数据：schema 违规被预检阻断（409）且不落库",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": null,
+      "status": "skipped"
+    },
+    {
+      "name": "重复提交：同 Idempotency-Key 重放不产生第二次效果",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": null,
+      "status": "skipped"
+    },
+    {
+      "name": "失败恢复：失败显式且无副作用，随后有效请求仍成功（含 Action 审计）",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": null,
+      "status": "skipped"
+    },
+    {
+      "name": "跨租户拒绝：异租户 rid / 关联写入一律 4xx",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": null,
+      "status": "skipped"
+    },
+    {
+      "name": "前端：本体页面在真实后端下无未捕获错误",
+      "classname": "ontology-loop\\ontology-core.spec.ts",
+      "seconds": null,
+      "status": "skipped"
+    }
+  ],
+  "failure_classes": [
+    {
+      "name": "建模：ObjectType（含层级）→ LinkType → ActionType，读回一致",
+      "keycloak_timeout": true,
+      "operational_error": false
+    }
+  ],
+  "interpretation": "beforeAll login timeout: one failed, eight not run; not a passed gate"
+}

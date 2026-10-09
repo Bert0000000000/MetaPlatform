@@ -2,30 +2,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Spin, Tag } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { RefreshCw } from 'lucide-react';
-import { getExtractionsByEmployee } from '@/api/dw/extraction';
-import type { ExtractionItem } from '@/api/dw/types';
+import { getExtractionsByEmployee, type ExtractionRecord } from '@/api/dw/extraction';
 import { DataTablePro, EmptyState, PageHeader, type DataTableProProps } from '@/components/skeleton';
 import '@/pages/agents/agents.css';
 
 /**
- * 数字员工 · 概念抽取（P2-DW-07/08 消费页）。
- * 数据面 src/api/dw/extraction（getExtractionsByEmployee）：文档抽取出的本体条目。
+ * 数字员工 · 抽取记录。GET /dw/extract 返回来源及抽取数量记录。
  */
 
 type Meta = { label: string; color: TagColor };
 
-const TYPE_META: Record<string, Meta> = {
-  concept: { label: '概念', color: 'blue' },
-  entity: { label: '实体', color: 'cyan' },
-  rule: { label: '规则', color: 'purple' },
-  action: { label: '动作', color: 'teal' },
-};
-
-const STATUS_META: Record<string, Meta> = {
-  pending: { label: '待审核', color: 'amber' },
-  approved: { label: '已通过', color: 'green' },
-  rejected: { label: '已驳回', color: 'red' },
-  committed: { label: '已提交', color: 'blue' },
+const SOURCE_META: Record<string, Meta> = {
+  kb: { label: '知识库', color: 'blue' },
+  conversation: { label: '会话', color: 'cyan' },
+  document: { label: '文档', color: 'purple' },
 };
 
 function metaOf(map: Record<string, Meta>, key: unknown): Meta {
@@ -35,7 +25,7 @@ function metaOf(map: Record<string, Meta>, key: unknown): Meta {
 }
 
 export default function ExtractionPage() {
-  const [items, setItems] = useState<ExtractionItem[]>([]);
+  const [items, setItems] = useState<ExtractionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -44,7 +34,7 @@ export default function ExtractionPage() {
     setError('');
     try {
       const res = await getExtractionsByEmployee('');
-      setItems(res ?? []);
+      setItems(res);
     } catch (e) {
       setItems([]);
       setError(e instanceof Error ? e.message : String(e));
@@ -57,20 +47,19 @@ export default function ExtractionPage() {
     void load();
   }, [load]);
 
-  const columns: DataTableProProps<ExtractionItem>['columns'] = [
+  const columns: DataTableProProps<ExtractionRecord>['columns'] = [
     {
-      title: '名称',
-      dataIndex: 'name',
+      title: '来源记录',
+      dataIndex: 'sourceId',
       width: 240,
       ellipsis: true,
-      render: (_: unknown, r: ExtractionItem) => r.name || '—',
     },
     {
-      title: '类型',
-      dataIndex: 'type',
+      title: '来源',
+      dataIndex: 'source',
       width: 110,
-      render: (_: unknown, r: ExtractionItem) => {
-        const meta = metaOf(TYPE_META, r.type);
+      render: (_: unknown, r: ExtractionRecord) => {
+        const meta = metaOf(SOURCE_META, r.source);
         return (
           <Tag size="small" color={meta.color} type="light">
             {meta.label}
@@ -78,28 +67,15 @@ export default function ExtractionPage() {
         );
       },
     },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      width: 110,
-      render: (_: unknown, r: ExtractionItem) => {
-        const meta = metaOf(STATUS_META, r.status);
-        return (
-          <Tag size="small" color={meta.color} type="light">
-            {meta.label}
-          </Tag>
-        );
-      },
-    },
-    { title: '置信度', dataIndex: 'confidence', width: 100, render: (_: unknown, r: ExtractionItem) => (typeof r.confidence === 'number' ? String(r.confidence) : '—') },
-    { title: '抽取时间', dataIndex: 'extractedAt', width: 180, render: (_: unknown, r: ExtractionItem) => r.extractedAt || '—' },
-    { title: '描述', dataIndex: 'description', ellipsis: true },
+    { title: '数字员工', dataIndex: 'employeeId', width: 220, ellipsis: true },
+    { title: '抽取事实数', dataIndex: 'extractedFacts', width: 110 },
+    { title: '抽取时间', dataIndex: 'extractedAt', width: 180 },
   ];
 
   return (
     <>
       <PageHeader
-        title="概念抽取列表"
+        title="抽取记录列表"
         desc={error ? undefined : loading ? '正在加载抽取记录…' : `共 ${items.length} 条抽取记录`}
         actions={
           <Button
@@ -129,7 +105,7 @@ export default function ExtractionPage() {
         </div>
       ) : (
         <Card>
-          <DataTablePro<ExtractionItem>
+          <DataTablePro<ExtractionRecord>
             columns={columns}
             dataSource={items}
             rowKey="id"
@@ -138,7 +114,7 @@ export default function ExtractionPage() {
               <EmptyState
                 illustration="no-content"
                 title="暂无抽取记录"
-                desc="对文档执行抽取后，条目会在这里出现。"
+                desc="完成抽取后，可在这里查看来源记录与抽取数量。"
               />
             }
           />

@@ -36,15 +36,18 @@ export default function KnowledgeKbDetailPage() {
   const [keyword, setKeyword] = useState('');
   const [activeDoc, setActiveDoc] = useState<string>();
   const [chunksByDoc, setChunksByDoc] = useState<Record<string, DocumentChunk[]>>({});
-  const [loadingChunks, setLoadingChunks] = useState(false);
+  const [chunkErrorsByDoc, setChunkErrorsByDoc] = useState<Record<string, string>>({});
+  const [chunkRetry, setChunkRetry] = useState(0);
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (file: File) => {
+    if (!canUpload) throw new Error('知识库信息和文档列表读取成功后才可上传文档。');
     setUploading(true);
     try {
       const result = await uploadDocumentToKb(kbId, file);
       Toast.success(`「${result.filename}」已入库（${result.chunkCount} 个切片，已建立索引）`);
       setChunksByDoc({});
+      setChunkErrorsByDoc({});
       await reload();
     } catch (e) {
       report(e instanceof Error ? e : new Error(String(e)));
@@ -54,39 +57,50 @@ export default function KnowledgeKbDetailPage() {
     }
   };
 
-  const { data: kb, loading: loadingKb } = useAsync<KbEntity | null>(
-    () => (kbId ? getKbDetail(kbId).catch(() => null) : Promise.resolve(null)),
+  const { data: kb, loading: loadingKb, error: kbError, reload: reloadKb } = useAsync<KbEntity | null>(
+    () => (kbId ? getKbDetail(kbId) : Promise.resolve(null)),
     [kbId],
     { initialData: null },
   );
 
   const {
-    data: documents = [],
+    data: loadedDocuments,
     loading: loadingDocs,
+    error: documentsError,
     reload,
   } = useAsync<KbDocument[]>(
     () => (kbId ? listDocuments(kbId) : Promise.resolve([])),
     [kbId],
-    { initialData: [] },
   );
 
+  const documents = loadedDocuments ?? [];
+  const kbReady = !loadingKb && !kbError && kb?.id === kbId;
+  const documentsReady = !loadingDocs && !documentsError && loadedDocuments !== undefined;
+  const kbMeta = kbReady ? kb : null;
+  const canUpload = kbReady && documentsReady;
+  const activeDocument = documentsReady ? documents.find((doc) => doc.id === activeDoc && doc.kbId === kbId) : undefined;
+
   useEffect(() => {
-    if (!activeDoc) return;
-    if (chunksByDoc[activeDoc]) return;
+    setActiveDoc(undefined);
+    setChunksByDoc({});
+    setChunkErrorsByDoc({});
+  }, [kbId]);
+
+  useEffect(() => {
+    if (!activeDoc || !activeDocument) return;
+    if (chunksByDoc[activeDoc] !== undefined || chunkErrorsByDoc[activeDoc]) return;
     let alive = true;
-    setLoadingChunks(true);
     getDocumentChunks(activeDoc)
       .then((chunks) => { if (alive) setChunksByDoc((p) => ({ ...p, [activeDoc]: chunks })); })
       .catch((e) => {
         if (alive) {
-          setChunksByDoc((p) => ({ ...p, [activeDoc]: [] }));
+          setChunkErrorsByDoc((p) => ({ ...p, [activeDoc]: e instanceof Error ? e.message : String(e) }));
           report(e instanceof Error ? e : new Error(String(e)));
         }
-      })
-      .finally(() => { if (alive) setLoadingChunks(false); });
+      });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDoc]);
+  }, [activeDoc, activeDocument?.id, kbId, chunkRetry]);
 
   const filteredDocuments = useMemo(() => {
     const q = keyword.trim().toLocaleLowerCase();
@@ -122,10 +136,10 @@ export default function KnowledgeKbDetailPage() {
               aria-label="返回知识库列表"
               onClick={() => navigate('/ki/kb')}
             />
-            {kb?.displayName ?? kbId}
+            {kbMeta?.displayName ?? kbId}
           </span>
         }
-        desc={kb?.description || undefined}
+        desc={kbMeta?.description || undefined}
         actions={
           <Space>
             {/* Semi Upload 官方接管姿势:customRequest 替换内置 xhr,
@@ -138,6 +152,7 @@ export default function KnowledgeKbDetailPage() {
               multiple
               showUploadList={false}
               draggable={false}
+              disabled={!canUpload}
               customRequest={({ fileInstance, onSuccess, onError }) => {
                 handleUpload(fileInstance)
                   .then((r) => onSuccess(r ?? null))
@@ -149,7 +164,8 @@ export default function KnowledgeKbDetailPage() {
                 theme="solid"
                 type="primary"
                 loading={uploading}
-                title={`上传文档到「${kb?.displayName ?? kbId}」`}
+                disabled={!canUpload}
+                title={canUpload ? `上传文档到「${kbMeta?.displayName ?? kbId}」` : '知识库信息和文档列表读取成功后可上传'}
               >
                 上传文档
               </Button>
@@ -162,6 +178,7 @@ export default function KnowledgeKbDetailPage() {
       />
 
       <Card title="基本信息" className="mp-mt-4">
+        {kbError && <div role="alert"><EmptyState illustration="failure" title="知识库信息读取失败" desc={kbError.message} actions={<Button onClick={reloadKb}>重试知识库</Button>} /></div>}
         <Spin spinning={loadingKb}>
           <Descriptions
             row
@@ -170,18 +187,18 @@ export default function KnowledgeKbDetailPage() {
           >
             <Descriptions.Item itemKey="ID">{kbId}</Descriptions.Item>
             <Descriptions.Item itemKey="类型">
-              <Tag>{kb?.kbKind ?? '-'}</Tag>
+              <Tag>{kbMeta?.kbKind ?? '未提供'}</Tag>
             </Descriptions.Item>
             <Descriptions.Item itemKey="状态">
-              <Tag color={kb?.enabled ? 'green' : 'red'}>{kb?.enabled ? '启用' : '禁用'}</Tag>
+              <Tag color={typeof kbMeta?.enabled === 'boolean' ? kbMeta.enabled ? 'green' : 'red' : 'grey'}>{typeof kbMeta?.enabled === 'boolean' ? kbMeta.enabled ? '启用' : '禁用' : '未提供'}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item itemKey="文档数">{documents.length}</Descriptions.Item>
-            <Descriptions.Item itemKey="切片总数">{totalChunks}</Descriptions.Item>
+            <Descriptions.Item itemKey="文档数">{documentsReady ? documents.length : '未提供'}</Descriptions.Item>
+            <Descriptions.Item itemKey="切片总数">{documentsReady ? totalChunks : '未提供'}</Descriptions.Item>
           </Descriptions>
         </Spin>
       </Card>
 
-      <Card title={`文档列表（${documents.length}）`} className="mp-mt-4">
+      <Card title={documentsReady ? `文档列表（${documents.length}）` : '文档列表'} className="mp-mt-4">
         <Input
           aria-label="搜索文档"
           placeholder="搜索文档名称"
@@ -189,9 +206,10 @@ export default function KnowledgeKbDetailPage() {
           value={keyword}
           onChange={setKeyword}
           showClear
-          className="mp-mb-3 mp-w-320"
+          disabled={!documentsReady}
+          className="mp-mb-3 mp-kb-detail-search"
         />
-        <Table<KbDocument>
+        {documentsError ? <div role="alert"><EmptyState illustration="failure" title="文档列表读取失败" desc={documentsError.message} actions={<Button onClick={reload}>重试文档列表</Button>} /></div> : !documentsReady ? <Spin tip="正在读取文档…" /> : <Table<KbDocument>
           rowKey="id"
           dataSource={filteredDocuments}
           loading={loadingDocs}
@@ -205,15 +223,22 @@ export default function KnowledgeKbDetailPage() {
             const doc = record as KbDocument | undefined;
             if (!doc) return null;
             const chunks = chunksByDoc[doc.id];
-            if (loadingChunks && !chunks) {
-              return <div className="mp-p-3"><Spin /></div>;
+            const chunkError = chunkErrorsByDoc[doc.id];
+            if (chunkError) {
+              return <div role="alert"><EmptyState illustration="failure" title="文档切片读取失败" desc={chunkError} actions={<Button onClick={() => {
+                setChunkErrorsByDoc((previous) => { const next = { ...previous }; delete next[doc.id]; return next; });
+                setChunkRetry((value) => value + 1);
+              }}>重试文档切片</Button>} /></div>;
             }
-            if (!chunks || chunks.length === 0) {
+            if (chunks === undefined) {
+              return <div className="mp-p-3"><Spin tip="正在读取切片…" /></div>;
+            }
+            if (chunks.length === 0) {
               return (
                 <EmptyState
                   illustration="no-content"
                   title="暂无切片内容"
-                  desc="文档可能未索引，或服务为内存模式重启后清空。"
+                  desc="当前文档读取成功，尚未返回切片内容。"
                 />
               );
             }
@@ -281,7 +306,7 @@ export default function KnowledgeKbDetailPage() {
               ),
             },
           ]}
-        />
+        />}
       </Card>
     </>
   );

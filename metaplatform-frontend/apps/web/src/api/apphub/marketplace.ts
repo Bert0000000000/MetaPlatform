@@ -82,24 +82,31 @@ function mapInstalled(raw: Record<string, unknown>): InstalledItem {
   };
 }
 
-// UUIDv5-style deterministic UUID from a template id（marketplace artifact_id 是 UUID 类型）
-function templateIdToUuid(id: string): string {
-  // 简单确定性映射：把任意字符串哈希成合法 UUID（v4 格式）
-  let h = 0x811c9dc5;
-  for (let i = 0; i < id.length; i++) {
-    h ^= id.charCodeAt(i);
-    h = (h * 0x01000193) >>> 0;
-  }
-  const hex = h.toString(16).padStart(8, '0') + '00000000000000000000';
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+export function canInstallTemplate(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+export interface TemplateCreateRequest {
+  code: string;
+  name: string;
+  template_type: 'workflow' | 'form' | 'approval';
+  description?: string;
+  content: Record<string, unknown>;
+}
+
+export async function createTemplate(payload: TemplateCreateRequest): Promise<TemplateItem> {
+  return mapTemplate(await post<Record<string, unknown>>('/templates', payload));
 }
 
 export async function installTemplate(id: string): Promise<InstallResult> {
+  if (!canInstallTemplate(id)) {
+    return { success: false, error: '该模板尚未关联可安装的市场制品' };
+  }
   try {
     // 真实 marketplace API：POST /install {kind, artifact_id, version}
     const resp = await mktClient.post<{ install_id?: string; already_installed?: boolean }>('/install', {
       kind: 'ontology',
-      artifact_id: templateIdToUuid(id),
+      artifact_id: id,
       version: 'v1',
     });
     const body = resp.data ?? resp;
@@ -129,27 +136,36 @@ export async function listTemplates(params?: {
   category?: string;
 }): Promise<TemplateItem[]> {
   // 后端返回 {items:[...]} 且字段为 id/template_type/description/content，映射到前端结构
-  const res = await get<{ items?: Array<Record<string, unknown>> }>('/templates', params as Record<string, unknown> | undefined);
-  return (res?.items ?? []).map(mapTemplate);
+  const res = await get<{ items?: Array<Record<string, unknown>> }>('/templates', params?.category ? { template_type: params.category } : undefined);
+  const templates = (res?.items ?? []).map(mapTemplate);
+  const keyword = params?.keyword?.trim().toLocaleLowerCase();
+  return keyword
+    ? templates.filter((item) => `${item.name} ${item.description} ${item.tags.join(' ')}`.toLocaleLowerCase().includes(keyword))
+    : templates;
 }
 
 function mapTemplate(raw: Record<string, unknown>): TemplateItem {
+  const content = raw.content && typeof raw.content === 'object' ? raw.content as Record<string, unknown> : {};
   return {
     templateId: String(raw.id ?? raw.code ?? ''),
     name: String(raw.name ?? ''),
     category: String(raw.template_type ?? raw.category ?? 'workflow'),
     description: String(raw.description ?? ''),
-    icon: 'appstore',
-    tags: [],
+    icon: typeof content.icon === 'string' ? content.icon : 'appstore',
+    tags: Array.isArray(content.tags) ? content.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     downloadCount: 0,
     rating: 0,
-    preview: String(raw.content ?? ''),
+    preview: typeof raw.content === 'string' ? raw.content : undefined,
+    configSnapshot: typeof raw.content === 'string' ? raw.content : JSON.stringify(raw.content ?? {}),
     createdAt: '',
   };
 }
 
 export async function getTemplate(id: string): Promise<TemplateItem> {
-  return get<TemplateItem>(`/templates/${id}`);
+  const templates = await listTemplates();
+  const template = templates.find((item) => item.templateId === id);
+  if (!template) throw new Error('模板不存在或已不可访问');
+  return template;
 }
 
 export async function listTemplateComments(

@@ -100,7 +100,16 @@ async function getOne<T>(path: string): Promise<T> {
 }
 
 export async function listObjectTypes(): Promise<KernelObjectType[]> {
-  return list<KernelObjectType>('/object-types');
+  // GET returns an array with no total. A short terminal batch proves completion;
+  // a failed later batch rejects the entire read, never a partial active family.
+  const types: KernelObjectType[] = [];
+  const limit = 100;
+  for (let offset = 0; ; offset += limit) {
+    const resp = await apiClient.get(v2('/object-types'), { params: { limit, offset } });
+    const batch = resp.data as KernelObjectType[];
+    types.push(...batch);
+    if (batch.length < limit) return types;
+  }
 }
 
 export async function getObjectType(rid: string): Promise<KernelObjectType> {
@@ -853,9 +862,17 @@ export interface SchemaWipEntry {
   author: string;
   payload: Record<string, unknown>;
   created_at?: string;
+  base_checksum?: string;
 }
 
-/** WIP 暂存清单（G33，他人不可见）。 */
+/** Stage an existing backend WIP. Does not apply the model or create a version. */
+export async function saveSchemaWip(payload: KernelObjectTypeCreate): Promise<{rid: string; status: 'staged'; base_checksum: string}> {
+  const { confirm_name: _confirmation, ...definition } = payload;
+  const resp = await apiClient.post(v2('/object-types/wip'), { payload: definition });
+  return resp.data;
+}
+
+/** 租户作用域 WIP 暂存清单；author 元数据不代表独立个人隔离。 */
 export async function listSchemaWip(): Promise<SchemaWipEntry[]> {
   return list<SchemaWipEntry>('/object-types/wip');
 }
@@ -863,7 +880,7 @@ export async function listSchemaWip(): Promise<SchemaWipEntry[]> {
 /** 应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁；二段确认 confirm_name 走 query 参数）。
  *
  * `expectedChecksum`：乐观并发 —— 与当前生效定义不一致 → 409（不静默覆盖他人改动）。
- * 传空则不做并发校验。
+ * 传空时后端仍按 WIP 保存时的 base_checksum 校验基线。
  */
 export async function applySchemaWip(
   rid: string, confirmName = '', expectedChecksum = '',
@@ -1108,6 +1125,9 @@ export interface KernelBackingDatasource {
   priority: number;
   ts_column?: string;
   last_synced_at?: string | null;
+  last_synced_pk?: string | null;
+  last_error?: string;
+  last_failed?: number;
   updated_at?: string;
 }
 
@@ -1138,15 +1158,29 @@ export async function upsertBackingDatasource(
   return resp.data as Record<string, unknown>;
 }
 
-/** 批量/增量同步（incremental=true 按 ts_column > 水位）；返回 {源名: 同步行数}。 */
+export interface BackingDatasourceSyncSource {
+  synced: number;
+  failed: number;
+  deleted: number;
+  failures: Array<{ pk: unknown; error: string }>;
+  cursor: { ts: string | null; pk: string | null };
+}
+export interface BackingDatasourceSyncResult {
+  ok: boolean;
+  total_synced: number;
+  total_failed: number;
+  total_deleted: number;
+  sources: Record<string, BackingDatasourceSyncSource>;
+}
+/** Synchronizes every declared source. HTTP 200 with ok=false is a partial failure. */
 export async function syncBackingDatasources(
   classRid: string, incremental = false,
-): Promise<Record<string, number>> {
+): Promise<BackingDatasourceSyncResult> {
   const resp = await apiClient.post(
     v2(`/object-types/${encodeURIComponent(classRid)}/datasources/sync`), {},
     { params: incremental ? { incremental: true } : undefined },
   );
-  return resp.data as Record<string, number>;
+  return resp.data as BackingDatasourceSyncResult;
 }
 
 /** DATA-15：物化行集（对象最新状态回流读端点）。 */

@@ -1,0 +1,121 @@
+{
+  "at": "2026-10-09T03:07:52.829110+00:00",
+  "method": "GET",
+  "health": [
+    {
+      "service": "arch",
+      "port": 58200,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "apphub",
+      "port": 58201,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "dw",
+      "port": 58202,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "etl",
+      "port": 58203,
+      "path": "/api/v1/etl/health",
+      "status": 200
+    },
+    {
+      "service": "scheduler",
+      "port": 58204,
+      "path": "/api/v1/scheduler/health",
+      "status": 200
+    },
+    {
+      "service": "metrics",
+      "port": 58205,
+      "path": "/api/v1/metrics/health",
+      "status": 200
+    },
+    {
+      "service": "llmgw",
+      "port": 58206,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "agent",
+      "port": 58207,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "rag",
+      "port": 58208,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "app-kb",
+      "port": 58209,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "mcp",
+      "port": 58210,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "obs",
+      "port": 58211,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "copilot",
+      "port": 58212,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "data",
+      "port": 58213,
+      "path": "/api/v1/data/health",
+      "status": 200
+    },
+    {
+      "service": "a2a",
+      "port": 58214,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "wfe",
+      "port": 58215,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "orchestrator",
+      "port": 58216,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "iam-admin",
+      "port": 58217,
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "service": "agent-team",
+      "port": 58218,
+      "path": "/healthz",
+      "status": 200
+    }
+  ],
+  "successful": 19
+}

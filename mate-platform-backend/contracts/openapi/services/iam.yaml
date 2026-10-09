@@ -55,7 +55,7 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/iam/auth/login:
     post:
-      summary: Username + password (bcrypt) -> access + refresh JWT
+      summary: Username + password via Keycloak -> provider access + refresh tokens; UserInfo identity is best-effort
       tags:
         - iam
       security: []
@@ -75,7 +75,7 @@ paths:
         "401":
           description: Bad credentials or disabled user
       operationId: iamPostIamAuthLogin
-      description: Username + password (bcrypt) -> access + refresh JWT
+      description: Username + password via Keycloak -> provider access + refresh tokens; UserInfo identity is best-effort
       x-mate-owner: security-iam
       x-mate-permission: iam.post
       x-mate-requirements:

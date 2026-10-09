@@ -24,6 +24,7 @@ import {
 import { getApp, updateApp } from '@/api/apphub/apps';
 import { publishApp } from '@/api/apphub/runtime';
 import type { AppItem, AppStatus } from '@/api/apphub/types';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 const STATUS_MAP: Record<AppStatus, { label: string; color: TagColor }> = {
   DESIGNING: { label: '设计中', color: 'blue' },
@@ -37,15 +38,19 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
   const navigate = useNavigate();
   const [app, setApp] = useState<AppItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmOfflineOpen, setConfirmOfflineOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
   const load = async () => {
     if (!appId) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const a = await getApp(appId);
       setApp(a);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : '生命周期读取失败');
     } finally {
       setLoading(false);
     }
@@ -55,15 +60,26 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
     load();
   }, [appId]);
 
+  if (loadError) {
+    return <div><PageHeader title="应用生命周期" /><div role="alert"><EmptyState illustration="failure" title="应用状态暂不可用" desc={loadError} actions={<Button type="primary" onClick={load}>重试</Button>} /></div></div>;
+  }
+  if (!appId) return <div><PageHeader title="应用生命周期" /><EmptyState title="未选择应用" actions={<Button onClick={() => navigate('/apps/mine')}>返回应用列表</Button>} /></div>;
   if (loading || !app) {
     return (
-      <div className="mp-text-center mp-p-8">
-        <Spin />
+      <div>
+        <PageHeader title="应用生命周期" />
+        <div className="mp-app-loading"><Spin tip="正在读取应用…" /></div>
       </div>
     );
   }
 
-  const currentStep = app.status === 'DESIGNING' ? 0 : app.status === 'PUBLISHED' ? 1 : 2;
+  const statusInfo = app.status ? STATUS_MAP[app.status] : undefined;
+  const currentStep = app.status === 'DESIGNING' ? 0 : app.status === 'PUBLISHED' ? 1 : app.status === 'OFFLINE' ? 2 : undefined;
+  const formatDate = (value?: string) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleString() : '—';
+  };
 
   const handleOffline = async () => {
     await updateApp(app.appId, { status: 'OFFLINE' });
@@ -86,15 +102,16 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
 
   return (
     <div>
+      <PageHeader title="应用生命周期" desc={app.name} />
       <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
           返回
         </Button>
-        <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
+        <Tag color={statusInfo?.color ?? 'grey'}>{statusInfo?.label ?? '未提供'}</Tag>
       </Space>
 
       <Space className="mp-mb-4">
-        {app.status !== 'PUBLISHED' && (
+        {statusInfo && app.status !== 'PUBLISHED' && (
           <Button
             theme="solid"
             type="primary"
@@ -118,11 +135,11 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
       </Space>
 
       <Card title="生命周期阶段" className="mp-mb-4">
-        <Steps current={currentStep} type="basic">
+        {currentStep === undefined ? <Typography.Text type="tertiary">未提供</Typography.Text> : <Steps current={currentStep} type="basic">
           <Steps.Step title="设计" icon={<ClockCircleOutlined/>} />
           <Steps.Step title="已发布" icon={<CloudUploadOutlined/>} />
           <Steps.Step title="已下线" icon={<PauseCircleOutlined/>} />
-        </Steps>
+        </Steps>}
       </Card>
 
       <Card title="基本信息">
@@ -135,12 +152,12 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
             {
               key: '状态',
               value: (
-                <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
+                <Tag color={statusInfo?.color ?? 'grey'}>{statusInfo?.label ?? '未提供'}</Tag>
               ),
             },
-            { key: '模块数', value: app.moduleCount },
-            { key: '创建时间', value: app.createdAt },
-            { key: '更新时间', value: app.updatedAt },
+            { key: '模块数', value: app.moduleCount ?? '—' },
+            { key: '创建时间', value: app.createdAt || '—' },
+            { key: '更新时间', value: app.updatedAt || '—' },
           ]}
         />
       </Card>
@@ -150,11 +167,11 @@ export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string 
           dataSource={[
             {
               color: 'var(--semi-color-success)',
-              content: `创建应用 ${new Date(app.createdAt).toLocaleString()}`,
+              content: `创建应用 ${formatDate(app.createdAt)}`,
             },
             {
               color: 'var(--semi-color-primary)',
-              content: `最近更新 ${new Date(app.updatedAt).toLocaleString()}`,
+              content: `最近更新 ${formatDate(app.updatedAt)}`,
             },
             app.status === 'OFFLINE' && {
               color: 'var(--semi-color-danger)',

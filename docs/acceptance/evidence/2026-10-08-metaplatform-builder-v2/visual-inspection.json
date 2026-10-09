@@ -1,0 +1,437 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "date_local": "2026-10-09",
+  "method": "Actual original pixels viewed through13 PNG-only contact sheets (four dimensions per sheet); no live page/network in sheet generation",
+  "inspected_frames": 52,
+  "observations": [
+    {
+      "group": "ont",
+      "page": "graph",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Actual tree/cards/selected Inspector visible"
+    },
+    {
+      "group": "ont",
+      "page": "graph",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "More canvas/card content visible"
+    },
+    {
+      "group": "ont",
+      "page": "graph",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Controls wrap; canvas and tree constrained locally"
+    },
+    {
+      "group": "ont",
+      "page": "graph",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Inspector opened locally, real RID/title wrap; canvas below fold"
+    },
+    {
+      "group": "ont",
+      "page": "type",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Real property/key table and resource navigation visible"
+    },
+    {
+      "group": "ont",
+      "page": "type",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Same data with wider table"
+    },
+    {
+      "group": "ont",
+      "page": "type",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Property table readable; long selected name truncates"
+    },
+    {
+      "group": "ont",
+      "page": "type",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Very long real name and trailing review/publish action initially clipped; native Tab/actionability still unverified"
+    },
+    {
+      "group": "ont",
+      "page": "mapping",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Saved binding env-key/property-RID mapping and count2 sample distinct"
+    },
+    {
+      "group": "ont",
+      "page": "mapping",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Binding and sample table clearly separate"
+    },
+    {
+      "group": "ont",
+      "page": "mapping",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Source/mapping table extends below initial fold"
+    },
+    {
+      "group": "ont",
+      "page": "mapping",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Stacked forms/selected labels truncate; mapping/sample below fold"
+    },
+    {
+      "group": "ont",
+      "page": "query",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Actual2-row table and selected class visible"
+    },
+    {
+      "group": "ont",
+      "page": "query",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Class tree and2 rows visible"
+    },
+    {
+      "group": "ont",
+      "page": "query",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Table uses constrained pane; some columns outside initial pane"
+    },
+    {
+      "group": "ont",
+      "page": "query",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Object sidebar occupies initial view; collapse button visible, data pane needs local operation"
+    },
+    {
+      "group": "ont",
+      "page": "release",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Current live/version/checksum and publication steps visible"
+    },
+    {
+      "group": "ont",
+      "page": "release",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "History row/actions visible"
+    },
+    {
+      "group": "ont",
+      "page": "release",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "History row extends below initial fold"
+    },
+    {
+      "group": "ont",
+      "page": "release",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Long RID truncated and steps use local overflow; current-live visible, history below fold"
+    },
+    {
+      "group": "platform",
+      "page": "home",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Boundary statistic7 and explicit empty sections visible"
+    },
+    {
+      "group": "platform",
+      "page": "home",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Boundary sections in wider grid"
+    },
+    {
+      "group": "platform",
+      "page": "home",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Sections reflow into narrower grid"
+    },
+    {
+      "group": "platform",
+      "page": "home",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Cards stack, lower sections below fold; no actual operational-statistics claim"
+    },
+    {
+      "group": "platform",
+      "page": "apps",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Boundary app card plus explicit group/domain failure visible"
+    },
+    {
+      "group": "platform",
+      "page": "apps",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Same boundary card/error sections visible"
+    },
+    {
+      "group": "platform",
+      "page": "apps",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "App/error controls readable"
+    },
+    {
+      "group": "platform",
+      "page": "apps",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Stacked card and retry controls visible; labels wrap"
+    },
+    {
+      "group": "platform",
+      "page": "explore",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Real2 rows and selected class visible"
+    },
+    {
+      "group": "platform",
+      "page": "explore",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Real2 rows and class tree visible"
+    },
+    {
+      "group": "platform",
+      "page": "explore",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Constrained table pane; local columns"
+    },
+    {
+      "group": "platform",
+      "page": "explore",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Object sidebar dominates initial view; collapse button visible, local operation needed"
+    },
+    {
+      "group": "platform",
+      "page": "ontology",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Real tree/card canvas/Inspector visible"
+    },
+    {
+      "group": "platform",
+      "page": "ontology",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Wider canvas and Inspector"
+    },
+    {
+      "group": "platform",
+      "page": "ontology",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Three local panels constrained"
+    },
+    {
+      "group": "platform",
+      "page": "ontology",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Inspector opened; wrapped real title/RID; canvas below fold"
+    },
+    {
+      "group": "platform",
+      "page": "agents",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Explicit boundary employee DTO card visible"
+    },
+    {
+      "group": "platform",
+      "page": "agents",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Boundary employee card visible"
+    },
+    {
+      "group": "platform",
+      "page": "agents",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Card/filter row readable"
+    },
+    {
+      "group": "platform",
+      "page": "agents",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Card and controls stack and wrap"
+    },
+    {
+      "group": "platform",
+      "page": "ki",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Explicit unregistered-service failure/retry visible"
+    },
+    {
+      "group": "platform",
+      "page": "ki",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Explicit failure state visible"
+    },
+    {
+      "group": "platform",
+      "page": "ki",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Error toast and retry readable"
+    },
+    {
+      "group": "platform",
+      "page": "ki",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Error toast wraps; failure/retry visible; no real knowledge service claim"
+    },
+    {
+      "group": "platform",
+      "page": "gov",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Two explicit unavailable panes visible"
+    },
+    {
+      "group": "platform",
+      "page": "gov",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Same two unavailable panes"
+    },
+    {
+      "group": "platform",
+      "page": "gov",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Two panes remain readable"
+    },
+    {
+      "group": "platform",
+      "page": "gov",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Two local panes exceed initial visible area; right pane partially clipped; local interaction unverified"
+    },
+    {
+      "group": "platform",
+      "page": "superai",
+      "width": 1440,
+      "height": 1000,
+      "pixel_inspected": true,
+      "observation": "Boundary conversation/message/context and input visible"
+    },
+    {
+      "group": "platform",
+      "page": "superai",
+      "width": 1920,
+      "height": 1080,
+      "pixel_inspected": true,
+      "observation": "Three panels and input toolbar visible"
+    },
+    {
+      "group": "platform",
+      "page": "superai",
+      "width": 1024,
+      "height": 900,
+      "pixel_inspected": true,
+      "observation": "Local panels/toolbar constrained"
+    },
+    {
+      "group": "platform",
+      "page": "superai",
+      "width": 390,
+      "height": 844,
+      "pixel_inspected": true,
+      "observation": "Conversation/input visible; trailing toolbar outside initial view; native scroll partially observed, semantic mode restoration not verified"
+    }
+  ],
+  "limitation": "Initial52pixel observations remain unchanged; no docoverflow=>reachability inference. Later actual native operation/restoration completed separately in attempt6; see narrow-completion.json.",
+  "supplementary_native_pixels": {
+    "attempt": 6,
+    "checked_images": 5,
+    "view_kinds": 4,
+    "query_explore_same_actual_route": true,
+    "observations": [
+      "Chat final toolbar and semantic choices visible after native local scroll; mode/Team restoration asserted separately",
+      "Type review/publish tail entirely inside viewport after nativeTab/trial, long displayName still clipped",
+      "Query and explore each show actual2-row pane after native collapse; same actualpage route, not two distinct business pages",
+      "Gov actual unavailable retry control visible after native collapse; service remains declared503"
+    ]
+  }
+}

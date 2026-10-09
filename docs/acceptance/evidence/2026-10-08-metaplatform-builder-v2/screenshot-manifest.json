@@ -1,0 +1,597 @@
+{
+  "source_commit": "f892895200d57312fbb753866271d82f4d52af83",
+  "final_readonly_capture_count": 52,
+  "original_builder_gate_count": 32,
+  "retained_failed_capture_count": 8,
+  "files": [
+    {
+      "path": "screenshots/ont/graph-1024.png",
+      "sha256": "e0032c61289b0038c4c5df3460678e8b2578c0f309ff1bea19abc64c4a5b5c46",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/graph-1440.png",
+      "sha256": "67528a462e0eb28e7efae8d71eb62b87f5e45bc9406ddb2acb97fc2706f72302",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/graph-1920.png",
+      "sha256": "273959fe27758079663b23dfd601dd689175c3187bc45c263bb507faad143570",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/graph-390.png",
+      "sha256": "eaa6b3ebc06573584f81df7c798447dbb2076bf175b7d7f8f3522e77352ce9a9",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/mapping-1024.png",
+      "sha256": "0245c139b5a2d7570d356a520814b670f39cad2c362569ff25e1dd5ed87586b7",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/mapping-1440.png",
+      "sha256": "dea6dfc2d06a7bf69da4efb9fa9b4075e9c7865658a6afca9851d571c4032cec",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/mapping-1920.png",
+      "sha256": "c461ee1afb99ed12697d79240e70d7f729b73c0e1bfe15667462d3fee911fc94",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/mapping-390.png",
+      "sha256": "69f7439f477442178d6be6152cc414c48ac93554f2f2a9299aee4405da1a378e",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/query-1024.png",
+      "sha256": "64383d801ae1892c1a9ff246538eafcbd6097abaec6eb32bf96405285e353e3f",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/query-1440.png",
+      "sha256": "f42d8622d137c249944e54fa82aa0e1cdcd7d3df6f96bdfa87d6d0a53cb2b093",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/query-1920.png",
+      "sha256": "6ffb9135e30ba2ebee28ff6d523d938b201e289da19f4e5bc7aaf5e9ae05a1fd",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/query-390.png",
+      "sha256": "4aa2c8e88121fae8629dab435fb6ca9cac213a25423eb9f8b4e6d37463eb90b8",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/release-1024.png",
+      "sha256": "dbb58d603f376fa3c33f174154191d580caabc52a39bb3c67b59fffeb058d974",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/release-1440.png",
+      "sha256": "5ed430ba6e26943f792535413a1b3bf9fc7d2507db7f1a3eec5e3a45a6b8755e",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/release-1920.png",
+      "sha256": "af8e0ff97c9fb5a43b7b95a1e5e6c2884209b101621bd5e5a97c9115c45f37ed",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/release-390.png",
+      "sha256": "7767f587c7a0d011032174e3cb0c1013bc1268fea37e3cc33afdf765dfb38267",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/type-1024.png",
+      "sha256": "db5c4b4c1d9545d9ffea1604f76b0b352802b3c26ce196d8c21da31d96ada8c1",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/type-1440.png",
+      "sha256": "3d970730136926c76877433998a1697230811b23e2548b730fb1888c42145e65",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/type-1920.png",
+      "sha256": "f1b24c632f761c59143e4fce2c0ed8977f5157469bc8c34f30742bb01c01403b",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/ont/type-390.png",
+      "sha256": "dc05f0288fd8fd394d3c3e96e105927385ed9380996da86e51e4c95975155c55",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/agents-1024.png",
+      "sha256": "6f51b4459340c3f70bb70bad7cc1cd0e9dc9b37c1f03613fce306e6929d2eefd",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/agents-1440.png",
+      "sha256": "ff203a77be3220ae138e780cdea42db08bdc2390f18c03cfac73e1c607714df0",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/agents-1920.png",
+      "sha256": "58187497ac832f22e9ea5eada8273d80acee3816a607edd1930277f92cfa23a2",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/agents-390.png",
+      "sha256": "8185da079b146103e20dd1c196e6904117f22913ad9f613067b441a0fbd04e02",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/apps-1024.png",
+      "sha256": "9b36cc1302d5079f088235eb1c05b25385bc38ea2b26f1bc55fd6092e152667e",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/apps-1440.png",
+      "sha256": "ee9d49eaf5a3b5caf00073dc2445b0de910275c1b202a4e4c12bb942ae80316a",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/apps-1920.png",
+      "sha256": "d2d5b552d6de774ff0a8f4dc8cb3ad7b2c4ba26c45437d0b785decf1cb12b8d2",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/apps-390.png",
+      "sha256": "4f90768abca10eceeb95e2d8e46400a54af6da8bd1dbfc7d717db7d1d877dd17",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/explore-1024.png",
+      "sha256": "c72593811dd4a2eb06771f2747bd15977911a9960b08e1e36aced4bf04ad10b8",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/explore-1440.png",
+      "sha256": "afd311149169950a3fc73d01b14b40783955eb39bc060079eb775f3a534bb630",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/explore-1920.png",
+      "sha256": "6e18b5b39353881dfb49abdb4544e1d841ea16f8b6ec4ca3cf4535d33a149ed8",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/explore-390.png",
+      "sha256": "1813ca9b4bf1a840e13ff5a19b92ffb9f2de3dd8a1da60da6d5f1c02da1e25d0",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/gov-1024.png",
+      "sha256": "e9c0ab19fc5ba5ef9e0870cea24fe26671f6b0f1e6b18aca8b29f34bef345752",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/gov-1440.png",
+      "sha256": "d8d498d3e44dbceebe288f31794776993f88dfb2772157c56212a143c971e9e2",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/gov-1920.png",
+      "sha256": "d20d6394283b57852a3e73f160b6885e714913e7d41c7888e4c558a903993a4b",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/gov-390.png",
+      "sha256": "936c8ace9bea0faf92b738e673840b9c3cdda9eda9e3f24677ca4dfe54e64a40",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/home-1024.png",
+      "sha256": "2ecf34e3aef00a9b2efdf235f103926b0cb91771ecc9ca946c7e49cbdd10aa85",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/home-1440.png",
+      "sha256": "11ce307edf306184b6749384da97268e9e7b682cac2163d84841581ef66fcbf3",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/home-1920.png",
+      "sha256": "b389b9999cb9775026dee272701e81266c1888f0c0c283db947459977e9daeff",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/home-390.png",
+      "sha256": "208f60aa01a6d92a5763957e42a667d798650e6329f06af096290c57d8e1881d",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/ki-1024.png",
+      "sha256": "0a3777fd3e2d356a4af4a5755224fdbe39c434cf9409ee03ece713fb1c0660c2",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/ki-1440.png",
+      "sha256": "d889c8db2231a50029c7c9a151fb4fc83c196df62e49fbdaa32859321b592cd4",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/ki-1920.png",
+      "sha256": "21f87d00a871f52132c328210defd480f8b267e9b938db4d444226aeab6c8605",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/ki-390.png",
+      "sha256": "561907c136d53f1f093c9c5120e5393c253f8ae165cfb15b9801691f85f5a8f7",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/ontology-1024.png",
+      "sha256": "e0032c61289b0038c4c5df3460678e8b2578c0f309ff1bea19abc64c4a5b5c46",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/ontology-1440.png",
+      "sha256": "67528a462e0eb28e7efae8d71eb62b87f5e45bc9406ddb2acb97fc2706f72302",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/ontology-1920.png",
+      "sha256": "273959fe27758079663b23dfd601dd689175c3187bc45c263bb507faad143570",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/ontology-390.png",
+      "sha256": "eaa6b3ebc06573584f81df7c798447dbb2076bf175b7d7f8f3522e77352ce9a9",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/superai-1024.png",
+      "sha256": "8acec9a810a5f1dd2f772ceee793c6408be96b49a9101c82584a9beac6f2fd6a",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/superai-1440.png",
+      "sha256": "ea985ee2becb383b719048962a1258ab6580d269de4a4034e2a92df4add15fa8",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/superai-1920.png",
+      "sha256": "8962906c3467b79aa384354fcec64b66bb326d54d0d7fcaa84720ff04fd84a1c",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform/superai-390.png",
+      "sha256": "4bd4b6133068e724ea28b6a1d79b7363067b71d2cceac905b7a752ff866b4832",
+      "kind": "successful named-ready capture"
+    },
+    {
+      "path": "screenshots/platform-failed-01/apps-1024.png",
+      "sha256": "9b36cc1302d5079f088235eb1c05b25385bc38ea2b26f1bc55fd6092e152667e",
+      "kind": "retained incomplete attempt; generic capture failure without confirmed cause"
+    },
+    {
+      "path": "screenshots/platform-failed-01/apps-1440.png",
+      "sha256": "ee9d49eaf5a3b5caf00073dc2445b0de910275c1b202a4e4c12bb942ae80316a",
+      "kind": "retained incomplete attempt; generic capture failure without confirmed cause"
+    },
+    {
+      "path": "screenshots/platform-failed-01/apps-1920.png",
+      "sha256": "d2d5b552d6de774ff0a8f4dc8cb3ad7b2c4ba26c45437d0b785decf1cb12b8d2",
+      "kind": "retained incomplete attempt; generic capture failure without confirmed cause"
+    },
+    {
+      "path": "screenshots/platform-failed-01/apps-390.png",
+      "sha256": "4f90768abca10eceeb95e2d8e46400a54af6da8bd1dbfc7d717db7d1d877dd17",
+      "kind": "retained incomplete attempt; generic capture failure without confirmed cause"
+    },
+    {
+      "path": "screenshots/platform-failed-01/home-1024.png",
+      "sha256": "2ecf34e3aef00a9b2efdf235f103926b0cb91771ecc9ca946c7e49cbdd10aa85",
+      "kind": "retained incomplete attempt; generic capture failure without confirmed cause"
+    },
+    {
+      "path": "screenshots/platform-failed-01/home-1440.png",
+      "sha256": "11ce307edf306184b6749384da97268e9e7b682cac2163d84841581ef66fcbf3",
+      "kind": "retained incomplete attempt; generic capture failure without confirmed cause"
+    },
+    {
+      "path": "screenshots/platform-failed-01/home-1920.png",
+      "sha256": "b389b9999cb9775026dee272701e81266c1888f0c0c283db947459977e9daeff",
+      "kind": "retained incomplete attempt; generic capture failure without confirmed cause"
+    },
+    {
+      "path": "screenshots/platform-failed-01/home-390.png",
+      "sha256": "208f60aa01a6d92a5763957e42a667d798650e6329f06af096290c57d8e1881d",
+      "kind": "retained incomplete attempt; generic capture failure without confirmed cause"
+    },
+    {
+      "path": "screenshots/builder-gate/agents-1024.png",
+      "sha256": "aa29139dfa7631e3b608c9b5514a5a94d596fb0125cf6c26aaf31755a8407627",
+      "width": 1024,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/apps-mine-1024.png",
+      "sha256": "12f65c62982c9b00047a1771fd090b046f66357ee8ee7a997d92ad4c45906037",
+      "width": 1024,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/gov-business-1024.png",
+      "sha256": "cbe5ca29df8610657165f1fbc4b3b7529d000b43b43dd6f1f479370b99e155bb",
+      "width": 1024,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/home-1024.png",
+      "sha256": "dfff30d6ea6a0835291b683da5364c519ee6a2efb5f6e5740f516f78762285ac",
+      "width": 1024,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ki-kb-1024.png",
+      "sha256": "dae1957b5a666001a221bc04af4fc644010423ef19a9e4c82ec30c819ddb54af",
+      "width": 1024,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ontology-explore-objects-1024.png",
+      "sha256": "4767833ecdeebd52c9ea79a4e372aa72f7d75aba50d7df019733fa5129a43865",
+      "width": 1024,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ontology-model-graph-1024.png",
+      "sha256": "1657e7ac00d906c39d6b0d32e59e85e65d817e130460fb38f6bb3547dccdcfec",
+      "width": 1024,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/superai-chat-1024.png",
+      "sha256": "c3e964843102c9b7b21562493f9cfb7bf6ae3632b22f44eb95fd5e504a7e82a8",
+      "width": 1024,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/agents-1920.png",
+      "sha256": "f08131b69dfd90091aecf68ce85ae9ec96d98bf390c64cc06b53baad9f75e372",
+      "width": 1920,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/apps-mine-1920.png",
+      "sha256": "438a5e7e807ea3e9d599c23f075cde03dcb8963e76013841f2fd566413141d35",
+      "width": 1920,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/gov-business-1920.png",
+      "sha256": "292403955edd49f73164c39ba9c8a344c13a982c81f994b127a760295a566e4f",
+      "width": 1920,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/home-1920.png",
+      "sha256": "ba58a11be3409bb5e22afd89b343a36840805579df62bf43e4e694b53d319359",
+      "width": 1920,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ki-kb-1920.png",
+      "sha256": "e5a3de0b6e1c9eb512d31f36f324a8f5df325a38ef120feafdcb835322966e34",
+      "width": 1920,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ontology-explore-objects-1920.png",
+      "sha256": "99761f53bf6d32371fca66d2bcd2dc36771aadf5557f3d2510ede7e81434f2a5",
+      "width": 1920,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ontology-model-graph-1920.png",
+      "sha256": "73e312cff60e39533c34f5f1dbb064cf6b7ee47c3eb07704c076457fda0d5a2b",
+      "width": 1920,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/superai-chat-1920.png",
+      "sha256": "602fe62b36ffc6261550ab0d4fddf67103a3b15fdc80405932c59e59012ca6a5",
+      "width": 1920,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/agents-1440.png",
+      "sha256": "ff203a77be3220ae138e780cdea42db08bdc2390f18c03cfac73e1c607714df0",
+      "width": 1440,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/apps-mine-1440.png",
+      "sha256": "ee9d49eaf5a3b5caf00073dc2445b0de910275c1b202a4e4c12bb942ae80316a",
+      "width": 1440,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/gov-business-1440.png",
+      "sha256": "c6caf7b9036926bbee5ef13131baa51d77f65194f7ca3a72ff6bc276ddf7a9e4",
+      "width": 1440,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/home-1440.png",
+      "sha256": "11ce307edf306184b6749384da97268e9e7b682cac2163d84841581ef66fcbf3",
+      "width": 1440,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ki-kb-1440.png",
+      "sha256": "3cb610ab27dddff828d9f04752d38aa41e017118ce14944a9f6565212d71a670",
+      "width": 1440,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ontology-explore-objects-1440.png",
+      "sha256": "1f2b36e15b1ba44e23806f4d800a669b8fb3b463cabd21f53e30b6fadb0a45f1",
+      "width": 1440,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ontology-model-graph-1440.png",
+      "sha256": "d70631a70e50995dff6f5e01d5c233ddf7c617825724cc3cbbd7391fbb49d796",
+      "width": 1440,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/superai-chat-1440.png",
+      "sha256": "ea985ee2becb383b719048962a1258ab6580d269de4a4034e2a92df4add15fa8",
+      "width": 1440,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/agents-390.png",
+      "sha256": "f84323b95a0034ab19b15570616f73a7abfdcd27600a3dd66dcc60c065bc3cab",
+      "width": 390,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/apps-mine-390.png",
+      "sha256": "66ff753f5997214b719c8b7edd494e65189ebb21f5f1d8960d99f2ce63f2b0ac",
+      "width": 390,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/gov-business-390.png",
+      "sha256": "b36afd9ac00737940de68030ee79942311c8e3e8e425092aeacc7cc3dd49a713",
+      "width": 390,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/home-390.png",
+      "sha256": "35195937f82a8858440db27652bbc3c595aebcce2c643008cd05bf99826eb89b",
+      "width": 390,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ki-kb-390.png",
+      "sha256": "df5db8d2d77f9ba09bfd1b8ca2346f4edc7e2336841894e5cb5f67a588b43272",
+      "width": 390,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ontology-explore-objects-390.png",
+      "sha256": "adecc23bc74f53575bb526d4c9b3b5c92c5dc353ec7ff79924fdddbf3dac0553",
+      "width": 390,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/ontology-model-graph-390.png",
+      "sha256": "3e38f191cec35ca7c0e854cfced0ca62be23639eb767e912b6c3ee1fd091b0da",
+      "width": 390,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/builder-gate/superai-chat-390.png",
+      "sha256": "eca305c1ede534c00a73ff8b02c6365443050f31a0ca56703a8dd9ea1ec60fb4",
+      "width": 390,
+      "height": 1000,
+      "kind": "original Builder gate; no manufactured per-frame identity/theme/error metadata"
+    },
+    {
+      "path": "screenshots/narrow-attempt-05/chat-390-after-interaction.png",
+      "sha256": "d0edb3748e849856fad86656533f8a0a6b03353ec0a5ef876bd3c504eb5f2d88",
+      "width": 390,
+      "height": 844,
+      "kind": "partial step evidence from overall failed attempt5"
+    },
+    {
+      "path": "screenshots/narrow-attempt-05/explore-390-after-native-collapse.png",
+      "sha256": "6d9a4892d53662e8cf032360d1b52d7be87cc588e0231ca23e8ef2eba1c2863e",
+      "width": 390,
+      "height": 844,
+      "kind": "partial step evidence from overall failed attempt5"
+    },
+    {
+      "path": "screenshots/narrow-attempt-05/query-390-after-native-collapse.png",
+      "sha256": "6d9a4892d53662e8cf032360d1b52d7be87cc588e0231ca23e8ef2eba1c2863e",
+      "width": 390,
+      "height": 844,
+      "kind": "partial step evidence from overall failed attempt5"
+    },
+    {
+      "path": "screenshots/narrow-attempt-05/type-390-after-native-tab.png",
+      "sha256": "7a0b917e7ee8fff1de68201fcdb185d57a3e45871175de720dd8aee97814d75e",
+      "width": 390,
+      "height": 844,
+      "kind": "partial step evidence from overall failed attempt5"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/chat-390-after-interaction.png",
+      "sha256": "d0edb3748e849856fad86656533f8a0a6b03353ec0a5ef876bd3c504eb5f2d88",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/explore-390-after-native-collapse.png",
+      "sha256": "18108ca2afaa4e0e0c6cf475db220498d27221f31eaec0df221265035eef8447",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/gov-390-after-native-collapse.png",
+      "sha256": "53effb74397c9aa9b28820cb68f619bfc1de37524fb1a7c392ef83714912768b",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/query-390-after-native-collapse.png",
+      "sha256": "18108ca2afaa4e0e0c6cf475db220498d27221f31eaec0df221265035eef8447",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    },
+    {
+      "path": "screenshots/narrow-attempt-06/type-390-after-native-tab.png",
+      "sha256": "7a0b917e7ee8fff1de68201fcdb185d57a3e45871175de720dd8aee97814d75e",
+      "width": 390,
+      "height": 844,
+      "kind": "actual successful full native attempt6; supplement, not replacement of original52"
+    }
+  ],
+  "narrow_attempt5_partial_count": 4,
+  "narrow_attempt6_count": 5
+}

@@ -13,6 +13,8 @@ import { BizError, HttpError, type ApiResponse } from './types';
 import { toast } from './toast';
 import { getToken, getRefreshToken, getTenantId, setToken, setRefreshToken, removeToken } from '../auth/token';
 
+type AuthRetryRequestConfig = AxiosRequestConfig & { _mateAuthRefreshAttempted?: boolean };
+
 function genTraceId(): string {
   const bytes = new Uint8Array(16);
   if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
@@ -73,19 +75,24 @@ export function createApiClient(opts: { baseURL?: string } = {}): AxiosInstance 
       if (payload && typeof payload === 'object' && 'message' in payload) {
         message = (payload as { message?: string }).message ?? message;
       }
+      if (status === 403) {
+        message = '无权访问：当前账号没有所需权限。';
+      }
 
       if (status === 401) {
-        const refreshed = await tryRefreshToken();
-        if (refreshed) {
-          const original = err.config as AxiosRequestConfig | undefined;
-          if (original) {
+        const original = err.config as AuthRetryRequestConfig | undefined;
+        if (original && !original._mateAuthRefreshAttempted) {
+          // A signed token can still lack endpoint-specific context. Refresh once,
+          // then surface the replay's real 401 instead of refreshing indefinitely.
+          original._mateAuthRefreshAttempted = true;
+          const refreshed = await tryRefreshToken();
+          if (refreshed) {
             original.headers = {
               ...(original.headers ?? {}),
               Authorization: 'Bearer ' + getToken(),
             } as any;
             return instance.request(original);
           }
-        } else {
           removeToken();
         }
       }

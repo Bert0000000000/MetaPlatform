@@ -34,12 +34,18 @@
 
 /* ---------- 工具表单（ToolDrawer） ---------- */
 /*
- * 字段自适应铺满：窄屏一列、宽屏依次排到 4 列，单列不窄于 320px。
+ * 字段自适应铺满：宽屏按 320px 起排，窄容器单列可缩到可用宽度。
  * 只补列间距，行距仍由 Semi 表单项自身的下边距给。
  */
 .mp-mcp-form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 0 var(--mp-space-4);
+}
+.mp-mcp-form-grid > * { min-width: 0; }
+
+.mp-mcp-tool-form {
+  container: mp-mcp-tool-form / inline-size;
+  min-width: 0;
 }
 
 /* 入参行：名称 / 类型 / 必填 / 描述 / 删除，按容器宽度分配，不写死像素 */
@@ -49,6 +55,16 @@
   align-items: center;
   gap: var(--mp-space-2);
   margin-bottom: var(--mp-space-2);
+}
+.mp-mcp-param-row > * { min-width: 0; max-width: 100%; }
+.mp-mcp-param-input { min-width: 0; width: 100%; max-width: 100%; }
+.mp-mcp-param-input input { min-width: 0; }
+
+@container mp-mcp-tool-form (max-width: 520px) {
+  .mp-mcp-param-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
 }
 
 /* 「测试连接」按钮的结果着色（按状态切换类名，不写 inline style） */
@@ -64,6 +80,9 @@
 
 /* 保住挂载但不可见（资源抽屉的预览态用它隐藏表单，而不是卸载表单） */
 .mp-mcp-hidden { display: none; }
+
+.mp-mcp-audit-filters { display: flex; flex-wrap: wrap; gap: var(--mp-space-2); min-width: 0; }
+.mp-mcp-audit-date { width: min(360px, 100%); }
 
 /* 一次性密钥警示卡 */
 .mp-mcp-warn-card {

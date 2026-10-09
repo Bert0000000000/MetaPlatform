@@ -62,7 +62,7 @@ export interface ActiveAgent {
 }
 
 export interface QuickLink {
-  id: string;
+  id?: string;
   label: string;
   icon: string;
   link: string;

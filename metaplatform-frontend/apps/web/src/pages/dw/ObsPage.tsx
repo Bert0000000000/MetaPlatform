@@ -2,21 +2,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Spin, Tag } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { RefreshCw } from 'lucide-react';
-import { getTraceSpans, type ObsSpan } from '@/api/dw/obs';
+import { listTraces, type TraceRecord } from '@/api/dw/obs';
 import { DataTablePro, EmptyState, PageHeader, type DataTableProProps } from '@/components/skeleton';
 import '@/pages/agents/agents.css';
 
 /**
- * 数字员工 · 可观测 Span（DW 接口消费页）。
- * 数据面 src/api/dw/obs（getTraceSpans('latest')）：最近一条 trace 的 span 列表。
+ * 数字员工 · 调用链概览。GET /dw/traces 返回调用链摘要记录。
  */
 
 type Meta = { label: string; color: TagColor };
 
 const STATUS_META: Record<string, Meta> = {
-  OK: { label: 'OK', color: 'green' },
-  UNSET: { label: '未设置', color: 'grey' },
-  ERROR: { label: '错误', color: 'red' },
+  ok: { label: '正常', color: 'green' },
+  error: { label: '错误', color: 'red' },
+  timeout: { label: '超时', color: 'amber' },
 };
 
 function metaOf(map: Record<string, Meta>, key: unknown): Meta {
@@ -25,19 +24,8 @@ function metaOf(map: Record<string, Meta>, key: unknown): Meta {
   return map[k] ?? { label: k, color: 'grey' };
 }
 
-function formatDuration(us: number): string {
-  if (!Number.isFinite(us) || us < 0) return '—';
-  if (us < 1000) return `${us} µs`;
-  return `${(us / 1000).toFixed(2)} ms`;
-}
-
-function formatStart(us: number): string {
-  if (!Number.isFinite(us) || us <= 0) return '—';
-  return new Date(us / 1000).toLocaleString('zh-CN');
-}
-
 export default function ObsPage() {
-  const [items, setItems] = useState<ObsSpan[]>([]);
+  const [items, setItems] = useState<TraceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -45,8 +33,8 @@ export default function ObsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await getTraceSpans('latest');
-      setItems(res ?? []);
+      const res = await listTraces();
+      setItems(res.items);
     } catch (e) {
       setItems([]);
       setError(e instanceof Error ? e.message : String(e));
@@ -59,14 +47,15 @@ export default function ObsPage() {
     void load();
   }, [load]);
 
-  const columns: DataTableProProps<ObsSpan>['columns'] = [
-    { title: '服务', dataIndex: 'serviceName', width: 200, ellipsis: true },
-    { title: '操作', dataIndex: 'operationName', width: 220, ellipsis: true },
+  const columns: DataTableProProps<TraceRecord>['columns'] = [
+    { title: 'Trace ID', dataIndex: 'traceId', width: 240, ellipsis: true },
+    { title: '数字员工', dataIndex: 'employeeId', width: 220, ellipsis: true },
+    { title: 'Span 数量', dataIndex: 'spanCount', width: 110 },
     {
       title: '状态',
       dataIndex: 'status',
       width: 100,
-      render: (_: unknown, r: ObsSpan) => {
+      render: (_: unknown, r: TraceRecord) => {
         const meta = metaOf(STATUS_META, r.status);
         return (
           <Tag size="small" color={meta.color} type="light">
@@ -75,26 +64,15 @@ export default function ObsPage() {
         );
       },
     },
-    {
-      title: '耗时',
-      dataIndex: 'durationUs',
-      width: 110,
-      render: (_: unknown, r: ObsSpan) => formatDuration(r.durationUs),
-    },
-    {
-      title: '开始时间',
-      dataIndex: 'startTimeUs',
-      width: 180,
-      render: (_: unknown, r: ObsSpan) => formatStart(r.startTimeUs),
-    },
-    { title: 'Span ID', dataIndex: 'spanId', width: 200, ellipsis: true },
+    { title: '耗时 (ms)', dataIndex: 'durationMs', width: 110 },
+    { title: '开始时间', dataIndex: 'startedAt', width: 180 },
   ];
 
   return (
     <>
       <PageHeader
-        title="可观测 Span"
-        desc={error ? undefined : loading ? '正在加载 span 数据…' : `共 ${items.length} 个 span`}
+        title="调用链概览"
+        desc={error ? undefined : loading ? '正在加载调用链…' : `共 ${items.length} 条调用链`}
         actions={
           <Button
             icon={<RefreshCw size={15} strokeWidth={1.5} />}
@@ -109,7 +87,7 @@ export default function ObsPage() {
       {error ? (
         <EmptyState
           illustration="failure"
-          title="Span 数据加载失败"
+          title="调用链加载失败"
           desc={error}
           actions={
             <Button theme="solid" type="primary" onClick={() => void load()}>
@@ -123,16 +101,16 @@ export default function ObsPage() {
         </div>
       ) : (
         <Card>
-          <DataTablePro<ObsSpan>
+          <DataTablePro<TraceRecord>
             columns={columns}
             dataSource={items}
-            rowKey="spanId"
+            rowKey="id"
             loading={loading}
             empty={
               <EmptyState
                 illustration="no-content"
-                title="暂无 span 数据"
-                desc="最近一条 trace 产生后，span 会在这里出现。"
+                title="暂无调用链记录"
+                desc="数字员工产生调用链后，摘要记录会在这里出现。"
               />
             }
           />

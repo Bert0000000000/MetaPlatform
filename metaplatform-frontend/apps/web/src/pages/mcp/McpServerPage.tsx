@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMatch, useNavigate } from 'react-router-dom';
 import {
+  Banner,
   Button,
   Card,
   Input,
@@ -25,7 +26,7 @@ import {
   SearchOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
-import { listServers, deleteServer, startServer, stopServer, createServer } from '@/api/mcphub/servers';
+import { listServers, deleteServer, startServer, stopServer, SERVER_MANAGEMENT_AVAILABLE } from '@/api/mcphub/servers';
 import { listTools } from '@/api/mcphub/tools';
 import ServerDrawer from './components/ServerDrawer';
 import type { McpServer, McpTool } from '@/api/mcphub/types';
@@ -74,6 +75,7 @@ export default function ServerListPage() {
   }, [keyword]);
 
   const handleDelete = async (s: McpServer) => {
+    if (!SERVER_MANAGEMENT_AVAILABLE) return;
     try {
       await deleteServer(s.id);
       Toast.success('Server 已删除');
@@ -84,6 +86,7 @@ export default function ServerListPage() {
   };
 
   const handleStart = async (s: McpServer) => {
+    if (!SERVER_MANAGEMENT_AVAILABLE) return;
     try {
       await startServer(s.id);
       Toast.success('已启动');
@@ -94,6 +97,7 @@ export default function ServerListPage() {
   };
 
   const handleStop = async (s: McpServer) => {
+    if (!SERVER_MANAGEMENT_AVAILABLE) return;
     try {
       await stopServer(s.id);
       Toast.success('已停止');
@@ -125,12 +129,12 @@ export default function ServerListPage() {
         </Space>
       ),
     },
-    { title: '传输', dataIndex: 'transport', render: (v) => <Tag size="small">{v}</Tag> },
+    { title: '传输 / 目录协议', key: 'transport', render: (_, s) => <Tag size="small">{s.transport ?? s.transportType ?? '未提供'}</Tag> },
     { title: '端点', dataIndex: 'endpoint', ellipsis: true },
     {
       title: '工具数',
       dataIndex: 'toolCount',
-      render: (v) => <Tag size="small" color="blue">{v ?? 0}</Tag>,
+      render: (v) => <Tag size="small" color="blue">{v ?? '未提供'}</Tag>,
     },
     {
       title: '状态',
@@ -155,19 +159,21 @@ export default function ServerListPage() {
             详情
           </Button>
           {s.status === 'offline' ? (
-            <Button size="small" theme="borderless" icon={<PlayCircleOutlined />} onClick={() => handleStart(s)}>
+            <Button size="small" theme="borderless" icon={<PlayCircleOutlined />} disabled={!SERVER_MANAGEMENT_AVAILABLE} onClick={() => handleStart(s)}>
               启动
             </Button>
           ) : (
-            <Button size="small" theme="borderless" icon={<PauseCircleOutlined />} onClick={() => handleStop(s)}>
+            <Button size="small" theme="borderless" icon={<PauseCircleOutlined />} disabled={!SERVER_MANAGEMENT_AVAILABLE} onClick={() => handleStop(s)}>
               停止
             </Button>
           )}
-          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(s)}>
-            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+          {SERVER_MANAGEMENT_AVAILABLE ? (
+            <Popconfirm title="确定删除？" onConfirm={() => handleDelete(s)}>
+              <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          ) : (
+            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />} disabled>删除</Button>
+          )}
         </Space>
       ),
     },
@@ -182,12 +188,20 @@ export default function ServerListPage() {
             theme="solid"
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate(`${SERVERS_PATH}/new`)}
+            disabled={!SERVER_MANAGEMENT_AVAILABLE}
+            onClick={() => {
+              if (!SERVER_MANAGEMENT_AVAILABLE) return;
+              navigate(`${SERVERS_PATH}/new`);
+            }}
           >
                   创建 Server
                 </Button>
         }
       />
+      {!SERVER_MANAGEMENT_AVAILABLE && (
+        <Banner type="info" title="服务目录管理未接入"
+          description="当前服务目录仅提供读取，创建、编辑保存、启停和删除尚未接入。" className="mp-mb-4" />
+      )}
 
       <Row gutter={16} className="mp-mb-4">
         <Col span={6}>

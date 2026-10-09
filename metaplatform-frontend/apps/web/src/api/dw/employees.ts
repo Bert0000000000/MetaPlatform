@@ -1,7 +1,19 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
 const client = createApiClient({ baseURL: '/api/v1' });
-const data = <T>(resp: { data: T }): T => resp.data;
+// The shared IAM interceptor maps top-level ACTIVE/INACTIVE to legacy tokens.
+// Employee activation owns a distinct DTO enum; restore only at this boundary.
+function canonicalEmployee<T>(value: T): T {
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.items)) return { ...record, items: record.items.map(canonicalEmployee) } as T;
+    if ('employeeId' in record && (record.status === 'ENABLED' || record.status === 'DISABLED')) {
+      return { ...record, status: record.status === 'ENABLED' ? 'ACTIVE' : 'INACTIVE' } as T;
+    }
+  }
+  return value;
+}
+const data = <T>(resp: { data: T }): T => canonicalEmployee(resp.data);
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
 async function put<T>(url: string, body?: unknown): Promise<T> { return data(await client.put<T>(url, body)); }

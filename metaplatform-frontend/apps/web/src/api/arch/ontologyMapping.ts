@@ -1,4 +1,5 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
+import { aliasListFields } from './_readerAliases';
 
 const client = createApiClient({ baseURL: apiPath('arch', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
@@ -44,7 +45,8 @@ export async function syncFromOntology(assetType?: string): Promise<SyncResult> 
 }
 
 export async function listPendingChanges(conceptId?: string): Promise<OntologyChangeEvent[]> {
-  return get<OntologyChangeEvent[]>('/ontology-mappings/changes', conceptId ? { conceptId } : undefined);
+  const result = await get<OntologyChangeEvent[]>('/ontology-mappings/changes', conceptId ? { conceptId } : undefined);
+  return aliasListFields(result, { change_type: 'changeType', rule_id: 'ruleId' });
 }
 
 export async function resolveChange(id: string): Promise<OntologyChangeEvent> {

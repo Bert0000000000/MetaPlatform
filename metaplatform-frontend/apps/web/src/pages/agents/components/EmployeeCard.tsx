@@ -44,7 +44,7 @@ export default function EmployeeCard({
   const navigate = useNavigate();
   const role = ROLE_CATEGORY_MAP[employee.roleCategory];
   const status = EMPLOYEE_STATUS_MAP[employee.status];
-  const isOnline = employee.status === 'ACTIVE';
+  const isActive = employee.status === 'ACTIVE';
 
   const openDetail = () => {
     if (onPreview) onPreview(employee);
@@ -64,10 +64,10 @@ export default function EmployeeCard({
       </Dropdown.Item>
       <Dropdown.Divider />
       <Dropdown.Item
-        icon={isOnline ? <PauseCircle size={14} /> : <PlayCircle size={14} />}
+        icon={isActive ? <PauseCircle size={14} /> : <PlayCircle size={14} />}
         onClick={() => onToggle(employee)}
       >
-        {isOnline ? '停用' : '启用'}
+        {isActive ? '停用' : '启用'}
       </Dropdown.Item>
       <Dropdown.Divider />
       <Dropdown.Item type="danger" icon={<Delete size={14} />}>
@@ -91,9 +91,9 @@ export default function EmployeeCard({
           </Avatar>
           <div className="mp-agent-head-main">
             <div className="mp-agent-name-row">
-              <a className="mp-agent-name" onClick={openDetail} title={employee.name}>
+              <button type="button" className="mp-agent-name" onClick={openDetail} title={employee.name}>
                 {employee.name}
-              </a>
+              </button>
               {employee.builtin ? (
                 <Tag color="yellow" type="light" size="small">
                   内置
@@ -153,7 +153,7 @@ export default function EmployeeCard({
             onClick={() => navigate(`/agents/${employee.code}/capabilities`)}
           >
             <Edit2 size={13} strokeWidth={1.5} />
-            编辑
+            配置员工
           </Button>
           <Dropdown render={moreMenu} trigger="click" position="bottomRight">
             <Button

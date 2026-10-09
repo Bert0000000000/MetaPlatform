@@ -16,6 +16,7 @@ from __future__ import annotations
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from mate_tech_iam.api import dashboard
 from mate_tech_iam.api.dashboard import router as dashboard_router
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -87,6 +88,63 @@ def test_get_profile_ok(client: TestClient) -> None:
     body = r.json()
     assert body["id"] == "u-1"
     assert body["tenantId"] == "tenant-default"
+
+
+def test_unknown_user_get_settings_defaults_to_light(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(dashboard, "_USER_SETTINGS", {})
+    response = client.get("/api/v1/dashboard/settings", params={"userId": "new-user"})
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "userId": "new-user",
+        "language": "zh-CN",
+        "timezone": "Asia/Shanghai",
+        "dateFormat": "YYYY-MM-DD HH:mm:ss",
+        "defaultPage": "/dashboard",
+        "theme": "light",
+        "layout": ["metrics", "approvals", "workers", "notifications"],
+    }
+    assert "new-user" not in dashboard._USER_SETTINGS
+
+
+def test_first_settings_put_initializes_light_without_overriding_requested_fields(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(dashboard, "_USER_SETTINGS", {})
+    response = client.put(
+        "/api/v1/dashboard/settings", json={"userId": "new-user", "language": "en-US"}
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["theme"] == "light"
+    followup = client.get("/api/v1/dashboard/settings", params={"userId": "new-user"})
+    assert followup.status_code == 200, followup.text
+    assert followup.json()["theme"] == "light"
+    assert followup.json()["language"] == "en-US"
+
+
+@pytest.mark.parametrize("theme", ["dark", "system"])
+def test_existing_settings_theme_survives_get_and_unrelated_put(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, theme: str
+) -> None:
+    existing = {
+        "userId": "existing-user",
+        "language": "zh-CN",
+        "timezone": "Asia/Shanghai",
+        "dateFormat": "YYYY-MM-DD HH:mm:ss",
+        "defaultPage": "/home",
+        "theme": theme,
+        "layout": ["workers"],
+    }
+    monkeypatch.setattr(dashboard, "_USER_SETTINGS", {"existing-user": existing.copy()})
+    response = client.get("/api/v1/dashboard/settings", params={"userId": "existing-user"})
+    assert response.status_code == 200, response.text
+    assert response.json() == existing
+    updated = client.put(
+        "/api/v1/dashboard/settings", json={"userId": "existing-user", "language": "en-US"}
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json() == {**existing, "language": "en-US"}
 
 
 def test_get_metrics_ok(client: TestClient) -> None:

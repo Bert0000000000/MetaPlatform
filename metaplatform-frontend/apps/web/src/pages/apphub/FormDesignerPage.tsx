@@ -16,6 +16,7 @@ import {
   Tabs,
   Modal,
   TextArea,
+  Spin,
 } from '@douyinfe/semi-ui';
 import {
   ArrowLeftOutlined,
@@ -50,6 +51,7 @@ import type {
   FormScripts,
 } from '@/api/apphub/types';
 import './apps.css';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 
 const DESIGNER_IMPORT_KEY = 'metaplatform:designer:import';
@@ -138,6 +140,9 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
   const moduleId = moduleIdProp || routeModuleId;
   const navigate = useNavigate();
   const [module, setModule] = useState<ModuleItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [config, setConfig] = useState<FormConfig>({ name: '', fields: [] });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -148,7 +153,11 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
 
   useEffect(() => {
     if (!moduleId) return;
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
     Promise.all([getModule(moduleId), getFormDefinition(moduleId)]).then(([m, definition]) => {
+      if (cancelled) return;
       setModule(m);
       let initialConfig = normalizeConfig(m);
 
@@ -183,8 +192,10 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
         }
       }
       setConfig(initialConfig);
-    });
-  }, [moduleId]);
+    }).catch((err) => { if (!cancelled) setLoadError(err instanceof Error ? err.message : '表单配置读取失败'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [moduleId, refreshKey]);
 
   const handleAIGenerate = (result: FormGenResult) => {
     const existingKeys = new Set(config.fields.map((f) => f.fieldKey));
@@ -639,22 +650,20 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
     }
   };
 
-  if (!module) {
-    return <div className="mp-text-center mp-p-8">加载中...</div>;
+  if (loadError) {
+    return <div><PageHeader title="表单设计器" /><div role="alert"><EmptyState illustration="failure" title="表单配置暂不可用" desc={loadError} actions={<Button type="primary" onClick={() => setRefreshKey((key) => key + 1)}>重试</Button>} /></div></div>;
+  }
+  if (!moduleId) return <div><PageHeader title="表单设计器" /><EmptyState title="未选择模块" /></div>;
+  if (loading || !module) {
+    return <div><PageHeader title="表单设计器" /><div className="mp-app-loading"><Spin tip="正在读取表单配置…" /></div></div>;
   }
 
   return (
-    <div className="mp-flex mp-flex-col mp-app-designer-h">
-      <div className="mp-justify-between mp-mb-4 mp-flex-center">
-        <Space>
+    <div className="mp-flex mp-flex-col mp-app-designer-h mp-app-builder">
+      <PageHeader title={`${module.name} · 表单设计器`} desc="编辑表单字段、联动规则与页面设置。" actions={<Space wrap>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
             返回
           </Button>
-          <Typography.Title heading={5} className="mp-m-0">
-            {module.name} - 表单设计器
-          </Typography.Title>
-        </Space>
-        <Space>
           <AIGenerateButton
             onApply={handleAIGenerate}
             promptPlaceholder="描述你要创建的表单，例如：员工请假申请"
@@ -662,14 +671,14 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           <Button icon={<EyeOutlined />} onClick={handlePreview}>
             预览
           </Button>
-          <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave}>
-            保存
+          <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave} disabled title="当前服务尚未开放表单配置保存">
+            保存暂不可用
           </Button>
-        </Space>
-      </div>
+        </Space>} />
+      <Typography.Paragraph type="tertiary">当前可预览设计内容，配置保存与高级设置暂未开放。</Typography.Paragraph>
 
-      <div className="mp-flex mp-hidden mp-flex-1 mp-gap-4">
-        <Card title="组件面板" className="mp-overflow-auto mp-w-240" >
+      <div className="mp-app-builder-panels">
+        <Card title="组件面板" className="mp-overflow-auto mp-app-builder-form-tools" >
           <Typography.Text type="tertiary" className="mp-text-sm">
             基础组件
           </Typography.Text>
@@ -709,14 +718,14 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
 
         <Card
           title="属性配置"
-          className="mp-flex mp-overflow-auto mp-w-360 mp-flex-col"
+          className="mp-flex mp-overflow-auto mp-app-builder-form-properties mp-flex-col"
           bodyStyle={{ flex: 1, overflow: 'auto' }}
         >
           <Tabs activeKey={activeTab} onChange={(k) => setActiveTab(k as ActiveTab)}>
             <Tabs.TabPane tab="字段" itemKey="fields" />
-            <Tabs.TabPane tab="全局设置" itemKey="settings" />
-            <Tabs.TabPane tab="数据联动" itemKey="linkage" />
-            <Tabs.TabPane tab="表单脚本" itemKey="scripts" />
+            <Tabs.TabPane tab="全局设置（暂未开放）" itemKey="settings" disabled />
+            <Tabs.TabPane tab="数据联动（暂未开放）" itemKey="linkage" disabled />
+            <Tabs.TabPane tab="表单脚本（暂未开放）" itemKey="scripts" disabled />
           </Tabs>
           <div className="mp-mt-3">{renderRightPanel()}</div>
         </Card>

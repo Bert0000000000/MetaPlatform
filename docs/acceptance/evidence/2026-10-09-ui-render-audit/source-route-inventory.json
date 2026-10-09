@@ -1,0 +1,829 @@
+{
+  "routes": [
+    {
+      "route": "/home",
+      "source": "src/pages/dashboard/DashboardPage.tsx"
+    },
+    {
+      "route": "/home/todos",
+      "source": "src/pages/dashboard/NotificationsPage.tsx"
+    },
+    {
+      "route": "/home/messages",
+      "source": "src/pages/dashboard/MessagesPage.tsx"
+    },
+    {
+      "route": "/home/deliverables",
+      "source": "src/pages/dashboard/DeliverablesPage.tsx"
+    },
+    {
+      "route": "/home/apps",
+      "source": "src/pages/dashboard/MyAppsPage.tsx"
+    },
+    {
+      "route": "/home/me",
+      "source": "src/pages/dashboard/SettingsPage.tsx"
+    },
+    {
+      "route": "/home/portal",
+      "source": "src/pages/dashboard/PortalPage.tsx"
+    },
+    {
+      "route": "/home/aiops",
+      "source": "src/pages/dashboard/AiOpsPage.tsx"
+    },
+    {
+      "route": "/agents",
+      "source": "src/pages/agents/EmployeeListPage.tsx"
+    },
+    {
+      "route": "/agents/create",
+      "source": "src/pages/agents/EmployeeCreatePage.tsx"
+    },
+    {
+      "route": "/agents/external",
+      "source": "src/pages/agents/ExternalAgentsPage.tsx"
+    },
+    {
+      "route": "/agents/tasks",
+      "source": "src/pages/agents/TaskListPage.tsx"
+    },
+    {
+      "route": "/agents/tasks/:taskId",
+      "source": "src/pages/agents/TaskDetailPage.tsx"
+    },
+    {
+      "route": "/agents/collab",
+      "source": "src/pages/agents/CollaborationListPage.tsx"
+    },
+    {
+      "route": "/agents/collab/create",
+      "source": "src/pages/agents/CollaborationCreatePage.tsx"
+    },
+    {
+      "route": "/agents/collab/:id",
+      "source": "src/pages/agents/CollaborationMonitorPage.tsx"
+    },
+    {
+      "route": "/agents/evaluation",
+      "source": "src/pages/agents/EvaluationPage.tsx"
+    },
+    {
+      "route": "/agents/documents",
+      "source": "src/pages/dw/DocumentsPage.tsx"
+    },
+    {
+      "route": "/agents/employees",
+      "source": "src/pages/dw/EmployeesPage.tsx"
+    },
+    {
+      "route": "/agents/dw-tasks",
+      "source": "src/pages/dw/TasksPage.tsx"
+    },
+    {
+      "route": "/agents/dw-collaborations",
+      "source": "src/pages/dw/CollaborationsPage.tsx"
+    },
+    {
+      "route": "/agents/dw-evaluations",
+      "source": "src/pages/dw/EvaluationsPage.tsx"
+    },
+    {
+      "route": "/agents/learning",
+      "source": "src/pages/dw/LearningPage.tsx"
+    },
+    {
+      "route": "/agents/extraction",
+      "source": "src/pages/dw/ExtractionPage.tsx"
+    },
+    {
+      "route": "/agents/obs",
+      "source": "src/pages/dw/ObsPage.tsx"
+    },
+    {
+      "route": "/agents/:employeeId",
+      "source": "src/pages/agents/EmployeeDetailPage.tsx"
+    },
+    {
+      "route": "/agents/:employeeId/capabilities",
+      "source": "src/pages/agents/CapabilityConfigPage.tsx"
+    },
+    {
+      "route": "/superai/chat",
+      "source": "src/pages/superai/ChatPage.tsx"
+    },
+    {
+      "route": "/superai/plans",
+      "source": "src/pages/superai/ExecutionPlanPage.tsx"
+    },
+    {
+      "route": "/superai/plans/a2a",
+      "source": "src/pages/superai/A2ACollaborationPage.tsx"
+    },
+    {
+      "route": "/superai/plans/orchestration",
+      "source": "src/pages/superai/OrchestrationConsolePage.tsx"
+    },
+    {
+      "route": "/superai/plans/manual-select",
+      "source": "src/pages/superai/ManualSelectEmployeePage.tsx"
+    },
+    {
+      "route": "/superai/plans/parallel",
+      "source": "src/pages/superai/ParallelExecutionPage.tsx"
+    },
+    {
+      "route": "/superai/plans/result-aggregation",
+      "source": "src/pages/superai/ResultAggregationPage.tsx"
+    },
+    {
+      "route": "/superai/plans/result-summary",
+      "source": "src/pages/superai/ResultSummaryPage.tsx"
+    },
+    {
+      "route": "/superai/plans/employee-match",
+      "source": "src/pages/superai/EmployeeMatchingPage.tsx"
+    },
+    {
+      "route": "/superai/plans/:definitionId",
+      "source": "src/pages/wfe/ActionOrchestrationPage.tsx"
+    },
+    {
+      "route": "/superai/schedules",
+      "source": "src/pages/superai/ScheduleIntentPage.tsx"
+    },
+    {
+      "route": "/superai/schedules/execute",
+      "source": "src/pages/superai/ScheduleExecutionPage.tsx"
+    },
+    {
+      "route": "/superai/schedules/plan",
+      "source": "src/pages/superai/SchedulePlanCardPage.tsx"
+    },
+    {
+      "route": "/superai/cost",
+      "source": "src/pages/superai/CostOptimizationPage.tsx"
+    },
+    {
+      "route": "/superai/cost/data",
+      "source": "src/pages/superai/DataAnalysisPage.tsx"
+    },
+    {
+      "route": "/superai/cost/report",
+      "source": "src/pages/superai/ReportExportPage.tsx"
+    },
+    {
+      "route": "/superai/templates",
+      "source": "src/pages/superai/TaskTemplatePage.tsx"
+    },
+    {
+      "route": "/superai/team",
+      "source": "src/pages/superai/AgentTeamRunPage.tsx"
+    },
+    {
+      "route": "/ki/kb",
+      "source": "src/pages/knowledge/KnowledgeBasePage.tsx"
+    },
+    {
+      "route": "/ki/kb/docs",
+      "source": "src/pages/knowledge/KnowledgeDocsPage.tsx"
+    },
+    {
+      "route": "/ki/kb/config",
+      "source": "src/pages/knowledge/KnowledgeConfigPage.tsx"
+    },
+    {
+      "route": "/ki/kb/test",
+      "source": "src/pages/knowledge/KnowledgeTestPage.tsx"
+    },
+    {
+      "route": "/ki/kb/:kbId",
+      "source": "src/pages/knowledge/KnowledgeKbDetailPage.tsx"
+    },
+    {
+      "route": "/ki/test",
+      "source": "src/pages/knowledge/KnowledgeTestPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/overview",
+      "source": "src/pages/mcp/OverviewPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/skill-hub",
+      "source": "src/pages/mcp/SkillHubPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/tools",
+      "source": "src/pages/mcp/McpToolsPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/tools/new",
+      "source": "src/pages/mcp/McpToolsPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/tools/:id",
+      "source": "src/pages/mcp/ToolDetailPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/tools/:id/edit",
+      "source": "src/pages/mcp/McpToolsPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/resources",
+      "source": "src/pages/mcp/ResourceListPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/resources/new",
+      "source": "src/pages/mcp/ResourceListPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/resources/:id",
+      "source": "src/pages/mcp/ResourceListPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/prompts",
+      "source": "src/pages/mcp/PromptTemplatePage.tsx"
+    },
+    {
+      "route": "/ki/mcp/debugger",
+      "source": "src/pages/mcp/McpDebuggerPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/ide-config",
+      "source": "src/pages/mcp/IdeConfigPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/servers",
+      "source": "src/pages/mcp/McpServerPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/servers/new",
+      "source": "src/pages/mcp/McpServerPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/servers/:id",
+      "source": "src/pages/mcp/ServerDetailPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/servers/:id/edit",
+      "source": "src/pages/mcp/McpServerPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/clients",
+      "source": "src/pages/mcp/McpClientPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/clients/new",
+      "source": "src/pages/mcp/McpClientPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/clients/:id",
+      "source": "src/pages/mcp/ClientDetailPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/clients/:id/edit",
+      "source": "src/pages/mcp/McpClientPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/permissions",
+      "source": "src/pages/mcp/McpPermissionsPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/permissions/rules",
+      "source": "src/pages/mcp/PermissionRulePage.tsx"
+    },
+    {
+      "route": "/ki/mcp/policies",
+      "source": "src/pages/mcp/PolicyManagementPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/matrix",
+      "source": "src/pages/mcp/PolicyManagementPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/audit",
+      "source": "src/pages/mcp/McpAuditPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/audit/detail/:id",
+      "source": "src/pages/mcp/AuditDetailPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/audit/stats",
+      "source": "src/pages/mcp/AuditStatisticsPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/connection-monitor",
+      "source": "src/pages/mcp/ConnectionMonitorPage.tsx"
+    },
+    {
+      "route": "/ki/a2a/external-agents",
+      "source": "src/pages/mcp/ExternalAgentListPage.tsx"
+    },
+    {
+      "route": "/ki/a2a/trusts",
+      "source": "src/pages/mcp/TrustManagementPage.tsx"
+    },
+    {
+      "route": "/ki/a2a/internal-agents",
+      "source": "src/pages/mcp/A2aInternalAgentsPage.tsx"
+    },
+    {
+      "route": "/ki/a2a/a2a-guide",
+      "source": "src/pages/mcp/A2aIntegrationGuidePage.tsx"
+    },
+    {
+      "route": "/gov/business",
+      "source": "src/pages/arch/BusinessArchPage.tsx"
+    },
+    {
+      "route": "/gov/business/capabilities",
+      "source": "src/pages/arch/CapabilityManagementPage.tsx"
+    },
+    {
+      "route": "/gov/business/applications",
+      "source": "src/pages/arch/ApplicationManagementPage.tsx"
+    },
+    {
+      "route": "/gov/business/value-streams",
+      "source": "src/pages/arch/ValueStreamPage.tsx"
+    },
+    {
+      "route": "/gov/business/processes",
+      "source": "src/pages/arch/BusinessProcessPage.tsx"
+    },
+    {
+      "route": "/gov/business/org-roles",
+      "source": "src/pages/arch/OrgRolePage.tsx"
+    },
+    {
+      "route": "/gov/data",
+      "source": "src/pages/arch/DataArchPage.tsx"
+    },
+    {
+      "route": "/gov/data/entities/:id",
+      "source": "src/pages/arch/DataEntityDetailPage.tsx"
+    },
+    {
+      "route": "/gov/data/flows",
+      "source": "src/pages/arch/DataFlowPage.tsx"
+    },
+    {
+      "route": "/gov/data/standards",
+      "source": "src/pages/arch/DataStandardPage.tsx"
+    },
+    {
+      "route": "/gov/data/assets",
+      "source": "src/pages/arch/DataAssetCatalogPage.tsx"
+    },
+    {
+      "route": "/gov/tech",
+      "source": "src/pages/arch/TechArchPage.tsx"
+    },
+    {
+      "route": "/gov/tech/components",
+      "source": "src/pages/arch/TechComponentPage.tsx"
+    },
+    {
+      "route": "/gov/tech/stacks",
+      "source": "src/pages/arch/TechStackPage.tsx"
+    },
+    {
+      "route": "/gov/tech/topologies",
+      "source": "src/pages/arch/DeploymentTopologyPage.tsx"
+    },
+    {
+      "route": "/gov/tech/radar",
+      "source": "src/pages/arch/TechRadarPage.tsx"
+    },
+    {
+      "route": "/gov/governance",
+      "source": "src/pages/arch/PrinciplesPage.tsx"
+    },
+    {
+      "route": "/gov/governance/principles",
+      "source": "src/pages/arch/PrinciplesPage.tsx"
+    },
+    {
+      "route": "/gov/governance/reviews",
+      "source": "src/pages/arch/ReviewPage.tsx"
+    },
+    {
+      "route": "/gov/governance/review-templates",
+      "source": "src/pages/arch/ReviewTemplatePage.tsx"
+    },
+    {
+      "route": "/gov/governance/tech-debt",
+      "source": "src/pages/arch/TechDebtPage.tsx"
+    },
+    {
+      "route": "/gov/governance/ontology-mapping",
+      "source": "src/pages/arch/OntologyMappingPage.tsx"
+    },
+    {
+      "route": "/admin/org/users",
+      "source": "src/pages/dashboard/admin/UsersPage.tsx"
+    },
+    {
+      "route": "/admin/org/roles",
+      "source": "src/pages/dashboard/admin/PermissionsPage.tsx"
+    },
+    {
+      "route": "/admin/org/tenants",
+      "source": "src/pages/dashboard/admin/OrgsPage.tsx"
+    },
+    {
+      "route": "/admin/platform/configs",
+      "source": "src/pages/dashboard/admin/ConfigsPage.tsx"
+    },
+    {
+      "route": "/admin/platform/ai-providers",
+      "source": "src/pages/dashboard/admin/AIProvidersPage.tsx"
+    },
+    {
+      "route": "/admin/platform/components",
+      "source": "src/routes/demo/index.tsx"
+    },
+    {
+      "route": "/admin/ops/logs",
+      "source": "src/pages/dashboard/admin/LogsPage.tsx"
+    },
+    {
+      "route": "/admin/ops/operations",
+      "source": "src/pages/dashboard/admin/OperationsPage.tsx"
+    },
+    {
+      "route": "/admin/ops/analytics",
+      "source": "src/pages/dashboard/admin/AnalyticsPage.tsx"
+    },
+    {
+      "route": "/admin/flowgram",
+      "source": "src/pages/dashboard/admin/FlowgramDemoPage.tsx"
+    },
+    {
+      "route": "/admin/demo",
+      "source": "src/routes/demo/index.tsx"
+    },
+    {
+      "route": "/ontology",
+      "source": "src/routes/ontology.tsx → src/pages/ontology/overview/OverviewPage.tsx"
+    },
+    {
+      "route": "/ontology/model/object-types",
+      "source": "src/pages/ontology/model/object-types/ObjectTypesPage.tsx"
+    },
+    {
+      "route": "/ontology/model/object-types/:rid",
+      "source": "src/pages/ontology/model/object-types/ObjectTypeDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/model/object-types/:rid/:tab",
+      "source": "src/pages/ontology/model/object-types/ObjectTypeDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/model/link-types",
+      "source": "src/pages/ontology/model/link-types/LinkTypesPage.tsx"
+    },
+    {
+      "route": "/ontology/model/interfaces",
+      "source": "src/pages/ontology/model/interfaces/InterfacesPage.tsx"
+    },
+    {
+      "route": "/ontology/model/axioms",
+      "source": "src/pages/ontology/model/axioms/AxiomsPage.tsx"
+    },
+    {
+      "route": "/ontology/model/graph",
+      "source": "src/pages/ontology/model/graph/OntologyGraphPage.tsx"
+    },
+    {
+      "route": "/ontology/model/validation",
+      "source": "src/pages/ontology/model/validation/ModelValidationPage.tsx"
+    },
+    {
+      "route": "/ontology/data/mappings",
+      "source": "src/pages/ontology/data/mappings/ObjectMappingsPage.tsx"
+    },
+    {
+      "route": "/ontology/data/sync",
+      "source": "src/pages/ontology/data/sync/SyncJobsPage.tsx"
+    },
+    {
+      "route": "/ontology/data/lineage",
+      "source": "src/pages/ontology/data/lineage/OntologyLineagePage.tsx"
+    },
+    {
+      "route": "/ontology/explore/objects/:rid?",
+      "source": "src/pages/ontology/explorer/ObjectExplorerPage.tsx"
+    },
+    {
+      "route": "/ontology/explore/analysis",
+      "source": "src/pages/ontology/AnalysisPage.tsx"
+    },
+    {
+      "route": "/ontology/explore/map",
+      "source": "src/pages/ontology/MapPage.tsx"
+    },
+    {
+      "route": "/ontology/explore/objectset",
+      "source": "src/pages/ontology/explore/objectset/ObjectSetBuilderPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/actions",
+      "source": "src/pages/ontology/logic/actions/ActionTypesPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/actions/:rid",
+      "source": "src/pages/ontology/logic/actions/ActionTypeDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/actions/:rid/:tab",
+      "source": "src/pages/ontology/logic/actions/ActionTypeDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/functions",
+      "source": "src/pages/ontology/logic/functions/FunctionsPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/functions/:rid",
+      "source": "src/pages/ontology/logic/functions/FunctionDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/functions/:rid/:tab",
+      "source": "src/pages/ontology/logic/functions/FunctionDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/designer",
+      "source": "src/pages/ontology/logic/designer/ActionDesignerPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/runs",
+      "source": "src/pages/ontology/logic/runs/ActionRunsPage.tsx"
+    },
+    {
+      "route": "/ontology/governance/drafts",
+      "source": "src/pages/ontology/governance/drafts/DraftsPage.tsx"
+    },
+    {
+      "route": "/ontology/governance/releases",
+      "source": "src/pages/ontology/governance/releases/ReleasesPage.tsx"
+    },
+    {
+      "route": "/ontology/governance/usage",
+      "source": "src/pages/ontology/governance/usage/UsagePage.tsx"
+    },
+    {
+      "route": "/ontology/governance/security",
+      "source": "src/pages/ontology/governance/security/SecurityPage.tsx"
+    },
+    {
+      "route": "/ontology/governance/import-export",
+      "source": "src/pages/ontology/governance/import-export/ImportExportPage.tsx"
+    },
+    {
+      "route": "/ontology/governance/audit",
+      "source": "src/pages/ontology/governance/audit/AuditPage.tsx"
+    },
+    {
+      "route": "/apps/mine",
+      "source": "src/pages/apphub/ApphubShellPage.tsx"
+    },
+    {
+      "route": "/apps/market",
+      "source": "src/pages/apphub/ApphubShellPage.tsx"
+    },
+    {
+      "route": "/apps/templates",
+      "source": "src/pages/apphub/ApphubShellPage.tsx"
+    },
+    {
+      "route": "/apps/designer",
+      "source": "src/pages/apphub/ApphubShellPage.tsx"
+    },
+    {
+      "route": "/apps/order-review",
+      "source": "src/pages/superai/OrderReviewPage.tsx"
+    }
+  ],
+  "static": [
+    "/home",
+    "/home/todos",
+    "/home/messages",
+    "/home/deliverables",
+    "/home/apps",
+    "/home/me",
+    "/home/portal",
+    "/home/aiops",
+    "/agents",
+    "/agents/create",
+    "/agents/external",
+    "/agents/tasks",
+    "/agents/collab",
+    "/agents/collab/create",
+    "/agents/evaluation",
+    "/agents/documents",
+    "/agents/employees",
+    "/agents/dw-tasks",
+    "/agents/dw-collaborations",
+    "/agents/dw-evaluations",
+    "/agents/learning",
+    "/agents/extraction",
+    "/agents/obs",
+    "/superai/chat",
+    "/superai/plans",
+    "/superai/plans/a2a",
+    "/superai/plans/orchestration",
+    "/superai/plans/manual-select",
+    "/superai/plans/parallel",
+    "/superai/plans/result-aggregation",
+    "/superai/plans/result-summary",
+    "/superai/plans/employee-match",
+    "/superai/schedules",
+    "/superai/schedules/execute",
+    "/superai/schedules/plan",
+    "/superai/cost",
+    "/superai/cost/data",
+    "/superai/cost/report",
+    "/superai/templates",
+    "/superai/team",
+    "/ki/kb",
+    "/ki/kb/docs",
+    "/ki/kb/config",
+    "/ki/kb/test",
+    "/ki/test",
+    "/ki/mcp/overview",
+    "/ki/mcp/skill-hub",
+    "/ki/mcp/tools",
+    "/ki/mcp/tools/new",
+    "/ki/mcp/resources",
+    "/ki/mcp/resources/new",
+    "/ki/mcp/prompts",
+    "/ki/mcp/debugger",
+    "/ki/mcp/ide-config",
+    "/ki/mcp/servers",
+    "/ki/mcp/servers/new",
+    "/ki/mcp/clients",
+    "/ki/mcp/clients/new",
+    "/ki/mcp/permissions",
+    "/ki/mcp/permissions/rules",
+    "/ki/mcp/policies",
+    "/ki/mcp/matrix",
+    "/ki/mcp/audit",
+    "/ki/mcp/audit/stats",
+    "/ki/mcp/connection-monitor",
+    "/ki/a2a/external-agents",
+    "/ki/a2a/trusts",
+    "/ki/a2a/internal-agents",
+    "/ki/a2a/a2a-guide",
+    "/gov/business",
+    "/gov/business/capabilities",
+    "/gov/business/applications",
+    "/gov/business/value-streams",
+    "/gov/business/processes",
+    "/gov/business/org-roles",
+    "/gov/data",
+    "/gov/data/flows",
+    "/gov/data/standards",
+    "/gov/data/assets",
+    "/gov/tech",
+    "/gov/tech/components",
+    "/gov/tech/stacks",
+    "/gov/tech/topologies",
+    "/gov/tech/radar",
+    "/gov/governance",
+    "/gov/governance/principles",
+    "/gov/governance/reviews",
+    "/gov/governance/review-templates",
+    "/gov/governance/tech-debt",
+    "/gov/governance/ontology-mapping",
+    "/admin/org/users",
+    "/admin/org/roles",
+    "/admin/org/tenants",
+    "/admin/platform/configs",
+    "/admin/platform/ai-providers",
+    "/admin/platform/components",
+    "/admin/ops/logs",
+    "/admin/ops/operations",
+    "/admin/ops/analytics",
+    "/admin/flowgram",
+    "/admin/demo",
+    "/ontology",
+    "/ontology/model/object-types",
+    "/ontology/model/link-types",
+    "/ontology/model/interfaces",
+    "/ontology/model/axioms",
+    "/ontology/model/graph",
+    "/ontology/model/validation",
+    "/ontology/data/mappings",
+    "/ontology/data/sync",
+    "/ontology/data/lineage",
+    "/ontology/explore/analysis",
+    "/ontology/explore/map",
+    "/ontology/explore/objectset",
+    "/ontology/logic/actions",
+    "/ontology/logic/functions",
+    "/ontology/logic/designer",
+    "/ontology/logic/runs",
+    "/ontology/governance/drafts",
+    "/ontology/governance/releases",
+    "/ontology/governance/usage",
+    "/ontology/governance/security",
+    "/ontology/governance/import-export",
+    "/ontology/governance/audit",
+    "/apps/mine",
+    "/apps/market",
+    "/apps/templates",
+    "/apps/designer",
+    "/apps/order-review"
+  ],
+  "dynamic": [
+    {
+      "route": "/agents/tasks/:taskId",
+      "source": "src/pages/agents/TaskDetailPage.tsx"
+    },
+    {
+      "route": "/agents/collab/:id",
+      "source": "src/pages/agents/CollaborationMonitorPage.tsx"
+    },
+    {
+      "route": "/agents/:employeeId",
+      "source": "src/pages/agents/EmployeeDetailPage.tsx"
+    },
+    {
+      "route": "/agents/:employeeId/capabilities",
+      "source": "src/pages/agents/CapabilityConfigPage.tsx"
+    },
+    {
+      "route": "/superai/plans/:definitionId",
+      "source": "src/pages/wfe/ActionOrchestrationPage.tsx"
+    },
+    {
+      "route": "/ki/kb/:kbId",
+      "source": "src/pages/knowledge/KnowledgeKbDetailPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/tools/:id",
+      "source": "src/pages/mcp/ToolDetailPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/tools/:id/edit",
+      "source": "src/pages/mcp/McpToolsPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/resources/:id",
+      "source": "src/pages/mcp/ResourceListPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/servers/:id",
+      "source": "src/pages/mcp/ServerDetailPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/servers/:id/edit",
+      "source": "src/pages/mcp/McpServerPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/clients/:id",
+      "source": "src/pages/mcp/ClientDetailPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/clients/:id/edit",
+      "source": "src/pages/mcp/McpClientPage.tsx"
+    },
+    {
+      "route": "/ki/mcp/audit/detail/:id",
+      "source": "src/pages/mcp/AuditDetailPage.tsx"
+    },
+    {
+      "route": "/gov/data/entities/:id",
+      "source": "src/pages/arch/DataEntityDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/model/object-types/:rid",
+      "source": "src/pages/ontology/model/object-types/ObjectTypeDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/model/object-types/:rid/:tab",
+      "source": "src/pages/ontology/model/object-types/ObjectTypeDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/explore/objects/:rid?",
+      "source": "src/pages/ontology/explorer/ObjectExplorerPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/actions/:rid",
+      "source": "src/pages/ontology/logic/actions/ActionTypeDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/actions/:rid/:tab",
+      "source": "src/pages/ontology/logic/actions/ActionTypeDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/functions/:rid",
+      "source": "src/pages/ontology/logic/functions/FunctionDetailPage.tsx"
+    },
+    {
+      "route": "/ontology/logic/functions/:rid/:tab",
+      "source": "src/pages/ontology/logic/functions/FunctionDetailPage.tsx"
+    }
+  ]
+}

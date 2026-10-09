@@ -1,3 +1,4 @@
+import PageHeader from '@/components/skeleton/PageHeader';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -146,9 +147,7 @@ export default function ToolDetailPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/ki/mcp/tools')}>
           返回
         </Button>
-        <Typography.Title heading={4} className="mp-m-0">
-          {tool?.name ?? '工具详情'}
-        </Typography.Title>
+        <PageHeader title={tool?.name ?? '工具详情'} />
         <Button
           theme="solid"
           type="primary"

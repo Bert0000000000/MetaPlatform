@@ -1,0 +1,32 @@
+{
+  "phase": "green",
+  "evidence_kind": "read-only parser validation on real already-executed core9/migration2; no new gate execution",
+  "entrypoint_sha256": "e6117eb515889a4897c747b273c74f75f077ea6694dedccd53301cf2675966f8",
+  "results": {
+    "core": {
+      "actual_junit": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "identities_match": true
+    },
+    "migration": {
+      "actual_junit": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "identities_match": true
+    },
+    "negative_and_disambiguation": {
+      "same_leaf_different_suites_distinct": true,
+      "all_nested_suite_titles_preserved": true,
+      "wrong_suite_or_leaf_rejected_by_exact_identity": true,
+      "suite_omission_rejected": true,
+      "duplicate_identity_rejected": true
+    }
+  }
+}

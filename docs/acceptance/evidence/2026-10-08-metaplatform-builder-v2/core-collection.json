@@ -1,0 +1,67 @@
+{
+  "mode": "core-list",
+  "exit_code": 0,
+  "seconds": 2.171,
+  "source_head": "f892895200d57312fbb753866271d82f4d52af83",
+  "frontend_sources_before": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "frontend_sources_after": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "source_unchanged": true,
+  "base_url": "http://127.0.0.1:59260",
+  "evidence_kind": "actual safe collection only; not test execution or passed browser gate",
+  "collected": 9,
+  "cases": [
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "建模：ObjectType（含层级）→ LinkType → ActionType，读回一致",
+      "project": "ontology-loop-core"
+    },
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "数据映射与同步：声明背挂源 → 同步 → 逐字段对账",
+      "project": "ontology-loop-core"
+    },
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "对象与关系查询：个体列表 + 关系写入 + 一跳遍历",
+      "project": "ontology-loop-core"
+    },
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "Proposal：提议（预检通过）→ 确认 → 执行 → 落库 + 审计可见",
+      "project": "ontology-loop-core"
+    },
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "违规数据：schema 违规被预检阻断（409）且不落库",
+      "project": "ontology-loop-core"
+    },
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "重复提交：同 Idempotency-Key 重放不产生第二次效果",
+      "project": "ontology-loop-core"
+    },
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "失败恢复：失败显式且无副作用，随后有效请求仍成功（含 Action 审计）",
+      "project": "ontology-loop-core"
+    },
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "跨租户拒绝：异租户 rid / 关联写入一律 4xx",
+      "project": "ontology-loop-core"
+    },
+    {
+      "file": "ontology-core.spec.ts",
+      "title": "前端：本体页面在真实后端下无未捕获错误",
+      "project": "ontology-loop-core"
+    }
+  ],
+  "config": "playwright.config.ts",
+  "config_sha256": "a819974f8f827c0e17996b676e30c9c069f500014b8f98e7c3fc2f9934cadffe"
+}

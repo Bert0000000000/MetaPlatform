@@ -1,0 +1,17 @@
+{
+  "stage": "build",
+  "exit_code": 0,
+  "seconds": 67.875,
+  "source_head_at_completion": "f892895200d57312fbb753866271d82f4d52af83",
+  "frontend_sources_before": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "frontend_sources_after": {
+    "sha256": "652ac909f9ac5e742df0cc72ce626cad380301dbe2f9c5f981a3f60f9855b0b1",
+    "file_count": 701
+  },
+  "source_unchanged": true,
+  "recorded_date": "2026-10-09 Asia/Shanghai",
+  "origin": "controller actual execution; strict safe projection"
+}
