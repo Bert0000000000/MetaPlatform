@@ -13,6 +13,25 @@ vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ resolvedThe
 vi.mock('@/api/dashboard/workbench', () => ({ getDashboardSummary: vi.fn() }));
 vi.mock('@/api/dashboard/approvals', () => ({ getPendingTasks: vi.fn(), completeTask: vi.fn() }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
+it('uses the canonical quick-link destination as a stable React key when the source has no id', async () => {
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.mocked(summary.getDashboardSummary).mockResolvedValue({
+    stats: [], recentTasks: [], activeAgents: [], systemHealth: [],
+    quickLinks: [
+      { label: 'SuperAI', icon: 'Robot', link: '/superai/chat' },
+      { label: '应用中心', icon: 'AppstoreOutlined', link: '/apps' },
+    ],
+  });
+  vi.mocked(approvals.getPendingTasks).mockResolvedValue({ items: [], total: 0 } as never);
+  try {
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+    expect(await screen.findByRole('button', { name: 'SuperAI' })).toBeVisible();
+    expect(screen.getByRole('button', { name: '应用中心' })).toBeVisible();
+    expect(errors.mock.calls.filter((args) => args.some((value) => String(value).includes('unique "key"')))).toEqual([]);
+  } finally {
+    errors.mockRestore();
+  }
+});
 it('keeps successful summary visible and independently retries failed approvals without claiming empty', async () => {
   vi.mocked(summary.getDashboardSummary).mockResolvedValue({ stats: [{ label: '实际统计', value: '7', icon: '', trend_label: null, trend_value: null, trend_up: false }], recentTasks: [], activeAgents: [], quickLinks: [] , systemHealth: [] });
   vi.mocked(approvals.getPendingTasks).mockRejectedValueOnce(new Error('审批暂不可用')).mockResolvedValueOnce({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 });
