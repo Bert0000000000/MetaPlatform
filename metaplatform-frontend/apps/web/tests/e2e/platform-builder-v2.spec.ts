@@ -50,7 +50,23 @@ for (const width of [1440, 1920, 1024, 390]) test(`HTTP boundary: seven entry pa
     if (route === '/superai/chat') await expect(page.getByText('实际 DTO 会话内容')).toBeVisible();
     if (route === '/ki/kb') await expect(page.getByText('知识库加载失败', { exact: true })).toBeVisible();
     if (route === '/gov/business') await expect(page.getByText('业务架构加载失败', { exact: true })).toBeVisible();
-    if (route === '/ontology/explore/objects') await expect(page.locator('.mp-explorer-tree .semi-tree-option').first()).toBeVisible();
+    if (route === '/ontology/explore/objects') {
+      const typeTree = page.locator('.mp-explorer-tree .semi-tree-option').first();
+      if (width === 390) {
+        const expand = page.getByRole('button', { name: '展开面板', exact: true });
+        await expect(expand).toHaveAttribute('aria-expanded', 'false');
+        await expect(typeTree).toBeHidden();
+        await expand.click();
+        await expect(page.getByRole('button', { name: '折叠面板', exact: true })).toHaveAttribute('aria-expanded', 'true');
+      }
+      await expect(typeTree).toBeVisible();
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      if (width === 390) {
+        await page.keyboard.press('Escape');
+        await expect(typeTree).toBeHidden();
+        await expect(page.getByRole('button', { name: '展开面板', exact: true })).toBeFocused();
+      }
+    }
     if (route === '/ontology/model/graph') await expect(page.getByText('模型关系图', { exact: true })).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     if (route !== '/ontology/model/graph') await expect(page.getByRole('navigation', { name: '本体工作区导航' })).toHaveCount(0);
