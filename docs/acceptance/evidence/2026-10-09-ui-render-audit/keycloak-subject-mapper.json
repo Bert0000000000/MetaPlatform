@@ -1,0 +1,18 @@
+{
+  "stage": "verify",
+  "at": "2026-10-09T02:17:50Z",
+  "container": "codex-242e-builder-v2-keycloak",
+  "containerId": "9b26ae43d9f6",
+  "goal": "01a11b4d-ab28-7ed0-9a89-929e5fae1374",
+  "scope": "builder-v2-validation",
+  "port": 55389,
+  "client": "metaplatform-backend",
+  "adminRead": 200,
+  "subjectMapperPresentBefore": false,
+  "subjectMapperPresentAfter": true,
+  "mapperProvider": "oidc-sub-mapper",
+  "accessTokenClaim": true,
+  "protocolMapperCountBefore": 5,
+  "protocolMapperCountAfter": 6,
+  "otherMappersUnchanged": true
+}

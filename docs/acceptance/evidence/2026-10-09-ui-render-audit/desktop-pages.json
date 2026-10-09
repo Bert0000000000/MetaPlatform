@@ -1,0 +1,1613 @@
+[
+  {
+    "requested": "/home",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 199,
+          "h": 32,
+          "sw": 199,
+          "w": 199.1875,
+          "x": 1216.8125,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "早上好，admin"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/home",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/home/todos",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 187,
+          "h": 32,
+          "sw": 187,
+          "w": 187,
+          "x": 1229,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "待办"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/home/todos",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/home/messages",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "消息"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/home/messages",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/home/deliverables",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "没有匹配的交付物调整搜索关键词或类型筛选。",
+      "暂无动态交付物状态变化后会出现在这里。"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "交付物"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/home/deliverables",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/home/apps",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 187,
+          "h": 32,
+          "sw": 187,
+          "w": 187,
+          "x": 1229,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "我的应用"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/home/apps",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/home/me",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "暂无 API 令牌创建令牌后，可在此查看最后使用时间并随时撤销。",
+      "暂无活动会话当前账号没有其他登录中的设备。"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1330,
+          "y": 117
+        },
+        "box": {
+          "cw": 1128,
+          "h": 73.5,
+          "sw": 1128,
+          "w": 1128,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "我的"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/home/me",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/home/portal",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "门户"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/home/portal",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/home/aiops",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "暂无异常事件检测规则命中后，事件会在这里生成。"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "智能运维"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/home/aiops",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 201,
+          "h": 32,
+          "sw": 201,
+          "w": 201,
+          "x": 1215,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "数字员工"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/create",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "创建数字员工"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/create",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/external",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "暂无委托记录"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 230,
+          "h": 32,
+          "sw": 230,
+          "w": 230.359375,
+          "x": 1185.640625,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "外部员工 · A2A"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/external",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/tasks",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "还没有任务记录数字员工执行任务后，这里会出现任务记录。"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 187,
+          "h": 32,
+          "sw": 187,
+          "w": 187,
+          "x": 1229,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "任务中心"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/tasks",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/collab",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "还没有协作任务创建一个协作任务，让多名数字员工按依赖自动分工。创建协作"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 187,
+          "h": 32,
+          "sw": 187,
+          "w": 187,
+          "x": 1229,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "协作编排"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/collab",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/collab/create",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 228,
+          "h": 32,
+          "sw": 228,
+          "w": 228,
+          "x": 1188,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "创建协作任务"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/collab/create",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/evaluation",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "效果评估"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/evaluation",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/documents",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "知识文档列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/documents",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/employees",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "数字员工列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/employees",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/dw-tasks",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "任务列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/dw-tasks",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/dw-collaborations",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "协作任务列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/dw-collaborations",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/dw-evaluations",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "效果评估报告"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/dw-evaluations",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/learning",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "学习沉淀"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/learning",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/extraction",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "概念抽取列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/extraction",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/external",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "暂无委托记录"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 230,
+          "h": 32,
+          "sw": 230,
+          "w": 230.359375,
+          "x": 1185.640625,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "外部员工 · A2A"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/external",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/tasks",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 186,
+          "h": 32,
+          "sw": 186,
+          "w": 186,
+          "x": 1230,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "任务中心"
+    ],
+    "outsideControls": [
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 330.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 358.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 403.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 431.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 476.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 504.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 549.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 577.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 622.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 650.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 695.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 723.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 768.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 796.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 841.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 869.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 914.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 942.5
+        },
+        "name": "反馈"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 987.5
+        },
+        "name": "详情"
+      },
+      {
+        "box": {
+          "cw": 75,
+          "h": 24,
+          "sw": 75,
+          "w": 75,
+          "x": 1475,
+          "y": 1015.5
+        },
+        "name": "反馈"
+      }
+    ],
+    "splits": [],
+    "url": "/agents/tasks",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/employees",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/employees/tasks",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/employees/tasks",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/collab",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 186,
+          "h": 32,
+          "sw": 186,
+          "w": 186,
+          "x": 1230,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "协作编排"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/collab",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/collaborations",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/collab/create",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 228,
+          "h": 32,
+          "sw": 228,
+          "w": 228,
+          "x": 1188,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "创建协作任务"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/collab/create",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/employees",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/evaluation",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 76,
+          "h": 32,
+          "sw": 76,
+          "w": 76,
+          "x": 1340,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "效果评估"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/evaluation",
+    "viewport": 1440,
+    "api": []
+  },
+  {
+    "requested": "/agents/documents",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "知识文档列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/documents",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/documents",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/employees",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "数字员工列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/employees",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/employees",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/dw-tasks",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "任务列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/dw-tasks",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/employees/tasks",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/dw-collaborations",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "协作任务列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/dw-collaborations",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/collaborations",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/dw-evaluations",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "效果评估报告"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/dw-evaluations",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/evaluations/reports",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/learning",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "学习沉淀加载失败Request failed with status code 404重试"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 52,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "学习沉淀"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/learning",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/learning/employees//knowledge",
+        "status": 404
+      }
+    ]
+  },
+  {
+    "requested": "/agents/extraction",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 73.5,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "概念抽取列表"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/extraction",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/extract",
+        "status": 200
+      }
+    ]
+  },
+  {
+    "requested": "/agents/obs",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [
+      "Span 数据加载失败Request failed with status code 404重试"
+    ],
+    "header": [
+      {
+        "actions": {
+          "cw": 75,
+          "h": 32,
+          "sw": 75,
+          "w": 75,
+          "x": 1341,
+          "y": 117
+        },
+        "box": {
+          "cw": 1138,
+          "h": 52,
+          "sw": 1138,
+          "w": 1138,
+          "x": 278,
+          "y": 117
+        }
+      }
+    ],
+    "headings": [
+      "可观测 Span"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/agents/obs",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/dw/traces/latest/spans",
+        "status": 404
+      }
+    ]
+  },
+  {
+    "requested": "/superai/chat",
+    "ready": true,
+    "idle": true,
+    "docWidth": 1440,
+    "errors": [],
+    "header": [
+      {
+        "actions": null,
+        "box": {
+          "cw": 1146,
+          "h": 73.5,
+          "sw": 1146,
+          "w": 1146,
+          "x": 274,
+          "y": 113
+        }
+      }
+    ],
+    "headings": [
+      "会话工作台"
+    ],
+    "outsideControls": [],
+    "splits": [],
+    "url": "/superai/chat",
+    "viewport": 1440,
+    "api": [
+      {
+        "path": "/api/v1/dashboard/settings",
+        "status": 200
+      }
+    ]
+  }
+]

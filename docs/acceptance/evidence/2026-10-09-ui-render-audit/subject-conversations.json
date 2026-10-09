@@ -1,0 +1,84 @@
+{
+  "at": "2026-10-09T02:15:33Z",
+  "goal": "01a11b4d-ab28-7ed0-9a89-929e5fae1374",
+  "scope": "builder-v2-validation",
+  "keycloakPort": 55389,
+  "client": "metaplatform-backend",
+  "auth": [
+    {
+      "path": "/api/v1/iam/auth/login",
+      "status": 200,
+      "elapsed": 0.484,
+      "strictSignatureVerified": true,
+      "subjectPresent": true,
+      "tenantPresent": true,
+      "subjectMatchesUserInfo": true
+    },
+    {
+      "path": "/api/v1/iam/auth/refresh",
+      "status": 200,
+      "elapsed": 0.219,
+      "strictSignatureVerified": true,
+      "subjectPresent": true,
+      "tenantPresent": true,
+      "subjectMatchesLogin": true
+    }
+  ],
+  "business": [
+    {
+      "method": "GET",
+      "path": "/api/v1/dw/employees/dw-emp-default-3/conversations",
+      "via": "dw-source",
+      "tokenFrom": "login",
+      "status": 200,
+      "elapsed": 0.0,
+      "count": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dw/employees/dw-emp-default-3/conversations",
+      "via": "gateway",
+      "tokenFrom": "login",
+      "status": 200,
+      "elapsed": 0.031,
+      "count": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dw/employees/dw-emp-default-3/conversations",
+      "via": "vite",
+      "tokenFrom": "login",
+      "status": 200,
+      "elapsed": 0.0,
+      "count": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dw/employees/dw-emp-default-3/conversations",
+      "via": "dw-source",
+      "tokenFrom": "refresh",
+      "status": 200,
+      "elapsed": 0.0,
+      "count": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dw/employees/dw-emp-default-3/conversations",
+      "via": "gateway",
+      "tokenFrom": "refresh",
+      "status": 200,
+      "elapsed": 0.0,
+      "count": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dw/employees/dw-emp-default-3/conversations",
+      "via": "vite",
+      "tokenFrom": "refresh",
+      "status": 200,
+      "elapsed": 0.032,
+      "count": null
+    }
+  ],
+  "verified": true
+}

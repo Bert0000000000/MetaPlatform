@@ -1,0 +1,340 @@
+{
+  "at": "2026-10-09T03:04:23.879Z",
+  "action": "Add parameter locally; no save",
+  "backgroundPendingIndicators": 0,
+  "contentLength": 1211,
+  "docWidth": 390,
+  "errors": [],
+  "foreground": true,
+  "header": [
+    {
+      "actions": {
+        "cw": 212,
+        "h": 32,
+        "sw": 212,
+        "w": 212,
+        "x": 166,
+        "y": 174.5
+      },
+      "box": {
+        "cw": 288,
+        "h": 121.5,
+        "sw": 288,
+        "w": 288,
+        "x": 90,
+        "y": 105
+      }
+    }
+  ],
+  "headings": [
+    "工具注册中心"
+  ],
+  "outsideControls": [
+    {
+      "box": {
+        "cw": 40,
+        "h": 24,
+        "sw": 40,
+        "w": 40,
+        "x": 983.578125,
+        "y": 415.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "INPUT"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1072.578125,
+        "y": 414.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "详情"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1154.578125,
+        "y": 414.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "编辑"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1236.578125,
+        "y": 414.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "删除"
+    },
+    {
+      "box": {
+        "cw": 40,
+        "h": 24,
+        "sw": 40,
+        "w": 40,
+        "x": 983.578125,
+        "y": 476.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "INPUT"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1072.578125,
+        "y": 475.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "详情"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1154.578125,
+        "y": 475.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "编辑"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1236.578125,
+        "y": 475.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "删除"
+    },
+    {
+      "box": {
+        "cw": 40,
+        "h": 24,
+        "sw": 40,
+        "w": 40,
+        "x": 983.578125,
+        "y": 537.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "INPUT"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1072.578125,
+        "y": 536.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "详情"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1154.578125,
+        "y": 536.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "编辑"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1236.578125,
+        "y": 536.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "删除"
+    },
+    {
+      "box": {
+        "cw": 40,
+        "h": 24,
+        "sw": 40,
+        "w": 40,
+        "x": 983.578125,
+        "y": 598.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "INPUT"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1072.578125,
+        "y": 597.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "详情"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1154.578125,
+        "y": 597.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "编辑"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1236.578125,
+        "y": 597.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "删除"
+    },
+    {
+      "box": {
+        "cw": 40,
+        "h": 24,
+        "sw": 40,
+        "w": 40,
+        "x": 983.578125,
+        "y": 659.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "INPUT"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1072.578125,
+        "y": 658.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "详情"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1154.578125,
+        "y": 658.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "编辑"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1236.578125,
+        "y": 658.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "删除"
+    },
+    {
+      "box": {
+        "cw": 40,
+        "h": 24,
+        "sw": 40,
+        "w": 40,
+        "x": 983.578125,
+        "y": 720.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "INPUT"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1072.578125,
+        "y": 719.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "详情"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1154.578125,
+        "y": 719.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "编辑"
+    },
+    {
+      "box": {
+        "cw": 74,
+        "h": 24,
+        "sw": 74,
+        "w": 74,
+        "x": 1236.578125,
+        "y": 719.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "删除"
+    },
+    {
+      "box": {
+        "cw": 40,
+        "h": 24,
+        "sw": 40,
+        "w": 40,
+        "x": 983.578125,
+        "y": 781.5
+      },
+      "localScroll": "semi-table-body",
+      "name": "INPUT"
+    }
+  ],
+  "pendingIndicators": 0,
+  "pendingText": 0,
+  "renderFailure": false,
+  "splits": [],
+  "url": "/ki/mcp/tools/new",
+  "viewport": 390
+}
