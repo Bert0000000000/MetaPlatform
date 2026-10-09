@@ -76,8 +76,15 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
   test('对象浏览刷新保持现有页面能力', async ({ page }) => {
     await gotoApp(page, '/ontology/explore/objects');
     await expect(page.getByRole('button', { name: '刷新类型清单' })).toBeVisible({ timeout: 20_000 });
+    await expect.poll(() => new URL(page.url()).searchParams.get('class') ?? '').toMatch(/^ont\./);
+    const selectedClass = new URL(page.url()).searchParams.get('class');
+    const instanceSearch = page.getByPlaceholder(/^搜索「.*」：主键、属性值…$/);
+    await expect(instanceSearch).toBeVisible();
+    const selectedTypePlaceholder = await instanceSearch.getAttribute('placeholder');
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/ontology\/explore\/objects$/);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/ontology/explore/objects');
+    await expect.poll(() => new URL(page.url()).searchParams.get('class')).toBe(selectedClass);
+    await expect(instanceSearch).toHaveAttribute('placeholder', selectedTypePlaceholder!);
     await expect(page.getByRole('button', { name: '刷新类型清单' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: '本体工作区导航' })).toHaveCount(0);
     await expect(page.getByRole('navigation', { name: '工作区页面导航' }).getByRole('link', { name: 'ObjectSet 构建器' })).toBeVisible();
@@ -130,14 +137,35 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     }
     await page.getByRole('button', { name: '切换导航布局' }).click();
     await expect(page.locator('.mp-topnav').getByRole('link')).toHaveText(names);
-    await page.locator('.mp-topnav').getByRole('link', { name: '对象探索', exact: true }).click();
-    await expect(page).toHaveURL(/\/ontology\/explore\/objects$/);
-    await expect(page.getByRole('navigation', { name: '本体工作区导航' })).toHaveCount(0);
-    await page.getByRole('button', { name: '打开 SuperAI Copilot' }).click();
-    await expect(page.locator('#app')).toHaveAttribute('data-copilot', 'open');
-    await page.getByRole('button', { name: '打开 SuperAI 会话' }).click();
-    await expect(page).toHaveURL(/\/superai\/chat$/);
-    await expect(page.getByRole('navigation', { name: '工作区页面导航' }).getByRole('link', { name: '会话', exact: true })).toBeVisible();
+    let releaseTypes!: () => void;
+    const typesReady = new Promise<void>(resolve => { releaseTypes = resolve; });
+    let typesBlocked = false;
+    await page.route('**/ont/v2/object-types**', async route => {
+      const request = route.request();
+      if (request.method() === 'GET' && new URL(request.url()).pathname.endsWith('/ont/v2/object-types')) {
+        typesBlocked = true;
+        await typesReady;
+      }
+      await route.continue();
+    });
+    try {
+      await page.locator('.mp-topnav').getByRole('link', { name: '对象探索', exact: true }).click();
+      await expect.poll(() => new URL(page.url()).pathname).toBe('/ontology/explore/objects');
+      await expect.poll(() => typesBlocked).toBe(true);
+      await expect(page.getByRole('navigation', { name: '本体工作区导航' })).toHaveCount(0);
+      await page.getByRole('button', { name: '打开 SuperAI Copilot' }).click();
+      await expect(page.locator('#app')).toHaveAttribute('data-copilot', 'open');
+      await page.getByRole('button', { name: '打开 SuperAI 会话' }).click();
+      await expect(page).toHaveURL(/\/superai\/chat$/);
+      const lateTypes = page.waitForResponse(response => response.request().method() === 'GET'
+        && new URL(response.url()).pathname.endsWith('/ont/v2/object-types'));
+      releaseTypes();
+      expect((await lateTypes).ok()).toBe(true);
+      await expect(page.getByRole('navigation', { name: '工作区页面导航' }).getByRole('link', { name: '会话', exact: true })).toBeVisible();
+      await expect(page).toHaveURL(/\/superai\/chat$/);
+    } finally {
+      releaseTypes();
+    }
     for (const path of ['/superai/plans', '/superai/schedules', '/superai/cost', '/superai/templates', '/admin/org/users', '/gov/tech/components']) {
       await gotoApp(page, path);
       await expect(page.getByRole('navigation', { name: '工作区页面导航' })).toBeVisible();
