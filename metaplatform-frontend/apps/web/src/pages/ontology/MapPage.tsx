@@ -444,7 +444,7 @@ export default function MapPage() {
   return (
     <>
     <PageHeader title="对象地图" desc="从当前对象类型读取地理属性与实例" />
-    <div className="mp-flex mp-gap-5 mp-items-start" >
+    <div className="mp-flex mp-gap-5 mp-items-start mp-onto-explore-layout" >
       {/* 左栏：类型选择 */}
       <div className="mp-shrink-0 mp-w-240" >
         <Card className="mp-h-fit">
@@ -483,7 +483,7 @@ export default function MapPage() {
       </div>
 
       {/* 右栏：地图 */}
-      <div className="mp-flex-1">
+      <div className="mp-flex-1 mp-onto-explore-main">
         <Card bodyStyle={{ padding: 0 }} className="mp-hidden">
           {/* 工具栏 */}
           <div className="mp-wrap mp-border mp-gap-2 mp-flex-center mp-py-2 mp-px-4" >
@@ -504,13 +504,13 @@ export default function MapPage() {
               </select>
             )}
             <div className="mp-flex-center mp-gap-1" >
-              <button type="button" title="缩小" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, -1)} className="mp-onto-zoom-btn">
+              <button type="button" title="缩小" aria-label="缩小地图" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, -1)} className="mp-onto-zoom-btn">
                 <Minus className="mp-icon-14" />
               </button>
               <span className="mp-text-center mp-text-xs mp-text-2 mp-onto-zoom-label">
                 z{view.z}
               </span>
-              <button type="button" title="放大" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, 1)} className="mp-onto-zoom-btn">
+              <button type="button" title="放大" aria-label="放大地图" onClick={() => zoomAt(vpSize.w / 2, vpSize.h / 2, 1)} className="mp-onto-zoom-btn">
                 <Plus className="mp-icon-14" />
               </button>
             </div>

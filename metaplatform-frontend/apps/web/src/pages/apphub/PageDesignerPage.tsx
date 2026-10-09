@@ -27,6 +27,7 @@ import type {
   DataSourceType,
 } from '@/api/apphub/pages';
 import type { DashboardGenResult } from '@/api/apphub/types';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './apps.css';
 
 const DATA_SOURCE_TYPE_OPTIONS: Array<{ label: string; value: DataSourceType }> = [
@@ -55,13 +56,19 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
     layout: 'grid',
   });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState<DashboardWidget | null>(null);
   const [dsWidgetId, setDsWidgetId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!pageId) return;
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
     getPage(pageId).then((c) => {
+      if (cancelled) return;
       let widgets = c.widgets;
       try {
         const raw = localStorage.getItem('metaplatform:designer:import');
@@ -91,9 +98,13 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
         // ignore parse error
       }
       setConfig({ ...c, widgets });
-      setLoading(false);
+    }).catch((err) => {
+      if (!cancelled) setLoadError(err instanceof Error ? err.message : '页面读取失败');
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
-  }, [pageId]);
+    return () => { cancelled = true; };
+  }, [pageId, refreshKey]);
 
   const handleSave = async () => {
     if (!pageId) return;
@@ -207,23 +218,26 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
     );
   };
 
+  if (loadError) {
+    return <div><PageHeader title="页面设计器" /><div role="alert"><EmptyState illustration="failure" title="页面配置暂不可用" desc={loadError} actions={<Button type="primary" onClick={() => setRefreshKey((key) => key + 1)}>重试</Button>} /></div></div>;
+  }
+  if (!pageId) return <div><PageHeader title="页面设计器" /><EmptyState title="未选择页面" actions={<Button onClick={() => navigate('/apps/mine')}>返回应用列表</Button>} /></div>;
   if (loading) {
     return (
-      <div className="mp-text-center mp-p-8">
-        <Spin />
+      <div>
+        <PageHeader title="页面设计器" />
+        <div className="mp-app-loading"><Spin tip="正在读取页面…" /></div>
       </div>
     );
   }
 
   return (
     <div>
+      <PageHeader title={`页面设计器 · ${config.name}`} desc="编辑页面布局、数据绑定与组件配置。" />
       <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')}>
           返回
         </Button>
-        <Typography.Title heading={4} className="mp-m-0">
-          页面设计器 - {config.name}
-        </Typography.Title>
         <Button
           icon={<EyeOutlined />}
           onClick={() => setPreviewing(config.widgets[0] ?? null)}

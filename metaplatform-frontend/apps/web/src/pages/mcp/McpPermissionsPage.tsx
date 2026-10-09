@@ -207,7 +207,7 @@ export default function PermissionMatrixPage() {
       <PageHeader
         title="权限矩阵"
         actions={
-          <Space>
+          <Space wrap>
                   <Select
                     value={action}
                     optionList={ACTION_OPTIONS}

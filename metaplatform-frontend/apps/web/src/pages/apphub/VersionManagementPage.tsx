@@ -26,6 +26,7 @@ import RollbackConfirm from './components/RollbackConfirm';
 import VersionDiff from './components/VersionDiff';
 import type { AppVersion } from '@/api/apphub/versions';
 import type { AppItem } from '@/api/apphub/types';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 export default function VersionManagementPage({ appId: appIdProp }: { appId?: string } = {}) {
   const { appId: routeAppId } = useParams<{ appId: string }>();
@@ -34,6 +35,7 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
   const [app, setApp] = useState<AppItem | null>(null);
   const [versions, setVersions] = useState<AppVersion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [previewing, setPreviewing] = useState<AppVersion | null>(null);
@@ -45,12 +47,15 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
   const load = async () => {
     if (!appId) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const [a, v] = await Promise.all([getApp(appId), listVersions(appId)]);
       setApp(a);
       setVersions(v.items);
       const published = v.items.find((x) => x.status === 'PUBLISHED');
       if (published) setSelectedA(published.versionId);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : '版本读取失败');
     } finally {
       setLoading(false);
     }
@@ -60,10 +65,15 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
     load();
   }, [appId]);
 
+  if (loadError) {
+    return <div><PageHeader title="应用版本管理" /><div role="alert"><EmptyState illustration="failure" title="版本列表暂不可用" desc={loadError} actions={<Button type="primary" onClick={load}>重试</Button>} /></div></div>;
+  }
+  if (!appId) return <div><PageHeader title="应用版本管理" /><EmptyState title="未选择应用" actions={<Button onClick={() => navigate('/apps/mine')}>返回应用列表</Button>} /></div>;
   if (loading || !app) {
     return (
-      <div className="mp-text-center mp-p-8">
-        <Spin />
+      <div>
+        <PageHeader title="应用版本管理" />
+        <div className="mp-app-loading"><Spin tip="正在读取版本…" /></div>
       </div>
     );
   }
@@ -106,6 +116,7 @@ export default function VersionManagementPage({ appId: appIdProp }: { appId?: st
 
   return (
     <div>
+      <PageHeader title="应用版本管理" desc={app.name} />
       <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
           返回应用

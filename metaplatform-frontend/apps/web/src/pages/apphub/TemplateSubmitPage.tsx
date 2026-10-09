@@ -7,21 +7,17 @@ import {
   Form,
   Space,
   Typography,
-  Upload,
   Toast,
 } from '@douyinfe/semi-ui';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
-import type { FileItem as UploadFileItem } from '@douyinfe/semi-ui/lib/es/upload';
-import { ArrowLeftOutlined, PlusOutlined, MinusCircleOutlined, InboxOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import {
-  TEMPLATE_CATEGORIES,
-  addCreatedTemplate,
-  type TemplateCategory,
   type TemplateField,
   type TemplateFlow,
   type TemplateFlowNode,
 } from './data/templates';
-import { getUser } from '@mate/shared';
+import { createTemplate } from '@/api/apphub/marketplace';
+import { PageHeader } from '@/components/skeleton';
 import './apps.css';
 
 interface FieldFormValue {
@@ -47,7 +43,8 @@ interface FlowFormValue {
 
 interface SubmitFormValues {
   name: string;
-  category: TemplateCategory;
+  code: string;
+  template_type: 'workflow' | 'form' | 'approval';
   description: string;
   tags?: string;
   icon?: string;
@@ -86,26 +83,16 @@ const ICON_OPTIONS = [
   'CheckSquareOutlined',
 ];
 
-/** 模板投稿 — 本地暂存实现，后端 endpoint 接入后无缝切换为 API 调用 */
-async function submitTemplate(
-  payload: Parameters<typeof addCreatedTemplate>[0],
-): Promise<{ templateId: string }> {
-  const tpl = addCreatedTemplate(payload);
-  return { templateId: tpl.templateId };
-}
-
 export default function TemplateSubmitPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm<SubmitFormValues>();
   const [submitting, setSubmitting] = useState(false);
-  const [screenshots, setScreenshots] = useState<UploadFileItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (values: SubmitFormValues) => {
     setSubmitting(true);
+    setError(null);
     try {
-      const user = getUser();
-      const author = user?.username ?? '匿名用户';
-
       // 转换字段
       const fields: TemplateField[] = (values.fields ?? []).map((f) => ({
         fieldKey: f.fieldKey,
@@ -128,46 +115,39 @@ export default function TemplateSubmitPage() {
         })),
       }));
 
-      // 截图：mock，仅保存文件名
-      const screenshotNames = screenshots.map((f) => f.name).filter(Boolean);
-
-      await submitTemplate({
+      await createTemplate({
         name: values.name,
-        category: values.category,
+        code: values.code,
+        template_type: values.template_type,
         description: values.description,
-        icon: values.icon ?? 'AppstoreOutlined',
-        tags: values.tags ? values.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
-        author,
-        screenshots: screenshotNames,
-        fields,
-        flows,
-        createdAt: new Date().toISOString(),
+        content: {
+          icon: values.icon ?? 'AppstoreOutlined',
+          tags: values.tags ? values.tags.split(',').map((s) => s.trim()).filter(Boolean) : [],
+          fields,
+          flows,
+        },
       });
 
-      Toast.success('模板投稿成功，可在"我的模板"中查看');
-      navigate('/my-templates');
+      Toast.success('共享模板已创建');
+      navigate('/apps/market');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '模板创建失败，请重试');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div>
-      <Space className="mp-mb-4">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/my-templates')}>
-          返回我的模板
-        </Button>
-        <Typography.Title heading={4} className="mp-m-0">
-          投稿新模板
-        </Typography.Title>
-      </Space>
+    <div className="mp-apps-page">
+      <PageHeader title="新建共享模板" desc="配置字段或流程内容，保存后可在共享模板目录查看。" actions={<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/templates')}>返回我的模板</Button>} />
 
       <Form<SubmitFormValues>
         form={form}
         onSubmit={handleSubmit}
         initValues={{
           name: '',
-          category: 'OA' as TemplateCategory,
+          code: '',
+          template_type: 'form',
           description: '',
           icon: 'AppstoreOutlined',
           fields: [{ fieldKey: '', label: '', type: 'text', required: false }],
@@ -185,12 +165,15 @@ export default function TemplateSubmitPage() {
               />
             </Col>
             <Col xs={24} md={12}>
+              <Form.Input field="code" label="模板编码" rules={[{ required: true, message: '请输入模板编码' }, { max: 64 }]} placeholder="如：leave-request" />
+            </Col>
+            <Col xs={24} md={12}>
               <Form.Select
-                field="category"
-                label="模板分类"
-                rules={[{ required: true, message: '请选择分类' }]}
-                optionList={TEMPLATE_CATEGORIES}
-                placeholder="选择分类"
+                field="template_type"
+                label="模板类型"
+                rules={[{ required: true, message: '请选择模板类型' }]}
+                optionList={[{ label: '工作流', value: 'workflow' }, { label: '表单', value: 'form' }, { label: '审批', value: 'approval' }]}
+                placeholder="选择模板类型"
               />
             </Col>
             <Col xs={24} md={12}>
@@ -217,33 +200,7 @@ export default function TemplateSubmitPage() {
         </Card>
 
         <Card title="模板截图" className="mp-mb-4">
-          <Upload
-            draggable
-            listType="picture"
-            fileList={screenshots}
-            onRemove={(file) => {
-              setScreenshots((prev) => prev.filter((f) => f.uid !== file.uid));
-            }}
-            beforeUpload={({ file }) => {
-              const raw = file.fileInstance;
-              setScreenshots((prev) => [
-                ...prev,
-                {
-                  uid: `${Date.now()}-${file.name}`,
-                  name: file.name,
-                  size: String(file.size ?? ''),
-                  type: raw?.type,
-                  fileInstance: raw,
-                  status: 'success',
-                },
-              ]);
-              return false; // 阻止自动上传
-            }}
-            multiple
-            dragIcon={<InboxOutlined />}
-            dragMainText="点击或拖拽上传模板截图"
-            dragSubText="支持多张，仅保存文件名"
-          />
+          <Typography.Text type="tertiary">截图上传暂未开放。</Typography.Text>
         </Card>
 
         <Card title="字段定义" className="mp-mb-4">
@@ -378,11 +335,12 @@ export default function TemplateSubmitPage() {
           </ArrayField>
         </Card>
 
-        <Space>
+        {error && <div role="alert" className="mp-mb-3"><Typography.Text type="danger">{error}</Typography.Text></div>}
+        <Space wrap>
           <Button theme="solid" type="primary" htmlType="submit" loading={submitting} icon={<PlusOutlined />}>
-            提交投稿
+            创建共享模板
           </Button>
-          <Button onClick={() => navigate('/my-templates')}>取消</Button>
+          <Button onClick={() => navigate('/apps/templates')}>取消</Button>
         </Space>
       </Form>
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Button, Form, SideSheet, Spin, Toast } from '@douyinfe/semi-ui';
-import { createServer, getServer, updateServer } from '@/api/mcphub/servers';
-import type { McpServerCreateRequest } from '@/api/mcphub/types';
+import { Banner, Button, Form, SideSheet, Spin, Toast, Typography } from '@douyinfe/semi-ui';
+import { createServer, getServer, updateServer, SERVER_MANAGEMENT_AVAILABLE } from '@/api/mcphub/servers';
+import type { McpServer, McpServerCreateRequest } from '@/api/mcphub/types';
 import { EmptyState } from '@/components/skeleton';
 import '../mcp.css';
 
@@ -47,13 +47,20 @@ export default function ServerDrawer({
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [serverConfig, setServerConfig] = useState<McpServer | null>(null);
+  const incompleteEdit = !!serverId && (!serverConfig?.code
+    || !TRANSPORT_OPTIONS.some((option) => option.value === serverConfig.transport)
+    || !Array.isArray(serverConfig.toolIds) || typeof serverConfig.enabled !== 'boolean');
+  const canSave = SERVER_MANAGEMENT_AVAILABLE && !loading && !loadError && !incompleteEdit && !submitting;
 
   useEffect(() => {
     if (!open) return;
     setLoadError(null);
+    setServerConfig(null);
+    form.reset();
 
     if (!serverId) {
-      form.reset();
+      setLoading(false);
       form.setValues({
         enabled: true,
         transport: 'sse',
@@ -69,6 +76,7 @@ export default function ServerDrawer({
     setLoading(true);
     getServer(serverId)
       .then((s) => {
+        setServerConfig(s);
         form.setValues({
           name: s.name,
           code: s.code,
@@ -78,7 +86,7 @@ export default function ServerDrawer({
           host: s.host,
           port: s.port,
           sseEndpoint: s.sseEndpoint,
-          authType: s.authType ?? 'none',
+          authType: s.authType,
           authConfig: s.authConfig,
           timeoutMs: s.timeoutMs,
           maxConcurrentCalls: s.maxConcurrentCalls,
@@ -87,13 +95,14 @@ export default function ServerDrawer({
           enabled: s.enabled,
           tags: s.tags,
         });
-        setAuthType(s.authType ?? 'none');
+        setAuthType(s.authType ?? '');
       })
       .catch((e: unknown) => setLoadError(e instanceof Error ? e.message : 'Server 加载失败'))
       .finally(() => setLoading(false));
   }, [open, serverId, form]);
 
   const handleSubmit = async () => {
+    if (!canSave) return;
     const values = await form.validate();
     setSubmitting(true);
     try {
@@ -118,7 +127,7 @@ export default function ServerDrawer({
       visible={open}
       title={serverId ? '编辑 MCP Server' : '创建 MCP Server'}
       onCancel={onClose}
-      width={DRAWER_W}
+      width={`min(${DRAWER_W}px, 100vw)`}
       footer={
         <>
           <Button onClick={onClose}>取消</Button>
@@ -126,7 +135,7 @@ export default function ServerDrawer({
             theme="solid"
             type="primary"
             loading={submitting}
-            disabled={loading || !!loadError}
+            disabled={!canSave}
             onClick={() => void handleSubmit()}
           >
             {serverId ? '保存' : '创建'}
@@ -134,6 +143,9 @@ export default function ServerDrawer({
         </>
       }
     >
+      {!SERVER_MANAGEMENT_AVAILABLE && (
+        <Banner type="info" title="服务目录管理未接入" description="Server 表单仅供审阅，尚未接入保存。" className="mp-mb-4" />
+      )}
       {loading ? (
         <div className="mp-text-center mp-p-8">
           <Spin />
@@ -146,6 +158,14 @@ export default function ServerDrawer({
           actions={<Button onClick={onClose}>关闭</Button>}
         />
       ) : null}
+      {serverId && serverConfig && incompleteEdit && (
+        <Banner
+          type="info"
+          title="服务目录未提供完整管理配置，暂不能保存。"
+          description={serverConfig.transportType ? `目录协议：${serverConfig.transportType}` : '请使用服务目录返回的配置，未提供的字段不作为默认值。'}
+          className="mp-mb-4"
+        />
+      )}
 
       {/*
         表单必须常驻挂载：Semi 的 form 实例在 <Form> 未挂载时 setValues 是空操作，
@@ -196,6 +216,7 @@ export default function ServerDrawer({
           {authType && authType !== 'none' && (
             <Form.TextArea
               field="authConfig"
+              initValue={serverConfig?.authConfig}
               label="认证配置（JSON）"
               rows={3}
               placeholder='例如：{ "apiKey": "xxx" }'
@@ -220,14 +241,23 @@ export default function ServerDrawer({
             label="健康检查 URL"
             placeholder="例如：http://localhost:8080/health"
           />
-          <Form.Select
-            field="toolIds"
-            label="暴露的工具"
-            multiple
-            placeholder="选择工具"
-            optionList={availableTools.map((t) => ({ label: t.name, value: t.id }))}
-          />
-          <Form.Switch field="enabled" label="启用" />
+          {!serverId || Array.isArray(serverConfig?.toolIds) ? (
+            <Form.Select
+              field="toolIds"
+              label="暴露的工具"
+              multiple
+              placeholder="选择工具"
+              optionList={availableTools.map((t) => ({ label: t.name, value: t.id }))}
+              initValue={serverConfig?.toolIds}
+            />
+          ) : (
+            <Typography.Paragraph>暴露的工具：<Typography.Text>目录未提供工具关联</Typography.Text></Typography.Paragraph>
+          )}
+          {!serverId || typeof serverConfig?.enabled === 'boolean' ? (
+            <Form.Switch field="enabled" label="启用" initValue={serverConfig?.enabled} />
+          ) : (
+            <Typography.Paragraph>启用：<Typography.Text>目录未提供启用配置</Typography.Text></Typography.Paragraph>
+          )}
           <Form.Select
             field="tags"
             label="标签"

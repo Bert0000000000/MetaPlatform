@@ -11,3 +11,15 @@
 
 /* Plan 画布节点卡：选中态主色描边 */
 .mp-wfe-node-on { border: 2px solid var(--semi-color-primary); }
+
+.mp-wfe-orchestration { container: mp-wfe-orchestration / inline-size; min-width: 0; }
+.mp-wfe-orchestration-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 17fr) minmax(0, 7fr);
+  gap: var(--mp-space-4, 16px);
+  width: 100%;
+}
+.mp-wfe-orchestration-grid > * { min-width: 0; }
+@container mp-wfe-orchestration (max-width: 720px) {
+  .mp-wfe-orchestration-grid { grid-template-columns: minmax(0, 1fr); }
+}

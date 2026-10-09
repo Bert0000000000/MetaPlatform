@@ -9,6 +9,9 @@ async function del<T>(url: string): Promise<T> { return data(await client.delete
 
 import type { McpServer, McpServerCreateRequest, McpServerStatus, PageResponse } from './types';
 
+// /servers is the read-only agent directory alias. Federation writes use a separate contract.
+export const SERVER_MANAGEMENT_AVAILABLE = false;
+
 export async function listServers(params?: { keyword?: string }): Promise<PageResponse<McpServer>> {
   return get<PageResponse<McpServer>>('/servers', params);
 }

@@ -1,4 +1,5 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
+import { aliasFields } from './_readerAliases';
 
 const client = createApiClient({ baseURL: apiPath('arch', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
@@ -63,7 +64,8 @@ export function normalizeTechDebt(raw: TechDebt): TechDebt {
 
 // ---------- 原则分类 ----------
 export async function listPrincipleCategories(): Promise<PrincipleCategory[]> {
-  return list<PrincipleCategory>('/governance/principle-categories');
+  const items = await list<PrincipleCategory>('/governance/principle-categories');
+  return items.map((item) => aliasFields(item, { sort_order: 'sortOrder' }));
 }
 
 export async function createPrincipleCategory(req: Partial<PrincipleCategory>): Promise<PrincipleCategory> {
@@ -81,7 +83,7 @@ export async function deletePrincipleCategory(id: string): Promise<void> {
 // ---------- 架构原则 ----------
 export async function listPrinciples(categoryId?: string): Promise<Principle[]> {
   const items = await list<Principle>('/governance/principles', categoryId ? { categoryId } : undefined);
-  return items.map(normalizePrinciple);
+  return items.map((item) => normalizePrinciple(aliasFields(item, { category_id: 'categoryId' })));
 }
 
 export async function createPrinciple(req: Partial<Principle>): Promise<Principle> {

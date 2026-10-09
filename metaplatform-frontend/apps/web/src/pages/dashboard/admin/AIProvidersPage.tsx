@@ -5,7 +5,7 @@
  * - 抽屉：编辑单 provider 的 Base URL / API Key / 默认模型 / Embedding 模型 / API Version
  * - 抽屉：查看并管理该 provider 已获取的模型清单（启用开关 / 删除）
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -128,6 +128,26 @@ function maskedAwareKey(value: unknown): string | null {
   return v === '***' || v === '********' ? null : value;
 }
 
+interface ReadFailure {
+  forbidden: boolean;
+  message: string;
+}
+
+function readFailure(error: unknown): ReadFailure {
+  const failure = error as { status?: number; response?: { status?: number; data?: {
+    code?: string; message?: string; detail?: string | { code?: string; message?: string };
+  } } } | null;
+  const response = failure?.response;
+  const data = response?.data;
+  const detail = typeof data?.detail === 'object' ? data.detail : undefined;
+  return {
+    forbidden: failure?.status === 403 || response?.status === 403
+      || data?.code === 'E403_FORBIDDEN' || detail?.code === 'E403_FORBIDDEN',
+    message: detail?.message || data?.message || (typeof data?.detail === 'string' ? data.detail : '')
+      || (error instanceof Error ? error.message : String(error)),
+  };
+}
+
 interface TestState {
   status: 'idle' | 'loading' | 'ok' | 'fail';
   message?: string;
@@ -141,23 +161,26 @@ interface ProviderRow {
   enabled: boolean;
   baseUrl: string;
   defaultModel: string;
-  modelCount: number;
+  modelCount: number | null;
   isDefault: boolean;
 }
 
 export default function AIProvidersPage() {
   const { settings } = useSettings();
+  const defaultLabelId = useId();
 
   const [items, setItems] = useState<AdminSystemConfig[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<ReadFailure | null>(null);
   const [keyword, setKeyword] = useState('');
 
-  const [defaultActive, setDefaultActive] = useState<string>('openai');
-  const [defaultEmbedding, setDefaultEmbedding] = useState<string>('disabled');
+  const [defaultActive, setDefaultActive] = useState<string>();
+  const [defaultEmbedding, setDefaultEmbedding] = useState<string>();
   const [customProviderIds, setCustomProviderIds] = useState<string[]>([]);
 
   const [models, setModels] = useState<Record<ProviderId, AiModelItem[]>>({});
+  const [modelsLoading, setModelsLoading] = useState(true);
+  const [modelsError, setModelsError] = useState<ReadFailure | null>(null);
   const [testStates, setTestStates] = useState<Record<ProviderId, TestState>>({});
   const [fetchingId, setFetchingId] = useState<ProviderId | null>(null);
   const [savingId, setSavingId] = useState<ProviderId | null>(null);
@@ -169,6 +192,7 @@ export default function AIProvidersPage() {
   const formApi = useRef<FormApiLike | null>(null);
 
   const loadModels = useCallback(async (provider?: ProviderId) => {
+    setModelsLoading(true);
     try {
       const list = await listAiModels(provider ? { provider } : undefined);
       setModels((prev) => {
@@ -183,22 +207,25 @@ export default function AIProvidersPage() {
         }
         return next;
       });
-    } catch {
-      // 静默：模型清单不可用时保留空，不影响 provider 配置
+      setModelsError(null);
+    } catch (e) {
+      setModelsError(readFailure(e));
+    } finally {
+      setModelsLoading(false);
     }
   }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await listConfigs({ pageSize: 200 });
+      setError(null);
       const aiItems = (res.items ?? []).filter((c) => c.category === 'AI_PROVIDER');
       setItems(aiItems);
       const active = aiItems.find((c) => c.key === 'ai.provider.default_active');
-      if (active && typeof active.value === 'string') setDefaultActive(active.value);
+      setDefaultActive(typeof active?.value === 'string' ? active.value : undefined);
       const emb = aiItems.find((c) => c.key === 'ai.embedding.default_provider');
-      if (emb && typeof emb.value === 'string') setDefaultEmbedding(emb.value);
+      setDefaultEmbedding(typeof emb?.value === 'string' ? emb.value : undefined);
 
       // 发现自定义 provider：从 config key 前缀 ai.provider.custom_* 提取
       const customs = new Set<string>();
@@ -219,7 +246,9 @@ export default function AIProvidersPage() {
     } catch (e) {
       setItems([]);
       setCustomProviderIds([]);
-      setError(e instanceof Error ? e.message : String(e));
+      setDefaultActive(undefined);
+      setDefaultEmbedding(undefined);
+      setError(readFailure(e));
     } finally {
       setLoading(false);
     }
@@ -229,6 +258,9 @@ export default function AIProvidersPage() {
     void load();
     void loadModels();
   }, [load, loadModels]);
+
+  const configReady = !loading && !error;
+  const modelsReady = !modelsLoading && !modelsError;
 
   const pickByKey = useCallback(
     (provider: ProviderId, suffix: string): AdminSystemConfig | undefined =>
@@ -254,11 +286,11 @@ export default function AIProvidersPage() {
           enabled: enabledCfg?.value === true || enabledCfg?.value === 'true',
           baseUrl: typeof baseUrlCfg?.value === 'string' ? baseUrlCfg.value : '',
           defaultModel: typeof modelCfg?.value === 'string' ? modelCfg.value : '',
-          modelCount: (models[id] ?? []).length,
+          modelCount: modelsReady ? (models[id] ?? []).length : null,
           isDefault: defaultActive === id,
         };
       }),
-    [providerIds, pickByKey, models, defaultActive],
+    [providerIds, pickByKey, models, modelsReady, defaultActive],
   );
 
   const filteredRows = useMemo(() => {
@@ -288,6 +320,7 @@ export default function AIProvidersPage() {
 
   // ── 连接测试 ──
   const handleTest = async (provider: ProviderId) => {
+    if (!configReady) return;
     const baseUrl = cfgString(pickByKey(provider, 'base_url'));
     if (!baseUrl) {
       Toast.warning('请先配置 Base URL');
@@ -330,6 +363,7 @@ export default function AIProvidersPage() {
 
   // ── 获取模型：调 LLMGW providers/models 拉上游模型 → 批量存 IAM ──
   const handleFetchModels = async (provider: ProviderId) => {
+    if (!configReady || !modelsReady) return;
     const baseUrl = cfgString(pickByKey(provider, 'base_url'));
     if (!baseUrl) {
       Toast.warning('请先配置 Base URL');
@@ -375,7 +409,7 @@ export default function AIProvidersPage() {
   };
 
   const handleToggleModel = async (model: AiModelItem) => {
-    if (model.id == null) return;
+    if (!configReady || !modelsReady || model.id == null) return;
     try {
       await updateAiModel(model.id, { enabled: !model.enabled });
       await loadModels(model.provider);
@@ -385,7 +419,7 @@ export default function AIProvidersPage() {
   };
 
   const handleDeleteModel = async (model: AiModelItem) => {
-    if (model.id == null) return;
+    if (!configReady || !modelsReady || model.id == null) return;
     try {
       await deleteAiModel(model.id);
       Toast.success('已删除模型');
@@ -397,6 +431,7 @@ export default function AIProvidersPage() {
 
   // ── 启用 / 默认项切换 ──
   const handleToggle = async (provider: ProviderId, enabled: boolean) => {
+    if (!configReady) return;
     const cfg = pickByKey(provider, 'enabled');
     if (!cfg) {
       Toast.warning('该 Provider 尚未初始化 enabled 配置');
@@ -412,6 +447,7 @@ export default function AIProvidersPage() {
   };
 
   const setDefaultActiveProvider = async (val: string) => {
+    if (!configReady) return;
     setDefaultActive(val);
     try {
       await updateConfig('ai.provider.default_active', val, '切换默认 AI Provider');
@@ -423,6 +459,7 @@ export default function AIProvidersPage() {
   };
 
   const setDefaultEmbeddingProvider = async (val: string) => {
+    if (!configReady) return;
     setDefaultEmbedding(val);
     const key = 'ai.embedding.default_provider';
     try {
@@ -444,6 +481,7 @@ export default function AIProvidersPage() {
 
   // ── 保存单 provider 配置 ──
   const submitProvider = async () => {
+    if (!configReady) return;
     const provider = editId;
     const values = formApi.current?.getValues();
     if (!provider || !values) return;
@@ -473,6 +511,7 @@ export default function AIProvidersPage() {
 
   // ── 添加自定义 Provider ──
   const submitCustom = async () => {
+    if (!configReady) return;
     const name = newProviderName.trim();
     if (!name) {
       Toast.warning('请输入名称');
@@ -553,6 +592,7 @@ export default function AIProvidersPage() {
         width: 110,
         render: (_: unknown, row: ProviderRow) => (
           <Switch
+            disabled={!configReady}
             checked={row.enabled}
             onChange={(v) => void handleToggle(row.id, v)}
             checkedText="ON"
@@ -581,9 +621,9 @@ export default function AIProvidersPage() {
         title: '模型数',
         dataIndex: 'modelCount',
         width: 90,
-        render: (v: number) => (
-          <Tag size="small" type="light" color={v > 0 ? 'blue' : 'grey'}>
-            {v ?? 0}
+        render: (v: number | null) => (
+          <Tag size="small" type="light" color={v !== null && v > 0 ? 'blue' : 'grey'}>
+            {v ?? '未读取'}
           </Tag>
         ),
       },
@@ -632,6 +672,7 @@ export default function AIProvidersPage() {
               theme="borderless"
               type="primary"
               size="small"
+              disabled={!configReady}
               onClick={() => {
                 formApi.current = null;
                 setEditId(row.id);
@@ -644,7 +685,7 @@ export default function AIProvidersPage() {
               type="tertiary"
               size="small"
               icon={<Zap size={15} strokeWidth={1.5} />}
-              disabled={!row.enabled}
+              disabled={!configReady || !row.enabled}
               onClick={() => void handleTest(row.id)}
             >
               测试连接
@@ -655,7 +696,7 @@ export default function AIProvidersPage() {
               size="small"
               icon={<CloudDownload size={15} strokeWidth={1.5} />}
               loading={fetchingId === row.id}
-              disabled={!row.enabled}
+              disabled={!configReady || !modelsReady || !row.enabled}
               onClick={() => void handleFetchModels(row.id)}
             >
               获取模型
@@ -664,9 +705,9 @@ export default function AIProvidersPage() {
         ),
       },
     ],
-    // handleToggle / handleTest / handleFetchModels 为稳定闭包，随其读取的状态更新
+    // Row actions must use the current config snapshot and read availability.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [testStates, fetchingId],
+    [testStates, fetchingId, pickByKey, configReady, modelsReady],
   );
 
   const editMeta = editId ? getProviderMeta(editId) : null;
@@ -685,6 +726,7 @@ export default function AIProvidersPage() {
           <>
             <Button
               icon={<Plus size={15} strokeWidth={1.5} />}
+              disabled={!configReady}
               onClick={() => {
                 setNewProviderName('');
                 setAddOpen(true);
@@ -706,22 +748,33 @@ export default function AIProvidersPage() {
         }
       />
 
+      {error ? <div role="alert" className="mp-read-warning">
+        <strong>{error.forbidden ? '无权限读取 Provider 配置' : 'Provider 配置暂不可用'}</strong>
+        <span>{error.message}</span>
+        <Button loading={loading} onClick={() => void load()}>重试配置</Button>
+      </div> : null}
+      {modelsError ? <div role="alert" className="mp-read-warning">
+        <strong>{modelsError.forbidden ? '无权限读取模型清单' : '模型清单暂不可用'}</strong>
+        <span>{modelsError.message}</span>
+        <Button loading={modelsLoading} onClick={() => void loadModels()}>重试模型清单</Button>
+      </div> : null}
+
       <div className="mp-admin-kpis">
         <Card>
           <span className="mp-admin-kpi-label">已启用</span>
-          <div className="mp-admin-kpi-value">{summary.enabledCount}</div>
+          <div className="mp-admin-kpi-value">{configReady ? summary.enabledCount : '未读取'}</div>
         </Card>
         <Card>
           <span className="mp-admin-kpi-label">已配置 Base URL</span>
-          <div className="mp-admin-kpi-value">{summary.configured}</div>
+          <div className="mp-admin-kpi-value">{configReady ? summary.configured : '未读取'}</div>
         </Card>
         <Card>
           <span className="mp-admin-kpi-label">Provider 数量</span>
-          <div className="mp-admin-kpi-value">{summary.total}</div>
+          <div className="mp-admin-kpi-value">{configReady ? summary.total : '未读取'}</div>
         </Card>
         <Card>
           <span className="mp-admin-kpi-label">默认生效</span>
-          <div className="mp-admin-kpi-value">{getProviderMeta(defaultActive).name}</div>
+          <div className="mp-admin-kpi-value">{!configReady ? '未读取' : defaultActive ? getProviderMeta(defaultActive).name : '未设置'}</div>
         </Card>
       </div>
 
@@ -730,11 +783,15 @@ export default function AIProvidersPage() {
         filters={
           <>
             <Tooltip content="下游实际调用哪个 Provider">
-              <span className="mp-admin-faint">默认 Provider</span>
+              <span id={`${defaultLabelId}-provider`} className="mp-admin-faint">默认 Provider</span>
             </Tooltip>
-            <Select value={defaultActive} onChange={(v) => void setDefaultActiveProvider(v as string)} optionList={defaultOptions} />
-            <span className="mp-admin-faint">默认 Embedding</span>
+            <Select aria-labelledby={`${defaultLabelId}-provider`} disabled={!configReady} value={defaultActive}
+              placeholder="未设置" onChange={(v) => void setDefaultActiveProvider(v as string)} optionList={defaultOptions} />
+            <span id={`${defaultLabelId}-embedding`} className="mp-admin-faint">默认 Embedding</span>
             <Select
+              aria-labelledby={`${defaultLabelId}-embedding`}
+              disabled={!configReady}
+              placeholder="未设置"
               value={defaultEmbedding}
               onChange={(v) => void setDefaultEmbeddingProvider(v as string)}
               optionList={embeddingOptions}
@@ -745,13 +802,15 @@ export default function AIProvidersPage() {
 
       <DataTablePro<ProviderRow>
         columns={columns}
-        dataSource={filteredRows}
+        dataSource={configReady ? filteredRows : []}
         rowKey="id"
         loading={loading}
-        onRow={(record) => ({ onDoubleClick: () => setEditId(record.id) })}
+        onRow={(record) => ({ onDoubleClick: () => { if (configReady) setEditId(record.id); } })}
         empty={
-          error ? (
-            <EmptyState illustration="failure" title="Provider 配置加载失败" desc={error} />
+          !configReady ? (
+            <EmptyState illustration={error ? 'failure' : 'no-result'}
+              title={loading ? '正在读取 Provider 配置' : 'Provider 配置尚未读取'}
+              desc="成功读取配置后可进行管理操作。" />
           ) : (
             <EmptyState
               illustration="no-result"
@@ -773,6 +832,7 @@ export default function AIProvidersPage() {
               <>
                 <Button
                   icon={<Zap size={15} strokeWidth={1.5} />}
+                  disabled={!configReady}
                   onClick={() => void handleTest(editId)}
                 >
                   测试连接
@@ -780,6 +840,7 @@ export default function AIProvidersPage() {
                 <Button
                   icon={<CloudDownload size={15} strokeWidth={1.5} />}
                   loading={fetchingId === editId}
+                  disabled={!configReady || !modelsReady}
                   onClick={() => void handleFetchModels(editId)}
                 >
                   获取模型
@@ -791,6 +852,7 @@ export default function AIProvidersPage() {
               theme="solid"
               type="primary"
               loading={savingId !== null}
+              disabled={!configReady}
               onClick={() => void submitProvider()}
             >
               保存
@@ -819,12 +881,14 @@ export default function AIProvidersPage() {
               labelWidth={120}
             >
               <Form.Switch
+                disabled={!configReady}
                 field="enabled"
                 label="启用"
                 extraText="关闭后下游回退到默认 Provider"
               />
               {pickByKey(editId, 'base_url') ? (
                 <Form.Input
+                  disabled={!configReady}
                   field="base_url"
                   label="Base URL"
                   placeholder={editMeta.baseUrlExample}
@@ -832,6 +896,7 @@ export default function AIProvidersPage() {
               ) : null}
               {pickByKey(editId, 'api_key') ? (
                 <Form.Input
+                  disabled={!configReady}
                   field="api_key"
                   label="API Key"
                   mode="password"
@@ -843,6 +908,7 @@ export default function AIProvidersPage() {
               ) : null}
               {pickByKey(editId, 'default_model') ? (
                 <Form.Input
+                  disabled={!configReady}
                   field="default_model"
                   label="默认模型"
                   placeholder={editMeta.defaultModelExample}
@@ -850,19 +916,22 @@ export default function AIProvidersPage() {
               ) : null}
               {pickByKey(editId, 'embedding_model') ? (
                 <Form.Input
+                  disabled={!configReady}
                   field="embedding_model"
                   label="Embedding 模型"
                   placeholder={editMeta.defaultModelExample}
                 />
               ) : null}
               {pickByKey(editId, 'api_version') ? (
-                <Form.Input field="api_version" label="API Version" placeholder="2024-02-01" />
+                <Form.Input disabled={!configReady} field="api_version" label="API Version" placeholder="2024-02-01" />
               ) : null}
             </Form>
 
             <div className="mp-admin-section">
-              <span className="mp-admin-section-label">已获取模型（{editModels.length}）</span>
-              {editModels.length === 0 ? (
+              <span className="mp-admin-section-label">已获取模型（{modelsReady ? editModels.length : '未读取'}）</span>
+              {!modelsReady ? (
+                <span className="mp-admin-faint">{modelsLoading ? '正在读取模型清单…' : '模型清单读取未完成，请先重试。'}</span>
+              ) : editModels.length === 0 ? (
                 <span className="mp-admin-faint">尚无模型，点击「获取模型」从上游拉取。</span>
               ) : (
                 <ul className="mp-admin-list">
@@ -871,6 +940,7 @@ export default function AIProvidersPage() {
                       <span className="mp-admin-mono">{m.displayName || m.modelId}</span>
                       <span className="mp-admin-row-actions">
                         <Switch
+                          disabled={!configReady || !modelsReady}
                           size="small"
                           checked={m.enabled}
                           onChange={() => void handleToggleModel(m)}
@@ -882,6 +952,7 @@ export default function AIProvidersPage() {
                           size="small"
                           icon={<Trash2 size={14} strokeWidth={1.5} />}
                           onClick={() => void handleDeleteModel(m)}
+                          disabled={!configReady || !modelsReady}
                           aria-label={`删除 ${m.modelId}`}
                         />
                       </span>
@@ -902,7 +973,7 @@ export default function AIProvidersPage() {
         footer={
           <>
             <Button onClick={() => setAddOpen(false)}>取消</Button>
-            <Button theme="solid" type="primary" loading={adding} onClick={() => void submitCustom()}>
+            <Button theme="solid" type="primary" loading={adding} disabled={!configReady} onClick={() => void submitCustom()}>
               添加
             </Button>
           </>
@@ -910,6 +981,7 @@ export default function AIProvidersPage() {
       >
         <div className="mp-admin-form">
           <Input
+            disabled={!configReady}
             value={newProviderName}
             onChange={setNewProviderName}
             maxLength={20}

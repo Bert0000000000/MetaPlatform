@@ -28,13 +28,9 @@ const SORT_OPTIONS = [
 /** 「全部」在 Tabs 里也要有个 itemKey（activeKey 不能为 undefined）。 */
 const ALL_DOMAINS_KEY = '__all__';
 
-/**
- * 应用版本。src/api/apphub/apps.ts 的 mapApp 把后端 `version` 映射进了
- * `AppItem.updatedAt`（字段命名失真，但 API 层本批不动）。这里集中一处读取，
- * 将来 mapper 修正为真实 `version` 字段时只需改这里。
- */
+/** 应用目录直接展示服务端版本，时间字段不参与版本推断。 */
 function appVersion(app: AppItem): string {
-  return app.updatedAt || '—';
+  return app.version || '—';
 }
 
 export default function AppListPage() {

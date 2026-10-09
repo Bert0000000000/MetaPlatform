@@ -3,13 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Empty,
-  Popconfirm,
-  Rating,
   Space,
   Tag,
   Typography,
-  Toast,
+  Spin,
 } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
@@ -17,11 +14,11 @@ import * as Icons from '@ant-design/icons';
 import {
   CATEGORY_COLOR,
   CATEGORY_LABEL,
-  removeUserTemplate,
   type TemplateCategory,
 } from './data/templates';
 import { listTemplates, type TemplateItem } from '@/api/apphub/marketplace';
 import { getUser } from '@mate/shared';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './apps.css';
 
 // Semi Tag 颜色名与 antd 色名差异修正（gold → yellow）
@@ -38,21 +35,24 @@ function renderIcon(name?: string): React.ReactNode {
 export default function MyTemplatesPage() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ownershipAvailable, setOwnershipAvailable] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const currentUser = getUser();
       const all = await listTemplates();
+      setOwnershipAvailable(Boolean(currentUser?.username) && all.length > 0 && all.every((item) => Boolean(item.author)));
       // listTemplates 不支持 createdBy 过滤，前端按 author 字段过滤当前用户的模板
       const mine = currentUser
         ? all.filter((t) => t.author === currentUser.username)
         : [];
       setTemplates(mine);
-    } catch {
-      Toast.error('加载模板列表失败');
-      setTemplates([]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '加载模板列表失败');
     } finally {
       setLoading(false);
     }
@@ -62,28 +62,20 @@ export default function MyTemplatesPage() {
     refresh();
   }, [refresh]);
 
-  const handleDelete = (t: TemplateItem) => {
-    removeUserTemplate(t.templateId);
-    setTemplates((prev) => prev.filter((x) => x.templateId !== t.templateId));
-    Toast.success(`已删除模板：${t.name}`);
-  };
-
-  const handlePublish = (t: TemplateItem) => {
-    Toast.success(`模板「${t.name}」已投稿到应用市场，等待管理员审核`);
-  };
-
   const tagColor = (c: string | undefined): TagColor => (SEMI_TAG_COLOR[c ?? ''] ?? c ?? 'grey') as TagColor;
 
   return (
-    <div>
-
-      <Card loading={loading}>
-        {templates.length === 0 ? (
-          <Empty description="还没有创建任何模板，点击&quot;投稿新模板&quot;开始">
-            <Button theme="solid" type="primary" icon={<Icons.PlusOutlined />} onClick={() => navigate('/my-templates/submit')}>
-              投稿新模板
-            </Button>
-          </Empty>
+    <div className="mp-apps-page">
+      <PageHeader title="我的模板" desc="查看个人模板与可用的模板配置入口。" actions={<Button icon={<Icons.PlusOutlined />} onClick={() => navigate('/apps/templates?submit=1')}>配置新模板</Button>} />
+      <Card>
+        {loading ? (
+          <div className="mp-app-loading"><Spin tip="正在读取模板…" /></div>
+        ) : error ? (
+          <div role="alert"><EmptyState illustration="failure" title="模板列表读取失败" desc={error} actions={<Button type="primary" onClick={refresh}>重试</Button>} /></div>
+        ) : !ownershipAvailable ? (
+          <EmptyState illustration="idle" title="无法确认个人模板" desc="当前模板服务未提供作者信息，暂时无法区分个人模板。可先浏览共享模板目录。" actions={<Button onClick={() => navigate('/apps/market')}>查看模板目录</Button>} />
+        ) : templates.length === 0 ? (
+          <EmptyState title="暂无个人模板" desc="当前账户还没有可用的个人模板。" />
         ) : (
           <Row gutter={[16, 16]}>
             {templates.map((t) => (
@@ -98,24 +90,18 @@ export default function MyTemplatesPage() {
                     </div>
                   }
                   actions={[
-                    <Popconfirm
-                      key="delete"
-                      title="确认删除"
-                      content={`确定删除模板「${t.name}」吗？`}
-                      onConfirm={() => handleDelete(t)}
-                    >
-                      <Button theme="borderless" type="danger" icon={<Icons.DeleteOutlined />}>
-                        删除
-                      </Button>
-                    </Popconfirm>,
+                    <Button key="delete" theme="borderless" type="danger" icon={<Icons.DeleteOutlined />} disabled title="当前服务尚未开放模板删除">
+                      删除暂不可用
+                    </Button>,
                     <Button
                       key="publish"
                       theme="borderless"
                       type="primary"
                       icon={<Icons.CloudUploadOutlined />}
-                      onClick={() => handlePublish(t)}
+                      disabled
+                      title="当前服务尚未开放模板市场投稿"
                     >
-                      投稿市场
+                      投稿暂不可用
                     </Button>,
                   ]}
                 >
@@ -142,14 +128,8 @@ export default function MyTemplatesPage() {
                             <Tag key={tag}>{tag}</Tag>
                           ))}
                         </Space>
-                        <div className="mp-justify-between mp-flex-center">
-                          <Rating disabled value={t.rating} allowHalf className="mp-text-sm" />
-                          <Typography.Text type="tertiary" className="mp-text-sm">
-                            {t.usageCount ?? 0} 次使用
-                          </Typography.Text>
-                        </div>
                         <Typography.Text type="tertiary" className="mp-text-sm">
-                          创建于：{new Date(t.createdAt).toLocaleDateString()}
+                          {t.createdAt ? `创建于：${new Date(t.createdAt).toLocaleDateString()}` : '创建时间未提供'}
                         </Typography.Text>
                       </div>
                     }

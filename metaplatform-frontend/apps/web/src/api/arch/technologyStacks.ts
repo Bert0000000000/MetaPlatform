@@ -1,4 +1,5 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
+import { aliasListFields } from './_readerAliases';
 
 const client = createApiClient({ baseURL: apiPath('arch', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
@@ -10,7 +11,7 @@ async function del<T>(url: string): Promise<T> { return data(await client.delete
 import type { TechnologyStack } from './types';
 
 export async function listTechnologyStacks(): Promise<TechnologyStack[]> {
-  return get<TechnologyStack[]>('/technology-stacks');
+  return aliasListFields(await get<TechnologyStack[]>('/technology-stacks'), { application_id: 'applicationId' });
 }
 
 export async function createTechnologyStack(req: Partial<TechnologyStack>): Promise<TechnologyStack> {

@@ -2,6 +2,8 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { toast } from '@mate/shared';
 import { getToken, removeToken, getRefreshToken, setToken, setRefreshToken } from '@/utils/auth';
 
+type AuthRetryRequestConfig = InternalAxiosRequestConfig & { _mateAuthRefreshAttempted?: boolean };
+
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 30000,
@@ -17,7 +19,9 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
   // treat the caller as anonymous and return 403 (not 401), so a
   // 401-only refresh would miss them.
   const token = getToken();
-  if (token && isJwtExpiring(token)) {
+  const refreshConfig = config as AuthRetryRequestConfig;
+  if (token && !refreshConfig._mateAuthRefreshAttempted && isJwtExpiring(token)) {
+    refreshConfig._mateAuthRefreshAttempted = true;
     await tryRefreshToken();
   }
   const fresh = getToken();
@@ -60,6 +64,9 @@ apiClient.interceptors.response.use(
     }
 
     const status = error.response?.status;
+    if (status === 403) {
+      error.message = '无权访问：当前账号没有所需权限。';
+    }
     const msg = error.response?.data?.message || error.message || '网络错误';
     if (status === 401) {
       const onLoginPage =
@@ -69,21 +76,24 @@ apiClient.interceptors.response.use(
       if (onLoginPage) {
         return Promise.reject(error);
       }
-      // Try to refresh the access token and replay the original request
-      // before giving up and forcing a re-login.
-      return tryRefreshToken().then((refreshed) => {
-        if (refreshed) {
-          const original = error.config as InternalAxiosRequestConfig | undefined;
-          if (original) {
-            const fresh = getToken();
-            original.headers.Authorization = fresh ? `Bearer ${fresh}` : undefined;
-            return apiClient.request(original);
-          }
-        }
+      const rejectUnauthorized = () => {
         removeToken();
         toast('登录已过期，请重新登录', 'error');
         window.location.href = '/login';
         return Promise.reject(error);
+      };
+      const original = error.config as AuthRetryRequestConfig | undefined;
+      if (!original || original._mateAuthRefreshAttempted) return rejectUnauthorized();
+      // Count proactive refresh too: a newly issued token's 401 is not cured by
+      // repeatedly issuing more tokens. Keep the existing final login exit.
+      original._mateAuthRefreshAttempted = true;
+      return tryRefreshToken().then((refreshed) => {
+        if (refreshed) {
+          const fresh = getToken();
+          original.headers.Authorization = fresh ? `Bearer ${fresh}` : undefined;
+          return apiClient.request(original);
+        }
+        return rejectUnauthorized();
       });
     } else {
       toast(msg, 'error');

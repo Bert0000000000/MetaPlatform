@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Form, SideSheet, Spin, Toast } from '@douyinfe/semi-ui';
+import { Banner, Button, Form, SideSheet, Spin, Toast } from '@douyinfe/semi-ui';
 import { SaveOutlined, ApiOutlined } from '@ant-design/icons';
 import { createClient, getClient, testConnection, updateClient } from '@/api/mcphub/clients';
 import type { McpClient, McpClientCreateRequest } from '@/api/mcphub/types';
@@ -56,31 +56,40 @@ export default function ClientDrawer({ open, clientId, onClose, onSaved }: Clien
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [readAttempt, setReadAttempt] = useState(0);
+  const incompleteEdit = !!clientId && !!client && (client.id !== clientId
+    || !client.name || !client.endpoint || !client.clientType || !client.transportType
+    || client.authType === undefined);
+  const readReady = !clientId || (client?.id === clientId && !incompleteEdit);
+  const canSave = open && readReady && !loading && !loadError && !submitting;
+  const canTest = !!clientId && canSave && !testing;
 
   useEffect(() => {
     if (!open) return;
+    let current = true;
+    form.reset();
+    setClient(null);
+    setTestResult(null);
+    setLoadError(null);
 
     if (!clientId) {
-      form.reset();
-      setClient(null);
-      setTestResult(null);
-      setLoadError(null);
+      setLoading(false);
       form.setValues({ authType: 'none', clientType: 'custom', transportType: 'HTTP' });
       return;
     }
 
     setLoading(true);
-    setLoadError(null);
-    setTestResult(null);
     getClient(clientId)
       .then((c) => {
+        if (!current) return;
         setClient(c);
         form.setValues({
           name: c.name,
           endpoint: c.endpoint,
-          clientType: c.clientType || 'custom',
-          transportType: c.transportType || 'HTTP',
-          authType: c.authType || 'none',
+          clientType: c.clientType,
+          transportType: c.transportType,
+          // The read DTO explicitly uses null for no auth; omitted auth remains unknown.
+          authType: c.authType === null ? 'none' : c.authType,
           apiKey: c.apiKey,
           timeoutMs: c.timeoutMs,
           headers: c.headers,
@@ -88,11 +97,15 @@ export default function ClientDrawer({ open, clientId, onClose, onSaved }: Clien
           config: c.config,
         });
       })
-      .catch((e: unknown) => setLoadError(e instanceof Error ? e.message : 'Client 加载失败'))
-      .finally(() => setLoading(false));
-  }, [open, clientId, form]);
+      .catch((e: unknown) => {
+        if (current) setLoadError(e instanceof Error && e.message.trim() ? e.message : 'Client 加载失败');
+      })
+      .finally(() => { if (current) setLoading(false); });
+    return () => { current = false; };
+  }, [open, clientId, form, readAttempt]);
 
   const handleSubmit = async () => {
+    if (!canSave) return;
     const values = await form.validate();
     setSubmitting(true);
     try {
@@ -115,6 +128,7 @@ export default function ClientDrawer({ open, clientId, onClose, onSaved }: Clien
       Toast.warning('请先保存 Client');
       return;
     }
+    if (!canTest) return;
     setTesting(true);
     setTestResult(null);
     try {
@@ -135,7 +149,7 @@ export default function ClientDrawer({ open, clientId, onClose, onSaved }: Clien
     <SideSheet
       visible={open}
       title={clientId ? `编辑 Client：${client?.name ?? ''}` : '添加 MCP Client'}
-      width={DRAWER_W}
+      width={`min(${DRAWER_W}px, 100vw)`}
       onCancel={onClose}
       footer={
         <>
@@ -143,6 +157,7 @@ export default function ClientDrawer({ open, clientId, onClose, onSaved }: Clien
             <Button
               icon={<ApiOutlined />}
               loading={testing}
+              disabled={!canTest}
               onClick={() => void handleTest()}
               className={
                 testResult ? (testResult.ok ? 'mp-mcp-test-ok' : 'mp-mcp-test-fail') : undefined
@@ -157,7 +172,7 @@ export default function ClientDrawer({ open, clientId, onClose, onSaved }: Clien
             type="primary"
             icon={<SaveOutlined />}
             loading={submitting}
-            disabled={loading || !!loadError}
+            disabled={!canSave}
             onClick={() => void handleSubmit()}
           >
             保存
@@ -170,13 +185,26 @@ export default function ClientDrawer({ open, clientId, onClose, onSaved }: Clien
           <Spin />
         </div>
       ) : loadError ? (
-        <EmptyState
-          illustration="failure"
-          title="Client 加载失败"
-          desc={loadError}
-          actions={<Button onClick={onClose}>关闭</Button>}
-        />
+        <div role="alert">
+          <EmptyState
+            illustration="failure"
+            title="Client 加载失败"
+            desc={loadError}
+            actions={<>
+              <Button onClick={() => setReadAttempt((attempt) => attempt + 1)}>重试读取 Client</Button>
+              <Button onClick={onClose}>关闭</Button>
+            </>}
+          />
+        </div>
       ) : null}
+      {!loading && !loadError && incompleteEdit && (
+        <Banner
+          type="info"
+          title="Client 配置未完整返回，暂不能保存或测试连接。"
+          description={<Button onClick={() => setReadAttempt((attempt) => attempt + 1)}>重试读取 Client</Button>}
+          className="mp-mb-4"
+        />
+      )}
 
       {/*
         表单必须常驻挂载：Semi 的 form 实例在 <Form> 未挂载时 setValues 是空操作，
@@ -220,7 +248,7 @@ export default function ClientDrawer({ open, clientId, onClose, onSaved }: Clien
                   rules={[{ required: true }]}
                   optionList={AUTH_OPTIONS}
                 />
-                {values.authType !== 'none' ? (
+                {values.authType && values.authType !== 'none' ? (
                   <Form.Input
                     field="apiKey"
                     label="API Key / Token"

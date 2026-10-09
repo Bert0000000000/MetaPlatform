@@ -111,9 +111,11 @@ export interface McpToolCategoryCreateRequest {
 export interface McpServer {
   id: string;
   name: string;
-  code: string;
+  /** The agent directory omits management configuration; absence is not a default. */
+  code?: string;
   description?: string;
-  transport: 'stdio' | 'sse' | 'http';
+  transport?: 'stdio' | 'sse' | 'http';
+  transportType?: string;
   endpoint: string;
   host?: string;
   port?: number;
@@ -123,10 +125,11 @@ export interface McpServer {
   timeoutMs?: number;
   maxConcurrentCalls?: number;
   healthCheckUrl?: string;
-  toolIds: string[];
+  toolIds?: string[];
   toolCount?: number;
-  enabled: boolean;
+  enabled?: boolean;
   status: 'online' | 'offline' | 'error';
+  lastConnectedAt?: string;
   lastHeartbeatAt?: string;
   lastErrorMessage?: string;
   tags?: string[];
@@ -138,7 +141,7 @@ export interface McpServerCreateRequest {
   name: string;
   code: string;
   description?: string;
-  transport: McpServer['transport'];
+  transport: NonNullable<McpServer['transport']>;
   endpoint: string;
   host?: string;
   port?: number;
@@ -154,8 +157,10 @@ export interface McpServerCreateRequest {
 }
 
 export interface McpServerStatus {
-  status: 'ACTIVE' | 'INACTIVE' | 'ERROR';
-  connectionStatus: 'online' | 'offline' | 'error';
+  status: 'ACTIVE' | 'INACTIVE' | 'ERROR' | 'unknown';
+  connectionStatus?: 'online' | 'offline' | 'error';
+  id?: string;
+  lastCheckedAt?: string;
   lastHeartbeatAt?: string;
   lastErrorMessage?: string;
   healthCheckUrl?: string;
@@ -274,12 +279,13 @@ export interface McpDiscoveredTool {
 export interface PermissionRule {
   id: string;
   name: string;
-  subject: string;
-  subjectType: 'user' | 'role' | 'app';
-  resourceType: 'tool' | 'server' | 'resource' | 'prompt';
-  resourceId: string;
-  actions: ('invoke' | 'read' | 'admin')[];
-  effect: 'allow' | 'deny';
+  subjectId: string;
+  subjectType: string;
+  resourceType: string;
+  resourceIds: string[];
+  action: string;
+  effect: string;
+  conditionExpression?: string;
   priority: number;
   enabled: boolean;
   createdAt?: string;
@@ -288,12 +294,13 @@ export interface PermissionRule {
 
 export interface PermissionRuleCreateRequest {
   name: string;
-  subject: string;
+  subjectId: string;
   subjectType: PermissionRule['subjectType'];
   resourceType: PermissionRule['resourceType'];
-  resourceId: string;
-  actions: PermissionRule['actions'];
+  resourceIds: string[];
+  action: string;
   effect: PermissionRule['effect'];
+  conditionExpression?: string;
   priority: number;
   enabled: boolean;
 }

@@ -265,7 +265,7 @@ export default function DashboardPage() {
                     split={false}
                     renderItem={(t: RecentTask) => (
                       <List.Item
-                        main={
+                        children={
                           <span className="mp-home-feed-row">
                             <span className="mp-home-feed-main">
                               <span className="mp-home-feed-title">{t.name}</span>
@@ -300,7 +300,7 @@ export default function DashboardPage() {
                       const Icon = iconFor(q.icon);
                       return (
                         <button
-                          key={q.id}
+                          key={q.link}
                           type="button"
                           className="mp-home-link"
                           onClick={() => {
@@ -343,7 +343,7 @@ export default function DashboardPage() {
                     split={false}
                     renderItem={(task: ApprovalTask) => (
                       <List.Item
-                        main={
+                        children={
                           <span className="mp-home-todo">
                             <span className="mp-home-todo-main">
                               <span className="mp-home-feed-title">{task.title}</span>
@@ -398,7 +398,7 @@ export default function DashboardPage() {
                     split={false}
                     renderItem={(a: ActiveAgent) => (
                       <List.Item
-                        main={
+                        children={
                           <span className="mp-home-agent">
                             <Avatar size="small" color="light-blue">
                               {a.name.slice(0, 1)}

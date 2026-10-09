@@ -9,14 +9,22 @@ async function del<T>(url: string): Promise<T> { return data(await client.delete
 
 import type { McpResource, McpResourceCreateRequest, PageResponse } from './types';
 
+/** Registered-resource listing supplies name/URI, not a persisted resource CRUD identity. */
+export type RegisteredMcpResource = Pick<McpResource, 'name' | 'uri'>
+  & Partial<Omit<McpResource, 'name' | 'uri'>>;
+
+// mcpGetMcpResources is implemented; detail and writes are not connected in the current service.
+export const RESOURCE_MANAGEMENT_AVAILABLE = false;
+
 /** 后端 /resources 返回 {resources:[...]}，包装成前端 PageResponse 结构 */
-function toPage(raw: { resources?: McpResource[]; items?: McpResource[] } | null): PageResponse<McpResource> {
-  const items = raw?.items ?? raw?.resources ?? [];
+function toPage(raw: { resources?: RegisteredMcpResource[]; items?: RegisteredMcpResource[] } | null): PageResponse<RegisteredMcpResource> {
+  const items = raw?.items ?? raw?.resources;
+  if (!Array.isArray(items)) throw new Error('资源注册信息响应缺少资源列表。');
   return { items, total: items.length, page: 1, size: items.length || 1, totalPages: 1 };
 }
 
-export async function listResources(params?: { keyword?: string }): Promise<PageResponse<McpResource>> {
-  return toPage(await get<{ resources?: McpResource[]; items?: McpResource[] }>('/resources', params));
+export async function listResources(params?: { keyword?: string }): Promise<PageResponse<RegisteredMcpResource>> {
+  return toPage(await get<{ resources?: RegisteredMcpResource[]; items?: RegisteredMcpResource[] }>('/resources', params));
 }
 export async function getResource(id: string): Promise<McpResource> {
   return get<McpResource>(`/resources/${id}`);

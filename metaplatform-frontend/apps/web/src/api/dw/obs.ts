@@ -4,6 +4,27 @@ const client = createApiClient({ baseURL: '/api/v1' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 
+import type { PageResponse } from './types';
+
+/** Trace summaries returned by GET /dw/traces. */
+export interface TraceRecord {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  traceId: string;
+  spanCount: number;
+  status: string;
+  durationMs: number;
+  startedAt: string;
+}
+
+export async function listTraces(params?: {
+  page?: number;
+  size?: number;
+}): Promise<PageResponse<TraceRecord>> {
+  return get('/dw/traces', params);
+}
+
 
 
 export interface ObsSpan {

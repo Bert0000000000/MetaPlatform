@@ -21,6 +21,7 @@ async function del<T>(url: string): Promise<T> {
 
 import type {
   AppItem,
+  AppStatus,
   AppCreateRequest,
   AppUpdateRequest,
   BusinessDomain,
@@ -40,6 +41,13 @@ interface ApphubAppRaw {
   owner?: string;
   tags?: string[];
   business_domain?: string;
+  status?: AppStatus | null;
+  module_count?: number | null;
+  moduleCount?: number | null;
+  created_at?: string | null;
+  createdAt?: string | null;
+  updated_at?: string | null;
+  updatedAt?: string | null;
 }
 
 /** Map backend snake_case app record to the frontend AppItem shape. */
@@ -51,10 +59,11 @@ function mapApp(raw: ApphubAppRaw): AppItem {
     description: raw.description,
     group: raw.category,
     businessDomain: raw.business_domain ?? '',
-    status: 'PUBLISHED',
-    moduleCount: raw.tags?.length ?? 0,
-    createdAt: raw.version ?? '',
-    updatedAt: raw.version ?? '',
+    version: raw.version,
+    status: raw.status ?? undefined,
+    moduleCount: raw.module_count ?? raw.moduleCount ?? undefined,
+    createdAt: raw.created_at ?? raw.createdAt ?? undefined,
+    updatedAt: raw.updated_at ?? raw.updatedAt ?? undefined,
   };
 }
 

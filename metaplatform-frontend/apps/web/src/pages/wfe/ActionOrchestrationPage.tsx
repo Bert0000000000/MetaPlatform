@@ -1,6 +1,6 @@
 import PageHeader from '@/components/skeleton/PageHeader';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card, Col, Input, Row, Space, Tag, Toast, Typography } from '@douyinfe/semi-ui';
+import { Button, Card, Input, Space, Tag, Toast, Typography } from '@douyinfe/semi-ui';
 import { useParams } from 'react-router-dom';
 import {
   getNodeRegistry,
@@ -180,14 +180,14 @@ export default function ActionOrchestrationPage() {
   };
 
   return (
-    <div ref={rootRef} className="mp-p-6 mp-wfe-min-h-full">
+    <div ref={rootRef} className="mp-p-6 mp-wfe-min-h-full mp-wfe-orchestration">
       <Space vertical align="start" spacing="medium" className="mp-w-full">
         <div className="mp-w-full mp-flex mp-justify-between mp-gap-4 mp-wrap" >
           <div>
             <PageHeader title="行动编排" />
             <Typography.Text type="secondary">服务端版本化 Plan 定义 · 发布后按不可变版本运行</Typography.Text>
           </div>
-          <Space>
+          <Space wrap>
             <Button onClick={() => void rootRef.current?.requestFullscreen?.()}>全屏编辑</Button>
             <Button theme="solid" type="primary" loading={saving} onClick={() => void save()}>保存草稿</Button>
             <Button theme="solid" type="tertiary" loading={saving} onClick={() => void publish()}>发布</Button>
@@ -197,7 +197,7 @@ export default function ActionOrchestrationPage() {
         {definition && <Space><Tag color="blue">草稿 v{definition.version}</Tag>{definition.published_version && <Tag color="green">已发布 v{definition.published_version}</Tag>}</Space>}
         {error && (
           <Card className="mp-w-full mp-wfe-card-danger">
-            <Space>
+            <Space wrap>
               <Typography.Text type="danger">{error}</Typography.Text>
               {needsReload && <Button size="small" onClick={() => void load()}>重新加载</Button>}
             </Space>
@@ -212,10 +212,10 @@ export default function ActionOrchestrationPage() {
           <Typography.Text strong>定义名称</Typography.Text>
           <Input value={name} onChange={setName} disabled={loading} className="mp-mt-2" />
         </Card>
-        <Row gutter={16} className="mp-w-full">
-          <Col span={17}><Card title="Plan 画布"><PlanCanvas plan={plan} selectedNodeId={selectedNodeId} onSelect={setSelectedNodeId} onDeleteNode={deleteNode} /></Card></Col>
-          <Col span={7}><Card title="节点配置"><PlanInspector node={selectedNode} actionTypes={actionTypes} onChange={updateNode} /></Card></Col>
-        </Row>
+        <div className="mp-wfe-orchestration-grid">
+          <Card title="Plan 画布"><PlanCanvas plan={plan} selectedNodeId={selectedNodeId} onSelect={setSelectedNodeId} onDeleteNode={deleteNode} /></Card>
+          <Card title="节点配置"><PlanInspector node={selectedNode} actionTypes={actionTypes} onChange={updateNode} /></Card>
+        </div>
       </Space>
     </div>
   );

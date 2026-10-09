@@ -12,6 +12,7 @@ import {
   Toast,
   Modal,
   Tag,
+  Spin,
 } from '@douyinfe/semi-ui';
 import {
   ArrowLeftOutlined,
@@ -33,6 +34,7 @@ import type { ModuleItem, FlowConfig, FlowNode, FlowEdge, FlowNodeType, FlowVali
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { IconTick } from '@douyinfe/semi-icons';
 import './apps.css';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 const NODE_DEFS: { type: FlowNodeType; label: string; icon: ReactNode; color: string; tagColor: TagColor; width: number; height: number }[] = [
   { type: 'start', label: '开始', icon: '▶', color: '#52c41a', tagColor: 'green', width: 100, height: 60 },
@@ -114,6 +116,9 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
   const moduleId = moduleIdProp || routeModuleId;
   const navigate = useNavigate();
   const [module, setModule] = useState<ModuleItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [config, setConfig] = useState<FlowConfig>({ name: '', description: '', nodes: [], edges: [] });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -131,18 +136,16 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
   useEffect(() => {
     if (!moduleId) return;
     let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
     (async () => {
       try {
         const m = await getModule(moduleId);
         if (cancelled) return;
         setModule(m);
         let cfg: FlowConfig = { name: m.name, description: m.description || '', nodes: [], edges: [] };
-        try {
-          const flow = await getFlow(moduleId);
-          if (flow.nodes.length > 0) cfg = flow;
-        } catch {
-          // no existing flow
-        }
+        const flow = await getFlow(moduleId);
+        cfg = flow;
         const imported = consumeDesignerImport();
         if (imported && imported.type === 'process') {
           try {
@@ -161,15 +164,17 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           }
         }
         if (!cancelled) setConfig(cfg);
-      } catch {
-        // ignore load error
+      } catch (err) {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : '流程配置读取失败');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     if (appId) {
       listFormModules(appId).then(setFormModules).catch(() => {});
     }
     return () => { cancelled = true; };
-  }, [moduleId, appId]);
+  }, [moduleId, appId, refreshKey]);
 
   const selectedNode = config.nodes.find((n) => n.id === selectedNodeId) || null;
 
@@ -579,22 +584,20 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
     );
   };
 
-  if (!module) {
-    return <div className="mp-text-center mp-p-8">加载中...</div>;
+  if (loadError) {
+    return <div><PageHeader title="流程设计器" /><div role="alert"><EmptyState illustration="failure" title="流程配置暂不可用" desc={loadError} actions={<Button type="primary" onClick={() => setRefreshKey((key) => key + 1)}>重试</Button>} /></div></div>;
+  }
+  if (!moduleId) return <div><PageHeader title="流程设计器" /><EmptyState title="未选择模块" /></div>;
+  if (loading || !module) {
+    return <div><PageHeader title="流程设计器" /><div className="mp-app-loading"><Spin tip="正在读取流程配置…" /></div></div>;
   }
 
   return (
-    <div className="mp-flex mp-flex-col mp-app-designer-h">
-      <div className="mp-justify-between mp-mb-4 mp-flex-center">
-        <Space>
+    <div className="mp-flex mp-flex-col mp-app-designer-h mp-app-builder">
+      <PageHeader title={`${module.name} · 流程设计器`} desc="配置节点、连线与审批规则，验证后发布。" actions={<Space wrap>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/mine?app=${appId}`)}>
             返回
           </Button>
-          <Typography.Title heading={5} className="mp-m-0">
-            {module.name} - 流程设计器
-          </Typography.Title>
-        </Space>
-        <Space>
           <Button
             type={connectingFrom ? 'primary' : 'secondary'}
             icon={<PlusOutlined />}
@@ -608,30 +611,30 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           >
             {connectingFrom ? '取消连线' : '连线模式'}
           </Button>
-          <Button icon={<CheckCircleOutlined />} onClick={handleValidate}>
-            校验
+          <Button icon={<CheckCircleOutlined />} onClick={handleValidate} disabled title="当前服务尚未开放节点配置校验">
+            校验暂不可用
           </Button>
-          <Button icon={<PlayCircleOutlined />} onClick={handleTest}>
-            测试
+          <Button icon={<PlayCircleOutlined />} onClick={handleTest} disabled title="当前服务尚未开放节点配置测试">
+            测试暂不可用
           </Button>
-          <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave}>
-            保存
+          <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave} disabled title="当前服务尚未开放节点配置保存">
+            保存暂不可用
           </Button>
-          <Button type="primary" icon={<CloudUploadOutlined />} onClick={() => setPublishModalOpen(true)}>
-            发布
+          <Button type="primary" icon={<CloudUploadOutlined />} onClick={() => setPublishModalOpen(true)} disabled title="当前服务尚未开放节点配置发布">
+            发布暂不可用
           </Button>
           <Button onClick={() => setAiGenerateOpen(true)}>
             AI 生成流程
           </Button>
-        </Space>
-      </div>
+        </Space>} />
+      <Typography.Paragraph type="tertiary">当前可预览设计内容，节点配置的保存、校验、测试与发布暂未开放。</Typography.Paragraph>
 
       {validationResult && (
         <PublishValidation result={validationResult} onPublish={handlePublish} publishing={submitting} />
       )}
 
-      <div className="mp-flex mp-hidden mp-flex-1 mp-gap-4">
-        <Card title="节点面板" className="mp-overflow-auto mp-w-180" >
+      <div className="mp-app-builder-panels">
+        <Card title="节点面板" className="mp-overflow-auto mp-app-builder-node-tools" >
           <div className="mp-flex mp-gap-2 mp-flex-col" >
             {NODE_DEFS.map((def) => (
               <Button
@@ -679,8 +682,8 @@ export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdP
           </Card>
         </div>
 
-        <div onClick={(e) => e.stopPropagation()}>
-          <Card title="属性配置" className="mp-overflow-auto mp-w-320" >
+        <div className="mp-app-builder-properties" onClick={(e) => e.stopPropagation()}>
+          <Card title="属性配置" className="mp-overflow-auto" >
             {renderPropertyPanel()}
           </Card>
         </div>

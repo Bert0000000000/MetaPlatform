@@ -71,13 +71,18 @@ const fmtWeight = (n: number) => Number(n.toFixed(2));
 export default function KnowledgeConfigPage() {
   const { report } = useApiErrorBoundary();
   const [config, setConfig] = useState<RetrievalConfigUpdate | null>(null);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [configError, setConfigError] = useState('');
+  const [configReload, setConfigReload] = useState(0);
   // 服务端基线快照：用于「待保存」脏检查。保存成功后同步为最新值。
   const [originalConfig, setOriginalConfig] = useState<RetrievalConfigUpdate | null>(null);
   // P1.8: 当前 version(后端单调递增) + 历史快照(只读,不能回滚)。
   // History 默认拿最近 5 条(后端 FIFO 上限 10)。
-  const [version, setVersion] = useState<number>(1);
+  const [version, setVersion] = useState<number | null>(null);
   const [history, setHistory] = useState<RetrievalConfigSnapshot[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyError, setHistoryError] = useState('');
+  const [historyReload, setHistoryReload] = useState(0);
   const [saving, setSaving] = useState(false);
   // 配置历史的开合改成受控：原先用 defaultActiveKey，它在首次挂载时求值，
   // 那一刻 history 还是空数组，面板永远不会自动展开。用户手动开合后不再被覆盖。
@@ -86,6 +91,8 @@ export default function KnowledgeConfigPage() {
 
   useEffect(() => {
     let alive = true;
+    setConfigLoading(true);
+    setConfigError('');
     getRetrievalConfig()
       .then((cfg: RetrievalConfig) => {
         if (!alive) return;
@@ -94,26 +101,35 @@ export default function KnowledgeConfigPage() {
         setOriginalConfig(next);
         setVersion(cfg.version);
       })
-      .catch((e: Error) => {
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setConfig(null);
+        setOriginalConfig(null);
+        setVersion(null);
+        setConfigError(e instanceof Error ? e.message : '请求失败');
         report(e);
-        if (!alive) return;
-        setConfig(DEFAULT_CONFIG);
-        setOriginalConfig(DEFAULT_CONFIG);
-        setVersion(1);
-      });
-
-    // P1.8: history 拉取失败不阻塞主表单(空数组即可),但要提示。
-    getRetrievalConfigHistory()
-      .then((snaps) => { if (alive) { setHistory(snaps); setHistoryLoaded(true); } })
-      .catch((e: Error) => {
-        if (!alive) return;
-        setHistory([]);
-        setHistoryLoaded(true);
-        console.warn('[KnowledgeConfig] history load failed', e);
-      });
+      })
+      .finally(() => { if (alive) setConfigLoading(false); });
 
     return () => { alive = false; };
-  }, [report]);
+  }, [report, configReload]);
+
+  // History has an independent read boundary; its failure does not invalidate loaded configuration.
+  useEffect(() => {
+    let alive = true;
+    setHistoryLoaded(false);
+    setHistoryError('');
+    getRetrievalConfigHistory()
+      .then((snaps) => { if (alive) setHistory(snaps); })
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setHistory([]);
+        setHistoryError(e instanceof Error ? e.message : '请求失败');
+      })
+      .finally(() => { if (alive) setHistoryLoaded(true); });
+
+    return () => { alive = false; };
+  }, [historyReload]);
 
   // 首次拿到非空历史时自动展开一次；此后完全交给用户。
   useEffect(() => {
@@ -129,22 +145,21 @@ export default function KnowledgeConfigPage() {
     () => (config && originalConfig ? stableStringify(config) !== stableStringify(originalConfig) : false),
     [config, originalConfig],
   );
+  const configReady = config !== null && !configLoading && !configError;
 
   const update = <K extends keyof RetrievalConfigUpdate>(key: K, value: RetrievalConfigUpdate[K]) => {
     setConfig((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   const onSave = async () => {
-    if (!config) return;
+    if (!config || !configReady || saving) return;
     setSaving(true);
     try {
       const saved = await putRetrievalConfig(config);
       setOriginalConfig(config); // 保存成功 → 基线前移，「待保存」消失
       setVersion(saved.version); // P1.8: 同步最新 version,新版历史里的上一版就是这次保存前的版本
       // 保存后立刻拉一次历史:新快照是「前一个版本」,要在面板里立刻可见。
-      getRetrievalConfigHistory()
-        .then((snaps) => setHistory(snaps))
-        .catch(() => { /* history 拉取失败不影响主流程 */ });
+      setHistoryReload((previous) => previous + 1);
       Toast.success(`检索配置已保存(版本 v${saved.version})`);
     } catch (e) {
       report(e instanceof Error ? e : new Error(String(e)));
@@ -154,22 +169,19 @@ export default function KnowledgeConfigPage() {
   };
 
   const onReset = () => {
+    if (!configReady || saving) return;
     setConfig({ ...DEFAULT_CONFIG });
     Toast.info('已重置为前端内置默认值（非服务端初始值），需点击「保存配置」才会写回后端');
   };
-
-  if (!config) {
-    return <div className="mp-flex mp-justify-center mp-p-10" ><Spin /></div>;
-  }
 
   return (
     <>
       <PageHeader
         title={
-          <span className="mp-inline-flex mp-items-center mp-gap-2">
+          <span className="mp-inline-flex mp-items-center mp-gap-2 mp-kb-config-heading">
             检索配置
-            {/* P1.8: 当前 config 的单调递增 version。配置从未保存过时为 v1,首次保存后变 v2。 */}
-            <Tag color="blue" shape="circle" size="small">v{version}</Tag>
+            {/* Only display a version returned by a successful configuration read/save. */}
+            {version !== null && <Tag color="blue" shape="circle" size="small">v{version}</Tag>}
             {dirty && (
               <span className="mp-inline-flex mp-items-center mp-fw-500 mp-gap-1 mp-text-sm mp-text-danger">
                 ● 待保存
@@ -180,14 +192,26 @@ export default function KnowledgeConfigPage() {
         desc="全局检索策略、Top-K、Reranker、分块策略的统一管理（租户级）"
         actions={
           <>
-            <Button icon={<RefreshCw size={14} />} onClick={onReset} theme="light">恢复前端默认值</Button>
-            <Button icon={<Save size={14} />} onClick={onSave} loading={saving} theme="solid" type="primary">保存配置</Button>
+            <Button icon={<RefreshCw size={14} />} onClick={onReset} disabled={!configReady || saving} theme="light">恢复前端默认值</Button>
+            <Button icon={<Save size={14} />} onClick={onSave} loading={saving} disabled={!configReady || saving} theme="solid" type="primary">保存配置</Button>
           </>
         }
       />
 
       {/* mp-max-w-720：设置项是「标签 + 控件」两列，满宽下拉/Slider 拉出 1200px+ 会看起来失焦 */}
-      <div className="mp-flex mp-gap-4 mp-flex-col mp-max-w-720">
+      <div className="mp-flex mp-gap-4 mp-flex-col mp-max-w-720 mp-kb-config">
+        {configLoading ? <div className="mp-flex mp-items-center mp-gap-3 mp-p-6" role="status">
+          <Spin /><span>正在读取检索配置</span>
+        </div> : null}
+        {configError ? <div role="alert" className="mp-read-warning">
+          <strong>检索配置读取失败</strong><span>{configError}</span>
+          <Button onClick={() => setConfigReload((previous) => previous + 1)}>重试检索配置</Button>
+        </div> : null}
+        {config ? <>
+        {historyError ? <div role="alert" className="mp-read-warning">
+          <strong>配置历史读取失败</strong><span>{historyError}；当前检索配置仍可使用。</span>
+          <Button onClick={() => setHistoryReload((previous) => previous + 1)}>重试配置历史</Button>
+        </div> : null}
         {/* P1.8: 配置历史只读折叠面板 — 仅展示最近 5 条,不支持回滚(后端未实现)。 */}
         <Card className="mp-p-4">
           <Collapse
@@ -200,17 +224,19 @@ export default function KnowledgeConfigPage() {
             <Collapse.Panel
               itemKey="history"
               header={
-                <span className="mp-inline-flex mp-items-center mp-gap-2">
+                <span className="mp-inline-flex mp-items-center mp-gap-2 mp-kb-config-heading">
                   <History size={14} className="mp-icon-14 mp-text-2" />
                   <span className="mp-fw-600 mp-text-md">配置历史</span>
                   <span className="mp-text-sm mp-text-2">
-                    最近 {Math.min(history.length, 5)} 条 · 只读 · 不支持回滚
+                    {historyLoaded && !historyError ? `最近 ${Math.min(history.length, 5)} 条` : '快照未读取'} · 只读 · 不支持回滚
                   </span>
                 </span>
               }
             >
               {!historyLoaded ? (
                 <div className="mp-flex mp-p-6 mp-justify-center" ><Spin /></div>
+              ) : historyError ? (
+                <EmptyState illustration="failure" title="历史快照未读取" desc="请重试配置历史。" className="mp-py-3" />
               ) : history.length === 0 ? (
                 <EmptyState
                   title="尚无历史快照"
@@ -295,6 +321,7 @@ export default function KnowledgeConfigPage() {
             </div>
           )}
         </Card>
+        </> : null}
       </div>
     </>
   );

@@ -34,6 +34,7 @@ import {
   restartServer,
   deleteServer,
   getServerStatus,
+  SERVER_MANAGEMENT_AVAILABLE,
 } from '@/api/mcphub/servers';
 import { listTools } from '@/api/mcphub/tools';
 import type { McpServer, McpTool, McpServerStatus } from '@/api/mcphub/types';
@@ -45,7 +46,7 @@ const STATUS_MAP: Record<McpServer['status'], { label: string; color: TagColor }
 };
 
 const CONNECTION_STATUS_MAP: Record<
-  McpServerStatus['connectionStatus'],
+  NonNullable<McpServerStatus['connectionStatus']>,
   { label: string; color: TagColor }
 > = {
   online: { label: '在线', color: 'green' },
@@ -109,24 +110,28 @@ export default function ServerDetailPage() {
   }
 
   const handleStart = async () => {
+    if (!SERVER_MANAGEMENT_AVAILABLE) return;
     await startServer(server.id);
     Toast.success('已启动');
     load();
   };
 
   const handleStop = async () => {
+    if (!SERVER_MANAGEMENT_AVAILABLE) return;
     await stopServer(server.id);
     Toast.success('已停止');
     load();
   };
 
   const handleRestart = async () => {
+    if (!SERVER_MANAGEMENT_AVAILABLE) return;
     await restartServer(server.id);
     Toast.success('已重启');
     load();
   };
 
   const handleDelete = async () => {
+    if (!SERVER_MANAGEMENT_AVAILABLE) return;
     await deleteServer(server.id);
     Toast.success('已删除');
     navigate('/ki/mcp/servers');
@@ -144,39 +149,55 @@ export default function ServerDetailPage() {
     },
   ];
 
-  const assignedTools = tools.filter((t) => server.toolIds.includes(t.id));
+  const toolIds = Array.isArray(server.toolIds) ? server.toolIds : null;
+  const assignedTools = toolIds ? tools.filter((t) => toolIds.includes(t.id)) : null;
+  const serverStatus = STATUS_MAP[server.status] ?? { label: '未提供', color: 'grey' as TagColor };
+  const connectionStatus = status?.connectionStatus
+    ? CONNECTION_STATUS_MAP[status.connectionStatus]
+    : undefined;
 
   return (
     <div>
-      <Space className="mp-mb-4">
+      <Space wrap className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/ki/mcp/servers')}>
           返回
         </Button>
         <PageHeader title={server.name} />
-        <Tag color={STATUS_MAP[server.status].color}>{STATUS_MAP[server.status].label}</Tag>
+        <Tag color={serverStatus.color}>{serverStatus.label}</Tag>
       </Space>
+      {!SERVER_MANAGEMENT_AVAILABLE && (
+        <Banner type="info" title="服务目录管理未接入"
+          description="当前服务目录仅提供读取，编辑保存、启停、重启和删除尚未接入。" className="mp-mb-4" />
+      )}
 
-      <Space className="mp-mb-4">
+      <Space wrap className="mp-mb-4">
         <Button icon={<EditOutlined />} onClick={() => navigate(`/ki/mcp/servers/${server.id}/edit`)}>
           编辑
         </Button>
         {server.status === 'offline' ? (
-          <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} onClick={handleStart}>
+          <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} disabled={!SERVER_MANAGEMENT_AVAILABLE} onClick={handleStart}>
             启动
           </Button>
         ) : (
-          <Button icon={<PauseCircleOutlined />} onClick={handleStop}>
+          <Button icon={<PauseCircleOutlined />} disabled={!SERVER_MANAGEMENT_AVAILABLE} onClick={handleStop}>
             停止
           </Button>
         )}
-        <Popconfirm title="确定重启该 Server？" onConfirm={handleRestart}>
-          <Button icon={<ReloadOutlined />}>重启</Button>
-        </Popconfirm>
-        <Popconfirm title="确定删除？" onConfirm={handleDelete}>
-          <Button type="danger" icon={<DeleteOutlined />}>
-            删除
-          </Button>
-        </Popconfirm>
+        {SERVER_MANAGEMENT_AVAILABLE ? (
+          <>
+            <Popconfirm title="确定重启该 Server？" onConfirm={handleRestart}>
+              <Button icon={<ReloadOutlined />}>重启</Button>
+            </Popconfirm>
+            <Popconfirm title="确定删除？" onConfirm={handleDelete}>
+              <Button type="danger" icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          </>
+        ) : (
+          <>
+            <Button icon={<ReloadOutlined />} disabled>重启</Button>
+            <Button type="danger" icon={<DeleteOutlined />} disabled>删除</Button>
+          </>
+        )}
       </Space>
 
       <Tabs>
@@ -187,20 +208,22 @@ export default function ServerDetailPage() {
               size="small"
               data={[
                 { key: '名称', value: server.name },
-                { key: '编码', value: server.code },
-                { key: '传输', value: server.transport },
+                { key: '编码', value: server.code ?? '未提供' },
+                { key: server.transport ? '传输' : '目录协议', value: server.transport ?? server.transportType ?? '未提供' },
                 { key: '端点', value: <code>{server.endpoint}</code> },
                 { key: '监听地址', value: server.host || '-' },
                 { key: '监听端口', value: server.port ?? '-' },
                 { key: 'SSE 端点', value: server.sseEndpoint || '-' },
-                { key: '认证方式', value: server.authType || 'none' },
+                { key: '认证方式', value: server.authType ?? '未提供' },
                 { key: '超时（ms）', value: server.timeoutMs ?? '-' },
                 { key: '最大并发', value: server.maxConcurrentCalls ?? '-' },
                 { key: '健康检查 URL', value: server.healthCheckUrl || '-' },
-                { key: '工具数量', value: server.toolIds.length },
+                { key: '工具数量', value: toolIds?.length ?? server.toolCount ?? '未提供' },
                 {
                   key: '启用',
-                  value: server.enabled ? <Tag color="green">已启用</Tag> : <Tag>未启用</Tag>,
+                  value: typeof server.enabled === 'boolean'
+                    ? server.enabled ? <Tag color="green">已启用</Tag> : <Tag>未启用</Tag>
+                    : '未提供',
                   span: 2,
                 },
                 { key: '描述', value: server.description || '-', span: 2 },
@@ -211,27 +234,34 @@ export default function ServerDetailPage() {
         </TabPane>
         <TabPane tab="工具列表" itemKey="tools">
           <Card>
-            <Table
-              rowKey="id"
-              dataSource={assignedTools}
-              columns={toolColumns}
-              pagination={false}
-              empty="该 Server 未暴露任何工具"
-            />
+            {assignedTools ? (
+              <Table
+                rowKey="id"
+                dataSource={assignedTools}
+                columns={toolColumns}
+                pagination={false}
+                empty={toolIds?.length === 0 ? '该 Server 未暴露任何工具' : '已关联工具未在工具目录中返回'}
+              />
+            ) : (
+              <Banner type="info" title="工具关联未提供" description="服务目录没有返回工具关联，暂无法展示该 Server 的工具列表。" />
+            )}
           </Card>
         </TabPane>
         <TabPane tab="连接状态 / 日志" itemKey="status">
           <Card>
             {status ? (
               <>
+                {status.status === 'unknown' && (
+                  <Banner type="info" title="实时连接状态未知" description="服务目录尚未提供实时连接状态与心跳数据。" className="mp-mb-4" />
+                )}
                 <Row gutter={16}>
                   <Col span={8}>
                     <StatCard
                       title="连接状态"
                       value={
-                        <Tag color={CONNECTION_STATUS_MAP[status.connectionStatus].color}>
-                          {CONNECTION_STATUS_MAP[status.connectionStatus].label}
-                        </Tag>
+                        connectionStatus
+                          ? <Tag color={connectionStatus.color}>{connectionStatus.label}</Tag>
+                          : '未提供'
                       }
                     />
                   </Col>
@@ -241,12 +271,12 @@ export default function ServerDetailPage() {
                       value={
                         status.lastHeartbeatAt
                           ? new Date(status.lastHeartbeatAt).toLocaleString()
-                          : '无'
+                          : '未提供'
                       }
                     />
                   </Col>
                   <Col span={8}>
-                    <StatCard title="响应耗时（ms）" value={status.responseTimeMs ?? '-'} />
+                    <StatCard title="响应耗时（ms）" value={status.responseTimeMs ?? '未提供'} />
                   </Col>
                 </Row>
                 <Descriptions

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -33,13 +33,14 @@ import {
 import { Search } from 'lucide-react';
 import { getApp, updateApp, deleteApp } from '@/api/apphub/apps';
 import { createShortlink } from '@/api/apphub/shortlink';
-import { listModules, createModule, updateModule, deleteModule } from '@/api/apphub/modules';
+import { listModules, createModule } from '@/api/apphub/modules';
 import { QRCodeSVG } from 'qrcode.react';
 import AppForm from './components/AppForm';
 import ModuleForm from './components/ModuleForm';
 import './apps.css';
 import ReleaseRecordPage from './ReleaseRecordPage';
-import type { AppItem, ModuleItem, ModuleCreateRequest, ModuleUpdateRequest, AppStatus, Shortlink } from '@/api/apphub/types';
+import type { AppItem, ModuleItem, ModuleCreateRequest, AppStatus, Shortlink } from '@/api/apphub/types';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 const STATUS_MAP: Record<AppStatus, { label: string; color: 'blue' | 'green' | 'grey' }> = {
   DESIGNING: { label: '设计中', color: 'blue' },
@@ -53,6 +54,7 @@ const MODULE_TYPE_COLORS: Record<string, 'blue' | 'purple' | 'cyan' | 'orange'> 
   BOARD: 'cyan',
   PAGE: 'orange',
 };
+const MODULE_TYPE_LABELS: Record<string, string> = { FORM: '表单', FLOW: '流程', BOARD: '看板', PAGE: '页面' };
 
 const MODULE_TYPE_ICONS: Record<string, React.ReactNode> = {
   FORM: <FileTextOutlined />,
@@ -61,36 +63,53 @@ const MODULE_TYPE_ICONS: Record<string, React.ReactNode> = {
   PAGE: <LayoutOutlined />,
 };
 
+type ReadModule = ModuleItem & { id?: string };
+
 export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) {
   const { appId: routeAppId } = useParams<{ appId: string }>();
   const appId = appIdProp || routeAppId;
   const navigate = useNavigate();
   const [app, setApp] = useState<AppItem | null>(null);
-  const [modules, setModules] = useState<ModuleItem[]>([]);
+  const [modules, setModules] = useState<ReadModule[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [moduleKeyword, setModuleKeyword] = useState('');
   const [appFormOpen, setAppFormOpen] = useState(false);
   const [moduleFormOpen, setModuleFormOpen] = useState(false);
-  const [editingModule, setEditingModule] = useState<ModuleItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [shortlink, setShortlink] = useState<Shortlink | null>(null);
   const [shortlinkLoading, setShortlinkLoading] = useState(false);
+  const loadGeneration = useRef(0);
 
   const loadApp = async () => {
-    if (!appId) return;
+    const generation = ++loadGeneration.current;
+    setApp(null);
+    setModules([]);
+    if (!appId) {
+      setLoadError(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getApp(appId);
+      if (generation !== loadGeneration.current) return;
       setApp(data);
-      const res = await listModules(appId);
+      const res = await listModules(data.code);
+      if (generation !== loadGeneration.current) return;
       setModules(res.items);
+    } catch (err) {
+      if (generation !== loadGeneration.current) return;
+      setLoadError(err instanceof Error ? err.message : '应用读取失败');
     } finally {
-      setLoading(false);
+      if (generation === loadGeneration.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadApp();
+    return () => { ++loadGeneration.current; };
   }, [appId]);
 
   const handleUpdateApp = async (values: { name?: string; description?: string; icon?: string; group?: string }) => {
@@ -128,36 +147,17 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
   };
 
   const handleCreateModule = async (values: ModuleCreateRequest) => {
-    if (!appId) return;
+    if (!appId || !app) return;
     setSubmitting(true);
     try {
-      await createModule({ ...values, appId });
+      const request = { ...values, appId, app_code: app.code };
+      await createModule(request);
       Toast.success('模块创建成功');
       setModuleFormOpen(false);
       loadApp();
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleUpdateModule = async (values: ModuleUpdateRequest) => {
-    if (!editingModule) return;
-    setSubmitting(true);
-    try {
-      await updateModule(editingModule.moduleId, values);
-      Toast.success('模块更新成功');
-      setEditingModule(null);
-      setModuleFormOpen(false);
-      loadApp();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDeleteModule = async (module: ModuleItem) => {
-    await deleteModule(module.moduleId);
-    Toast.success('模块已删除');
-    loadApp();
   };
 
   const handleCreateShortlink = async () => {
@@ -181,6 +181,8 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
     Toast.success('短链已复制');
   };
 
+  const statusInfo = app?.status ? STATUS_MAP[app.status] : undefined;
+
   const moreMenu = (
     <Dropdown.Menu>
       <Dropdown.Item
@@ -191,7 +193,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
         下线应用
       </Dropdown.Item>
       <Dropdown.Divider />
-      {app?.status === 'PUBLISHED' ? (
+      {app?.status === 'PUBLISHED' || !statusInfo ? (
         <Dropdown.Item icon={<DeleteOutlined />} disabled>
           删除应用
         </Dropdown.Item>
@@ -209,27 +211,15 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
     </Dropdown.Menu>
   );
 
-  const moduleActions = (module: ModuleItem): React.ReactNode => (
+  const moduleActions = (
     <Dropdown.Menu>
-      <Dropdown.Item
-        icon={<EditOutlined />}
-        onClick={() => {
-          setEditingModule(module);
-          setModuleFormOpen(true);
-        }}
-      >
+      <Dropdown.Item icon={<EditOutlined />} disabled>
         编辑模块
       </Dropdown.Item>
       <Dropdown.Divider />
-      <Popconfirm
-        title="确认删除"
-        content={`确定删除模块「${module.name}」吗？`}
-        onConfirm={() => handleDeleteModule(module)}
-      >
-        <Dropdown.Item icon={<DeleteOutlined />}>
-          删除模块
-        </Dropdown.Item>
-      </Popconfirm>
+      <Dropdown.Item icon={<DeleteOutlined />} disabled>
+        删除模块
+      </Dropdown.Item>
     </Dropdown.Menu>
   );
 
@@ -237,25 +227,32 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
     (m) => !moduleKeyword || m.name.toLowerCase().includes(moduleKeyword.toLowerCase())
   );
 
-  const formatTime = (v: string) => {
+  const formatTime = (v?: string) => {
+    if (!v) return '—';
     const d = new Date(v);
+    if (!Number.isFinite(d.getTime())) return '—';
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} 更新`;
   };
 
+  if (loadError) {
+    return <div><PageHeader title="应用详情" /><div role="alert"><EmptyState illustration="failure" title="应用详情暂不可用" desc={loadError} actions={<Button type="primary" onClick={loadApp}>重试</Button>} /></div></div>;
+  }
   if (!app) {
-    return <div className="mp-text-center mp-p-8">加载中...</div>;
+    return <div><PageHeader title="应用详情" />{appId ? <div className="mp-app-loading">加载中...</div> : <EmptyState title="未选择应用" desc="请从应用列表打开要查看的应用。" actions={<Button onClick={() => navigate('/apps/mine')}>返回应用列表</Button>} />}</div>;
   }
 
   return (
     <div>
+      <PageHeader title={app.name} desc="配置应用模块并管理发布与运行入口。" />
       <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')} className="mp-mb-4">
         返回列表
       </Button>
 
       <Card
         loading={loading}
+        headerStyle={{ flexWrap: 'wrap', gap: 'var(--mp-space-4)' }}
         title={
-          <Space>
+          <Space wrap>
             <div
               className="mp-justify-center mp-text-xl mp-flex-center mp-rounded mp-app-avatar-48"
             >
@@ -269,18 +266,18 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                 {app.code}
               </Typography.Text>
             </div>
-            <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
+            <Tag color={statusInfo?.color ?? 'grey'}>{statusInfo?.label ?? '未提供'}</Tag>
           </Space>
         }
         headerExtraContent={
-          <Space>
+          <Space wrap>
             <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} onClick={() => navigate(`/s/${app.code}`)}>
               打开应用
             </Button>
             <Button icon={<EditOutlined />} onClick={() => setAppFormOpen(true)}>
               编辑
             </Button>
-            {app.status !== 'PUBLISHED' && (
+            {statusInfo && app.status !== 'PUBLISHED' && (
               <Button theme="solid" type="primary" icon={<SendOutlined />} onClick={handlePublish}>
                 发布
               </Button>
@@ -297,26 +294,26 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
             itemKey="modules"
             children={
               <div>
-                <Space className="mp-mb-4">
+                <Space wrap className="mp-mb-4 mp-w-full">
                   <Input
                     showClear
                     prefix={<Search size={16} />}
                     placeholder="搜索模块名称"
                     onEnterPress={(e) => setModuleKeyword((e.target as HTMLInputElement).value)}
-                    className="mp-w-240"
+                    className="mp-app-module-search"
                   />
                   <Button
                     theme="solid"
                     type="primary"
                     icon={<PlusOutlined />}
-                    onClick={() => {
-                      setEditingModule(null);
-                      setModuleFormOpen(true);
-                    }}
+                    onClick={() => setModuleFormOpen(true)}
                   >
                     创建模块
                   </Button>
                 </Space>
+                <Typography.Paragraph type="tertiary">
+                  当前后端未提供模块编辑与删除接口。模块类型或标识未提供时，无法打开设计器。
+                </Typography.Paragraph>
 
                 {filteredModules.length === 0 ? (
                   <Empty description="还没有模块，点击创建第一个模块吧" />
@@ -324,12 +321,17 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                   <div className="mp-gap-4 mp-grid mp-app-grid-auto-240">
                     {filteredModules.map((module) => (
                       <div
-                        key={module.moduleId}
+                        key={module.id || module.moduleId || module.code}
                         onClick={() => {
+                          const moduleId = module.id || module.moduleId;
+                          if (!module.type || !moduleId) {
+                            Toast.info('当前模块未提供设计器类型或标识，暂无法打开设计器。');
+                            return;
+                          }
                           if (module.type === 'FORM') {
-                            navigate(`/apps/mine?app=${appId}&module=${module.moduleId}&tab=form-designer`);
+                            navigate(`/apps/mine?app=${encodeURIComponent(appId!)}&module=${encodeURIComponent(moduleId)}&tab=form-designer`);
                           } else if (module.type === 'FLOW') {
-                            navigate(`/apps/mine?app=${appId}&module=${module.moduleId}&tab=flow-designer`);
+                            navigate(`/apps/mine?app=${encodeURIComponent(appId!)}&module=${encodeURIComponent(moduleId)}&tab=flow-designer`);
                           } else {
                             Toast.info('该类型设计器待实现');
                           }
@@ -343,14 +345,14 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                               <div>
                                 <Typography.Text strong>{module.name}</Typography.Text>
                                 <div>
-                                  <Tag color={MODULE_TYPE_COLORS[module.type]}>
-                                    {module.type === 'FORM' ? '表单' : module.type === 'FLOW' ? '流程' : module.type === 'BOARD' ? '看板' : '页面'}
+                                  <Tag color={MODULE_TYPE_COLORS[module.type] ?? 'grey'}>
+                                    {MODULE_TYPE_LABELS[module.type] ?? '未提供'}
                                   </Tag>
                                 </div>
                               </div>
                             </Space>
                             <span onClick={(e) => e.stopPropagation()}>
-                              <Dropdown trigger="click" position="bottomRight" render={moduleActions(module)}>
+                              <Dropdown trigger="click" position="bottomRight" render={moduleActions}>
                                 <Button theme="borderless" icon={<MoreOutlined />} />
                               </Dropdown>
                             </span>
@@ -467,18 +469,9 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
 
       <ModuleForm
         open={moduleFormOpen}
-        title={editingModule ? '编辑模块' : '创建模块'}
-        initial={editingModule}
-        onOk={(values) => {
-          if (editingModule) {
-            return handleUpdateModule(values as ModuleUpdateRequest);
-          }
-          return handleCreateModule(values as ModuleCreateRequest);
-        }}
-        onCancel={() => {
-          setModuleFormOpen(false);
-          setEditingModule(null);
-        }}
+        title="创建模块"
+        onOk={(values) => handleCreateModule(values as ModuleCreateRequest)}
+        onCancel={() => setModuleFormOpen(false)}
         confirmLoading={submitting}
       />
     </div>

@@ -5,6 +5,26 @@ const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
 
+import type { PageResponse } from './types';
+
+/** Session records returned by the current DW collaboration list. */
+export interface CollaborationSession {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  peerEmployeeId: string;
+  sessionId: string;
+  startedAt: string;
+  durationMs: number;
+}
+
+export async function listCollaborationSessions(params?: {
+  page?: number;
+  size?: number;
+}): Promise<PageResponse<CollaborationSession>> {
+  return get('/dw/collaborations', params);
+}
+
 
 
 // V15-04: Digital worker team collaboration API.

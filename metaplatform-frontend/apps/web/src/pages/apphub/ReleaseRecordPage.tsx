@@ -37,6 +37,7 @@ import {
   completeReleaseTask,
 } from '@/api/apphub/release';
 import type { PageResponse } from '@/api/apphub/types';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 
 interface ReleaseRecordPageProps {
   appId?: string;
@@ -74,6 +75,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
   const appId = appIdProp ?? routeAppId ?? "";
   const [releases, setReleases] = useState<PageResponse<ReleaseRecord> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedRelease, setSelectedRelease] = useState<ReleaseRecord | null>(null);
@@ -87,9 +89,12 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
 
   const loadReleases = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await listReleases(appId);
       setReleases(data);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : '发布记录读取失败');
     } finally {
       setLoading(false);
     }
@@ -301,7 +306,9 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
 
   return (
     <div>
+      <PageHeader title="应用发布记录" desc="查看发布申请、审批进度与操作记录。" />
       <Card loading={loading}>
+        {loadError ? <div role="alert"><EmptyState illustration="failure" title="发布历史读取失败" desc={loadError} actions={<Button type="primary" onClick={loadReleases}>重试</Button>} /></div> : <>
         <Space className="mp-mb-4">
           <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>
             创建发布
@@ -314,6 +321,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
           pagination={false}
           empty={<Empty description="暂无发布记录" />}
         />
+        </>}
       </Card>
 
       <Modal

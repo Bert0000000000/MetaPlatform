@@ -10,6 +10,7 @@ import TemplateCard from './components/TemplateCard';
 import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
 import type { TemplateItem, InstallResult, InstalledItem } from '@/api/apphub/marketplace';
+import { EmptyState, PageHeader } from '@/components/skeleton';
 import './apps.css';
 
 // Semi Badge type 仅支持 primary/secondary/tertiary/danger/warning/success
@@ -31,6 +32,7 @@ export default function MarketplacePage() {
   const [previewing, setPreviewing] = useState<TemplateItem | null>(null);
   const [installed, setInstalled] = useState<InstalledItem[]>([]);
   const [installedLoading, setInstalledLoading] = useState(false);
+  const [installedError, setInstalledError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -55,11 +57,12 @@ export default function MarketplacePage() {
 
   const loadInstalled = async () => {
     setInstalledLoading(true);
+    setInstalledError(null);
     try {
       const items = await listInstalled();
       setInstalled(items);
-    } catch {
-      setInstalled([]);
+    } catch (err) {
+      setInstalledError(err instanceof Error ? err.message : '安装记录读取失败');
     } finally {
       setInstalledLoading(false);
     }
@@ -83,9 +86,15 @@ export default function MarketplacePage() {
     }
   };
 
+  let previewContent = previewing?.configSnapshot ?? previewing?.preview;
+  if (previewContent) {
+    try { previewContent = JSON.stringify(JSON.parse(previewContent), null, 2); }
+    catch { /* 非 JSON 配置按已读原文展示。 */ }
+  }
+
   return (
     <div>
-
+      <PageHeader title="云市场" desc="浏览模板目录并查看市场制品的安装记录。" />
       <Space vertical className="mp-mb-4">
         <SearchBar
           keyword={keyword}
@@ -111,7 +120,7 @@ export default function MarketplacePage() {
           </Button>
         </div>
       ) : templates.length === 0 ? (
-        <Empty description="没有匹配的模板" />
+        <EmptyState illustration={keyword || category ? 'no-result' : 'no-content'} title={keyword || category ? '没有匹配的模板' : '暂无模板'} desc="当前目录没有符合条件的模板，可调整筛选后重试。" />
       ) : (
         <div
           className="mp-grid mp-gap-4 mp-app-grid-auto-280"
@@ -128,10 +137,12 @@ export default function MarketplacePage() {
       )}
 
       {/* 我的安装 */}
-      <Card title={`我的安装 (${installed.length})`} className="mp-mt-6">
+      <Card title={installedError || installedLoading ? '我的安装' : `我的安装 (${installed.length})`} className="mp-mt-6">
         <Spin spinning={installedLoading}>
-          {installed.length === 0 ? (
-            <Empty description="还没有安装记录，安装后的本体/Agent/MCP 会显示在这里" />
+          {installedError ? (
+            <div role="alert"><EmptyState illustration="failure" title="安装历史暂不可用" desc={installedError} actions={<Button type="primary" onClick={loadInstalled}>重试安装记录</Button>} /></div>
+          ) : installed.length === 0 ? (
+            <EmptyState title="还没有安装记录" desc="安装后的本体、Agent 与 MCP 会显示在这里。" />
           ) : (
             <Table
               size="small"
@@ -187,16 +198,12 @@ export default function MarketplacePage() {
                   <Tag key={t}>{t}</Tag>
                 ))}
               </Space>
-              <div className="mp-mt-3">
-                <Typography.Text>评分：</Typography.Text>
-                {previewing.rating} / 5 · 安装 {previewing.downloadCount} 次
-              </div>
             </Card>
             <Card title="功能预览">
-              <Typography.Paragraph>
-                包含：表单（4 个）、流程（2 个）、仪表盘（1 个）、
-                仪表盘组件（5+）、权限规则（3 条）。
+              <Typography.Paragraph type="tertiary">
+                模块清单未提供
               </Typography.Paragraph>
+              {previewContent ? <pre className="mp-app-template-content">{previewContent}</pre> : <Typography.Text type="tertiary">配置内容未提供</Typography.Text>}
             </Card>
           </Space>
         )}

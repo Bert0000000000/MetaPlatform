@@ -66,7 +66,12 @@ function adaptCapability(raw: RawCapability): Capability {
 /** 能力列表可能返回裸数组或 PageResponse，统一成 Capability[]。 */
 function capList(raw: unknown): Capability[] {
   const items = Array.isArray(raw) ? raw : ((raw as { items?: unknown[] } | null)?.items ?? []);
-  return items.map((i) => adaptCapability(i as RawCapability));
+  const capabilities = items.map((i) => adaptCapability(i as RawCapability));
+  const names = new Map(capabilities.map((capability) => [capability.capabilityId, capability.name]));
+  return capabilities.map((capability) => ({
+    ...capability,
+    parentName: capability.parentCapabilityId ? names.get(capability.parentCapabilityId) : undefined,
+  }));
 }
 
 function buildTreeData(caps: Capability[]): TreeNodeData[] {

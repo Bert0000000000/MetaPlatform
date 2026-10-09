@@ -126,6 +126,7 @@ export default function CollaborationCreatePage() {
 
           <Form.Select
             field="employeeIds"
+            style={{ width: '100%' }}
             label="参与员工"
             rules={[{ required: true, message: '请至少选择 1 名员工' }]}
             extraText="系统会按员工技能匹配度自动分配子任务"
@@ -158,6 +159,7 @@ export default function CollaborationCreatePage() {
 
           <Form.Select
             field="splitStrategy"
+            style={{ width: '100%' }}
             label="拆分策略"
             rules={[{ required: true, message: '请选择拆分策略' }]}
             optionList={SPLIT_OPTIONS.map((o) => ({

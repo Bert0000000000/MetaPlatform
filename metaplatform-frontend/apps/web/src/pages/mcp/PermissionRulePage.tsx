@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -23,13 +23,16 @@ import type {
   PermissionRuleCreateRequest,
   McpTool,
   McpServer,
-  McpResource,
   PromptTemplate,
 } from '@/api/mcphub/types';
 
 export default function PermissionRulePage() {
   const [rules, setRules] = useState<PermissionRule[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [hasRead, setHasRead] = useState(false);
+  const [missingResourceIds, setMissingResourceIds] = useState(false);
+  const readGeneration = useRef(0);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PermissionRule | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -37,8 +40,10 @@ export default function PermissionRulePage() {
     Array<{ type: PermissionRule['resourceType']; id: string; name: string }>
   >([]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    const generation = ++readGeneration.current;
     setLoading(true);
+    setLoadError('');
     try {
       const [r, toolsRes, serversRes, resourcesRes, promptsRes] = await Promise.all([
         listRules(),
@@ -47,6 +52,7 @@ export default function PermissionRulePage() {
         listResources(),
         listPrompts(),
       ]);
+      if (generation !== readGeneration.current) return;
       setRules(r.items);
       const all: Array<{ type: PermissionRule['resourceType']; id: string; name: string }> = [];
       (toolsRes.items as McpTool[]).forEach((t) =>
@@ -55,23 +61,31 @@ export default function PermissionRulePage() {
       (serversRes.items as McpServer[]).forEach((s) =>
         all.push({ type: 'server', id: s.id, name: s.name }),
       );
-      (resourcesRes.items as McpResource[]).forEach((r2) =>
-        all.push({ type: 'resource', id: r2.id, name: r2.name }),
-      );
+      setMissingResourceIds(resourcesRes.items.some(resource => !resource.id?.trim()));
+      resourcesRes.items.forEach(resource => {
+        if (resource.id?.trim()) all.push({ type: 'resource', id: resource.id, name: resource.name });
+      });
       (promptsRes.items as PromptTemplate[]).forEach((p) =>
         all.push({ type: 'prompt', id: p.id, name: p.name }),
       );
-      setResources(all);
+      setResources(all.filter(resource => typeof resource.id === 'string' && resource.id.trim()));
+      setHasRead(true);
+    } catch (cause) {
+      if (generation === readGeneration.current) setLoadError(cause instanceof Error ? cause.message : '读取失败');
     } finally {
-      setLoading(false);
+      if (generation === readGeneration.current) setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    load();
   }, []);
 
+  useEffect(() => {
+    void load();
+    return () => { readGeneration.current++; };
+  }, [load]);
+
+  const canWrite = hasRead && !loading && !loadError;
+
   const handleSubmit = async (values: PermissionRuleCreateRequest) => {
+    if (!canWrite) return;
     setSubmitting(true);
     try {
       if (editing) {
@@ -83,7 +97,9 @@ export default function PermissionRulePage() {
       }
       setEditorOpen(false);
       setEditing(null);
-      load();
+      void load();
+    } catch (cause) {
+      Toast.error(cause instanceof Error ? cause.message : '保存失败');
     } finally {
       setSubmitting(false);
     }
@@ -110,7 +126,7 @@ export default function PermissionRulePage() {
       render: (_, r) => (
         <span>
           <Tag size="small">{r.subjectType}</Tag>
-          {r.subject}
+          <span>{r.subjectId}</span>
         </span>
       ),
     },
@@ -120,20 +136,20 @@ export default function PermissionRulePage() {
       render: (_, r) => (
         <span>
           <Tag size="small" color="blue">{r.resourceType}</Tag>
-          {r.resourceId}
+          {r.resourceIds.map(id => <Tag key={id}>{id}</Tag>)}
         </span>
       ),
     },
     {
       title: '操作',
-      dataIndex: 'actions',
-      render: (v: string[]) => v.map((a) => <Tag size="small" color="purple" key={a}>{a}</Tag>),
+      dataIndex: 'action',
+      render: (value: string) => <Tag size="small" color="purple">{value}</Tag>,
     },
     {
       title: '效果',
       key: 'effect',
       render: (_, r) => (
-        <Tag size="small" color={r.effect === 'allow' ? 'green' : 'red'}>{r.effect}</Tag>
+        <Tag size="small" color={r.effect.toUpperCase() === 'ALLOW' ? 'green' : 'red'}>{r.effect}</Tag>
       ),
     },
     {
@@ -150,7 +166,9 @@ export default function PermissionRulePage() {
             size="small"
             theme="borderless"
             icon={<EditOutlined />}
+            disabled={!canWrite}
             onClick={() => {
+              if (!canWrite) return;
               setEditing(r);
               setEditorOpen(true);
             }}
@@ -158,11 +176,14 @@ export default function PermissionRulePage() {
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={async () => {
-            await deleteRule(r.id);
-            Toast.success('已删除');
-            load();
+            if (!canWrite) return;
+            try {
+              await deleteRule(r.id);
+              Toast.success('已删除');
+              void load();
+            } catch (cause) { Toast.error(cause instanceof Error ? cause.message : '删除失败'); }
           }}>
-            <Button size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
+            <Button disabled={!canWrite} size="small" theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -178,7 +199,9 @@ export default function PermissionRulePage() {
                   theme="solid"
                   type="primary"
                   icon={<PlusOutlined />}
+                  disabled={!canWrite}
                   onClick={() => {
+                    if (!canWrite) return;
                     setEditing(null);
                     setEditorOpen(true);
                   }}
@@ -188,8 +211,15 @@ export default function PermissionRulePage() {
         }
       />
 
+      {loadError && <div role="alert" className="mp-read-warning">
+        <strong>权限规则加载失败</strong><p>{loadError}</p>
+        {hasRead && <p>显示上次成功读取的结果。</p>}
+        <Button disabled={loading} onClick={() => void load()} aria-label="重试权限规则">重试</Button>
+      </div>}
+      {missingResourceIds && <p className="mp-text-sm">资源注册信息没有权限资源 ID，暂时无法选择这些资源配置权限。</p>}
+
       <Card>
-        {rules.length === 0 && !loading ? (
+        {rules.length === 0 && !loading && !loadError ? (
           <EmptyState title="还没有权限规则" />
         ) : (
           <Table
@@ -211,6 +241,7 @@ export default function PermissionRulePage() {
           setEditing(null);
         }}
         confirmLoading={submitting}
+        disabled={!canWrite}
       />
     </div>
   );

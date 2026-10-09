@@ -45,6 +45,7 @@ export default function ResourceDetailLayout({
       {tabs && tabs.length > 0 ? (
         <Tabs
           type={tabType}
+          collapsible="auto"
           activeKey={activeTab ?? tabs[0].key}
           tabList={tabs.map((t) => ({ tab: t.label, itemKey: t.key }))}
           onChange={(key) => onTabChange?.(key)}

@@ -134,6 +134,27 @@
 .mp-onto-input--multi { height: auto; min-height: 64px; max-height: 132px; }
 .mp-onto-select--kind { flex: 0 0 260px; }
 .mp-onto-select--op { flex: 0 0 130px; }
+
+.mp-onto-security-condition {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mp-space-2);
+}
+
+.mp-onto-security-condition-field {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.mp-onto-security-condition-op { flex: 0 1 200px; }
+
+@media (max-width: 480px) {
+  .mp-onto-security-condition-field { flex: 1 1 100%; }
+  .mp-onto-select--kind { flex: 1; min-width: 0; }
+}
 .mp-onto-select--reducer { width: 220px; }
 .mp-onto-select--struct { width: 150px; }
 
@@ -419,6 +440,13 @@
 .mp-onto-pick-dot--on { background: var(--semi-color-primary); }
 
 /* 列表滚动高度 */
+.mp-onto-explore-layout { width: 100%; min-width: 0; flex-wrap: wrap; }
+.mp-onto-explore-main { flex: 1 1 440px; min-width: 0; max-width: 100%; }
+@media (max-width: 720px) {
+  .mp-onto-explore-layout > .mp-onto-side-col,
+  .mp-onto-explore-layout > .mp-w-240 { width: 100%; }
+}
+
 .mp-onto-list-scroll { max-height: 300px; }
 .mp-onto-list-tall { max-height: 520px; }
 .mp-onto-list-panel { max-height: 210px; }
