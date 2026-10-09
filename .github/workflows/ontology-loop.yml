@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Free ports
         run: |
@@ -67,7 +67,7 @@ jobs:
         run: npm install -g pnpm@11.15.1
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: pnpm
@@ -153,7 +153,7 @@ jobs:
 
       - name: Upload safe Builder V2 inventory and result artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: builder-v2-safe-results
           path: |
@@ -175,7 +175,7 @@ jobs:
 
       - name: Upload playwright artifacts (trace / screenshot / report)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ontology-core-e2e-artifacts
           # Builder uploads only its dedicated safe whitelist; keep diagnostics private.
