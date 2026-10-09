@@ -15,7 +15,7 @@
 把 `概览 / 概念建模 / 对象浏览 / 数据中心 / 分析应用 / 运行治理` 六个横向 Tab，
 重构为语义清晰、职责互斥、支持深链接的本体工作区：
 
-```
+```text
 本体
 ├── 总览
 ├── 语义模型
@@ -93,7 +93,7 @@ export interface DomainDef {
 
 > 首版只渲染 `active`；`planned` 只登记不渲染。
 
-```
+```text
 本体
 ├── 总览                       active
 ├── 语义模型
@@ -147,7 +147,7 @@ Dashboard：从本体导航移除，`DashboardPage.tsx` 保留文件（最终归
 
 ### 4.1 目标正式路由
 
-```
+```text
 /ontology                              总览（落地页）
 
 /ontology/model                     → redirect /ontology/model/object-types
@@ -193,6 +193,7 @@ Dashboard：从本体导航移除，`DashboardPage.tsx` 保留文件（最终归
 ```
 
 约束：
+
 - 详情路由先注册；暂无独立组件的详情 Tab 用同一详情组件按 tab 渲染。
 - `:rid` 用 URL-safe 编码 + 统一解码辅助函数（复用 `pages/ontology/rid.ts` 惯例）。
 - 对象详情可继续以 Sheet 呈现（React Router background location），深链直达时展示
@@ -247,7 +248,7 @@ Dashboard：从本体导航移除，`DashboardPage.tsx` 保留文件（最终归
 
 ### 5.1 OntologyWorkspaceLayout
 
-```
+```text
 ┌──────────────────────────────────────────────────────┐
 │ ContextBar：本体名 / Release / 搜索 / 创建资源        │
 ├───────────────┬──────────────────────────────────────┤
@@ -333,6 +334,7 @@ feature migration → cleanup → acceptance evidence。
 ### 7.2 测试方案
 
 **新增（IA2-0 已落红）**：
+
 - `src/components/shell/ontology-navigation-mode.test.tsx`（vitest 契约）：
   ontology 域声明 `navigationMode: 'workspace'`；PageTabs 在本体路由渲染为空；
   非 workspace 域不受影响
@@ -346,7 +348,8 @@ feature migration → cleanup → acceptance evidence。
 `context-navigate.spec.ts` 的 `/ontology/objects` 用例随 ROUTE_VIEWS 扩展更新。
 
 **回归命令**（apps/web 下）：
-```
+
+```bash
 pnpm typecheck && pnpm build && pnpm test:unit && node scripts/check_classes.mjs
 npx playwright test tests/e2e/ontology-ia-v2-*.spec.ts   # 需 9250 dev server + 8100 网关
 ```
@@ -364,19 +367,23 @@ npx playwright test tests/e2e/ontology-ia-v2-*.spec.ts   # 需 9250 dev server +
 ## 8. 验收标准
 
 ### 8.1 信息架构
+
 六大功能域命名顺序正确；本体不显示全局横向 PageTabs；工作区有独立左侧导航；
 语义模型不含 Action/Function；数据映射不含全局资产门户；对象与查询不含正式
 Dashboard；动作与函数有独立入口；发布与治理不含 Agent 回归指标。
 
 ### 8.2 路由
+
 每个 active 子页面有正式 URL；刷新不丢位置；前进后退正常；面包屑正确；
 ⌘K 可搜索；旧路径全部可达新路径；无路由循环；无重复注册。
 
 ### 8.3 功能
+
 对象消费闭环、Action 编排、版本/Diff/Rollback、数据映射与同步、分析与地图
 均不退化；Agent 服务不可用不影响本体页面。
 
 ### 8.4 工程
+
 无 `.semi-*` 覆盖；无新增静态 inline style；无 Mock 冒充；无空壳正式页面；
 无跳过的 P0 测试；typecheck / build / unit / E2E 通过；验收证据落档。
 
