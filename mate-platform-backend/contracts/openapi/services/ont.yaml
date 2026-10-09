@@ -706,7 +706,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/PropertyV2" }
+            schema: { $ref: "#/components/schemas/PropertyCreateV2" }
       responses:
         "200":
           description: OK
@@ -2849,9 +2849,47 @@ components:
       description: Canonical rid (e.g. ont.<tenant>.<kind>.<rest>).
     PropertyFormatV2:
       type: string
-      description: Registered value format; includes extended structured and collection types.
+      description: Serialized PropertyFormat token. Collection metadata is represented by the array field; requests use PropertyFormatInputV2.
       examples:
-        [string, integer, double, boolean, date, timestamp, marking, struct]
+        [
+          string,
+          integer,
+          double,
+          boolean,
+          date,
+          timestamp,
+          marking,
+          geojson,
+          latlon,
+          timeseries,
+          image,
+          audio,
+          video,
+          struct,
+          vector,
+        ]
+    PropertyFormatInputV2:
+      type: string
+      description: Existing kernel PropertyFormat values, including the original seven formats.
+      default: string
+      enum:
+        [
+          string,
+          integer,
+          double,
+          boolean,
+          date,
+          timestamp,
+          marking,
+          geojson,
+          latlon,
+          timeseries,
+          image,
+          audio,
+          video,
+          struct,
+          vector,
+        ]
     CardinalityV2:
       type: string
       enum: ["1:1", "1:N", "N:1", "N:N"]
@@ -2874,12 +2912,42 @@ components:
         type_id: { type: string, minLength: 1 }
         nullable: { type: boolean }
         primary_key: { type: boolean }
-        title: { type: string, default: "" }
+        title:
+          type: string
+          minLength: 1
+          description: Display title; an empty stored title is displayed as the full property RID without changing the definition.
         format: { $ref: "#/components/schemas/PropertyFormatV2" }
         description: { type: string, default: "" }
         struct_fields:
           type: array
           items: { $ref: "#/components/schemas/PropertyV2" }
+        array: { type: boolean, default: false }
+        reducer: { type: [string, "null"] }
+        shared: { type: boolean, default: false }
+        derived:
+          anyOf:
+            - { type: "null" }
+            - type: object
+              required: [fn, over_link]
+              properties:
+                fn: { type: string }
+                over_link: { type: string }
+                field: { type: [string, "null"] }
+    PropertyCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, type_id]
+      properties:
+        rid: { $ref: "#/components/schemas/RidString" }
+        type_id: { type: string, minLength: 1 }
+        nullable: { type: boolean, default: false }
+        primary_key: { type: boolean, default: false }
+        title: { type: string, default: "" }
+        format: { $ref: "#/components/schemas/PropertyFormatInputV2" }
+        description: { type: string, default: "" }
+        struct_fields:
+          type: array
+          items: { $ref: "#/components/schemas/PropertyCreateV2" }
         array: { type: boolean, default: false }
         reducer: { type: [string, "null"] }
         shared: { type: boolean, default: false }
@@ -2938,7 +3006,7 @@ components:
         properties:
           type: array
           minItems: 1
-          items: { $ref: "#/components/schemas/PropertyV2" }
+          items: { $ref: "#/components/schemas/PropertyCreateV2" }
         interfaces:
           type: array
           items: { $ref: "#/components/schemas/RidString" }
@@ -2983,7 +3051,7 @@ components:
         directionality: { $ref: "#/components/schemas/DirectionalityV2" }
         link_properties:
           type: array
-          items: { $ref: "#/components/schemas/PropertyV2" }
+          items: { $ref: "#/components/schemas/PropertyCreateV2" }
     ActionTypeV2:
       type: object
       additionalProperties: false
@@ -3025,7 +3093,7 @@ components:
         rid: { $ref: "#/components/schemas/RidString" }
         parameters:
           type: array
-          items: { $ref: "#/components/schemas/PropertyV2" }
+          items: { $ref: "#/components/schemas/PropertyCreateV2" }
         submission_criteria:
           type: array
           items: { type: string }
@@ -3096,7 +3164,7 @@ components:
         rid: { $ref: "#/components/schemas/RidString" }
         properties:
           type: array
-          items: { $ref: "#/components/schemas/PropertyV2" }
+          items: { $ref: "#/components/schemas/PropertyCreateV2" }
         required_links:
           type: array
           items: { $ref: "#/components/schemas/RidString" }

@@ -13423,7 +13423,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PropertyV2'
+              $ref: '#/components/schemas/PropertyCreateV2'
       responses:
         '200':
           description: OK
@@ -18588,7 +18588,7 @@ components:
       description: Canonical rid (e.g. ont.<tenant>.<kind>.<rest>).
     PropertyFormatV2:
       type: string
-      description: Registered value format; includes extended structured and collection types.
+      description: Serialized PropertyFormat token. Collection metadata is represented by the array field; requests use PropertyFormatInputV2.
       examples:
         - string
         - integer
@@ -18597,7 +18597,14 @@ components:
         - date
         - timestamp
         - marking
+        - geojson
+        - latlon
+        - timeseries
+        - image
+        - audio
+        - video
         - struct
+        - vector
     PropertyV2:
       type: object
       additionalProperties: false
@@ -18620,7 +18627,8 @@ components:
           type: boolean
         title:
           type: string
-          default: ''
+          minLength: 1
+          description: Display title; an empty stored title is displayed as the full property RID without changing the definition.
         format:
           $ref: '#/components/schemas/PropertyFormatV2'
         description:
@@ -18698,6 +18706,82 @@ components:
           items:
             type: object
             additionalProperties: true
+    PropertyFormatInputV2:
+      type: string
+      description: Existing kernel PropertyFormat values, including the original seven formats.
+      default: string
+      enum:
+        - string
+        - integer
+        - double
+        - boolean
+        - date
+        - timestamp
+        - marking
+        - geojson
+        - latlon
+        - timeseries
+        - image
+        - audio
+        - video
+        - struct
+        - vector
+    PropertyCreateV2:
+      type: object
+      additionalProperties: false
+      required:
+        - rid
+        - type_id
+      properties:
+        rid:
+          $ref: '#/components/schemas/RidString'
+        type_id:
+          type: string
+          minLength: 1
+        nullable:
+          type: boolean
+          default: false
+        primary_key:
+          type: boolean
+          default: false
+        title:
+          type: string
+          default: ''
+        format:
+          $ref: '#/components/schemas/PropertyFormatInputV2'
+        description:
+          type: string
+          default: ''
+        struct_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyCreateV2'
+        array:
+          type: boolean
+          default: false
+        reducer:
+          type:
+            - string
+            - 'null'
+        shared:
+          type: boolean
+          default: false
+        derived:
+          anyOf:
+            - type: 'null'
+            - type: object
+              required:
+                - fn
+                - over_link
+              properties:
+                fn:
+                  type: string
+                over_link:
+                  type: string
+                field:
+                  type:
+                    - string
+                    - 'null'
     ActionTypeCreateV2:
       type: object
       additionalProperties: false
@@ -18711,7 +18795,7 @@ components:
         parameters:
           type: array
           items:
-            $ref: '#/components/schemas/PropertyV2'
+            $ref: '#/components/schemas/PropertyCreateV2'
         submission_criteria:
           type: array
           items:
@@ -19196,7 +19280,7 @@ components:
         properties:
           type: array
           items:
-            $ref: '#/components/schemas/PropertyV2'
+            $ref: '#/components/schemas/PropertyCreateV2'
         required_links:
           type: array
           items:
@@ -19327,7 +19411,7 @@ components:
         link_properties:
           type: array
           items:
-            $ref: '#/components/schemas/PropertyV2'
+            $ref: '#/components/schemas/PropertyCreateV2'
     QueryConditionV2:
       type: object
       additionalProperties: false
@@ -19630,7 +19714,7 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/PropertyV2'
+            $ref: '#/components/schemas/PropertyCreateV2'
         interfaces:
           type: array
           items:
