@@ -407,12 +407,13 @@ def _effective_markings(request: Request, param: str) -> tuple[str, ...]:
 
 
 def _prop_to_dto(p: Property) -> PropertyDTO:
+    """Serialize display metadata without changing the stored definition or its checksum."""
     return PropertyDTO(
         rid=p.rid.rid,
         type_id=p.type_id,
         nullable=p.nullable,
         primary_key=p.primary_key,
-        title=p.title,
+        title=p.title or p.rid.rid,
         format=p.format.value,
         description=p.description,
         struct_fields=[_prop_to_dto(sf) for sf in p.struct_fields],
