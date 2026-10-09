@@ -19,7 +19,7 @@ from mate_tech_ont.v2_kernel.pg_repo import _ot_to_row
 
 TENANT = "propertycompat"
 OBJ = "ont.propertycompat.obj.model.v1"
-KEY = "ont.propertycompat.prop.key.v1"
+PRIMARY_PROPERTY_RID = "ont.propertycompat.prop.key.v1"
 VALUE = "ont.propertycompat.prop.value.v1"
 NESTED = "ont.propertycompat.prop.nested.v1"
 BASE = "/api/v1/ont/v2"
@@ -73,9 +73,9 @@ def _payload(format_value: str, *, title: str | None = "") -> dict:
     return {
         "rid": OBJ,
         "display_name": "Property compatibility",
-        "primary_key": [KEY],
+        "primary_key": [PRIMARY_PROPERTY_RID],
         "properties": [
-            {"rid": KEY, "type_id": "string", "primary_key": True, "title": "Key"},
+            {"rid": PRIMARY_PROPERTY_RID, "type_id": "string", "primary_key": True, "title": "Key"},
             value,
         ],
     }
@@ -128,7 +128,7 @@ def test_nested_display_titles_preserve_raw_definition_checksum_and_version_snap
     source_client, route
 ):
     client, repo = source_client
-    key = Property(ClassRef(KEY), "string", False, True, "", PropertyFormat.STRING)
+    key = Property(ClassRef(PRIMARY_PROPERTY_RID), "string", False, True, "", PropertyFormat.STRING)
     child = Property(ClassRef(NESTED), "string", False, False, "", PropertyFormat.STRING)
     value = Property(
         ClassRef(VALUE), "struct", False, False, "", PropertyFormat.STRUCT, struct_fields=(child,)
@@ -150,7 +150,7 @@ def test_nested_display_titles_preserve_raw_definition_checksum_and_version_snap
 
     assert response.status_code == 200
     properties = response.json()["properties"]
-    assert properties[0]["title"] == KEY
+    assert properties[0]["title"] == PRIMARY_PROPERTY_RID
     assert properties[1]["title"] == VALUE
     assert properties[1]["struct_fields"][0]["title"] == NESTED
     if "/object-types/" in route:
