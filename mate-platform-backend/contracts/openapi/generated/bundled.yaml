@@ -6672,7 +6672,7 @@ paths:
             type: string
   /api/v1/dashboard/auth/login:
     post:
-      summary: 'Workbench login via Keycloak; provider tokens and best-effort UserInfo identity'
+      summary: Workbench login via Keycloak; provider tokens and best-effort UserInfo identity
       tags:
         - dashboard
       security: []
@@ -6700,7 +6700,7 @@ paths:
         '400':
           description: Missing username or password
       operationId: dashboardPostDashboardAuthLogin
-      description: 'Workbench login via Keycloak; provider tokens and best-effort UserInfo identity'
+      description: Workbench login via Keycloak; provider tokens and best-effort UserInfo identity
       x-mate-owner: business-workbench
       x-mate-permission: dashboard.post
       x-mate-requirements:
@@ -12726,45 +12726,6 @@ paths:
           $ref: '#/components/responses/Error409'
         '422':
           $ref: '#/components/responses/Error422'
-  /api/v1/ont/v2/object-types/wip/{rid}:
-    parameters:
-      - in: path
-        name: rid
-        required: true
-        schema:
-          type: string
-    delete:
-      security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
-      tags:
-        - ont
-      summary: ontDiscardV2SchemaWip
-      operationId: ontDiscardV2SchemaWip
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements:
-        - FR-ONT-BUILDER-PUBLICATION
-      x-mate-implementation-status: implemented
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
-        '403':
-          $ref: '#/components/responses/Error403'
-        '404':
-          $ref: '#/components/responses/Error404'
-        '409':
-          $ref: '#/components/responses/Error409'
-        '422':
-          $ref: '#/components/responses/Error422'
   /api/v1/ont/v2/object-types/wip/{rid}/apply:
     parameters:
       - in: path
@@ -13525,6 +13486,55 @@ paths:
               properties:
                 from_rid:
                   type: string
+  /api/v1/ont/v2/object-types/{rid}/wip:
+    parameters:
+      - in: path
+        name: rid
+        required: true
+        schema:
+          type: string
+    delete:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - ont
+      summary: Discard staged schema WIP
+      description: |
+        Discard schema WIP without deleting the published ObjectType.
+        Compatibility alias: DELETE /api/v1/ont/v2/object-types/wip/{rid}.
+        The deprecated alias remains supported by the same handler and tenant guard;
+        it is omitted from the public runtime schema in favor of this canonical operation.
+      operationId: ontDiscardV2SchemaWip
+      x-mate-compatibility-aliases:
+        - method: DELETE
+          path: /api/v1/ont/v2/object-types/wip/{rid}
+          deprecated: true
+          includeInSchema: false
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+        - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
   /api/v1/ont/v2/proposals/{proposal_id}:
     parameters:
       - in: path
