@@ -11,7 +11,7 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..v2_kernel import api as native
-from . import assistant_client, assurance, ingestion, publication, generation_quality, data_treatment
+from . import assistant_client, assurance, ingestion, publication, generation_quality, data_treatment, review_completion
 from .core import (
     Draft,
     ModelingQuestion,
@@ -44,6 +44,14 @@ class SyncRequest(Revision):
 class RepairConfirmation(Revision):
     proposalId: str = Field(min_length=1, max_length=80)
     keys: list[str] = Field(min_length=1, max_length=30)
+
+
+class CompletionRequest(Revision):
+    deferClasses: list[str] = Field(default_factory=list, max_length=40)
+
+
+class CompletionConfirmation(CompletionRequest):
+    planHash: str = Field(min_length=64, max_length=64)
 
 
 class Resolution(Strict):
@@ -343,6 +351,115 @@ async def review(ident: str, payload: Revision, request: Request):
     return await begin_job(ident, payload, request, "review")
 
 
+async def completion_result(request, source, rows, defer_classes):
+    plan = await asyncio.to_thread(review_completion.propose, source, rows, defer_classes)
+    trial = {**source, 'draft': plan['draft'], 'revision': source['revision'] + 1}
+    checked = await validation_result(request, trial, rows)
+    plan['remaining'] = [i for i in checked['validation']['issues'] if i['severity'] == 'error']
+    plan['canApply'] = checked['validation']['canPublish'] and bool(checked['plan'])
+    native_plan = checked['plan'] or {}
+    baseline = [{k: t.get(k) for k in ('classId', 'rid', 'mode', 'baselineChecksum', 'expectedChecksum')}
+                for t in native_plan.get('types', [])]
+    relations = [{k: r.get(k) for k in ('relationId', 'rid', 'payload', 'baseline')}
+                 for r in native_plan.get('relationships', [])]
+    plan['hash'] = digest({'candidate': plan['hash'], 'types': sorted(baseline, key=lambda t: t['classId']),
+                           'relations': sorted(relations, key=lambda r: r['relationId']), 'remaining': plan['remaining']})
+    return plan, checked
+
+
+@router.post('/sources/{ident}/completion-plan', operation_id='ontPrepareModelingCompletion')
+async def completion_plan(ident: str, payload: CompletionRequest, request: Request):
+    store = store_for(request, True)
+    with source_lock(store, ident):
+        source, rows = read(store, ident, payload.revision, private=True)
+        ensure_idle(source)
+        if not source.get('draft'):
+            raise HTTPException(422, '请先建立候选模型')
+        try:
+            plan, _ = await completion_result(request, source, rows, payload.deferClasses)
+            return {k: v for k, v in plan.items() if k != 'draft'}
+        except ValueError as exc:
+            failure(exc)
+
+
+@router.post('/sources/{ident}/completion-confirm', operation_id='ontConfirmModelingCompletion')
+async def completion_confirm(ident: str, payload: CompletionConfirmation, request: Request):
+    store = store_for(request, True)
+    with source_lock(store, ident):
+        source, rows = read(store, ident, payload.revision, private=True)
+        ensure_idle(source)
+        if not source.get('draft'):
+            raise HTTPException(422, '请先建立候选模型')
+        try:
+            plan, checked = await completion_result(request, source, rows, payload.deferClasses)
+            if payload.planHash != plan['hash']:
+                raise HTTPException(409, '完整处理方案已变化，请重新查看方案')
+            if not plan['canApply']:
+                raise HTTPException(422, '仍有无法处理的结构问题，草稿未修改')
+            audit = {'actor': str(context(request).user_id), 'at': now(), 'planHash': plan['hash'],
+                     'beforeHash': digest(source['draft']), 'afterHash': digest(plan['draft']), 'changes': plan['changes']}
+            changes = {'draft': plan['draft'], 'validation': None, 'review': None, 'preview': None,
+                       'plan': None, 'sync': None, 'syncCheck': None, 'dataRepair': None,
+                       'completionAudit': [*(source.get('completionAudit') or []), audit]}
+            if source.get('generation'):
+                changes['generation'] = {**source['generation'], 'stale': True}
+            changes.update(checked)
+            return store.update(ident, source['revision'], changes)
+        except ValueError as exc:
+            failure(exc)
+
+
+async def validation_result(request, source, rows):
+    report = validate_ontology(source["draft"])
+    from .rules import validate_evidence
+
+    evidence_issues = validate_evidence(source["draft"], source["profile"])
+    report["issues"].extend(evidence_issues)
+    report["errors"] += sum(i["severity"] == "error" for i in evidence_issues)
+    report["canPublish"] = report["canPublish"] and not report["errors"]
+    data_report = validate_draft(source["draft"], rows)
+    data_report.update(scope="data", canSync=data_report.pop("canPublish"))
+    report["dataValidation"] = data_report
+    if data_report["errors"]:
+        report["warnings"] += 1
+        report["issues"].append(
+            {
+                "severity": "warning",
+                "item": "data",
+                "message": f"数据检查发现 {data_report['errors']} 项问题；不阻断本体发布。可在数据同步中隔离问题记录，仅同步合格数据。",
+            }
+        )
+    preview = {"nodes": [], "edges": [], "totalNodes": 0, "totalEdges": 0, "limit": 100}
+    plan = None
+    if not data_report["errors"]:
+        nodes, edges = compile_graph(source["draft"], rows, require_review=False)
+        selected = {n["key"] for n in nodes[:100]}
+        preview.update(
+            nodes=nodes[:100],
+            edges=[e for e in edges if e["source"] in selected and e["target"] in selected][
+                :200
+            ],
+            totalNodes=len(nodes),
+            totalEdges=len(edges),
+        )
+    if not report["errors"]:
+        conflicts = await publication.new_type_conflicts(request, source)
+        if conflicts:
+            report["errors"] += len(conflicts)
+            report["canPublish"] = False
+            report["issues"].extend(conflicts)
+    if not report["errors"]:
+        try:
+            plan = await publication.prepare(request, source)
+        except ValueError as exc:
+            report["errors"] += 1
+            report["canPublish"] = False
+            report["issues"].append(
+                {"severity": "error", "item": "native", "message": str(exc)}
+            )
+    return {"validation": report, "preview": preview, "plan": plan}
+
+
 @router.post("/sources/{ident}/validate", operation_id="ontValidateModelingCandidate")
 async def validate(ident: str, payload: Revision, request: Request):
     store = store_for(request, True)
@@ -352,59 +469,8 @@ async def validate(ident: str, payload: Revision, request: Request):
         if not source.get("draft"):
             raise HTTPException(422, "请先生成或保存候选")
         try:
-            report = validate_ontology(source["draft"])
-            from .rules import validate_evidence
-
-            evidence_issues = validate_evidence(source["draft"], source["profile"])
-            report["issues"].extend(evidence_issues)
-            report["errors"] += sum(i["severity"] == "error" for i in evidence_issues)
-            report["canPublish"] = report["canPublish"] and not report["errors"]
-            data_report = validate_draft(source["draft"], rows)
-            data_report.update(scope="data", canSync=data_report.pop("canPublish"))
-            report["dataValidation"] = data_report
-            if data_report["errors"]:
-                report["warnings"] += 1
-                report["issues"].append(
-                    {
-                        "severity": "warning",
-                        "item": "data",
-                        "message": f"数据校验存在 {data_report['errors']} 项阻断；不阻断本体结构发布，但修正前不能同步数据。",
-                    }
-                )
-            preview = {"nodes": [], "edges": [], "totalNodes": 0, "totalEdges": 0, "limit": 100}
-            plan = None
-            if not data_report["errors"]:
-                nodes, edges = compile_graph(source["draft"], rows, require_review=False)
-                selected = {n["key"] for n in nodes[:100]}
-                preview.update(
-                    nodes=nodes[:100],
-                    edges=[e for e in edges if e["source"] in selected and e["target"] in selected][
-                        :200
-                    ],
-                    totalNodes=len(nodes),
-                    totalEdges=len(edges),
-                )
-            if not report["errors"]:
-                conflicts = await publication.new_type_conflicts(request, source)
-                if conflicts:
-                    report["errors"] += len(conflicts)
-                    report["canPublish"] = False
-                    report["issues"].extend(conflicts)
-            if not report["errors"]:
-                try:
-                    plan = await publication.prepare(request, source)
-                except ValueError as exc:
-                    report["errors"] += 1
-                    report["canPublish"] = False
-                    report["issues"].append(
-                        {"severity": "error", "item": "native", "message": str(exc)}
-                    )
-            return store.update(
-                ident,
-                source["revision"],
-                {"validation": report, "preview": preview, "plan": plan},
-                increment=False,
-            )
+            changes = await validation_result(request, source, rows)
+            return store.update(ident, source["revision"], changes, increment=False)
         except ValueError as exc:
             failure(exc)
 

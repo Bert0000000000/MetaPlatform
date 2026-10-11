@@ -17,6 +17,52 @@ security:
     tenantHeader: []
     oidcScopes: [platform.read]
 paths:
+  /api/v1/ont/v2/modeling/sources/{ident}/completion-plan:
+    post:
+      tags: [data-modeling]
+      operationId: ontPrepareModelingCompletion
+      summary: Preview one complete candidate repair, review and deferred dependency scope without writing
+      parameters:
+        - {name: ident, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DataModelingCompletionRequest'}
+      responses:
+        '200':
+          description: Inert hash-gated plan, rules, decisions, dependency scope and eligible data preview
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DataModelingCompletionPlan'}
+        '409': {description: Busy source or stale revision}
+        '422': {description: Invalid candidate or existing publication}
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/modeling/sources/{ident}/completion-confirm:
+    post:
+      tags: [data-modeling]
+      operationId: ontConfirmModelingCompletion
+      summary: Confirm all reviewed decisions once and automatically run native publication preparation
+      parameters:
+        - {name: ident, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DataModelingCompletionConfirmation'}
+      responses:
+        '200':
+          description: Candidate and confirmation audit saved with fresh native validation; no native publication or instance writes
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DataModelingSource'}
+        '409': {description: Busy source or stale plan}
+        '422': {description: Invalid or empty scope; candidate not saved}
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-implementation-status: implemented
   /api/v1/ont/v2/modeling/sources/{ident}/data-repair:
     post:
       tags: [data-modeling]
@@ -3244,6 +3290,66 @@ components:
       required:
       - revision
       title: Revision
+    DataModelingCompletionRequest:
+      type: object
+      additionalProperties: false
+      required: [revision]
+      properties:
+        revision: {type: integer, minimum: 1}
+        deferClasses: {type: array, maxItems: 40, items: {type: string}, default: []}
+    DataModelingCompletionConfirmation:
+      type: object
+      additionalProperties: false
+      required: [revision, planHash]
+      properties:
+        revision: {type: integer, minimum: 1}
+        deferClasses: {type: array, maxItems: 40, items: {type: string}, default: []}
+        planHash: {type: string, minLength: 64, maxLength: 64}
+    DataModelingCompletionPlan:
+      type: object
+      required: [hash, canApply, changes, remaining, candidates, relationships, counts, data]
+      properties:
+        hash: {type: string, minLength: 64, maxLength: 64}
+        canApply: {type: boolean}
+        changes:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              name: {type: string}
+              action: {type: string}
+              reason: {type: string}
+              kind: {type: string, enum: [classes, relationships, mappings]}
+        remaining: {type: array, items: {type: object}}
+        candidates:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              name: {type: string}
+              included: {type: boolean}
+              originallyIncluded: {type: boolean}
+              parent: {type: [string, 'null']}
+              identity: {type: array, items: {type: string}}
+              reason: {type: string}
+              problem: {type: string}
+        relationships: {type: array, items: {type: object}}
+        counts:
+          type: object
+          properties:
+            classes: {type: integer}
+            relationships: {type: integer}
+            deferred: {type: integer}
+        data:
+          type: object
+          properties:
+            nodes: {type: integer}
+            edges: {type: integer}
+            rows: {type: integer}
+            errors: {type: integer}
+            canSync: {type: boolean}
     DataModelingRepairConfirmation:
       type: object
       additionalProperties: false
@@ -3853,6 +3959,18 @@ components:
       - questions
       - resolutions
       properties:
+        completionAudit:
+          type: array
+          description: Explicit complete-plan confirmation audit; no native data writes.
+          items:
+            type: object
+            properties:
+              actor: {type: string}
+              at: {type: string, format: date-time}
+              planHash: {type: string}
+              beforeHash: {type: string}
+              afterHash: {type: string}
+              changes: {type: array, items: {type: object}}
         dataTreatment:
           type: [object, 'null']
           description: Source-local confirmed instance edits and append-only audit; invalidated by source/draft changes. Never changes published identity or ontology definitions.

@@ -63,6 +63,19 @@ export interface ModelingQuarantine {
 
 const base = '/ont/v2/modeling/sources';
 const sourcePath = (id: string) => `${base}/${encodeURIComponent(id)}`;
+export interface ModelingCompletionPlan {
+  hash: string; canApply: boolean;
+  changes: Array<{id: string;name: string;action: string;reason: string}>;
+  candidates: Array<{id: string;name: string;included: boolean;originallyIncluded: boolean;parent: string | null;identity: string[];reason: string;problem: string}>;
+  relationships: Array<{id: string;name: string;included: boolean;cardinality: string;reason: string;source: string;target: string;joins: Array<{sourceProperty: string;targetProperty: string}>}>;
+  remaining: Array<{item: string;message: string;severity: string}>;
+  counts: {classes: number;relationships: number;deferred: number};
+  data: {nodes: number;edges: number;rows: number;canSync: boolean;errors: number};
+}
+export const prepareModelingCompletion = async (source: ModelingSource, deferClasses: string[]): Promise<ModelingCompletionPlan> =>
+  (await apiClient.post<ModelingCompletionPlan>(`${sourcePath(source.id)}/completion-plan`, {revision:source.revision,deferClasses}, {timeout:120000})).data;
+export const confirmModelingCompletion = async (source: ModelingSource, planHash: string, deferClasses: string[]): Promise<ModelingSource> =>
+  (await apiClient.post<ModelingSource>(`${sourcePath(source.id)}/completion-confirm`, {revision:source.revision,planHash,deferClasses}, {timeout:120000})).data;
 export const listModelingSources = async (): Promise<ModelingSource[]> => (await apiClient.get<{ sources: ModelingSource[] }>(base)).data.sources;
 export const getModelingSource = async (id: string): Promise<ModelingSource> => (await apiClient.get<ModelingSource>(sourcePath(id))).data;
 export const getModelingAcceptance = async (id: string): Promise<ModelingAcceptance> => (await apiClient.get<ModelingAcceptance>(`${sourcePath(id)}/acceptance`)).data;

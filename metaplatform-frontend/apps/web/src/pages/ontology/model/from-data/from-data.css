@@ -1,4 +1,8 @@
 .fd-page { color: var(--semi-color-text-0); min-width: 0; }
+.fd-completion-table { min-width: 820px; }
+.fd-completion-table th:nth-child(1) { width: 16%; }
+.fd-completion-table th:nth-child(2) { width: 25%; }
+.fd-completion-table th:nth-child(3) { width: 26%; }
 .fd-page h2 { font-size: 16px; font-weight: 600; margin: 0 0 8px; }
 .fd-page h3 { font-size: 14px; font-weight: 600; margin: 0 0 12px; }
 .fd-page p { font-size: 13px; line-height: 1.7; margin: 6px 0 14px; }

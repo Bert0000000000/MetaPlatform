@@ -20,6 +20,63 @@ DSN = os.environ.get("MODELING_TEST_DSN", "")
 pytestmark = pytest.mark.skipif(not DSN, reason="MODELING_TEST_DSN requires isolated PostgreSQL")
 
 
+@pytest.mark.asyncio
+async def test_completion_native_collision_is_visible_before_confirmation_and_invalidates_old_plan(app):
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
+        source=await candidate(client)
+        prefix='/api/v1/ont/v2/modeling/sources/'+source['id']
+        body={'revision':source['revision']}
+        planned=await client.post(prefix+'/completion-plan',json=body)
+        assert planned.status_code==200,planned.text
+        plan=planned.json();assert plan['canApply']
+        other=await candidate(client);await validate_publish(client,other)
+        stale=await client.post(prefix+'/completion-confirm',json={**body,'planHash':plan['hash']})
+        assert stale.status_code==409,stale.text
+        unchanged=(await client.get(prefix)).json()
+        assert unchanged['revision']==source['revision'] and unchanged['draft']==source['draft']
+        updated=(await client.post(prefix+'/completion-plan',json=body)).json()
+        assert not updated['canApply'] and updated['remaining']
+
+
+@pytest.mark.asyncio
+async def test_completion_plan_is_inert_hash_gated_and_deferred_class_never_syncs(app):
+    from .test_modeling_generation_quality import related_fixture
+    value, _ = related_fixture()
+    book=Workbook();sheet=book.active;sheet.title='费用';sheet.append(['单号','明细号','金额'])
+    sheet.append(['A','10',100]);sheet.append(['B','10',200])
+    payment=book.create_sheet('付款');payment.append(['付款号','单号','明细号']);payment.append(['P1','A','10'])
+    output=BytesIO();book.save(output)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
+        source=(await client.post('/api/v1/ont/v2/modeling/sources',files={'file':('completion.xlsx',output.getvalue())})).json()
+        prefix='/api/v1/ont/v2/modeling/sources/'+source['id']
+        source=(await client.put(prefix,json={'revision':source['revision'],'draft':value})).json()
+        body={'revision':source['revision'],'deferClasses':['line']}
+        plan=(await client.post(prefix+'/completion-plan',json=body)).json()
+        assert plan['canApply'] and plan['counts']['classes']==1 and plan['counts']['relationships']==0
+        unchanged=(await client.get(prefix)).json()
+        assert unchanged['draft']==source['draft'] and unchanged['revision']==source['revision']
+        assert 'draft' not in plan
+        assert (await client.post(prefix+'/completion-confirm',json={**body,'planHash':'0'*64})).status_code==409
+        assert (await client.post(prefix+'/completion-confirm',json={**body,'planHash':plan['hash'],'deferClasses':[]})).status_code==409
+        result=await client.post(prefix+'/completion-confirm',json={**body,'planHash':plan['hash']})
+        assert result.status_code==200,result.text
+        confirmed=result.json()
+        assert confirmed['revision']==source['revision']+1 and confirmed['validation']['canPublish'] and confirmed['plan']
+        assert len(confirmed['completionAudit'])==1 and confirmed['completionAudit'][0]['actor']
+        assert not confirmed['publication'] and not confirmed['sync']
+        assert (await client.post(prefix+'/completion-confirm',json={**body,'planHash':plan['hash']})).status_code==409
+        published=await validate_publish(client,confirmed)
+        synced=await client.post(prefix+'/sync',json={'revision':published['revision']})
+        assert synced.status_code==200,synced.text
+        assert synced.json()['sync']['links']==0
+        assert len(published['plan']['types'])==1 and published['plan']['types'][0]['classId']=='payment'
+        repo=app.state.kernel_repo
+        with repo.tenant_scope(app.state.test_tenant):
+            instances=repo.list_individuals(ClassRef(published['plan']['types'][0]['rid']))
+            assert len(instances)==1
+        assert (await client.post(prefix+'/completion-plan',json={'revision':published['revision']})).status_code==422
+
+
 async def treatment_candidate(client):
     from .test_modeling_data_treatment import source_fixture
     value, _ = source_fixture()

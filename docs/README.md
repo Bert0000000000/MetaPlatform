@@ -7,6 +7,8 @@
 
 ## 🚀 新成员必读
 
+候选一次处理与类级暂缓：[实施计划](superpowers/plans/2026-10-11-modeling-review-completion.md)、[本地验收](acceptance/2026-10-11-modeling-review-completion.md)（补全/不发布选择、依赖范围收敛、一次确认自动校验；未发布类不生成实例）。
+
 Excel 数据处理：[实施计划](superpowers/plans/2026-10-11-modeling-data-treatment.md)、[本地验收记录](acceptance/2026-10-11-modeling-data-treatment.md)（AI 修复提案与确认、问题记录暂缓、原生合格子集同步及对象浏览）。
 
 本轮数据同步：[实施计划](superpowers/plans/2026-10-11-modeling-data-sync.md)、[本地验收记录](acceptance/2026-10-11-modeling-data-sync.md)（复用原生接入与对象浏览，发布后的可选第五步；最新后端调整已重启加载）。

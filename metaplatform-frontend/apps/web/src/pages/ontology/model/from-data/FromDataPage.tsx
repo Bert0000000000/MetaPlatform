@@ -13,6 +13,7 @@ import GenerationProgress from './GenerationProgress';
 import GenerationQuality from './GenerationQuality';
 import ReviewWorkspace from './ReviewWorkspace';
 import SyncWorkspace from './SyncWorkspace';
+import CompletionReview from './CompletionReview';
 import { included, selectedDraft } from './review';
 import './from-data.css';
 
@@ -45,6 +46,7 @@ export default function FromDataPage() {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [publishError, setPublishError] = useState('');
+  const [completionFeedback, setCompletionFeedback] = useState('');
   const [warningAck, setWarningAck] = useState(false);
   const [publishConfirmed, setPublishConfirmed] = useState(false);
   const [focusClassId, setFocusClassId] = useState<string | null>(null);
@@ -83,7 +85,7 @@ export default function FromDataPage() {
 
   useEffect(() => {
     if (!sourceId) { setSource(null); return; }
-    let active = true; setBusy('读取来源'); setError(''); setPublishError('');
+    let active = true; setBusy('读取来源'); setError(''); setPublishError(''); setCompletionFeedback('');
     void getModelingSource(sourceId).then(value => { if (active) { accept(value); setStep(value.sync || params.get('step') === 'sync' ? 4 : value.publication?.status === 'succeeded' ? 3 : value.draft ? 1 : 0); if (value.job?.status === 'failed' || value.job?.status === 'interrupted') setError(value.job.error || '任务已中断，可重新发起。'); } })
       .catch(err => { if (active) setError(message(err)); }).finally(() => { if (active) setBusy(''); });
     return () => { active = false; };
@@ -196,6 +198,10 @@ export default function FromDataPage() {
   const ready = Boolean(source?.validation?.scope === 'ontology' && source.validation.canPublish && source.plan && !dirty);
   const publishBlockers = source?.validation?.issues.filter(issue => issue.severity === 'error') ?? [];
   const published = !dirty && source?.publication?.configHash === source?.plan?.configHash && (source?.publication?.status === 'succeeded' || source?.publication?.status === 'completed');
+  const completion = source?.draft && !source.publication?.completed.length ? <CompletionReview key={source.id} source={source} disabled={locked}
+    onPrepare={async () => { const saved = dirty ? await saveModelingSource(source) : await getModelingSource(source.id); accept(saved); return saved; }}
+    onEditClass={id => { setFocusClassId(`fd-class-${id}`); setStep(1); }}
+    onApplied={value => { accept(value); setError(''); setCompletionFeedback(value.validation?.canPublish ? '完整方案已应用并通过本体校验，可继续查看发布方案。暂缓类及其依赖实例不进入本次发布和同步。' : '完整方案已应用并重新校验，剩余平台发布冲突请查看下方结果。'); setStep(2); }} /> : null;
 
   return <div className="fd-page">
     <PageHeader title="从数据建模" desc="从业务数据生成候选本体，审核后发布。" actions={<>
@@ -237,12 +243,15 @@ export default function FromDataPage() {
         </section>
       </>}
       {step === 1 && source.draft && <>
+        <section className="fd-card"><div className="fd-section-head"><div><h2>完整处理方案</h2><p className="mp-onto-muted">有依据的统一补全；不完整的类可选择本次不发布，其子类、关系和实例一起暂缓。确认一次后自动重新校验。</p></div>{completion}</div></section>
         <GenerationQuality source={source} dirty={dirty} onLocate={target => setFocusClassId(target)} />
         <ReviewWorkspace draft={source.draft} profile={source.profile} types={types} resolutions={source.resolutions} disabled={locked} focusClassId={focusClassId} identityLocked={Boolean(source.publication?.completed.length)} onChange={draft => edit(next => { next.draft = draft; })} onResolve={(classId, resolution) => edit(next => { next.resolutions[classId] = resolution; })} onRename={(draft, resolutions) => edit(next => { next.draft = draft; next.resolutions = resolutions; })} />
         <div className="fd-review-footer"><span>{dirty ? '有未保存的修改，校验时将先保存。' : '当前修改已保存。'}确认表示已核对业务规则与依据。</span><div className="fd-inline"><Button theme="borderless" icon={<Sparkles size={15} />} onClick={() => void operate('review')}>AI 语义审查（可选）</Button>{source.publication?.completed.length ? <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => setStep(3)}>查看发布结果</Button> : <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => void operate('validate')}>校验并预览</Button>}</div></div>
         {source.review && !dirty && <section className="fd-card"><h2>AI 语义审查</h2><p className="mp-onto-muted">审查是辅助建议，不能替代业务确认与数据校验。</p><Findings value={source.review} /></section>}
       </>}
       {step === 2 && <>
+        {completionFeedback && !dirty && <Banner type={source.validation?.canPublish ? 'success' : 'warning'} description={completionFeedback} closeIcon={null} />}
+        {completion && <section className="fd-card"><div className="fd-section-head"><div><h3>统一处理剩余问题</h3><p className="mp-onto-muted">集中核对补全与暂缓范围，无需逐项往返审核。</p></div>{completion}</div></section>}
         {source.draft && [...source.draft.classes, ...source.draft.relationships].some(item => !included(item)) && <section className="fd-card" aria-label="暂缓候选"><h3>暂缓候选（不进入本次发布）</h3><p>{[...source.draft.classes, ...source.draft.relationships].filter(item => !included(item)).map(item => item.name).join('、')}</p><p className="mp-onto-muted">候选保留在草稿，对应业务问题可能尚未覆盖。可返回审核恢复。</p></section>}
         {source.draft && <CandidateGraph draft={selectedDraft(source.draft)} />}
         <div className="fd-section-head"><div><h2>本体结构校验与接入预览</h2><p>检查概念、属性、继承和关系定义，再预检平台接入；数据质量独立限制可选同步。</p></div><Button onClick={() => void operate('validate')}>重新校验</Button></div>
