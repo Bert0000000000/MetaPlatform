@@ -46,7 +46,7 @@ Running 43 tests using 1 worker
   ok 43 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:392:1 › 前端：本体页面在真实后端下无未捕获错误 (1.5s)
 
 
-  1) [web] › tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication 
+  1) [web] › tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication
 
     Error: locator.click: Error: strict mode violation: getByRole('button', { name: '恢复草稿：浏览器草稿' }) resolved to 2 elements:
         1) <button type="button">恢复草稿：浏览器草稿</button> aka getByRole('button', { name: '恢复草稿：浏览器草稿' }).first()
@@ -68,6 +68,5 @@ Running 43 tests using 1 worker
     Error Context: ..\..\..\.tmp\codex-mp11-candidate\playwright-results\ontology-object-creation-f-70dc9--and-successful-publication-web\error-context.md
 
   1 failed
-    [web] › tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication 
+    [web] › tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication
   42 passed (1.1m)
-

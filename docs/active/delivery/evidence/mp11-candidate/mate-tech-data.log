@@ -14,4 +14,3 @@ packages/mate-tech-data/tests/test_mp11_connection_schema.py: 1 warning
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 129 passed, 45 warnings in 26.78s
-

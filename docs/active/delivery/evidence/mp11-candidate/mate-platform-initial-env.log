@@ -8,7 +8,7 @@ _________________ TestAuthConfig.test_load_returns_dataclass __________________
 packages\mate-platform\tests\test_sec_iam_01.py:81: in test_load_returns_dataclass
     assert cfg.realm == "metaplatform"
 E   AssertionError: assert 'codex-mp11' == 'metaplatform'
-E     
+E
 E     - metaplatform
 E     + codex-mp11
 ============================== warnings summary ===============================
@@ -20,4 +20,3 @@ E     + codex-mp11
 =========================== short test summary info ===========================
 FAILED packages/mate-platform/tests/test_sec_iam_01.py::TestAuthConfig::test_load_returns_dataclass - AssertionError: assert 'codex-mp11' == 'metaplatform'
 1 failed, 324 passed, 1 warning in 11.93s
-

@@ -10,7 +10,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:44 [info     ] marketplace.state.installed   
+2026-10-12 04:16:44 [info     ] marketplace.state.installed
 ___________________ test_list_apps_supports_keyword_filter ____________________
 packages\mate-app-hub\tests\test_app_hub.py:61: in test_list_apps_supports_keyword_filter
     assert r.status_code == 200, r.text
@@ -18,7 +18,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:44 [info     ] marketplace.state.installed   
+2026-10-12 04:16:44 [info     ] marketplace.state.installed
 ____________________________ test_list_app_groups _____________________________
 packages\mate-app-hub\tests\test_app_hub.py:85: in test_list_app_groups
     assert r.status_code == 200, r.text
@@ -26,7 +26,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:44 [info     ] marketplace.state.installed   
+2026-10-12 04:16:44 [info     ] marketplace.state.installed
 ____________________________ test_list_app_domains ____________________________
 packages\mate-app-hub\tests\test_app_hub.py:98: in test_list_app_domains
     assert r.status_code == 200, r.text
@@ -34,13 +34,13 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:44 [info     ] marketplace.state.installed   
+2026-10-12 04:16:44 [info     ] marketplace.state.installed
 _______________________ test_apps_carry_business_domain _______________________
 packages\mate-app-hub\tests\test_app_hub.py:121: in test_apps_carry_business_domain
     for d in client.get("/api/v1/apphub/apps/domains", headers=auth_headers_acme).json()[
 E   KeyError: 'items'
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:44 [info     ] marketplace.state.installed   
+2026-10-12 04:16:44 [info     ] marketplace.state.installed
 ______________________ test_list_modules_with_app_filter ______________________
 packages\mate-app-hub\tests\test_app_hub.py:152: in test_list_modules_with_app_filter
     assert r.status_code == 200, r.text
@@ -48,7 +48,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ________________________ test_list_pages_and_templates ________________________
 packages\mate-app-hub\tests\test_app_hub.py:161: in test_list_pages_and_templates
     assert r1.status_code == 200, r1.text
@@ -56,7 +56,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ____________________________ test_wrong_tenant_403 ____________________________
 packages\mate-app-hub\tests\test_app_hub_tenant_integration.py:67: in test_wrong_tenant_403
     assert r.status_code == 403, r.text
@@ -64,7 +64,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 403
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ___________________________ test_missing_scope_403 ____________________________
 packages\mate-app-hub\tests\test_app_hub_tenant_integration.py:83: in test_missing_scope_403
     assert r.status_code == 200, r.text
@@ -72,7 +72,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _____________________________ test_no_tenant_400 ______________________________
 packages\mate-app-hub\tests\test_app_hub_tenant_integration.py:94: in test_no_tenant_400
     assert r.status_code == 400, r.text
@@ -80,7 +80,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 400
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 __________________________ test_tenant_isolation_ok ___________________________
 packages\mate-app-hub\tests\test_app_hub_tenant_integration.py:116: in test_tenant_isolation_ok
     assert r1.status_code == 200, r1.text
@@ -88,7 +88,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 __________________________ test_register_app_success __________________________
 packages\mate-app-hub\tests\test_apphub_business.py:58: in test_register_app_success
     assert r.status_code == 201, r.text
@@ -96,7 +96,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _____________________ test_register_app_invalid_category ______________________
 packages\mate-app-hub\tests\test_apphub_business.py:74: in test_register_app_invalid_category
     assert r.status_code == 422, r.text
@@ -104,7 +104,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 422
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _____________________ test_register_app_category_no_group _____________________
 packages\mate-app-hub\tests\test_apphub_business.py:101: in test_register_app_category_no_group
     assert r.status_code == 409, r.text
@@ -112,7 +112,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 409
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ______________________ test_register_app_invalid_version ______________________
 packages\mate-app-hub\tests\test_apphub_business.py:114: in test_register_app_invalid_version
     assert r.status_code == 422, r.text
@@ -120,14 +120,14 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 422
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _______________________ test_register_app_emits_outbox ________________________
 packages\mate-app-hub\tests\test_apphub_business.py:129: in test_register_app_emits_outbox
     assert len(registered) >= 1
 E   assert 0 >= 1
 E    +  where 0 = len([])
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ________________________ test_update_app_version_bump _________________________
 packages\mate-app-hub\tests\test_apphub_business.py:154: in test_update_app_version_bump
     assert r.status_code == 200, r.text
@@ -135,7 +135,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ____________________ test_update_app_same_version_rejected ____________________
 packages\mate-app-hub\tests\test_apphub_business.py:173: in test_update_app_same_version_rejected
     assert r.status_code == 409, r.text
@@ -143,7 +143,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 409
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _______________________ test_update_app_invalid_version _______________________
 packages\mate-app-hub\tests\test_apphub_business.py:189: in test_update_app_invalid_version
     assert r.status_code == 422, r.text
@@ -151,7 +151,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 422
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 __________________________ test_update_app_not_found __________________________
 packages\mate-app-hub\tests\test_apphub_business.py:199: in test_update_app_not_found
     assert r.status_code == 404, r.text
@@ -159,14 +159,14 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 404
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ________________________ test_update_app_emits_outbox _________________________
 packages\mate-app-hub\tests\test_apphub_business.py:218: in test_update_app_emits_outbox
     assert len(updated) >= 1
 E   assert 0 >= 1
 E    +  where 0 = len([])
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ___________________________ test_delete_app_success ___________________________
 packages\mate-app-hub\tests\test_apphub_business.py:237: in test_delete_app_success
     assert r.status_code == 200, r.text
@@ -174,7 +174,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 __________________________ test_delete_app_not_found __________________________
 packages\mate-app-hub\tests\test_apphub_business.py:244: in test_delete_app_not_found
     assert r.status_code == 404, r.text
@@ -182,14 +182,14 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 404
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ________________________ test_delete_app_emits_outbox _________________________
 packages\mate-app-hub\tests\test_apphub_business.py:259: in test_delete_app_emits_outbox
     assert len(deleted) >= 1
 E   assert 0 >= 1
 E    +  where 0 = len([])
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 __________________________ test_create_group_success __________________________
 packages\mate-app-hub\tests\test_apphub_business.py:272: in test_create_group_success
     assert r.status_code == 201, r.text
@@ -197,7 +197,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _________________________ test_create_group_duplicate _________________________
 packages\mate-app-hub\tests\test_apphub_business.py:283: in test_create_group_duplicate
     assert r.status_code == 409, r.text
@@ -205,7 +205,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 409
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ____________________ test_delete_group_with_apps_rejected _____________________
 packages\mate-app-hub\tests\test_apphub_business.py:295: in test_delete_group_with_apps_rejected
     assert r.status_code == 409, r.text
@@ -213,7 +213,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 409
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _______________________ test_delete_empty_group_success _______________________
 packages\mate-app-hub\tests\test_apphub_business.py:310: in test_delete_empty_group_success
     assert r.status_code == 200, r.text
@@ -221,7 +221,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _________________________ test_create_domain_success __________________________
 packages\mate-app-hub\tests\test_apphub_business.py:323: in test_create_domain_success
     assert r.status_code == 201, r.text
@@ -229,7 +229,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ________________________ test_create_domain_duplicate _________________________
 packages\mate-app-hub\tests\test_apphub_business.py:346: in test_create_domain_duplicate
     assert r.status_code == 409, r.text
@@ -237,7 +237,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 409
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _________________________ test_update_domain_success __________________________
 packages\mate-app-hub\tests\test_apphub_business.py:356: in test_update_domain_success
     assert r.status_code == 200, r.text
@@ -245,7 +245,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ________________________ test_update_domain_not_found _________________________
 packages\mate-app-hub\tests\test_apphub_business.py:376: in test_update_domain_not_found
     assert r.status_code == 404, r.text
@@ -253,7 +253,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 404
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ____________________ test_delete_domain_with_apps_rejected ____________________
 packages\mate-app-hub\tests\test_apphub_business.py:388: in test_delete_domain_with_apps_rejected
     assert r.status_code == 409, r.text
@@ -261,7 +261,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 409
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ______________________ test_delete_empty_domain_success _______________________
 packages\mate-app-hub\tests\test_apphub_business.py:403: in test_delete_empty_domain_success
     assert r.status_code == 200, r.text
@@ -269,7 +269,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _________________________ test_create_module_success __________________________
 packages\mate-app-hub\tests\test_apphub_business.py:428: in test_create_module_success
     assert r.status_code == 201, r.text
@@ -277,7 +277,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _______________________ test_create_module_unknown_app ________________________
 packages\mate-app-hub\tests\test_apphub_business.py:439: in test_create_module_unknown_app
     assert r.status_code == 422, r.text
@@ -285,7 +285,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 422
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ________________________ test_create_module_duplicate _________________________
 packages\mate-app-hub\tests\test_apphub_business.py:449: in test_create_module_duplicate
     assert r.status_code == 409, r.text
@@ -293,7 +293,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 409
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 __________________________ test_create_page_success ___________________________
 packages\mate-app-hub\tests\test_apphub_business.py:467: in test_create_page_success
     assert r.status_code == 201, r.text
@@ -301,7 +301,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _______________________ test_create_page_unknown_module _______________________
 packages\mate-app-hub\tests\test_apphub_business.py:478: in test_create_page_unknown_module
     assert r.status_code == 422, r.text
@@ -309,7 +309,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 422
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ________________________ test_create_template_success _________________________
 packages\mate-app-hub\tests\test_apphub_business.py:497: in test_create_template_success
     assert r.status_code == 201, r.text
@@ -317,7 +317,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ______________________ test_create_template_invalid_type ______________________
 packages\mate-app-hub\tests\test_apphub_business.py:510: in test_create_template_invalid_type
     assert r.status_code == 422, r.text
@@ -325,7 +325,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 422
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 _______________________ test_create_template_duplicate ________________________
 packages\mate-app-hub\tests\test_apphub_business.py:522: in test_create_template_duplicate
     assert r1.status_code == 201, r1.text
@@ -333,26 +333,26 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 __________________________ test_app_tenant_isolation __________________________
 packages\mate-app-hub\tests\test_apphub_business.py:550: in test_app_tenant_isolation
     assert r_acme.status_code == 201
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ______________________ test_app_update_tenant_isolation _______________________
 packages\mate-app-hub\tests\test_apphub_business.py:581: in test_app_update_tenant_isolation
     assert r_globex.status_code == 404
 E   assert 401 == 404
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:45 [info     ] marketplace.state.installed   
+2026-10-12 04:16:45 [info     ] marketplace.state.installed
 ______ test_actual_pg_declarative_proposal_replay_concurrency_and_state _______
 packages\mate-app-hub\tests\test_apphub_order_binding.py:86: in test_actual_pg_declarative_proposal_replay_concurrency_and_state
     assert target.hostname=='127.0.0.1' and target.port==55497 and target.path.startswith('/codex_mp11_apphub_')
 E   AssertionError: assert ('127.0.0.1' == '127.0.0.1'
-E     
+E
 E       127.0.0.1 and 55497 == 55497 and False)
 E    +  where 55497 = ParseResult(scheme='postgresql', netloc='[REDACTED_DSN_AUTHORITY]', path='/codex_mp11_candidate_tests_20261012', params='', query='', fragment='').port
 E    +  and   False = <built-in method startswith of str object at 0x000001BE31A6BDC0>('/codex_mp11_apphub_')
@@ -364,7 +364,7 @@ _____________ test_actual_pg_insert_only_module_page_concurrency ______________
 .venv\Lib\site-packages\sqlalchemy\engine\default.py:952: in do_execute
     cursor.execute(statement, parameters)
 E   psycopg2.errors.UndefinedTable: relation "apphub_modules" does not exist
-E   LINE 2: FROM apphub_modules 
+E   LINE 2: FROM apphub_modules
 E                ^
 
 The above exception was the direct cause of the following exception:
@@ -420,11 +420,11 @@ packages\mate-app-hub\src\mate_app_hub\repositories\sql_store.py:516: in put_mod
 .venv\Lib\site-packages\sqlalchemy\engine\default.py:952: in do_execute
     cursor.execute(statement, parameters)
 E   sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedTable) relation "apphub_modules" does not exist
-E   LINE 2: FROM apphub_modules 
+E   LINE 2: FROM apphub_modules
 E                ^
-E   
-E   [SQL: SELECT apphub_modules.id AS apphub_modules_id, apphub_modules.tenant_id AS apphub_modules_tenant_id, apphub_modules.name AS apphub_modules_name, apphub_modules.code AS apphub_modules_code, apphub_modules.app_code AS apphub_modules_app_code, apphub_modules.description AS apphub_modules_description, apphub_modules.entry_path AS apphub_modules_entry_path 
-E   FROM apphub_modules 
+E
+E   [SQL: SELECT apphub_modules.id AS apphub_modules_id, apphub_modules.tenant_id AS apphub_modules_tenant_id, apphub_modules.name AS apphub_modules_name, apphub_modules.code AS apphub_modules_code, apphub_modules.app_code AS apphub_modules_app_code, apphub_modules.description AS apphub_modules_description, apphub_modules.entry_path AS apphub_modules_entry_path
+E   FROM apphub_modules
 E   WHERE apphub_modules.id = %(pk_1)s]
 E   [parameters: {'pk_1': 'create-d4bc475f557d4bc98718a21cadedfd57-m'}]
 E   (Background on this error at: https://sqlalche.me/e/20/f405)
@@ -471,7 +471,7 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:50 [info     ] marketplace.state.installed   
+2026-10-12 04:16:50 [info     ] marketplace.state.installed
 _______________________ test_execute_action_emits_span ________________________
 packages\mate-app-hub\tests\test_apphub_otel_01.py:104: in test_execute_action_emits_span
     _save_runtime_fixture(client, auth_headers)
@@ -480,21 +480,21 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:16:50 [info     ] marketplace.state.installed   
+2026-10-12 04:16:50 [info     ] marketplace.state.installed
 _______________ test_sql_http_page_save_and_unpublished_runtime _______________
 packages\mate-app-hub\tests\test_apphub_publication.py:74: in test_sql_http_page_save_and_unpublished_runtime
     assert detail.status_code == 200
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout call -----------------------------
-2026-10-12 04:17:11 [info     ] marketplace.state.installed   
+2026-10-12 04:17:11 [info     ] marketplace.state.installed
 ____________ test_empty_publish_and_readonly_mutations_fail_closed ____________
 packages\mate-app-hub\tests\test_apphub_publication.py:92: in test_empty_publish_and_readonly_mutations_fail_closed
     assert publish.status_code == 422
 E   assert 401 == 422
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:17:11 [info     ] marketplace.state.installed   
+2026-10-12 04:17:11 [info     ] marketplace.state.installed
 _______ test_saved_binding_publishes_snapshot_runtime_and_tenant_usage ________
 packages\mate-app-hub\tests\test_apphub_publication.py:140: in test_saved_binding_publishes_snapshot_runtime_and_tenant_usage
     assert published.status_code == 200, published.text
@@ -502,7 +502,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:17:28 [info     ] marketplace.state.installed   
+2026-10-12 04:17:28 [info     ] marketplace.state.installed
 ________ test_release_snapshot_and_tasks_are_durable_and_tenant_scoped ________
 packages\mate-app-hub\tests\test_apphub_publication.py:171: in test_release_snapshot_and_tasks_are_durable_and_tenant_scoped
     assert sql.get_app('tenant-acme', 'real').releases, 'release records must be persisted'
@@ -512,14 +512,14 @@ E    +  where [] = ApphubApp(id='app-real', tenant_id='tenant-acme', name='Real'
 E    +    where ApphubApp(id='app-real', tenant_id='tenant-acme', name='Real', code='real', category='business', description='', versi... revision=0, status='DESIGNING', created_at=None, updated_at=None, published_version_id=None, versions=[], releases=[]) = <function get_app at 0x000001BE30F89580>('tenant-acme', 'real')
 E    +      where <function get_app at 0x000001BE30F89580> = sql.get_app
 ---------------------------- Captured stdout call -----------------------------
-2026-10-12 04:17:33 [info     ] marketplace.state.installed   
+2026-10-12 04:17:33 [info     ] marketplace.state.installed
 ___________________ test_offline_app_cannot_issue_shortlink ___________________
 packages\mate-app-hub\tests\test_apphub_publication.py:185: in test_offline_app_cannot_issue_shortlink
     assert response.status_code == 409
 E   assert 401 == 409
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:17:33 [info     ] marketplace.state.installed   
+2026-10-12 04:17:33 [info     ] marketplace.state.installed
 _____________ test_preview_reads_draft_binding_without_publishing _____________
 packages\mate-app-hub\tests\test_apphub_publication.py:207: in test_preview_reads_draft_binding_without_publishing
     assert response.status_code == 200, response.text
@@ -527,7 +527,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:17:33 [info     ] marketplace.state.installed   
+2026-10-12 04:17:33 [info     ] marketplace.state.installed
 _________ test_sql_group_creation_is_insert_only_and_tenant_isolated __________
 packages\mate-app-hub\tests\test_apphub_publication.py:232: in test_sql_group_creation_is_insert_only_and_tenant_isolated
     assert result.status_code==201,result.text
@@ -535,21 +535,21 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout call -----------------------------
-2026-10-12 04:17:51 [info     ] marketplace.state.installed   
+2026-10-12 04:17:51 [info     ] marketplace.state.installed
 _______ test_offline_reverse_reference_reports_actual_application_state _______
 packages\mate-app-hub\tests\test_apphub_publication.py:244: in test_offline_reverse_reference_reports_actual_application_state
     assert response.status_code==200
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:17:51 [info     ] marketplace.state.installed   
+2026-10-12 04:17:51 [info     ] marketplace.state.installed
 ______ test_page_save_reports_partial_result_when_app_metadata_conflicts ______
 packages\mate-app-hub\tests\test_apphub_publication.py:313: in test_page_save_reports_partial_result_when_app_metadata_conflicts
     assert response.status_code==200 and response.json()['application_metadata_updated'] is False
 E   assert (401 == 200)
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:18:00 [info     ] marketplace.state.installed   
+2026-10-12 04:18:00 [info     ] marketplace.state.installed
 _______ test_stale_release_approval_cannot_replace_new_running_snapshot _______
 packages\mate-app-hub\tests\test_apphub_publication.py:324: in test_stale_release_approval_cannot_replace_new_running_snapshot
     assert response.status_code==201,response.text
@@ -557,7 +557,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:18:00 [info     ] marketplace.state.installed   
+2026-10-12 04:18:00 [info     ] marketplace.state.installed
 _________ test_sql_module_and_page_codes_are_isolated_between_tenants _________
 packages\mate-app-hub\tests\test_apphub_publication.py:345: in test_sql_module_and_page_codes_are_isolated_between_tenants
     assert module.status_code==201,module.text
@@ -565,7 +565,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout call -----------------------------
-2026-10-12 04:18:02 [info     ] marketplace.state.installed   
+2026-10-12 04:18:02 [info     ] marketplace.state.installed
 _ test_delete_by_returned_id_removes_published_runtime[mate_app_hub.repositories.in_memory] _
 packages\mate-app-hub\tests\test_apphub_publication.py:385: in test_delete_by_returned_id_removes_published_runtime
     assert created.status_code == 201, created.text
@@ -573,7 +573,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout call -----------------------------
-2026-10-12 04:18:33 [info     ] marketplace.state.installed   
+2026-10-12 04:18:33 [info     ] marketplace.state.installed
 _ test_delete_by_returned_id_removes_published_runtime[mate_app_hub.repositories.sql_store] _
 packages\mate-app-hub\tests\test_apphub_publication.py:385: in test_delete_by_returned_id_removes_published_runtime
     assert created.status_code == 201, created.text
@@ -581,7 +581,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout call -----------------------------
-2026-10-12 04:18:36 [info     ] marketplace.state.installed   
+2026-10-12 04:18:36 [info     ] marketplace.state.installed
 ____________ test_draft_version_never_labels_the_running_snapshot _____________
 packages\mate-app-hub\tests\test_apphub_publication.py:414: in test_draft_version_never_labels_the_running_snapshot
     app_id = save_runtime_fixture(client, auth_headers_acme)
@@ -591,56 +591,56 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:18:54 [info     ] marketplace.state.installed   
+2026-10-12 04:18:54 [info     ] marketplace.state.installed
 ______ test_publication_checkpoint_checks_actual_saved_pages_and_access _______
 packages\mate-app-hub\tests\test_apphub_publication.py:434: in test_publication_checkpoint_checks_actual_saved_pages_and_access
     assert empty.status_code == 200
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:18:54 [info     ] marketplace.state.installed   
+2026-10-12 04:18:54 [info     ] marketplace.state.installed
 ______ test_history_authorizes_snapshot_page_and_ignores_live_objectset _______
 packages\mate-app-hub\tests\test_apphub_publication.py:461: in test_history_authorizes_snapshot_page_and_ignores_live_objectset
     assert result.status_code == 200
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:18:54 [info     ] marketplace.state.installed   
+2026-10-12 04:18:54 [info     ] marketplace.state.installed
 _____ test_publication_dependency_failure_is_unknown_and_preserves_draft ______
 packages\mate-app-hub\tests\test_apphub_publication.py:482: in test_publication_dependency_failure_is_unknown_and_preserves_draft
     assert report['can_publish'] is False
            ^^^^^^^^^^^^^^^^^^^^^
 E   KeyError: 'can_publish'
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:18:54 [info     ] marketplace.state.installed   
+2026-10-12 04:18:54 [info     ] marketplace.state.installed
 _ test_proposal_attribution_keeps_loaded_snapshot_across_concurrent_publication _
 packages\mate-app-hub\tests\test_apphub_publication.py:519: in test_proposal_attribution_keeps_loaded_snapshot_across_concurrent_publication
     assert response.status_code == 200
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:18:54 [info     ] marketplace.state.installed   
+2026-10-12 04:18:54 [info     ] marketplace.state.installed
 _ test_delete_prefers_exact_id_over_another_apps_code[mate_app_hub.repositories.in_memory] _
 packages\mate-app-hub\tests\test_apphub_publication.py:539: in test_delete_prefers_exact_id_over_another_apps_code
     assert response.status_code == 200
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout call -----------------------------
-2026-10-12 04:18:57 [info     ] marketplace.state.installed   
+2026-10-12 04:18:57 [info     ] marketplace.state.installed
 _ test_delete_prefers_exact_id_over_another_apps_code[mate_app_hub.repositories.sql_store] _
 packages\mate-app-hub\tests\test_apphub_publication.py:539: in test_delete_prefers_exact_id_over_another_apps_code
     assert response.status_code == 200
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout call -----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 ___ test_proposal_context_validates_old_snapshot_readonly_and_actual_target ___
 packages\mate-app-hub\tests\test_apphub_publication.py:562: in test_proposal_context_validates_old_snapshot_readonly_and_actual_target
     assert result.status_code==200 and result.json()['app_version']=='1.0.0'
 E   assert (401 == 200)
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 _______________ test_list_releases_for_seeded_app_returns_page ________________
 packages\mate-app-hub\tests\test_apphub_releases.py:12: in test_list_releases_for_seeded_app_returns_page
     assert response.status_code == 200, response.text
@@ -648,7 +648,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 ____________________ test_get_runtime_endpoint_returns_200 ____________________
 packages\mate-app-hub\tests\test_apphub_runtime_01.py:369: in test_get_runtime_endpoint_returns_200
     actual_id = _save_runtime_fixture(client, auth_headers_acme)
@@ -658,7 +658,7 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 _________________ test_get_runtime_endpoint_cross_tenant_404 __________________
 packages\mate-app-hub\tests\test_apphub_runtime_01.py:393: in test_get_runtime_endpoint_cross_tenant_404
     assert r_reg.status_code == 201, r_reg.text
@@ -666,7 +666,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 201
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 ______________________ test_execute_endpoint_submit_form ______________________
 packages\mate-app-hub\tests\test_apphub_runtime_01.py:406: in test_execute_endpoint_submit_form
     _save_runtime_fixture(client, auth_headers_acme)
@@ -675,7 +675,7 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 ___________________ test_publish_endpoint_returns_published ___________________
 packages\mate-app-hub\tests\test_apphub_runtime_01.py:431: in test_publish_endpoint_returns_published
     assert r.status_code == 200, r.text
@@ -683,14 +683,14 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 200
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 _____________________ test_publish_endpoint_emits_outbox ______________________
 packages\mate-app-hub\tests\test_apphub_runtime_01.py:448: in test_publish_endpoint_emits_outbox
     assert len(published) >= 1
 E   assert 0 >= 1
 E    +  where 0 = len([])
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 _________________ test_create_shortlink_endpoint_returns_201 __________________
 packages\mate-app-hub\tests\test_apphub_shortlink_01.py:239: in test_create_shortlink_endpoint_returns_201
     actual_id = _save_runtime_fixture(client, auth_headers_acme)
@@ -700,7 +700,7 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 _________________ test_resolve_shortlink_endpoint_returns_200 _________________
 packages\mate-app-hub\tests\test_apphub_shortlink_01.py:255: in test_resolve_shortlink_endpoint_returns_200
     actual_id = _save_runtime_fixture(client, auth_headers_acme)
@@ -710,7 +710,7 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 ____________________ test_resolve_shortlink_not_found_404 _____________________
 packages\mate-app-hub\tests\test_apphub_shortlink_01.py:280: in test_resolve_shortlink_not_found_404
     assert r.status_code == 404, r.text
@@ -718,7 +718,7 @@ E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupporte
 E   assert 401 == 404
 E    +  where 401 = <Response [401 Unauthorized]>.status_code
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 _________________ test_list_shortlinks_endpoint_returns_items _________________
 packages\mate-app-hub\tests\test_apphub_shortlink_01.py:289: in test_list_shortlinks_endpoint_returns_items
     actual_ids.add(_save_runtime_fixture(client, auth_headers_acme, app_id))
@@ -728,7 +728,7 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 ____________________ test_cross_tenant_resolve_returns_404 ____________________
 packages\mate-app-hub\tests\test_apphub_shortlink_01.py:310: in test_cross_tenant_resolve_returns_404
     actual_id = _save_runtime_fixture(client, auth_headers_acme)
@@ -738,7 +738,7 @@ packages\mate-app-hub\tests\publication_helpers.py:11: in save_runtime_fixture
            ^^^^^^^^^^^^^^^^^^^^^^^^^
 E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
 ---------------------------- Captured stdout setup ----------------------------
-2026-10-12 04:19:00 [info     ] marketplace.state.installed   
+2026-10-12 04:19:00 [info     ] marketplace.state.installed
 ============================== warnings summary ===============================
 .venv\Lib\site-packages\fastapi\testclient.py:1
   D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
@@ -841,4 +841,3 @@ FAILED packages/mate-app-hub/tests/test_apphub_shortlink_01.py::test_resolve_sho
 FAILED packages/mate-app-hub/tests/test_apphub_shortlink_01.py::test_list_shortlinks_endpoint_returns_items - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
 FAILED packages/mate-app-hub/tests/test_apphub_shortlink_01.py::test_cross_tenant_resolve_returns_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
 83 failed, 134 passed, 79 warnings in 136.45s (0:02:16)
-

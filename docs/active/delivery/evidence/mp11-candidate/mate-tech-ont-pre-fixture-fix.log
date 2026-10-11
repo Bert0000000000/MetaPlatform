@@ -73,31 +73,31 @@ E   starlette.websockets.WebSocketDisconnect
     from starlette.testclient import TestClient as TestClient  # noqa
 
 packages\mate-tech-ont\src\mate_tech_ont\main.py:218
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:218: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:218: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     @app.on_event("startup")  # pyright: ignore[reportDeprecated]
 
 .venv\Lib\site-packages\fastapi\applications.py:4675
 .venv\Lib\site-packages\fastapi\applications.py:4675
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     return self.router.on_event(event_type)  # ty: ignore[deprecated]
 
 packages\mate-tech-ont\src\mate_tech_ont\main.py:302
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:302: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:302: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     @app.on_event("shutdown")  # pyright: ignore[reportDeprecated]
 
 packages/mate-tech-ont/tests/security/test_cypher_tenant_guard.py: 1 warning
@@ -130,4 +130,3 @@ FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch
 FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_execute_gate_denial_maps_422_with_scoped_header - KeyError: 'proposal_id'
 FAILED packages/mate-tech-ont/tests/test_ont_g23_functions.py::TestWebSocketSubscription::test_ws_receives_outbox_event - starlette.websockets.WebSocketDisconnect
 8 failed, 671 passed, 13 skipped, 27 warnings in 188.23s (0:03:08)
-

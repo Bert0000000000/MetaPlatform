@@ -305,4 +305,3 @@ FAILED packages/mate-tech-data/tests/test_mp11_connection_schema.py::test_real_p
 FAILED packages/mate-tech-data/tests/test_mp11_connection_schema.py::test_real_pg_registered_sync_csv_retry_restart_and_relationships - assert (401 == 200)
 FAILED packages/mate-tech-data/tests/test_mp11_connection_schema.py::test_fix_i1_busy_mapping_and_sync_http409_preserve_state - AssertionError: assert 401 == 409
 44 failed, 85 passed, 43 warnings in 16.09s
-

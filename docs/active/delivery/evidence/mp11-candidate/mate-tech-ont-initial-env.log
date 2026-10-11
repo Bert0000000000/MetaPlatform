@@ -67,14 +67,14 @@ _________________ test_concurrent_new_has_one_winner[memory] __________________
 packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:65: in test_concurrent_new_has_one_winner
     assert sorted(r.status_code for r in results) == [200, 409]
 E   assert [401, 401] == [200, 409]
-E     
+E
 E     At index 0 diff: 401 != 200
 E     Use -v to get more diff
 ___________________ test_concurrent_new_has_one_winner[pg] ____________________
 packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:65: in test_concurrent_new_has_one_winner
     assert sorted(r.status_code for r in results) == [200, 409]
 E   assert [401, 401] == [200, 409]
-E     
+E
 E     At index 0 diff: 401 != 200
 E     Use -v to get more diff
 ___ test_new_wip_restore_competing_create_publish_preserves_winner[memory] ____
@@ -665,31 +665,31 @@ E   KeyError: 'id'
     from starlette.testclient import TestClient as TestClient  # noqa
 
 packages\mate-tech-ont\src\mate_tech_ont\main.py:218
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:218: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:218: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     @app.on_event("startup")  # pyright: ignore[reportDeprecated]
 
 .venv\Lib\site-packages\fastapi\applications.py:4675
 .venv\Lib\site-packages\fastapi\applications.py:4675
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     return self.router.on_event(event_type)  # ty: ignore[deprecated]
 
 packages\mate-tech-ont\src\mate_tech_ont\main.py:302
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:302: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:302: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     @app.on_event("shutdown")  # pyright: ignore[reportDeprecated]
 
 packages/mate-tech-ont/tests/security/test_cypher_tenant_guard.py: 1 warning
@@ -813,4 +813,3 @@ FAILED packages/mate-tech-ont/tests/test_shacl_engine.py::test_shacl_validate_en
 FAILED packages/mate-tech-ont/tests/test_shacl_engine.py::test_shacl_validate_endpoint_with_violations - assert 401 == 200
 FAILED packages/mate-tech-ont/tests/test_tenant_integration.py::test_relation_to_missing_src_raises - KeyError: 'id'
 100 failed, 579 passed, 13 skipped, 16 warnings in 155.38s (0:02:35)
-

@@ -46,7 +46,7 @@ Running 43 tests using 1 worker
   ok 43 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:392:1 › 前端：本体页面在真实后端下无未捕获错误 (1.5s)
 
 
-  1) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:9:3 › MP11 actual order application › empty tenant explicitly creates its own business group and order page 
+  1) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:9:3 › MP11 actual order application › empty tenant explicitly creates its own business group and order page
 
     Error: expect(received).toEqual(expected) // deep equality
 
@@ -64,7 +64,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\mp11-order-app-flow-MP11-a-f77cb-siness-group-and-order-page-web\error-context.md
 
-  2) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:26:3 › MP11 actual order application › actual metadata preview save publish shortlink and human receipt survive reopening 
+  2) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:26:3 › MP11 actual order application › actual metadata preview save publish shortlink and human receipt survive reopening
 
     Error: expect(received).toBeTruthy()
 
@@ -81,7 +81,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\mp11-order-app-flow-MP11-a-abfc1-n-receipt-survive-reopening-web\error-context.md
 
-  3) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:107:3 › MP11 actual order application › onboarding resumes selected real artifacts and treats query failures as unknown 
+  3) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:107:3 › MP11 actual order application › onboarding resumes selected real artifacts and treats query failures as unknown
 
     TimeoutError: locator.click: Timeout 15000ms exceeded.
     Call log:
@@ -99,7 +99,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\mp11-order-app-flow-MP11-a-a7558-s-query-failures-as-unknown-web\error-context.md
 
-  4) [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:78:3 › MP11 verified PG and CSV ingestion › real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent 
+  4) [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:78:3 › MP11 verified PG and CSV ingestion › real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent
 
     Error: expect(received).toBeTruthy()
 
@@ -116,7 +116,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\ontology-ia-v2-data-flow-M-b6542-and-CSV-retry-is-idempotent-web\error-context.md
 
-  5) [web] › apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication 
+  5) [web] › apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication
 
     TimeoutError: locator.click: Timeout 15000ms exceeded.
     Call log:
@@ -135,7 +135,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\ontology-object-creation-f-70dc9--and-successful-publication-web\error-context.md
 
-  6) [web] › apps\web\tests\e2e\ontology-relationship-flow.spec.ts:4:1 › real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries 
+  6) [web] › apps\web\tests\e2e\ontology-relationship-flow.spec.ts:4:1 › real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries
 
     TypeError: (intermediate value).map is not a function
 
@@ -150,7 +150,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\ontology-relationship-flow-003d3-d-and-both-endpoint-queries-web\error-context.md
 
-  7) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: javascript:alert(1) 
+  7) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: javascript:alert(1)
 
     Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
 
@@ -165,7 +165,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-6c824-uration-javascript-alert-1--web\error-context.md
 
-  8) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: data:text/html,unsafe 
+  8) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: data:text/html,unsafe
 
     Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
 
@@ -180,7 +180,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-69dd8-ation-data-text-html-unsafe-web\error-context.md
 
-  9) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: //unsafe.example/home 
+  9) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: //unsafe.example/home
 
     Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
 
@@ -195,7 +195,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-faa25-uration-unsafe-example-home-web\error-context.md
 
-  10) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://public-user:public-pass@platform.example.com/home 
+  10) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://public-user:public-pass@platform.example.com/home
 
     Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
 
@@ -210,7 +210,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-5acdf-s-platform-example-com-home-web\error-context.md
 
-  11) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://platform.example.com/home 
+  11) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://platform.example.com/home
 
     Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
 
@@ -225,7 +225,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-b3fc7-s-platform-example-com-home-web\error-context.md
 
-  12) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: /workspace/home 
+  12) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: /workspace/home
 
     Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
 
@@ -240,7 +240,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-79243-onfiguration-workspace-home-web\error-context.md
 
-  13) [web] › apps\web\tests\e2e\website-entry.spec.ts:142:1 › standalone generated links work without JavaScript 
+  13) [web] › apps\web\tests\e2e\website-entry.spec.ts:142:1 › standalone generated links work without JavaScript
 
     Error: node:internal/modules/cjs/loader:1522
       throw err;
@@ -278,7 +278,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-g-e08a2-nks-work-without-JavaScript-web\error-context.md
 
-  14) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $& 
+  14) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $&
 
     Error: node:internal/modules/cjs/loader:1522
       throw err;
@@ -316,7 +316,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-eff48--literal-replacement-token--web\error-context.md
 
-  15) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $` 
+  15) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $`
 
     Error: node:internal/modules/cjs/loader:1522
       throw err;
@@ -354,7 +354,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-eff48--literal-replacement-token--web\error-context.md
 
-  16) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $' 
+  16) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $'
 
     Error: node:internal/modules/cjs/loader:1522
       throw err;
@@ -392,7 +392,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-eff48--literal-replacement-token--web\error-context.md
 
-  17) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $$ 
+  17) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $$
 
     Error: node:internal/modules/cjs/loader:1522
       throw err;
@@ -430,7 +430,7 @@ Running 43 tests using 1 worker
 
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-eff48--literal-replacement-token--web\error-context.md
 
-  18) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $1 
+  18) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $1
 
     Error: node:internal/modules/cjs/loader:1522
       throw err;
@@ -469,23 +469,22 @@ Running 43 tests using 1 worker
     Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-02184-literal-replacement-token-1-web\error-context.md
 
   18 failed
-    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:9:3 › MP11 actual order application › empty tenant explicitly creates its own business group and order page 
-    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:26:3 › MP11 actual order application › actual metadata preview save publish shortlink and human receipt survive reopening 
-    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:107:3 › MP11 actual order application › onboarding resumes selected real artifacts and treats query failures as unknown 
-    [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:78:3 › MP11 verified PG and CSV ingestion › real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent 
-    [web] › apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication 
-    [web] › apps\web\tests\e2e\ontology-relationship-flow.spec.ts:4:1 › real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: javascript:alert(1) 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: data:text/html,unsafe 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: //unsafe.example/home 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://public-user:public-pass@platform.example.com/home 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://platform.example.com/home 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: /workspace/home 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:142:1 › standalone generated links work without JavaScript 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $& 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $` 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $' 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $$ 
-    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $1 
+    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:9:3 › MP11 actual order application › empty tenant explicitly creates its own business group and order page
+    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:26:3 › MP11 actual order application › actual metadata preview save publish shortlink and human receipt survive reopening
+    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:107:3 › MP11 actual order application › onboarding resumes selected real artifacts and treats query failures as unknown
+    [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:78:3 › MP11 verified PG and CSV ingestion › real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent
+    [web] › apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication
+    [web] › apps\web\tests\e2e\ontology-relationship-flow.spec.ts:4:1 › real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: javascript:alert(1)
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: data:text/html,unsafe
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: //unsafe.example/home
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://public-user:public-pass@platform.example.com/home
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://platform.example.com/home
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: /workspace/home
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:142:1 › standalone generated links work without JavaScript
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $&
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $`
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $'
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $$
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $1
   25 passed (1.3m)
-

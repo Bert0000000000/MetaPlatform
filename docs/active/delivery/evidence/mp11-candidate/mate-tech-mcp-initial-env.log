@@ -377,7 +377,7 @@ ______________ test_protocol_filters_discovery_and_all_fallbacks ______________
 packages\mate-tech-mcp\tests\test_mp11_client_contract.py:128: in test_protocol_filters_discovery_and_all_fallbacks
     assert names == {'ont_object_query'}
 E   AssertionError: assert {'ont_object_...ose_instance'} == {'ont_object_query'}
-E     
+E
 E     Extra items in the left set:
 E     'ont_propose_instance'
 E     Use -v to get more diff
@@ -596,22 +596,22 @@ E    +  where 401 = <Response [401 Unauthorized]>.status_code
 
 packages\mate-tech-mcp\src\mate_tech_mcp\main.py:247
 tests/test_ontology_mcp_tools.py::TestHitlBoundaryHardening::test_streamable_strips_external_caller_and_blocks_hitl
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-mcp\src\mate_tech_mcp\main.py:247: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-mcp\src\mate_tech_mcp\main.py:247: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     @app.on_event("startup")  # pyright: ignore[reportDeprecated]
 
 .venv\Lib\site-packages\fastapi\applications.py:4675
 tests/test_ontology_mcp_tools.py::TestHitlBoundaryHardening::test_streamable_strips_external_caller_and_blocks_hitl
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     return self.router.on_event(event_type)  # ty: ignore[deprecated]
 
 tests/test_edge.py: 5 warnings
