@@ -18,6 +18,144 @@ security:
     oidcScopes:
       - platform.read
 paths:
+  /api/v1/copilot/modeling/data-repair:
+    post:
+      tags: [modeling]
+      operationId: copilotProposeModelingDataRepair
+      summary: Propose observed-value repairs for nonidentity instance conflicts
+      description: Inert proposals only. Never invent values, fill missing identities, alter schemas, approve, publish or synchronize. The ONT service validates every selected value against the actual source conflict group and requires explicit human confirmation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DataModelingModelingRequest'}
+      responses:
+        '200':
+          description: Strict repair proposals or an empty repairs list for ambiguous values
+          content:
+            application/json:
+              schema: {type: object, required: [repairs], properties: {repairs: {type: array, maxItems: 30, items: {type: object}}}}
+        '401': {description: Authentication required}
+        '422': {description: Invalid or oversized input}
+        '502': {description: Provider failure}
+  /api/v1/copilot/modeling/refine:
+    post:
+      tags: [modeling]
+      summary: Propose bounded repairs from full-data diagnostics
+      operationId: copilotRefineModelingCandidate
+      description: Proposes identity additions or join replacements for existing unreviewed candidates. No concept creation, renaming, deletion, approval, source mutation, publication or cardinality changes. The ontology service validates all patches locally before accepting them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingModelingRequest'
+      responses:
+        '200':
+          description: Inert repairs; validated by the ontology adapter.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [repairs]
+                properties:
+                  repairs:
+                    type: array
+                    maxItems: 30
+                    items:
+                      type: object
+        '401':
+          description: Authentication required
+        '422':
+          description: Invalid or oversized input
+        '502':
+          description: Provider response failure
+  /api/v1/copilot/modeling/generate:
+    post:
+      tags:
+      - modeling
+      summary: Generate Model
+      description: Transient connection failures and provider HTTP 429/502/503/504 responses receive at most three attempts per request. Connect timeout is 15 seconds; read timeout is 180 seconds and is not automatically retried. Transport, access, rate-limit and JSON failures have distinct curated diagnostics. Batch mapping schemas enumerate allowed source sheets and global class IDs; source evidence for other batches is excluded only from the mapping request, without modifying candidate evidence. Global concepts are immutable across mapping batches. Technical mapping ID collisions are disambiguated without changing business references. Invalid class, sheet, property or column references receive one bounded batch repair, then fail closed with a curated diagnostic code; existing drafts and native resources are never changed by this endpoint.
+      operationId: generate_model_api_v1_copilot_modeling_generate_post
+      parameters:
+      - in: header
+        name: Accept
+        required: false
+        schema:
+          type: string
+        description: Use text/event-stream for real stage and mapping batch progress. Events contain type=progress with progress, type=result with result, or type=error with curated detail and status. Comments are keep-alives. Without this header, returns the existing JSON response.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingModelingRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+            text/event-stream:
+              schema:
+                type: string
+              description: SSE data carries JSON progress, result, or error events. Only result is a complete candidate; a partial stream must never replace a draft.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingHTTPValidationError'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+      x-mate-owner: copilot-platform
+      x-mate-permission: copilot.post
+      x-mate-requirements:
+      - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive
+        modeling remains independent. Revision and native baseline conflicts fail closed.
+  /api/v1/copilot/modeling/review:
+    post:
+      tags:
+      - modeling
+      summary: Review Model
+      operationId: review_model_api_v1_copilot_modeling_review_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingModelingRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingHTTPValidationError'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+      x-mate-owner: copilot-platform
+      x-mate-permission: copilot.post
+      x-mate-requirements:
+      - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive
+        modeling remains independent. Revision and native baseline conflicts fail closed.
   /api/v1/copilot:
     get:
       security:
@@ -1511,6 +1649,86 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    DataModelingHTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/DataModelingValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    DataModelingValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    DataModelingModelingRequest:
+      properties:
+        profile:
+          additionalProperties: true
+          type: object
+          title: Profile
+        context:
+          type: string
+          maxLength: 2000
+          title: Context
+          default: ''
+        questions:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          maxItems: 20
+          title: Questions
+        existingTypes:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          maxItems: 100
+          title: Existingtypes
+        outputSchema:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          description: Inert JSON Schema supplied by the ontology adapter; at most 30000 JSON characters. References are never fetched.
+          title: Outputschema
+          default: null
+        draft:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Draft
+        validation:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Validation
+      additionalProperties: false
+      type: object
+      required:
+      - profile
+      title: ModelingRequest
     ErrorResponse:
       type: object
       required:

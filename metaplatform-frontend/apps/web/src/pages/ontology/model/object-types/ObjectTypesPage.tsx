@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@douyinfe/semi-ui';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/skeleton';
@@ -15,6 +15,7 @@ import '../../ontology.css';
  * 随本页收编（其他基元页没有真实编辑器，不放创建入口——ADR-0069 §2.4）。
  */
 export default function ObjectTypesPage() {
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(params.get('create') === 'true');
 
@@ -24,6 +25,8 @@ export default function ObjectTypesPage() {
         title="对象类型"
         desc="对象类型的完整建模工作台：领域树、概念表、属性与关系、相似概念合并"
         actions={
+          <>
+          <Button onClick={() => navigate('/ontology/model/from-data')}>从数据建模</Button>
           <Button
             theme="solid"
             type="primary"
@@ -32,6 +35,7 @@ export default function ObjectTypesPage() {
           >
             新建本体
           </Button>
+          </>
         }
       />
       <OntologyModelingPage createOpen={createOpen} setCreateOpen={setCreateOpen} />

@@ -10,12 +10,16 @@ export default function ModelGraphCanvas({
   selectedRid,
   onSelect,
   onOpen,
+  labelOverrides = {},
+  showInheritance = false,
 }: {
   types: KernelObjectType[];
   links: KernelLinkType[];
   selectedRid?: string;
   onSelect: (rid: string) => void;
   onOpen: (rid: string) => void;
+  labelOverrides?: Record<string, string>;
+  showInheritance?: boolean;
 }) {
   const [positions, setPositions] = useState<Record<string, Point>>({});
   const [zoom, setZoom] = useState(1);
@@ -99,10 +103,14 @@ export default function ModelGraphCanvas({
                       d={`M${a.x + 230},${a.y + 95} C${a.x + 265},${a.y + 95} ${b.x - 35},${b.y + 95} ${b.x},${b.y + 95}`}
                     />
                     <text x={(a.x + b.x + 230) / 2} y={(a.y + b.y) / 2 + 85}>
-                      {l.rid}
+                      {labelOverrides[l.rid] ?? l.rid}
                     </text>
                   </g>
                 );
+              })}
+              {showInheritance && types.filter(t => t.parent_class && types.some(parent => parent.rid === t.parent_class)).map(t => {
+                const a = point(t.rid), b = point(t.parent_class!);
+                return <g key={`inherit-${t.rid}`}><path strokeDasharray="6 4" d={`M${a.x + 115},${a.y} L${b.x + 115},${b.y + 185}`} /><text x={(a.x + b.x) / 2 + 115} y={(a.y + b.y + 185) / 2}>继承</text></g>;
               })}
             </svg>
             {types.map((t) => (

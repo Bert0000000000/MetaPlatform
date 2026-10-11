@@ -4436,7 +4436,7 @@ class PgOntologyRepository(OntologyRepository):
     # ───── G33：schema WIP 暂存 ─────
 
     def save_schema_wip(
-        self, rid: str, payload: dict[str, Any], author: str = ""
+        self, rid: str, payload: dict[str, Any], author: str = "", *, preserve_existing: bool = False
     ) -> dict[str, Any]:
         """暂存草稿，并记下**当时的 live 定义指纹**（冲突基线）。
 
@@ -4458,15 +4458,19 @@ class PgOntologyRepository(OntologyRepository):
                        ON CONFLICT (rid) DO UPDATE SET
                          payload = EXCLUDED.payload, author = EXCLUDED.author,
                          base_checksum = EXCLUDED.base_checksum,
-                         created_at = now()""",
+                         created_at = now()
+                       WHERE NOT %s OR (ont_schema_wip.payload=EXCLUDED.payload AND ont_schema_wip.author=EXCLUDED.author)""",
                     (
                         rid,
                         self._current_tenant() or "tenant-default",
                         author,
                         json.dumps(payload, default=str),
                         base,
+                        preserve_existing,
                     ),
                 )
+                if cur.rowcount != 1:
+                    raise ValueError("Existing WIP changed; preserved the other editor's draft")
             conn.commit()
             return {"rid": rid, "status": "staged", "base_checksum": base}
         finally:
@@ -4498,11 +4502,14 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def delete_schema_wip(self, rid: str) -> bool:
+    def delete_schema_wip(self, rid: str, *, expected_payload: dict[str, Any] | None = None) -> bool:
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("DELETE FROM ont_schema_wip WHERE rid = %s", (rid,))
+                if expected_payload is None:
+                    cur.execute("DELETE FROM ont_schema_wip WHERE rid = %s", (rid,))
+                else:
+                    cur.execute("DELETE FROM ont_schema_wip WHERE rid = %s AND payload = %s::jsonb", (rid, json.dumps(expected_payload)))
                 deleted = cur.rowcount == 1
             conn.commit()
             return deleted

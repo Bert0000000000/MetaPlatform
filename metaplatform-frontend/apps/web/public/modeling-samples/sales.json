@@ -1,0 +1,36 @@
+{
+  "context": "客户订单：客户在主数据和订单表中重复出现；订单头与订单行粒度不同，订单行身份为订单号+行号。订单表同时描述客户与订单。不要把订单行误并成订单。",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "甲公司有哪些订单？",
+      "expected": "O01、O02"
+    },
+    {
+      "id": "q2",
+      "question": "O01 包含哪些商品？",
+      "expected": "S01 键盘、S02 鼠标"
+    },
+    {
+      "id": "q3",
+      "question": "O01 有多少订单行？",
+      "expected": "2；不得按订单号合并订单行"
+    },
+    {
+      "id": "q4",
+      "question": "S01 出现在哪些订单？",
+      "expected": "O01、O02"
+    },
+    {
+      "id": "q5",
+      "question": "O01 何时签收？",
+      "expected": "无法回答：缺配送和签收信息"
+    }
+  ],
+  "expected": {
+    "customers": 2,
+    "orders": 3,
+    "order_lines": 4,
+    "products": 2
+  }
+}

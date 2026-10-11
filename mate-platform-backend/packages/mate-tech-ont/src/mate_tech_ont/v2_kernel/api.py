@@ -1618,19 +1618,24 @@ class SchemaWipDTO(BaseModel):
 async def save_schema_wip(
     payload: SchemaWipDTO,
     request: Request,
+    preserve_existing: bool = False,
 ) -> dict:
     """G33：schema 变更暂存（他人不可见；不落正式表、不做门禁）。"""
     ctx = _ctx(request)
     tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not payload.payload.rid.startswith(f"ont.{tenant}."):
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
-    return await _call_scoped(
-        request,
-        "save_schema_wip",
-        payload.payload.rid,
-        payload.payload.model_dump(exclude={"confirm_name"}),
-        payload.author,
-    )
+    try:
+        return await _call_scoped(
+            request,
+            "save_schema_wip",
+            payload.payload.rid,
+            payload.payload.model_dump(exclude={"confirm_name"}),
+            payload.author,
+            **({"preserve_existing": True} if preserve_existing else {}),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get(
@@ -1653,6 +1658,7 @@ async def apply_schema_wip(
     request: Request,
     confirm_name: str = "",
     expected_checksum: str = "",
+    expected_payload_checksum: str = "",
 ) -> ObjectTypeResponse:
     """G33：应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁）。
 
@@ -1671,6 +1677,8 @@ async def apply_schema_wip(
     if confirm_name:
         payload["confirm_name"] = confirm_name
     dto = ObjectTypeDTO(**payload)
+    if expected_payload_checksum and definition_checksum(_ot_to_row(_dto_to_ot(dto))) != expected_payload_checksum:
+        raise HTTPException(status_code=409, detail="WIP payload changed after review; reopen the draft before publishing")
     # 显式 expected_checksum 优先；否则用草稿基线（自动发现"我编辑期间别人已改过"）
     declared = expected_checksum or str(wip.get("base_checksum") or "")
     if declared:
@@ -1693,7 +1701,10 @@ async def apply_schema_wip(
             )
     # 复用主 upsert 端点的门禁逻辑：直接调内部实现
     saved = await _upsert_object_type_gated(dto, request, ctx)
-    await _call_scoped(request, "delete_schema_wip", rid)
+    if expected_payload_checksum:
+        await _call_scoped(request, "delete_schema_wip", rid, expected_payload=wip["payload"])
+    else:
+        await _call_scoped(request, "delete_schema_wip", rid)
     return _ot_to_dto(saved)
 
 

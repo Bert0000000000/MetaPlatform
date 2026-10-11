@@ -1,0 +1,8 @@
+import type { KernelObjectType } from '@/api/ont/kernel';
+import type { ModelingClass, ModelingResolution } from '@/api/ont/modeling';
+export default function ReuseComparison({ cls, resolution, types, parentRid }: { cls: ModelingClass; resolution: ModelingResolution; types: KernelObjectType[]; parentRid?: string }) {
+ const target = types.find(t => t.rid === resolution.targetRid);
+ if (resolution.mode === 'new') { const matches = types.filter(t => t.display_name === cls.name || t.rid.split('.').includes(cls.id)); return matches.length ? <aside aria-label={`${cls.name} 同名建议`}><p>可能同名或同标识，请人工比较；不会自动选择复用。</p>{matches.map(t => <p key={t.rid}>{t.display_name} — {t.rid}：{t.description || '无定义'}</p>)}</aside> : null; }
+ if (!target) return <p>选择目标后可只读比较定义与身份。</p>;
+ return <aside aria-label={`${cls.name} 复用对比`}><h4>原生定义只读对比</h4><p>不会自动合并或映射。原生模型未提供独立业务粒度，需结合定义核对。</p><table className="fd-table"><thead><tr><th>项目</th><th>候选</th><th>原生目标</th></tr></thead><tbody><tr><th>定义 / 粒度</th><td>{cls.description} / {cls.grain || '未填写'}</td><td>{target.description || '未提供'}</td></tr><tr><th>映射后身份</th><td>{cls.identity.map(p => resolution.propertyMap[p] || `未映射:${p}`).join(' + ')}</td><td>{target.primary_key.join(' + ')}</td></tr><tr><th>父类</th><td>{parentRid || cls.parentClassId || '独立类'}</td><td>{target.parent_class || '独立类'}</td></tr>{cls.properties.map(p => { const n = target.properties.find(v => v.rid === resolution.propertyMap[p.id]); return <tr key={p.id}><th>{p.name}</th><td>{p.id} / {p.dataType}</td><td>{n ? `${n.rid} / ${n.type_id} / ${n.format}（请核对类型口径）` : '未映射'}</td></tr>; })}</tbody></table></aside>;
+}

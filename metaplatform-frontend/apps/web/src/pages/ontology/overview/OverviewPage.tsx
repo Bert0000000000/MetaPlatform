@@ -229,6 +229,7 @@ export default function OverviewPage() {
         desc="本体的概念层、动能层与数据落地面"
         actions={
           <>
+            <Button onClick={() => navigate('/ontology/model/from-data')}>从数据建模</Button>
             <Button
               icon={<RefreshCw size={15} strokeWidth={1.5} />}
               onClick={() => void load()}
