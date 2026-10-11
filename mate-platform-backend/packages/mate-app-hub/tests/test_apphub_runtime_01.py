@@ -364,10 +364,11 @@ def test_check_shortlink_access_role_match() -> None:
 def test_get_runtime_endpoint_returns_200(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
+    actual_id = _save_runtime_fixture(client, auth_headers_acme)
     r = client.get("/api/v1/apphub/apps/kb/runtime", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["app_id"] == "kb"
+    assert body["app_id"] == actual_id
     assert "modules" in body
     assert "render_tree" in body
     assert len(body["modules"]) >= 1
@@ -400,6 +401,7 @@ def test_get_runtime_endpoint_cross_tenant_404(
 def test_execute_endpoint_submit_form(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
+    _save_runtime_fixture(client, auth_headers_acme)
     r = client.post(
         "/api/v1/apphub/apps/kb/runtime/execute",
         json={
@@ -419,6 +421,7 @@ def test_execute_endpoint_submit_form(
 def test_publish_endpoint_returns_published(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
+    actual_id = _save_runtime_fixture(client, auth_headers_acme, publish=False)
     r = client.post(
         "/api/v1/apphub/apps/kb/publish",
         headers=auth_headers_acme,
@@ -427,12 +430,13 @@ def test_publish_endpoint_returns_published(
     body = r.json()
     assert body["status"] == "PUBLISHED"
     assert body["version"] == "1.0.0"
-    assert body["app_id"] == "kb"
+    assert body["app_id"] == actual_id
 
 
 def test_publish_endpoint_emits_outbox(
     client: TestClient, auth_headers_acme: dict[str, str], outbox: InMemoryOutboxWriter
 ) -> None:
+    _save_runtime_fixture(client, auth_headers_acme, publish=False)
     client.post(
         "/api/v1/apphub/apps/kb/publish",
         headers=auth_headers_acme,
@@ -520,3 +524,15 @@ def test_post_shortlink_without_ctx_returns_401(client: TestClient) -> None:
     assert response.status_code in (401, 403), (
         f"expected 401/403, got {response.status_code}: {response.text}"
     )
+
+
+def _save_runtime_fixture(client, headers, code="kb", publish=True):
+    from dataclasses import replace
+    from mate_app_hub.repositories import in_memory as repo
+    module = repo.ApphubModule("fixture-" + code, "tenant-acme", "Saved", "fixture-" + code, code, "", "")
+    repo.put_module("tenant-acme", module)
+    repo.put_page("tenant-acme", replace(repo.ApphubPage("fixture-" + code, "tenant-acme", "Saved", "fixture-" + code, module.code, "grid"), definition={"widgets": [{"id": "saved", "type": "text"}]}))
+    if publish:
+        result = client.post("/api/v1/apphub/apps/" + code + "/publish", headers=headers)
+        assert result.status_code == 200, result.text
+    return repo.get_app("tenant-acme", code).id

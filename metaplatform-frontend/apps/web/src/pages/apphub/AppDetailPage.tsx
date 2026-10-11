@@ -32,6 +32,8 @@ import {
 } from '@ant-design/icons';
 import { Search } from 'lucide-react';
 import { getApp, updateApp, deleteApp } from '@/api/apphub/apps';
+import { createOrderReviewPage, OrderPageCreationError, listPages } from '@/api/apphub/pages';
+import { publishApp } from '@/api/apphub/runtime';
 import { createShortlink } from '@/api/apphub/shortlink';
 import { listModules, createModule, updateModule, deleteModule } from '@/api/apphub/modules';
 import { QRCodeSVG } from 'qrcode.react';
@@ -66,7 +68,10 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
   const appId = appIdProp || routeAppId;
   const navigate = useNavigate();
   const [app, setApp] = useState<AppItem | null>(null);
+  const [orderModule, setOrderModule] = useState<string>();
   const [modules, setModules] = useState<ModuleItem[]>([]);
+  const [pages, setPages] = useState<Array<{ id: string; name: string; module_code: string }>>([]);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(false);
   const [moduleKeyword, setModuleKeyword] = useState('');
   const [appFormOpen, setAppFormOpen] = useState(false);
@@ -82,8 +87,11 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
     try {
       const data = await getApp(appId);
       setApp(data);
-      const res = await listModules(appId);
+      const res = await listModules(data.code);
       setModules(res.items);
+      setPages((await listPages()).items.filter(p => res.items.some(m => m.code === p.module_code)));
+      setLoadError('');
+    } catch (e) { setLoadError(e instanceof Error ? e.message : '应用加载失败');
     } finally {
       setLoading(false);
     }
@@ -108,9 +116,8 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
 
   const handlePublish = async () => {
     if (!appId) return;
-    await updateApp(appId, { status: 'PUBLISHED' });
-    Toast.success('应用已发布');
-    loadApp();
+    try { await publishApp(appId); Toast.success('应用已发布'); await loadApp(); }
+    catch (e) { Toast.error(e instanceof Error ? e.message : '发布失败，请修复绑定后重试'); }
   };
 
   const handleOffline = async () => {
@@ -238,12 +245,13 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
   );
 
   const formatTime = (v: string) => {
+    if (!v) return '更新时间未知';
     const d = new Date(v);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} 更新`;
   };
 
   if (!app) {
-    return <div className="mp-text-center mp-p-8">加载中...</div>;
+    return <div className="mp-text-center mp-p-8">{loadError || '加载中...'}{loadError && <button onClick={() => void loadApp()}>重试</button>}</div>;
   }
 
   return (
@@ -274,7 +282,11 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
         }
         headerExtraContent={
           <Space>
-            <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} onClick={() => navigate(`/s/${app.code}`)}>
+            <button onClick={async () => {
+              try { const page = await createOrderReviewPage(app.code, orderModule); navigate('/apps/mine?app=' + app.appId + '&tab=page&page=' + page.id); }
+              catch (e) { if (e instanceof OrderPageCreationError) setOrderModule(e.moduleCode); Toast.error(e instanceof Error ? e.message : '创建订单审核页面失败'); }
+            }}>添加订单审核页面</button>
+            <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} disabled={app.status !== 'PUBLISHED'} onClick={async () => { try { const sl = await createShortlink(appId!); navigate('/s/' + sl.code); } catch { Toast.error('打开失败，请检查发布状态与权限'); } }}>
               打开应用
             </Button>
             <Button icon={<EditOutlined />} onClick={() => setAppFormOpen(true)}>
@@ -318,6 +330,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                   </Button>
                 </Space>
 
+                {pages.map(page => <button key={page.id} onClick={() => navigate('/apps/mine?app=' + app.appId + '&tab=page&page=' + page.id)}>编辑页面：{page.name}</button>)}
                 {filteredModules.length === 0 ? (
                   <Empty description="还没有模块，点击创建第一个模块吧" />
                 ) : (
@@ -339,12 +352,12 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                         <Card shadows="hover">
                           <div className="mp-flex mp-justify-between mp-items-start" >
                             <Space>
-                              {MODULE_TYPE_ICONS[module.type]}
+                              {module.type ? MODULE_TYPE_ICONS[module.type] : <LayoutOutlined />}
                               <div>
                                 <Typography.Text strong>{module.name}</Typography.Text>
                                 <div>
-                                  <Tag color={MODULE_TYPE_COLORS[module.type]}>
-                                    {module.type === 'FORM' ? '表单' : module.type === 'FLOW' ? '流程' : module.type === 'BOARD' ? '看板' : '页面'}
+                                  <Tag color={module.type ? MODULE_TYPE_COLORS[module.type] : undefined}>
+                                    {module.type === 'FORM' ? '表单' : module.type === 'FLOW' ? '流程' : module.type === 'BOARD' ? '看板' : module.type === 'PAGE' ? '页面' : '模块'}
                                   </Tag>
                                 </div>
                               </div>
@@ -401,7 +414,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
               app.status === 'PUBLISHED' ? (
                 <div className="mp-app-max-480">
                   <Typography.Paragraph type="tertiary">
-                    为已发布的应用生成短链，便于快速访问与分享。访问短链无需登录鉴权（自决权限）。
+                    为已发布的应用生成短链，便于快速访问与分享。访问者须登录并具备相同租户的访问权限。
                   </Typography.Paragraph>
                   <Space vertical spacing="medium" className="mp-w-full">
                     <Button

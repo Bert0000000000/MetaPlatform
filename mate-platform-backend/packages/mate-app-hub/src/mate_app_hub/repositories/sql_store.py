@@ -14,15 +14,17 @@ import json
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, or_, update
+from dataclasses import asdict, replace
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from mate_tech_db.base import get_session
 
 from ..shortlink.repository import ShortlinkEntry
 from . import sql_models as models
 from .in_memory import (
-    ApphubApp,
+    ApphubApp, AppRevisionConflict,
     ApphubDomain,
     ApphubGroup,
     ApphubModule,
@@ -78,6 +80,13 @@ def _orm_to_app(row: models.ApphubAppORM) -> ApphubApp:
         owner=row.owner or "platform-team",
         tags=_split_lines(row.tags or ""),
         business_domain=row.business_domain or "",
+        revision=row.revision,
+        status=row.status or "DESIGNING",
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+        published_version_id=row.published_version_id,
+        versions=json.loads(row.versions or "[]"),
+        releases=json.loads(row.releases or "[]"),
     )
 
 
@@ -124,6 +133,7 @@ def _orm_to_page(row: models.ApphubPageORM) -> ApphubPage:
         module_code=row.module_code or "",
         layout=row.layout or "single",
         schema_version=row.schema_version,
+        definition=json.loads(row.definition or "{}"),
     )
 
 
@@ -146,29 +156,35 @@ def list_apps(tenant_id: str) -> list[ApphubApp]:
     if not tenant_id:
         return []
     s = _session()
-    rows = (
-        s.execute(
-            select(models.ApphubAppORM)
-            .where(models.ApphubAppORM.tenant_id == tenant_id)
-            .order_by(models.ApphubAppORM.category, models.ApphubAppORM.name)
+    try:
+        rows = (
+            s.execute(
+                select(models.ApphubAppORM)
+                .where(models.ApphubAppORM.tenant_id == tenant_id)
+                .order_by(models.ApphubAppORM.category, models.ApphubAppORM.name)
+            )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    return [_orm_to_app(r) for r in rows]
+        return [_orm_to_app(r) for r in rows]
+    finally:
+        s.close()
 
 
 def get_app(tenant_id: str, app_id: str) -> ApphubApp | None:
     if not tenant_id:
         return None
     s = _session()
-    row = s.execute(
-        select(models.ApphubAppORM).where(
-            models.ApphubAppORM.tenant_id == tenant_id,
-            models.ApphubAppORM.id == app_id,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_app(row) if row else None
+    try:
+        row = s.execute(
+            select(models.ApphubAppORM).where(
+                models.ApphubAppORM.tenant_id == tenant_id,
+                or_(models.ApphubAppORM.id == app_id, models.ApphubAppORM.code == app_id),
+            )
+        ).scalar_one_or_none()
+        return _orm_to_app(row) if row else None
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
@@ -178,29 +194,35 @@ def list_groups(tenant_id: str) -> list[ApphubGroup]:
     if not tenant_id:
         return []
     s = _session()
-    rows = (
-        s.execute(
-            select(models.ApphubGroupORM)
-            .where(models.ApphubGroupORM.tenant_id == tenant_id)
-            .order_by(models.ApphubGroupORM.sort_order)
+    try:
+        rows = (
+            s.execute(
+                select(models.ApphubGroupORM)
+                .where(models.ApphubGroupORM.tenant_id == tenant_id)
+                .order_by(models.ApphubGroupORM.sort_order)
+            )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    return [_orm_to_group(r) for r in rows]
+        return [_orm_to_group(r) for r in rows]
+    finally:
+        s.close()
 
 
 def get_group(tenant_id: str, group_id: str) -> ApphubGroup | None:
     if not tenant_id:
         return None
     s = _session()
-    row = s.execute(
-        select(models.ApphubGroupORM).where(
-            models.ApphubGroupORM.tenant_id == tenant_id,
-            models.ApphubGroupORM.id == group_id,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_group(row) if row else None
+    try:
+        row = s.execute(
+            select(models.ApphubGroupORM).where(
+                models.ApphubGroupORM.tenant_id == tenant_id,
+                or_(models.ApphubGroupORM.id == group_id, models.ApphubGroupORM.code == group_id),
+            )
+        ).scalar_one_or_none()
+        return _orm_to_group(row) if row else None
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
@@ -210,16 +232,19 @@ def list_domains(tenant_id: str) -> list[ApphubDomain]:
     if not tenant_id:
         return []
     s = _session()
-    rows = (
-        s.execute(
-            select(models.ApphubDomainORM)
-            .where(models.ApphubDomainORM.tenant_id == tenant_id)
-            .order_by(models.ApphubDomainORM.sort_order, models.ApphubDomainORM.code)
+    try:
+        rows = (
+            s.execute(
+                select(models.ApphubDomainORM)
+                .where(models.ApphubDomainORM.tenant_id == tenant_id)
+                .order_by(models.ApphubDomainORM.sort_order, models.ApphubDomainORM.code)
+            )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    return [_orm_to_domain(r) for r in rows]
+        return [_orm_to_domain(r) for r in rows]
+    finally:
+        s.close()
 
 
 def get_domain(tenant_id: str, code: str) -> ApphubDomain | None:
@@ -227,13 +252,16 @@ def get_domain(tenant_id: str, code: str) -> ApphubDomain | None:
     if not tenant_id:
         return None
     s = _session()
-    row = s.execute(
-        select(models.ApphubDomainORM).where(
-            models.ApphubDomainORM.tenant_id == tenant_id,
-            models.ApphubDomainORM.code == code,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_domain(row) if row else None
+    try:
+        row = s.execute(
+            select(models.ApphubDomainORM).where(
+                models.ApphubDomainORM.tenant_id == tenant_id,
+                models.ApphubDomainORM.code == code,
+            )
+        ).scalar_one_or_none()
+        return _orm_to_domain(row) if row else None
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
@@ -243,29 +271,35 @@ def list_modules(tenant_id: str) -> list[ApphubModule]:
     if not tenant_id:
         return []
     s = _session()
-    rows = (
-        s.execute(
-            select(models.ApphubModuleORM)
-            .where(models.ApphubModuleORM.tenant_id == tenant_id)
-            .order_by(models.ApphubModuleORM.code)
+    try:
+        rows = (
+            s.execute(
+                select(models.ApphubModuleORM)
+                .where(models.ApphubModuleORM.tenant_id == tenant_id)
+                .order_by(models.ApphubModuleORM.code)
+            )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    return [_orm_to_module(r) for r in rows]
+        return [_orm_to_module(r) for r in rows]
+    finally:
+        s.close()
 
 
 def get_module(tenant_id: str, module_id: str) -> ApphubModule | None:
     if not tenant_id:
         return None
     s = _session()
-    row = s.execute(
-        select(models.ApphubModuleORM).where(
-            models.ApphubModuleORM.tenant_id == tenant_id,
-            models.ApphubModuleORM.id == module_id,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_module(row) if row else None
+    try:
+        row = s.execute(
+            select(models.ApphubModuleORM).where(
+                models.ApphubModuleORM.tenant_id == tenant_id,
+                or_(models.ApphubModuleORM.id == module_id, models.ApphubModuleORM.code == module_id),
+            )
+        ).scalar_one_or_none()
+        return _orm_to_module(row) if row else None
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
@@ -275,29 +309,35 @@ def list_pages(tenant_id: str) -> list[ApphubPage]:
     if not tenant_id:
         return []
     s = _session()
-    rows = (
-        s.execute(
-            select(models.ApphubPageORM)
-            .where(models.ApphubPageORM.tenant_id == tenant_id)
-            .order_by(models.ApphubPageORM.code)
+    try:
+        rows = (
+            s.execute(
+                select(models.ApphubPageORM)
+                .where(models.ApphubPageORM.tenant_id == tenant_id)
+                .order_by(models.ApphubPageORM.code)
+            )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    return [_orm_to_page(r) for r in rows]
+        return [_orm_to_page(r) for r in rows]
+    finally:
+        s.close()
 
 
 def get_page(tenant_id: str, page_id: str) -> ApphubPage | None:
     if not tenant_id:
         return None
     s = _session()
-    row = s.execute(
-        select(models.ApphubPageORM).where(
-            models.ApphubPageORM.tenant_id == tenant_id,
-            models.ApphubPageORM.id == page_id,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_page(row) if row else None
+    try:
+        row = s.execute(
+            select(models.ApphubPageORM).where(
+                models.ApphubPageORM.tenant_id == tenant_id,
+                models.ApphubPageORM.id == page_id,
+            )
+        ).scalar_one_or_none()
+        return _orm_to_page(row) if row else None
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
@@ -307,95 +347,114 @@ def list_templates(tenant_id: str) -> list[ApphubTemplate]:
     if not tenant_id:
         return []
     s = _session()
-    rows = (
-        s.execute(
-            select(models.ApphubTemplateORM)
-            .where(models.ApphubTemplateORM.tenant_id == tenant_id)
-            .order_by(
-                models.ApphubTemplateORM.template_type,
-                models.ApphubTemplateORM.name,
+    try:
+        rows = (
+            s.execute(
+                select(models.ApphubTemplateORM)
+                .where(models.ApphubTemplateORM.tenant_id == tenant_id)
+                .order_by(
+                    models.ApphubTemplateORM.template_type,
+                    models.ApphubTemplateORM.name,
+                )
             )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    return [_orm_to_template(r) for r in rows]
+        return [_orm_to_template(r) for r in rows]
+    finally:
+        s.close()
 
 
 def get_template(tenant_id: str, template_id: str) -> ApphubTemplate | None:
     if not tenant_id:
         return None
     s = _session()
-    row = s.execute(
-        select(models.ApphubTemplateORM).where(
-            models.ApphubTemplateORM.tenant_id == tenant_id,
-            models.ApphubTemplateORM.id == template_id,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_template(row) if row else None
+    try:
+        row = s.execute(
+            select(models.ApphubTemplateORM).where(
+                models.ApphubTemplateORM.tenant_id == tenant_id,
+                or_(models.ApphubTemplateORM.id == template_id, models.ApphubTemplateORM.code == template_id),
+            )
+        ).scalar_one_or_none()
+        return _orm_to_template(row) if row else None
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
 # Write API — apps
 # ---------------------------------------------------------------------------
 def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
-    if not tenant_id:
-        return app
+    if not tenant_id or app.tenant_id != tenant_id:
+        raise ValueError("cross-tenant app write denied")
     s = _session()
-    tags_str = _join_lines(app.tags)
-    existing = s.get(models.ApphubAppORM, app.id)
-    if existing:
-        existing.name = app.name
-        existing.category = app.category
-        existing.description = app.description
-        existing.version = app.version
-        existing.owner = app.owner
-        existing.tags = tags_str
-        existing.business_domain = app.business_domain
-    else:
-        s.add(
-            models.ApphubAppORM(
-                id=app.id,
-                tenant_id=tenant_id,
-                name=app.name,
-                code=app.code,
-                category=app.category,
-                description=app.description,
-                version=app.version,
-                owner=app.owner,
-                tags=tags_str,
-                business_domain=app.business_domain,
-            )
-        )
-    s.commit()
-    return app
+    try:
+        existing = s.get(models.ApphubAppORM, app.id)
+        if existing and existing.tenant_id != tenant_id:
+            raise ValueError("cross-tenant app write denied")
+        values = asdict(app)
+        values.update(tags=_join_lines(app.tags), versions=json.dumps(app.versions), releases=json.dumps(app.releases))
+        if existing:
+            values["revision"] = app.revision + 1
+            changed = s.execute(update(models.ApphubAppORM).where(
+                models.ApphubAppORM.id == app.id, models.ApphubAppORM.tenant_id == tenant_id,
+                models.ApphubAppORM.revision == app.revision).values(**values))
+            if changed.rowcount != 1:
+                s.rollback()
+                raise AppRevisionConflict("Application changed; reload before saving")
+        else:
+            values["revision"] = 0
+            s.add(models.ApphubAppORM(**values))
+        s.commit()
+        return replace(app, revision=values["revision"])
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
 # Write API — groups
 # ---------------------------------------------------------------------------
+def insert_group(tenant_id: str, group: ApphubGroup) -> ApphubGroup:
+    from sqlalchemy.exc import IntegrityError
+    if not tenant_id or group.tenant_id != tenant_id:
+        raise ValueError("cross-tenant group creation denied")
+    s = _session()
+    try:
+        s.add(models.ApphubGroupORM(**asdict(group)))
+        s.commit()
+        return group
+    except IntegrityError:
+        s.rollback()
+        raise ValueError("group already exists") from None
+    finally:
+        s.close()
+
+
 def put_group(tenant_id: str, group: ApphubGroup) -> ApphubGroup:
     if not tenant_id:
         return group
     s = _session()
-    existing = s.get(models.ApphubGroupORM, group.id)
-    if existing:
-        existing.name = group.name
-        existing.icon = group.icon
-        existing.sort_order = group.sort_order
-    else:
-        s.add(
-            models.ApphubGroupORM(
-                id=group.id,
-                tenant_id=tenant_id,
-                name=group.name,
-                code=group.code,
-                icon=group.icon,
-                sort_order=group.sort_order,
+    try:
+        existing = s.get(models.ApphubGroupORM, group.id)
+        if existing:
+            existing.name = group.name
+            existing.icon = group.icon
+            existing.sort_order = group.sort_order
+        else:
+            s.add(
+                models.ApphubGroupORM(
+                    id=group.id,
+                    tenant_id=tenant_id,
+                    name=group.name,
+                    code=group.code,
+                    icon=group.icon,
+                    sort_order=group.sort_order,
+                )
             )
-        )
-    s.commit()
-    return group
+        s.commit()
+        return group
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
@@ -405,83 +464,116 @@ def put_domain(tenant_id: str, domain: ApphubDomain) -> ApphubDomain:
     if not tenant_id:
         return domain
     s = _session()
-    existing = s.get(models.ApphubDomainORM, domain.id)
-    if existing:
-        # ``code`` is immutable — only display attributes are updated.
-        existing.name = domain.name
-        existing.icon = domain.icon
-        existing.sort_order = domain.sort_order
-    else:
-        s.add(
-            models.ApphubDomainORM(
-                id=domain.id,
-                tenant_id=tenant_id,
-                name=domain.name,
-                code=domain.code,
-                icon=domain.icon,
-                sort_order=domain.sort_order,
+    try:
+        existing = s.get(models.ApphubDomainORM, domain.id)
+        if existing:
+            # ``code`` is immutable — only display attributes are updated.
+            existing.name = domain.name
+            existing.icon = domain.icon
+            existing.sort_order = domain.sort_order
+        else:
+            s.add(
+                models.ApphubDomainORM(
+                    id=domain.id,
+                    tenant_id=tenant_id,
+                    name=domain.name,
+                    code=domain.code,
+                    icon=domain.icon,
+                    sort_order=domain.sort_order,
+                )
             )
-        )
-    s.commit()
-    return domain
+        s.commit()
+        return domain
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
 # Write API — modules
 # ---------------------------------------------------------------------------
-def put_module(tenant_id: str, module: ApphubModule) -> ApphubModule:
+def put_module(tenant_id: str, module: ApphubModule, *, insert_only: bool = False) -> ApphubModule:
     if not tenant_id:
         return module
     s = _session()
-    existing = s.get(models.ApphubModuleORM, module.id)
-    if existing:
-        existing.name = module.name
-        existing.app_code = module.app_code
-        existing.description = module.description
-        existing.entry_path = module.entry_path
-    else:
-        s.add(
-            models.ApphubModuleORM(
-                id=module.id,
-                tenant_id=tenant_id,
-                name=module.name,
-                code=module.code,
-                app_code=module.app_code,
-                description=module.description,
-                entry_path=module.entry_path,
+    try:
+        existing = s.get(models.ApphubModuleORM, module.id)
+        if module.tenant_id != tenant_id or (existing and existing.tenant_id != tenant_id):
+            raise ValueError("cross-tenant module write denied")
+        if insert_only and (existing or s.execute(select(models.ApphubModuleORM.id).where(
+            models.ApphubModuleORM.tenant_id == tenant_id, models.ApphubModuleORM.code == module.code
+        )).first()):
+            raise ValueError("module already exists")
+        if existing:
+            existing.name = module.name
+            existing.app_code = module.app_code
+            existing.description = module.description
+            existing.entry_path = module.entry_path
+        else:
+            s.add(
+                models.ApphubModuleORM(
+                    id=module.id,
+                    tenant_id=tenant_id,
+                    name=module.name,
+                    code=module.code,
+                    app_code=module.app_code,
+                    description=module.description,
+                    entry_path=module.entry_path,
+                )
             )
-        )
-    s.commit()
-    return module
+        s.commit()
+        return module
+    except IntegrityError as exc:
+        s.rollback()
+        if insert_only:
+            raise ValueError("module already exists") from exc
+        raise
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
 # Write API — pages
 # ---------------------------------------------------------------------------
-def put_page(tenant_id: str, page: ApphubPage) -> ApphubPage:
+def put_page(tenant_id: str, page: ApphubPage, *, insert_only: bool = False) -> ApphubPage:
     if not tenant_id:
         return page
     s = _session()
-    existing = s.get(models.ApphubPageORM, page.id)
-    if existing:
-        existing.name = page.name
-        existing.module_code = page.module_code
-        existing.layout = page.layout
-        existing.schema_version = page.schema_version
-    else:
-        s.add(
-            models.ApphubPageORM(
-                id=page.id,
-                tenant_id=tenant_id,
-                name=page.name,
-                code=page.code,
-                module_code=page.module_code,
-                layout=page.layout,
-                schema_version=page.schema_version,
+    try:
+        existing = s.get(models.ApphubPageORM, page.id)
+        if page.tenant_id != tenant_id or (existing and existing.tenant_id != tenant_id):
+            raise ValueError("cross-tenant page write denied")
+        if insert_only and (existing or s.execute(select(models.ApphubPageORM.id).where(
+            models.ApphubPageORM.tenant_id == tenant_id, models.ApphubPageORM.code == page.code
+        )).first()):
+            raise ValueError("page already exists")
+        if existing:
+            existing.name = page.name
+            existing.module_code = page.module_code
+            existing.layout = page.layout
+            existing.schema_version = page.schema_version
+            existing.definition = json.dumps(page.definition)
+        else:
+            s.add(
+                models.ApphubPageORM(
+                    id=page.id,
+                    tenant_id=tenant_id,
+                    name=page.name,
+                    code=page.code,
+                    module_code=page.module_code,
+                    layout=page.layout,
+                    schema_version=page.schema_version,
+                    definition=json.dumps(page.definition),
+                )
             )
-        )
-    s.commit()
-    return page
+        s.commit()
+        return page
+    except IntegrityError as exc:
+        s.rollback()
+        if insert_only:
+            raise ValueError("page already exists") from exc
+        raise
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
@@ -491,27 +583,30 @@ def put_template(tenant_id: str, template: ApphubTemplate) -> ApphubTemplate:
     if not tenant_id:
         return template
     s = _session()
-    content_str = _json_dumps(template.content)
-    existing = s.get(models.ApphubTemplateORM, template.id)
-    if existing:
-        existing.name = template.name
-        existing.template_type = template.template_type
-        existing.description = template.description
-        existing.content = content_str
-    else:
-        s.add(
-            models.ApphubTemplateORM(
-                id=template.id,
-                tenant_id=tenant_id,
-                name=template.name,
-                code=template.code,
-                template_type=template.template_type,
-                description=template.description,
-                content=content_str,
+    try:
+        content_str = _json_dumps(template.content)
+        existing = s.get(models.ApphubTemplateORM, template.id)
+        if existing:
+            existing.name = template.name
+            existing.template_type = template.template_type
+            existing.description = template.description
+            existing.content = content_str
+        else:
+            s.add(
+                models.ApphubTemplateORM(
+                    id=template.id,
+                    tenant_id=tenant_id,
+                    name=template.name,
+                    code=template.code,
+                    template_type=template.template_type,
+                    description=template.description,
+                    content=content_str,
+                )
             )
-        )
-    s.commit()
-    return template
+        s.commit()
+        return template
+    finally:
+        s.close()
 
 
 # ---------------------------------------------------------------------------
@@ -555,25 +650,28 @@ def put_shortlink(tenant_id: str, entry: ShortlinkEntry) -> object:
     if not tenant_id:
         return entry
     s = _session()
-    existing = s.get(models.ApphubShortlinkORM, entry.id)
-    if existing:
-        existing.app_id = entry.app_id
-        existing.code = entry.code
-        existing.role = entry.role
-        existing.expires_at = datetime.fromisoformat(entry.expires_at) if entry.expires_at else None
-    else:
-        s.add(
-            models.ApphubShortlinkORM(
-                id=entry.id,
-                tenant_id=tenant_id,
-                app_id=entry.app_id,
-                code=entry.code,
-                role=entry.role,
-                expires_at=(datetime.fromisoformat(entry.expires_at) if entry.expires_at else None),
+    try:
+        existing = s.get(models.ApphubShortlinkORM, entry.id)
+        if existing:
+            existing.app_id = entry.app_id
+            existing.code = entry.code
+            existing.role = entry.role
+            existing.expires_at = datetime.fromisoformat(entry.expires_at) if entry.expires_at else None
+        else:
+            s.add(
+                models.ApphubShortlinkORM(
+                    id=entry.id,
+                    tenant_id=tenant_id,
+                    app_id=entry.app_id,
+                    code=entry.code,
+                    role=entry.role,
+                    expires_at=(datetime.fromisoformat(entry.expires_at) if entry.expires_at else None),
+                )
             )
-        )
-    s.commit()
-    return entry
+        s.commit()
+        return entry
+    finally:
+        s.close()
 
 
 def get_shortlink_by_code(tenant_id: str, code: str):
@@ -581,13 +679,16 @@ def get_shortlink_by_code(tenant_id: str, code: str):
     if not tenant_id:
         return None
     s = _session()
-    row = s.execute(
-        select(models.ApphubShortlinkORM).where(
-            models.ApphubShortlinkORM.tenant_id == tenant_id,
-            models.ApphubShortlinkORM.code == code,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_shortlink(row) if row else None
+    try:
+        row = s.execute(
+            select(models.ApphubShortlinkORM).where(
+                models.ApphubShortlinkORM.tenant_id == tenant_id,
+                models.ApphubShortlinkORM.code == code,
+            )
+        ).scalar_one_or_none()
+        return _orm_to_shortlink(row) if row else None
+    finally:
+        s.close()
 
 
 def list_shortlinks(tenant_id: str) -> list:
@@ -595,16 +696,19 @@ def list_shortlinks(tenant_id: str) -> list:
     if not tenant_id:
         return []
     s = _session()
-    rows = (
-        s.execute(
-            select(models.ApphubShortlinkORM)
-            .where(models.ApphubShortlinkORM.tenant_id == tenant_id)
-            .order_by(models.ApphubShortlinkORM.created_at.desc())
+    try:
+        rows = (
+            s.execute(
+                select(models.ApphubShortlinkORM)
+                .where(models.ApphubShortlinkORM.tenant_id == tenant_id)
+                .order_by(models.ApphubShortlinkORM.created_at.desc())
+            )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    return [_orm_to_shortlink(r) for r in rows]
+        return [_orm_to_shortlink(r) for r in rows]
+    finally:
+        s.close()
 
 
 def delete_shortlink_by_code(tenant_id: str, code: str) -> bool:
@@ -612,17 +716,20 @@ def delete_shortlink_by_code(tenant_id: str, code: str) -> bool:
     if not tenant_id:
         return False
     s = _session()
-    row = s.execute(
-        select(models.ApphubShortlinkORM).where(
-            models.ApphubShortlinkORM.tenant_id == tenant_id,
-            models.ApphubShortlinkORM.code == code,
-        )
-    ).scalar_one_or_none()
-    if row is None:
-        return False
-    s.delete(row)
-    s.commit()
-    return True
+    try:
+        row = s.execute(
+            select(models.ApphubShortlinkORM).where(
+                models.ApphubShortlinkORM.tenant_id == tenant_id,
+                models.ApphubShortlinkORM.code == code,
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            return False
+        s.delete(row)
+        s.commit()
+        return True
+    finally:
+        s.close()
 
 
 def shortlink_exists(tenant_id: str, code: str) -> bool:
@@ -630,17 +737,44 @@ def shortlink_exists(tenant_id: str, code: str) -> bool:
     if not tenant_id:
         return False
     s = _session()
-    row = s.execute(
-        select(models.ApphubShortlinkORM.id).where(
-            models.ApphubShortlinkORM.tenant_id == tenant_id,
-            models.ApphubShortlinkORM.code == code,
-        )
-    ).scalar_one_or_none()
-    return row is not None
+    try:
+        row = s.execute(
+            select(models.ApphubShortlinkORM.id).where(
+                models.ApphubShortlinkORM.tenant_id == tenant_id,
+                models.ApphubShortlinkORM.code == code,
+            )
+        ).scalar_one_or_none()
+        return row is not None
+    finally:
+        s.close()
 
 
 def reset_shortlinks() -> None:
     """Truncate the apphub_shortlinks table (test helper)."""
     s = _session()
-    s.execute(models.ApphubShortlinkORM.__table__.delete())
-    s.commit()
+    try:
+        s.execute(models.ApphubShortlinkORM.__table__.delete())
+        s.commit()
+    finally:
+        s.close()
+
+def _delete_by_code(model, tenant_id: str, code: str) -> bool:
+    with _session() as session:
+        row = session.execute(select(model).where(model.tenant_id == tenant_id, model.code == code)).scalar_one_or_none()
+        if row is None:
+            return False
+        session.delete(row)
+        session.commit()
+        return True
+
+
+def delete_app(tenant_id: str, code: str) -> bool:
+    return _delete_by_code(models.ApphubAppORM, tenant_id, code)
+
+
+def delete_group(tenant_id: str, code: str) -> bool:
+    return _delete_by_code(models.ApphubGroupORM, tenant_id, code)
+
+
+def delete_domain(tenant_id: str, code: str) -> bool:
+    return _delete_by_code(models.ApphubDomainORM, tenant_id, code)

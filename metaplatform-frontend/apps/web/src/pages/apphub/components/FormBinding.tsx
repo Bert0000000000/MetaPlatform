@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Select, Table, Switch, Typography, Space, Empty } from '@douyinfe/semi-ui';
 import type { ModuleItem, FormFieldBinding } from '@/api/apphub/types';
 
@@ -7,23 +8,16 @@ interface FormBindingProps {
   onChange: (bindings: FormFieldBinding[]) => void;
 }
 
-const MOCK_FIELDS: Array<{ fieldKey: string; fieldLabel: string }> = [
-  { fieldKey: 'applicant', fieldLabel: '申请人' },
-  { fieldKey: 'department', fieldLabel: '部门' },
-  { fieldKey: 'amount', fieldLabel: '金额' },
-  { fieldKey: 'type', fieldLabel: '类型' },
-  { fieldKey: 'description', fieldLabel: '描述' },
-  { fieldKey: 'date', fieldLabel: '日期' },
-  { fieldKey: 'attachment', fieldLabel: '附件' },
-];
 
 export default function FormBinding({ formModules, bindings, onChange }: FormBindingProps) {
+  const [moduleId, setModuleId] = useState('');
+  const fields = (formModules.find(m => m.moduleId === moduleId)?.config?.fields ?? []).map(f => ({ fieldKey: f.fieldKey, fieldLabel: f.label }));
   const handleToggleVisible = (fieldKey: string, visible: boolean) => {
     const existing = bindings.find((b) => b.fieldKey === fieldKey);
     if (existing) {
       onChange(bindings.map((b) => (b.fieldKey === fieldKey ? { ...b, visible } : b)));
     } else {
-      const field = MOCK_FIELDS.find((f) => f.fieldKey === fieldKey);
+      const field = fields.find((f) => f.fieldKey === fieldKey);
       if (field) {
         onChange([...bindings, { ...field, visible, required: false, readonly: false }]);
       }
@@ -35,7 +29,7 @@ export default function FormBinding({ formModules, bindings, onChange }: FormBin
     if (existing) {
       onChange(bindings.map((b) => (b.fieldKey === fieldKey ? { ...b, required } : b)));
     } else {
-      const field = MOCK_FIELDS.find((f) => f.fieldKey === fieldKey);
+      const field = fields.find((f) => f.fieldKey === fieldKey);
       if (field) {
         onChange([...bindings, { ...field, visible: true, required, readonly: false }]);
       }
@@ -47,7 +41,7 @@ export default function FormBinding({ formModules, bindings, onChange }: FormBin
     if (existing) {
       onChange(bindings.map((b) => (b.fieldKey === fieldKey ? { ...b, readonly } : b)));
     } else {
-      const field = MOCK_FIELDS.find((f) => f.fieldKey === fieldKey);
+      const field = fields.find((f) => f.fieldKey === fieldKey);
       if (field) {
         onChange([...bindings, { ...field, visible: true, required: false, readonly }]);
       }
@@ -66,6 +60,8 @@ export default function FormBinding({ formModules, bindings, onChange }: FormBin
         <Space spacing="tight" className="mp-mb-3">
           <Typography.Text type="tertiary">关联表单：</Typography.Text>
           <Select
+            value={moduleId}
+            onChange={value => { setModuleId(String(value)); onChange([]); }}
             placeholder="选择表单模块"
             className="mp-w-200"
             optionList={formModules.map((m) => ({ label: m.name, value: m.moduleId }))}
@@ -73,13 +69,13 @@ export default function FormBinding({ formModules, bindings, onChange }: FormBin
         </Space>
       )}
 
-      {MOCK_FIELDS.length === 0 ? (
-        <Empty description="请先关联表单模块" />
+      {fields.length === 0 ? (
+        <Empty description="请先关联具有已保存字段的表单模块" />
       ) : (
         <Table
           size="small"
           rowKey="fieldKey"
-          dataSource={MOCK_FIELDS.map((f) => ({ ...f, key: f.fieldKey }))}
+          dataSource={fields.map((f) => ({ ...f, key: f.fieldKey }))}
           pagination={false}
           scroll={{ x: 'max-content' }}
           columns={[

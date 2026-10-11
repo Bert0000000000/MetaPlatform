@@ -24,7 +24,10 @@ from .marketplace import router as marketplace_router
 
 def create_app() -> FastAPI:
     """Build the apphub FastAPI application."""
-    reject_production_fallback("in-memory AppHub state")
+    from .repositories import uses_sql
+
+    if not uses_sql():
+        reject_production_fallback("in-memory AppHub state")
     app = FastAPI(
         title="mate-app-hub",
         version="0.1.0",

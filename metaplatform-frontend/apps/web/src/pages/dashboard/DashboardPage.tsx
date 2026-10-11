@@ -28,6 +28,7 @@ import {
 import { useAuth } from '@mate/shared';
 import { EmptyState, PageHeader } from '@/components/skeleton';
 import type { ApprovalTask } from '@/types';
+import ProductOnboarding from './components/ProductOnboarding';
 import './home.css';
 
 /** 后端返回的是图标名字符串，按名字/label 兜底映射；未命中用通用图标。 */
@@ -157,6 +158,7 @@ export default function DashboardPage() {
 
   return (
     <>
+      <ProductOnboarding />
       <PageHeader
         title={`${greeting()}，${displayName}`}
         desc={

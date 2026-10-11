@@ -1381,3 +1381,19 @@ export async function validateShacl(payload: {
   const resp = await apiClient.post(v2('/shacl/validate'), payload);
   return resp.data as ShaclValidateReport;
 }
+
+
+export interface AppBindingUsage {
+  app_id: string;
+  app_name: string;
+  page_id: string;
+  status: 'DRAFT' | 'PUBLISHED' | 'OFFLINE' | 'DESIGNING';
+  version_id: string | null;
+  model_version: string;
+  model_checksum: string;
+  action_rid: string;
+}
+export async function getObjectBindingUsage(classRid: string): Promise<AppBindingUsage[]> {
+  const response = await apiClient.get('/apphub/bindings/usage', { params: { class_rid: classRid } });
+  return response.data.items;
+}

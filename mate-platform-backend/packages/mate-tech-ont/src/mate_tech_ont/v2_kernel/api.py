@@ -2945,6 +2945,8 @@ async def propose_edit_set(
     function 产物（执行时两规约解释）；三者全空才 422。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
     try:
@@ -2998,9 +3000,11 @@ async def apply_edit_set(
     markings 非空 → 安全闸门（行/列策略 + G6 合取门 + X-Scope-Markings 收窄）。
     """
     ctx = _ctx(request)
+    if str(ctx.auth_method) != "user" or not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="Human USER with platform.write required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
-    actor = str(ctx.user_id if hasattr(ctx, "user_id") else "") or "human-operator"
+    actor = str(ctx.user_id)
     viewer = _app_scoped_markings(request, markings) if markings else ()
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
@@ -3483,6 +3487,9 @@ async def withdraw_proposal(
     request: Request,
 ) -> dict:
     """PRD-02 FR-ACT-CONFIRM-001：pending → withdrawn（作者确认前撤回；终态）。"""
+    ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(status_code=403, detail="Authenticated human platform.write capability required")
     _logger.info(
         "ont.proposal.withdraw",
         proposal_id=proposal_id,
@@ -3518,6 +3525,8 @@ async def revert_proposal(
     partial；7 天窗口外拒绝（409）。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(status_code=403, detail="Authenticated human platform.write capability required")
     idempotency_key = _require_idempotency_key(request)
     _logger.info(
         "ont.proposal.revert",
@@ -3565,6 +3574,8 @@ async def execute_proposal(
       X-Scope-Markings 收窄）；FunctionNotRegistered / 闸门拒写 → 422（不再 500）。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(status_code=403, detail="Authenticated human platform.write capability required")
     idempotency_key = _require_idempotency_key(request)
     viewer = _app_scoped_markings(request, markings) if markings else ()
     try:
@@ -3642,6 +3653,8 @@ async def propose_action(
 ) -> ProposalResponse:
     """AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     rid_ref = ClassRef(rid)
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
@@ -3926,6 +3939,8 @@ async def confirm_proposal(
         actor_id=str(getattr(_ctx(request), "user_id", "")),
     )
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(status_code=403, detail="Authenticated human platform.write capability required")
     idempotency_key = _require_idempotency_key(request)
     try:
         prop = await _call_scoped(
@@ -3954,6 +3969,8 @@ async def reject_proposal(
 ) -> ProposalResponse:
     del payload  # identity comes exclusively from the authenticated context
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(status_code=403, detail="Authenticated human platform.write capability required")
     idempotency_key = _require_idempotency_key(request)
     _logger.info(
         "ont.proposal.reject",

@@ -17,6 +17,548 @@ security:
     tenantHeader: []
     oidcScopes: [platform.read]
 paths:
+  /api/v1/ont/v2/proposals/{proposal_id}/withdraw:
+    post:
+      tags:
+      - ont
+      summary: Withdraw Proposal
+      description: 'PRD-02 FR-ACT-CONFIRM-001：pending → withdrawn（作者确认前撤回；终态）。 Verified tenant and platform.write
+        required. Human USER identity required; actor is server verified and cannot be supplied by body. '
+      operationId: ontWithdrawV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Ontwithdrawv2Proposal
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/proposals/{proposal_id}/reject:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - ont
+      summary: Reject Proposal
+      operationId: ontRejectV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalConfirmDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+      description: ' Verified tenant and platform.write required. Human USER identity required; actor is server verified
+        and cannot be supplied by body. '
+  /api/v1/ont/v2/proposals/{proposal_id}/confirm:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - ont
+      summary: Confirm Proposal
+      description: '用户确认（pending → confirmed）。只能由用户侧发起——不是 LLM 工具。 Verified tenant and platform.write required. Human
+        USER identity required; actor is server verified and cannot be supplied by body. '
+      operationId: ontConfirmV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalConfirmDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/action-types/{rid}/propose:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - ont
+      summary: Propose Action
+      description: 'AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。 Verified tenant and platform.write required. '
+      operationId: ontProposeV2ActionType
+      parameters:
+      - name: rid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalCreateDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/proposals/{proposal_id}/execute:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - ont
+      summary: Execute Proposal
+      description: "MP-SAL-04b / MP-DEDUP-01：confirmed proposal 落库执行。\n\n- create_instance → 新建实例\n- model_type →\
+        \ upsert 类型\n- merge_suggestion → 自动触发 merge_object_types，archived source\n- action / edit_set → ADR-0064\
+        \ 统一执行器（按 ActionType 声明分派：\n  声明式/混合式走 EditSet 单事务，纯 function 式走 legacy 回写 is_compat）\n- ONT-GATE-01：执行前**重跑**三闸门预检（schema×SHACL×Axiom）——\n\
+        \  propose 时的报告只是快照，本体在窗口期可能已变化；violation 级\n  发现 → 409 阻断（机器预检是 HITL 之后的强制底线）。\n- ADR-0064 S2/S3：markings\
+        \ 非空 → 完整安全闸门（行/列策略 + G6 合取门 +\n  X-Scope-Markings 收窄）；FunctionNotRegistered / 闸门拒写 → 422（不再 500）。 Verified\
+        \ tenant and platform.write required. Human USER identity required; actor is server verified and cannot be\
+        \ supplied by body. "
+      operationId: ontExecuteV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      - name: markings
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Markings
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalExecuteResultDTO'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/proposals/{proposal_id}/revert:
+    post:
+      tags:
+      - ont
+      summary: Revert Proposal
+      description: 'PRD-02 FR-ACT-CONFIRM-002..006：executed → reverted（人审撤销 + 补偿）。
+
+
+        create_instance → 实例删除（I1 ≃ 等价判定）；action/model → audit-only
+
+        partial；7 天窗口外拒绝（409）。 Verified tenant and platform.write required. Human USER identity required; actor is
+        server verified and cannot be supplied by body. '
+      operationId: ontRevertV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Ontrevertv2Proposal
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/action-types/{rid}/apply-edit-set:
+    post:
+      tags:
+      - ont
+      summary: Apply Edit Set
+      description: 'ACT-05 / D7：人工路径「预览即确认」—— 即时 proposal + 单事务执行 + 审计。
+
+
+        expected_diff 预览在 proposal 记录中可查（GET /proposals/{id}/preview）。
+
+        ADR-0064 S3：edits 回落链同 propose-edit-set（body → declarative → function）；
+
+        markings 非空 → 安全闸门（行/列策略 + G6 合取门 + X-Scope-Markings 收窄）。 Verified tenant and platform.write required. Human
+        USER identity required; actor is server verified and cannot be supplied by body. '
+      operationId: ontApplyV2EditSet
+      parameters:
+      - name: rid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rid
+      - name: markings
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Markings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditSetApplyBodyDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Ontapplyv2Editset
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/action-types/{rid}/propose-edit-set:
+    post:
+      tags:
+      - ont
+      summary: Propose Edit Set
+      description: 'ACT-05：AI 路径 edit-set 提案（强制 HITL —— pending → 用户 confirm → execute）。
+
+
+        ADR-0064 S3：与 /propose 入口等价（统一执行器按 ActionType 声明分派）。
+
+        edits 缺省时依次回落：body.edits → ActionType.declarative_edits →
+
+        function 产物（执行时两规约解释）；三者全空才 422。 Verified tenant and platform.write required. '
+      operationId: ontProposeV2EditSet
+      parameters:
+      - name: rid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditSetApplyBodyDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Ontproposev2Editset
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
   /api/v1/ont/v2/object-types/{rid}/datasources:
     parameters:
     - name: rid
@@ -1764,35 +2306,6 @@ paths:
                 required: [indexed]
                 properties:
                   indexed: { type: integer }
-  /api/v1/ont/v2/action-types/{rid}/propose:
-    parameters:
-      - in: path
-        name: rid
-        required: true
-        schema: { type: string }
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      tags: [ont]
-      summary: Propose an action (SAL-04 pending proposal, not applied)
-      operationId: ontProposeV2ActionType
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-SAL04-PROPOSE]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/ProposalCreateV2" }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ProposalV2" }
-        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/action-types/{rid}/flow:
     parameters:
       - in: path
@@ -1863,63 +2376,6 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ProposalV2" }
         "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
-  /api/v1/ont/v2/proposals/{proposal_id}/confirm:
-    parameters:
-      - in: path
-        name: proposal_id
-        required: true
-        schema: { type: string }
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      tags: [ont]
-      summary: Confirm proposal (user-side HITL; pending -> confirmed)
-      operationId: ontConfirmV2Proposal
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-SAL04-CONFIRM]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/ProposalConfirmV2" }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ProposalV2" }
-        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
-  /api/v1/ont/v2/proposals/{proposal_id}/reject:
-    parameters:
-      - in: path
-        name: proposal_id
-        required: true
-        schema: { type: string }
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      tags: [ont]
-      summary: Reject proposal (terminal)
-      operationId: ontRejectV2Proposal
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-SAL04-REJECT]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/ProposalConfirmV2" }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ProposalV2" }
   /api/v1/ont/v2/classes/{class_rid}/propose-instance:
     parameters:
       - in: path
@@ -1972,37 +2428,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ProposalV2" }
-  /api/v1/ont/v2/proposals/{proposal_id}/execute:
-    parameters:
-      - in: path
-        name: proposal_id
-        required: true
-        schema: { type: string }
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      tags: [ont]
-      summary: Execute a confirmed proposal (create_instance / model_type; SAL-04b)
-      operationId: ontExecuteV2Proposal
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-SAL04B-EXECUTE]
-      x-mate-implementation-status: implemented
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [kind]
-                properties:
-                  kind: { type: string, enum: [create_instance, model_type] }
-                  individual_rid: { type: string }
-                  type_rid: { type: string }
-        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
   /api/v1/ont/v2/versions/{class_rid}:
     parameters:
       - in: path
@@ -2198,6 +2623,226 @@ components:
             platform.admin: Service-to-service admin
             tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
+    EditSetApplyBodyDTO:
+      properties:
+        parameters:
+          additionalProperties: true
+          type: object
+          title: Parameters
+        target_iid:
+          type: string
+          title: Target Iid
+          default: ''
+        edits:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Edits
+        impact_summary:
+          type: string
+          title: Impact Summary
+          default: ''
+      type: object
+      title: EditSetApplyBodyDTO
+      description: ACT-05：edit-set 执行体。edits 缺省时用 ActionType.declarative_edits 模板。
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ProposalExecuteResultDTO:
+      properties:
+        kind:
+          type: string
+          title: Kind
+        individual_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Individual Rid
+        type_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type Rid
+        action_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action Rid
+        target_iid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Iid
+        audit_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Audit Id
+        outbox_event_ids:
+          items:
+            type: string
+          type: array
+          title: Outbox Event Ids
+        side_effects_emitted:
+          items:
+            type: string
+          type: array
+          title: Side Effects Emitted
+        source_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Rid
+        target_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Rid
+        affected_individuals:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Affected Individuals
+        affected_links:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Affected Links
+        postflight:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Postflight
+      type: object
+      required:
+      - kind
+      title: ProposalExecuteResultDTO
+    ProposalCreateDTO:
+      properties:
+        parameters:
+          additionalProperties: true
+          type: object
+          title: Parameters
+        target_iid:
+          type: string
+          title: Target Iid
+          default: ''
+        impact_summary:
+          type: string
+          title: Impact Summary
+          default: ''
+        expected_diff:
+          additionalProperties: true
+          type: object
+          title: Expected Diff
+        provenance:
+          additionalProperties: true
+          type: object
+          title: Provenance
+      type: object
+      title: ProposalCreateDTO
+    ProposalResponse:
+      properties:
+        proposal_id:
+          type: string
+          title: Proposal Id
+        action_rid:
+          type: string
+          title: Action Rid
+        target_iid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Iid
+        parameters:
+          additionalProperties: true
+          type: object
+          title: Parameters
+        impact_summary:
+          type: string
+          title: Impact Summary
+          default: ''
+        expected_diff:
+          additionalProperties: true
+          type: object
+          title: Expected Diff
+        status:
+          type: string
+          title: Status
+        kind:
+          type: string
+          title: Kind
+          default: action
+        confirmed_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Confirmed By
+        created_at:
+          type: string
+          title: Created At
+          default: ''
+        confirmed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Confirmed At
+        preflight:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Preflight
+      type: object
+      required:
+      - proposal_id
+      - action_rid
+      - status
+      title: ProposalResponse
+    ProposalConfirmDTO:
+      properties: {}
+      type: object
+      title: ProposalConfirmDTO
+      description: 'Confirmation payload reserved for future user-provided rationale.
+
+
+        The confirming principal is deliberately excluded: it is always read from
+
+        the authenticated request context, never from client supplied JSON.'
     BackingDatasourceDTO:
       type: object
       properties:

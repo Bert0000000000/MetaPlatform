@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useContext, useEffect, useState } from 'react';
+import { UNSAFE_NavigationContext, useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -16,6 +16,8 @@ import {
 } from '@douyinfe/semi-ui';
 import { ArrowLeftOutlined, SaveOutlined, EyeOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { getPage, savePage } from '@/api/apphub/pages';
+import OrderReviewRuntime from './runtime/OrderReviewRuntime';
+import OrderReviewBinding from './components/OrderReviewBinding';
 import DashboardCanvas from './components/DashboardCanvas';
 import TableWidget from './components/TableWidget';
 import ChartWidget from './components/ChartWidget';
@@ -28,6 +30,11 @@ import type {
 } from '@/api/apphub/pages';
 import type { DashboardGenResult } from '@/api/apphub/types';
 import './apps.css';
+
+let activePageHistoryGuard: ((event: PopStateEvent) => void) | null = null;
+const guardPageHistory = (event: PopStateEvent) => activePageHistoryGuard?.(event);
+if (typeof window !== 'undefined') window.addEventListener('popstate', guardPageHistory, true);
+if (import.meta.hot) import.meta.hot.dispose(() => window.removeEventListener('popstate', guardPageHistory, true));
 
 const DATA_SOURCE_TYPE_OPTIONS: Array<{ label: string; value: DataSourceType }> = [
   { label: '本体 (TECH-ONT)', value: 'ontology' },
@@ -56,11 +63,44 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savedConfig, setSavedConfig] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const navigation = useContext(UNSAFE_NavigationContext);
+  const dirty = !loading && !!savedConfig && JSON.stringify(config) !== savedConfig;
+  useEffect(() => {
+    if (!dirty) return;
+    const beforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', beforeUnload);
+    const currentIndex: unknown = window.history.state?.idx;
+    let restoringHistory = false;
+    const historyGuard = (event: PopStateEvent) => {
+      if (restoringHistory) { restoringHistory = false; event.stopImmediatePropagation(); return; }
+      const targetIndex: unknown = event.state?.idx;
+      if (typeof currentIndex !== 'number' || typeof targetIndex !== 'number' || targetIndex === currentIndex) return;
+      if (!window.confirm('有未保存的更改，确定离开？')) {
+        event.stopImmediatePropagation(); restoringHistory = true; window.history.go(currentIndex - targetIndex);
+      }
+    };
+    activePageHistoryGuard = historyGuard;
+    const navigator = navigation?.navigator;
+    const push = navigator?.push, replace = navigator?.replace;
+    if (navigator && push && replace) {
+      navigator.push = (...args) => { if (window.confirm('有未保存的更改，确定离开？')) push.apply(navigator, args); };
+      navigator.replace = (...args) => { if (window.confirm('有未保存的更改，确定离开？')) replace.apply(navigator, args); };
+    }
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      if (activePageHistoryGuard === historyGuard) activePageHistoryGuard = null;
+      if (navigator && push && replace) { navigator.push = push; navigator.replace = replace; }
+    };
+  }, [dirty, navigation]);
+  const [previewConfig, setPreviewConfig] = useState<PageDesignerConfig | null>(null);
   const [previewing, setPreviewing] = useState<DashboardWidget | null>(null);
   const [dsWidgetId, setDsWidgetId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!pageId) return;
+    if (!pageId) { setLoading(false); return; }
+    setLoadError('');
     getPage(pageId).then((c) => {
       let widgets = c.widgets;
       try {
@@ -91,16 +131,21 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
         // ignore parse error
       }
       setConfig({ ...c, widgets });
+      setSavedConfig(JSON.stringify(c));
       setLoading(false);
-    });
+    }).catch(e => { setLoadError(e instanceof Error ? e.message : '页面加载失败'); setLoading(false); });
   }, [pageId]);
 
   const handleSave = async () => {
     if (!pageId) return;
     setSaving(true);
     try {
-      await savePage(pageId, config);
-      Toast.success('已保存');
+      const saved = await savePage(pageId, config);
+      setConfig(saved);
+      setSavedConfig(JSON.stringify(saved));
+      if (saved.application_metadata_updated === false) Toast.warning('页面已保存；应用信息同时发生更改，请重新加载应用详情。');
+      else Toast.success('已保存');
+    } catch (e) { Toast.error(e instanceof Error ? e.message : '保存失败，输入仍保留');
     } finally {
       setSaving(false);
     }
@@ -217,6 +262,10 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
 
   return (
     <div>
+      {loadError && <div role="alert">{loadError}<button onClick={() => window.location.reload()}>重试加载</button></div>}
+      <OrderReviewBinding value={config.binding} onChange={binding => setConfig({ ...config, binding })} />
+      {dirty && <p role="status">有未保存的更改。保存失败或取消离开时，当前输入保留。</p>}
+
       <Space className="mp-mb-4">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps/mine')}>
           返回
@@ -226,7 +275,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
         </Typography.Title>
         <Button
           icon={<EyeOutlined />}
-          onClick={() => setPreviewing(config.widgets[0] ?? null)}
+          onClick={() => { if (config.binding) setPreviewConfig(structuredClone(config)); else setPreviewing(config.widgets[0] ?? null); }}
         >
           预览
         </Button>
@@ -437,6 +486,7 @@ export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: stri
         />
       </Tabs>
 
+      {previewConfig?.binding && pageId && <OrderReviewRuntime appId="" pageId={pageId} binding={previewConfig.binding} previewConfig={previewConfig} />}
       {previewing && (
         <Card
           title={`预览：${previewing.title}`}

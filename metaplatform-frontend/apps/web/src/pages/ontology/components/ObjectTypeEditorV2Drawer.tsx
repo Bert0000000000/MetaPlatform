@@ -19,7 +19,7 @@ import { apiClient } from '@/api/client';
 import { listBigDataSources } from '@/api/ontology-bigdata';
 import { AlertTriangle, ChevronDown, ChevronRight, Plus, Trash2, X } from 'lucide-react';
 import {
-  propSlug, slugAndVersionOfObjectType, listSchemaWip, saveSchemaWip, validateObjectTypeModel, errDetailText, getObjectType, assessMigration, inspectObjectType,
+  propSlug, slugAndVersionOfObjectType, listSchemaWip, saveSchemaWip, validateObjectTypeModel, errDetailText, getObjectType, assessMigration, inspectObjectType, getObjectBindingUsage, type AppBindingUsage,
   type MigrationAssessment,
   type SchemaWipEntry, type ModelPreflight,
   type DestructiveConfirmDetail, type KernelInterface, type KernelLinkType,
@@ -107,6 +107,8 @@ export default function ObjectTypeEditorV2Drawer({
 }: ObjectTypeEditorV2DrawerProps) {
   const [baseline, setBaseline] = useState<string | undefined>(objectType?.checksum);
   const [latest, setLatest] = useState<KernelObjectType | null>(null);
+  const [applicationReferences, setApplicationReferences] = useState<AppBindingUsage[] | null>(null);
+  const [applicationReferenceError, setApplicationReferenceError] = useState('');
   const [actionReferences, setActionReferences] = useState<string[] | null>(null);
   const [impact, setImpact] = useState<MigrationAssessment | null>(null);
   const [advanced, setAdvanced] = useState(false);
@@ -381,11 +383,14 @@ export default function ObjectTypeEditorV2Drawer({
       setPreflight(report);
       if (mode === 'edit' && report.valid) {
         setActionReferences(null);
+        setApplicationReferences(null); setApplicationReferenceError('');
         const [assessment, inspection] = await Promise.all([
           assessMigration(payload.rid, {targetPayload: payload as unknown as Record<string, unknown>}),
           inspectObjectType(payload.rid),
         ]);
         setImpact(assessment); setActionReferences(inspection.actions);
+        try { setApplicationReferences(await getObjectBindingUsage(payload.rid)); }
+        catch (e) { setApplicationReferenceError('应用引用未知，请重试预检'); throw e; }
       }
       if (!report.valid || action === 'preflight') return;
       const submittedChecksum = retryChecksum ?? baseline;
@@ -786,7 +791,15 @@ export default function ObjectTypeEditorV2Drawer({
           {preflight && mode === 'edit' && <p>引用动作：{actionReferences === null ? '尚未取得，请重试预检' : actionReferences.length ? actionReferences.join('、') : '无'}</p>}
           {impact && <div aria-label="变更影响"><p>受影响数据：{impact.counts.instances_affected ?? impact.counts.reattach_pending ?? '未提供'} 条</p>
             {impact.changes.map((change,i) => <p key={i}>{change}</p>)}
-            <p>应用引用：等待应用中心绑定契约接入，尚未验证。</p>
+            <div aria-label="应用引用">
+              {applicationReferences === null ? <p role="status">{applicationReferenceError || '应用引用尚未查询，状态未知'}</p>
+                : applicationReferences.length === 0 ? <p>当前租户没有实际应用绑定引用</p>
+                : applicationReferences.map((a, i) => <p key={a.app_id + a.page_id + a.status + i}>
+                    <Link to={'/apps/mine?app=' + encodeURIComponent(a.app_id)}>{a.app_name}</Link>
+                    {' · ' + a.app_id + ' · ' + a.model_version + ' · ' + (a.status === 'PUBLISHED' ? '已发布' : a.status === 'OFFLINE' ? '已下线' : '草稿')}
+                    {a.version_id && ' · ' + a.version_id}
+                  </p>)}
+              </div>
             {impact.warnings.map((warning,i) => <p key={i}>{warning}</p>)}
           </div>}
           {latest && <div aria-label="最新版本比较"><p>最新名称：{latest.display_name}；最新说明：{latest.description || '无'}；最新属性：{latest.properties.map(p => p.title || propSlug(p.rid)).join('、')}</p>

@@ -6774,66 +6774,8 @@ class PgOntologyRepository(OntologyRepository):
         from mate_kernel.action.unified import assemble_unified_edits
         from mate_kernel.ontology.security_policies import check_edit_permissions
 
-        # 统一装配：ActionType（ad-hoc 编辑可为 None）→ 声明式模板 + function
-        # 两规约产物 → 合并 EditOp 序列。
-        try:
-            at = self.get_action_type(ClassRef(p.action_rid))
-        except KeyError:
-            at = None
-
-        # submission_criteria（有 ActionType 时；与 legacy apply 同一求值器）
-        if at is not None:
-            target_props: dict[str, Any] = {}
-            if p.target_iid:
-                with suppress(KeyError):
-                    t = self.get_individual(p.target_iid)
-                    target_props = {k.rid: v for k, v in t.props}
-            raw_crit = dict(p.parameters or {})
-            if p.kind == "edit_set":
-                inner = raw_crit.get("parameters")
-                crit_params = dict(inner) if isinstance(inner, dict) else {}
-            else:
-                crit_params = {k: v for k, v in raw_crit.items() if k != "provenance"}
-            for expr in at.submission_criteria:
-                if not self._action_service.evaluator.evaluate(expr, crit_params, target_props):
-                    raise ValueError(
-                        f"submission criteria not met: {expr!r} for action={at.rid.rid}"
-                    )
-
-        def _invoke(fn_rid: str, tgt: str | None, fn_params: dict[str, Any]) -> Any:
-            return self._action_service.invoke_function(fn_rid, tgt, fn_params)
-
-        try:
-            assembly = assemble_unified_edits(
-                action_type=at,
-                proposal_kind=p.kind,
-                parameters_raw=dict(p.parameters or {}),
-                target_iid=p.target_iid,
-                invoke_function=(
-                    _invoke if (at is not None and at.function_ref is not None) else None
-                ),
-                now_iso=_dt.now(_UTC).isoformat(),
-            )
-        except EditSetError as e:
-            raise ValueError(str(e)) from e  # API 层统一 422
-
-        ops = list(assembly.ops)
-        # 安全闸门（空 viewer markings 内部直通；无策略零回归）
-        check_edit_permissions(
-            ops,
-            viewer_markings=tuple(viewer_markings),
-            policies=self._policy_set(),
-            get_individual=lambda rid: self._individual_by_rid(rid),
-            class_marking_of=self._class_markings_of,
-            ancestors_of=self._ancestors_of_class,
-        )
-        applied: list[Any] = []
-        created_rids: list[str] = []
-        old_values: dict[str, Any] = {}
-        removed_links: list[dict[str, Any]] = []
+        from mate_kernel.action.engine import ProposalNotConfirmed
         tenant_id = self._current_tenant() or "tenant-default"
-        audit_id = f"audit-{_uuid.uuid4().hex[:12]}"
-
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -6841,6 +6783,91 @@ class PgOntologyRepository(OntologyRepository):
                 # locks its definition. Serialize this whole edit-set against
                 # supersede before either lock, avoiding the reverse-order cycle.
                 self._lock_schema_definitions(cur, tenant_id, shared=True)
+                # Preserve schema -> proposal -> object/link lock order. A command
+                # key is serialized before assembly, including function invocation.
+                if idempotency_key:
+                    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                                ("ont:execute:" + tenant_id + ":" + idempotency_key,))
+                    cur.execute("SELECT proposal_id, request_fingerprint FROM ont_proposal_idempotency "
+                                "WHERE tenant_id=%s AND operation='execute' AND idempotency_key=%s",
+                                (tenant_id, idempotency_key))
+                    previous = cur.fetchone()
+                    if previous is not None:
+                        if previous["proposal_id"] != p.proposal_id or previous["request_fingerprint"] != request_fingerprint:
+                            raise ValueError("idempotency key conflicts with a different proposal command")
+                        cur.execute("SELECT result FROM ont_proposal_execution WHERE proposal_id=%s AND tenant_id=%s",
+                                    (p.proposal_id, tenant_id))
+                        stored = cur.fetchone()
+                        if stored is None:
+                            raise ValueError("idempotent execution receipt unavailable")
+                        value = stored["result"]
+                        return dict(value if isinstance(value, dict) else json.loads(value))
+                cur.execute("SELECT status FROM ont_proposal WHERE proposal_id=%s AND tenant_id=%s FOR UPDATE",
+                            (p.proposal_id, tenant_id))
+                current = cur.fetchone()
+                if current is None:
+                    raise KeyError(f"proposal not found: {p.proposal_id}")
+                if current["status"] != "confirmed":
+                    raise ProposalNotConfirmed(f"proposal {p.proposal_id} is {current['status']}; execute requires a confirmed proposal")
+                # 统一装配：ActionType（ad-hoc 编辑可为 None）→ 声明式模板 + function
+                # 两规约产物 → 合并 EditOp 序列。
+                try:
+                    at = self.get_action_type(ClassRef(p.action_rid))
+                except KeyError:
+                    at = None
+
+                # submission_criteria（有 ActionType 时；与 legacy apply 同一求值器）
+                if at is not None:
+                    target_props: dict[str, Any] = {}
+                    if p.target_iid:
+                        with suppress(KeyError):
+                            t = self.get_individual(p.target_iid)
+                            target_props = {k.rid: v for k, v in t.props}
+                    raw_crit = dict(p.parameters or {})
+                    if p.kind == "edit_set":
+                        inner = raw_crit.get("parameters")
+                        crit_params = dict(inner) if isinstance(inner, dict) else {}
+                    else:
+                        crit_params = {k: v for k, v in raw_crit.items() if k != "provenance"}
+                    for expr in at.submission_criteria:
+                        if not self._action_service.evaluator.evaluate(expr, crit_params, target_props):
+                            raise ValueError(
+                                f"submission criteria not met: {expr!r} for action={at.rid.rid}"
+                            )
+
+                def _invoke(fn_rid: str, tgt: str | None, fn_params: dict[str, Any]) -> Any:
+                    return self._action_service.invoke_function(fn_rid, tgt, fn_params)
+
+                try:
+                    assembly = assemble_unified_edits(
+                        action_type=at,
+                        proposal_kind=p.kind,
+                        parameters_raw=dict(p.parameters or {}),
+                        target_iid=p.target_iid,
+                        invoke_function=(
+                            _invoke if (at is not None and at.function_ref is not None) else None
+                        ),
+                        now_iso=_dt.now(_UTC).isoformat(),
+                    )
+                except EditSetError as e:
+                    raise ValueError(str(e)) from e  # API 层统一 422
+
+                ops = list(assembly.ops)
+                # 安全闸门（空 viewer markings 内部直通；无策略零回归）
+                check_edit_permissions(
+                    ops,
+                    viewer_markings=tuple(viewer_markings),
+                    policies=self._policy_set(),
+                    get_individual=lambda rid: self._individual_by_rid(rid),
+                    class_marking_of=self._class_markings_of,
+                    ancestors_of=self._ancestors_of_class,
+                )
+                applied: list[Any] = []
+                created_rids: list[str] = []
+                old_values: dict[str, Any] = {}
+                removed_links: list[dict[str, Any]] = []
+                audit_id = f"audit-{_uuid.uuid4().hex[:12]}"
+
                 for e in ops:
                     if e.op == "set_property":
                         cur.execute(
@@ -7027,6 +7054,13 @@ class PgOntologyRepository(OntologyRepository):
                          audit_id = EXCLUDED.audit_id""",
                     (p.proposal_id, tenant_id, json.dumps(result, default=str), audit_id),
                 )
+                self._append_proposal_event(cur, proposal_id=p.proposal_id, tenant_id=tenant_id,
+                                            from_status="confirmed", to_status="executed", actor_id=actor_id or None)
+                if idempotency_key:
+                    cur.execute("INSERT INTO ont_proposal_idempotency "
+                                "(tenant_id,operation,idempotency_key,proposal_id,request_fingerprint) "
+                                "VALUES (%s,'execute',%s,%s,%s)",
+                                (tenant_id,idempotency_key,p.proposal_id,request_fingerprint))
             conn.commit()
         except Exception:
             conn.rollback()

@@ -4,6 +4,7 @@ export type AppStatus = 'DESIGNING' | 'PUBLISHED' | 'OFFLINE';
 export type ModuleType = 'FORM' | 'FLOW' | 'BOARD' | 'PAGE';
 
 export interface AppItem {
+  publishedVersionId?: string;
   appId: string;
   name: string;
   code: string;
@@ -15,6 +16,8 @@ export interface AppItem {
    * 与 `group`（技术分类 platform/knowledge/data/business）是两条独立的分类轴。
    */
   businessDomain: string;
+  owner?: string;
+  version?: string;
   status: AppStatus;
   moduleCount: number;
   createdAt: string;
@@ -65,11 +68,12 @@ export interface AppUpdateRequest {
 }
 
 export interface ModuleItem {
+  appCode?: string;
   moduleId: string;
   appId: string;
   name: string;
   code: string;
-  type: ModuleType;
+  type?: ModuleType;
   description?: string;
   icon?: string;
   config?: FormConfig;

@@ -12,3 +12,28 @@ export function executeRuntimeAction(appId: string, action: RuntimeAction): Prom
 export function publishApp(appId: string): Promise<{ app_id: string; status: string; version: string }> {
   return post(`/apps/${appId}/publish`);
 }
+
+
+import type { OrderBinding, PageDesignerConfig } from './pages';
+import type { KernelIndividual, KernelLinkInstance } from '@/api/ont/kernel';
+export interface OrderRuntimeData {
+  orders: KernelIndividual[];
+  customers: KernelIndividual[];
+  links: KernelLinkInstance[];
+  binding: OrderBinding;
+  version: string;
+}
+export function getOrderRuntimeData(appId: string, pageId: string): Promise<OrderRuntimeData> {
+  return get('/apps/' + encodeURIComponent(appId) + '/runtime/data?page_id=' + encodeURIComponent(pageId));
+}
+export function proposeOrderReview(appId: string, pageId: string, targetIid: string, parameters: Record<string, unknown>): Promise<ActionResult> {
+  return post('/apps/' + encodeURIComponent(appId) + '/runtime/execute', {
+    action_id: 'review', action_type: 'ontology_propose', page_id: pageId,
+    payload: { target_iid: targetIid, parameters },
+  });
+}
+
+
+export function previewOrderPage(pageId: string, config: PageDesignerConfig): Promise<OrderRuntimeData> {
+  return post('/pages/' + encodeURIComponent(pageId) + '/preview', config);
+}
