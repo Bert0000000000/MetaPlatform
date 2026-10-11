@@ -292,13 +292,15 @@ def test_mounted_surface_resolves_tenant_from_auth_middleware() -> None:
         time.sleep(.02)
 
     from mcp.client.session import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.client.streamable_http import streamable_http_client
 
     async def _names(tenant: str) -> set[str]:
+        import httpx
         async with (
-            streamablehttp_client(
+            httpx.AsyncClient(headers={"x-test-tenant": tenant}) as http_client,
+            streamable_http_client(
                 "http://127.0.0.1:55517/api/v1/mcp/protocol/mcp",
-                headers={"x-test-tenant": tenant},
+                http_client=http_client,
             ) as (read, write, _sid),
             ClientSession(read, write) as session,
         ):

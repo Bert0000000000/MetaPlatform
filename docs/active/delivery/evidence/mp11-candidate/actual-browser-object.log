@@ -1,0 +1,7 @@
+
+Running 1 test using 1 worker
+
+  ok 1 [web] › tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication (4.5s)
+
+  1 passed (5.9s)
+

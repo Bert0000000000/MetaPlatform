@@ -1,0 +1,26 @@
+........................F............................................... [  9%]
+........................................................................ [ 19%]
+........................................................................ [ 29%]
+........................................................................ [ 39%]
+........................................................................ [ 49%]
+........................................................................ [ 58%]
+........................................................................ [ 68%]
+........................................................................ [ 78%]
+........................................................................ [ 88%]
+........................................................................ [ 98%]
+..............                                                           [100%]
+================================== FAILURES ===================================
+_________________ TestActionService.test_apply_records_audit __________________
+packages\mate-kernel\tests\test_action_engine.py:122: in test_apply_records_audit
+    assert audit[0].audit_id.startswith("audit-") and audit[0].audit_id.endswith("-1")
+E   AssertionError: assert (True and False)
+E    +  where True = <built-in method startswith of str object at 0x00000245E36B9B10>('audit-')
+E    +    where <built-in method startswith of str object at 0x00000245E36B9B10> = 'audit-aedd42c0c00e41138b5b309815c74601'.startswith
+E    +      where 'audit-aedd42c0c00e41138b5b309815c74601' = ApplyOutcome(action_rid='ont.acme.act.a', target_iid=None, applied_at=datetime.datetime(2026, 10, 11, 20, 40, 41, 9944...b5b309815c74601', rolled_back=False, function_result={}, proposal_id=None, hitl_token='tok-xyz', side_effect_events=[]).audit_id
+E    +  and   False = <built-in method endswith of str object at 0x00000245E36B9B10>('-1')
+E    +    where <built-in method endswith of str object at 0x00000245E36B9B10> = 'audit-aedd42c0c00e41138b5b309815c74601'.endswith
+E    +      where 'audit-aedd42c0c00e41138b5b309815c74601' = ApplyOutcome(action_rid='ont.acme.act.a', target_iid=None, applied_at=datetime.datetime(2026, 10, 11, 20, 40, 41, 9944...b5b309815c74601', rolled_back=False, function_result={}, proposal_id=None, hitl_token='tok-xyz', side_effect_events=[]).audit_id
+=========================== short test summary info ===========================
+FAILED packages/mate-kernel/tests/test_action_engine.py::TestActionService::test_apply_records_audit - AssertionError: assert (True and False)
+1 failed, 733 passed in 20.81s
+

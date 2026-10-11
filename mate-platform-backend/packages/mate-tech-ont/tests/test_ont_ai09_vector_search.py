@@ -105,8 +105,9 @@ PG_DSN = os.environ.get("AI09_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/me
 
 
 class TestPgVector:
+    @staticmethod
     @pytest.fixture(scope="class")
-    def pg_repo(self):
+    def pg_repo():
         pytest.importorskip("psycopg2")
         os.environ["ONT_VECTOR_DIM"] = "384"  # HashEmbedder 维度（列随 env 重建）
         from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository

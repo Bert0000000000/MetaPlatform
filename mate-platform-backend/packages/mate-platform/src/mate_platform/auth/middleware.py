@@ -6,7 +6,6 @@ import inspect
 import logging
 import os
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -196,23 +195,15 @@ def _switch_allowed(claims: VerifiedClaims) -> bool:
 
 
 def _looks_like_service(claims: VerifiedClaims) -> bool:
-    return "preferred_username" not in _claims_dict(claims) and bool(claims.azp)
-
-
-def _claims_dict(claims: VerifiedClaims) -> dict[str, Any]:
-    return {
-        "sub": claims.sub,
-        "azp": claims.azp,
-        "iss": claims.iss,
-        "aud": claims.aud,
-        "tenant_id": claims.tenant_id,
-        "realm_roles": claims.realm_roles,
-        "client_roles": claims.client_roles,
-        "scopes": claims.scopes,
-        "expires_at": claims.expires_at,
-        "not_before": claims.not_before,
-        "jti": claims.jti,
-    }
+    # Supported Keycloak human contract: subject + user name + user session.
+    # Client-credentials tokens have no user session by default, and can carry
+    # preferred_username too. Explicit service metadata takes precedence even
+    # when a service is configured to receive a session. Unknown is non-human.
+    return not (
+        bool(claims.sub and claims.azp and claims.preferred_username and claims.session_id)
+        and not claims.service_account_client_id
+        and not claims.preferred_username.startswith("service-account-")
+    )
 
 
 def _anonymous_ctx(request: Request) -> RequestContext:

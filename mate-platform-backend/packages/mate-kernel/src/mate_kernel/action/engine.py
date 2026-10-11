@@ -27,11 +27,6 @@ from typing import Any, Protocol, runtime_checkable
 
 from ..sandbox.k8s import FunctionExecutor
 
-# F10：audit_id 此前是纯进程内计数器（`audit-<n>`），进程重启后从 1 重来，
-# 与库里既有行撞 `ont_action_audit` 主键 → execute 500。加进程唯一前缀。
-_AUDIT_TAG = uuid.uuid4().hex[:6]
-
-
 class SubmissionCriteriaFailed(RuntimeError):
     """提交前规则评估未通过。"""
 
@@ -449,7 +444,7 @@ class ActionService:
             target_iid=target_iid,
             applied_at=datetime.now(UTC),
             side_effects_emitted=emitted,
-            audit_id=f"audit-{_AUDIT_TAG}-{len(self._audit) + 1}",
+            audit_id=f"audit-{uuid.uuid4().hex}",
             rolled_back=rolled_back,
             function_result=function_result,
             proposal_id=proposal_id,

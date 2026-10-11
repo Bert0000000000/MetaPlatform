@@ -1,0 +1,13 @@
+# MetaPlatform1.1.0 local candidate release notes
+
+This candidate integrates the existing website/login, source discovery and ingestion, ontology object/relation editing, app publication/order runtime and scoped MCP path. Server-verified tenant login, conservative signed human classification, tenant-bound expiring WS and UUID audit records close reproduced integration gaps. Normal server/provider logout now precedes local UI clearing and reports partial failure.
+
+Launch/configuration: see scripts/acceptance/mp11/README.md and config.example.json. Existing retained private inputs/manifests in .tmp/codex-mp11-candidate are required. Start/Stop only affect exact owned55520/55521/55522/55523/9368 resources; PG55497 and all data remain. Manifest mismatch or occupied unowned ports fail closed. The published preview is http://127.0.0.1:9368/website/ . Passwords remain local protected inputs.
+
+Rollback: `./scripts/acceptance/run-mp11-acceptance.ps1 -Phase Stop` stops exact recorded candidate host processes/owned KC+Redis containers without deleting volumes/databases/config. Preserve manifests and backups. Restart via Start then Verify. Do not point older binaries at the upgraded candidate database or downgrade shared data; use the preserved prior preview for comparison and restore a separately authorized backup if data rollback is required. Fresh and0020→0022 acceptance databases are retained. Human create-instance compensation was actually executed, returned equivalent and removed that instance; arbitrary external actions are not promised reversible.
+
+Current-source host candidate and unchanged shared Docker images are different artifacts. No public DNS/container rollout, push, merge or GA release occurred. Task and whole-branch reviews are pending.72-hour SLO, user study, external dsh/WorkBuddy clients, nonprivileged RLS enforcement and1.1.1/1.2 work remain separately tracked.
+
+Known limits: direct API JWTs expire normally after logout although refresh is revoked; native browser WS needs a trusted Authorization-header gateway; LISTEN loss falls back to bounded polling and requires explicit API restart to restore fast path; DATA/AppHub administrative outbox composition is in-memory, not external durable bus dispatch; the actual audit replay proof concerns local deterministic functions/PG transactions, not external exactly-once effects. See MP11-ACCEPTANCE.md for exact test coverage and skip boundaries.
+
+Preserve controller-docker-recovery-20261012.json and controller-preview-handoff-20261012.json. Legacy Task6API55510 still references plan Scratch; controller will coordinate its exact retirement after reviews. Current candidate files/inputs/launchers live outside Scratch.

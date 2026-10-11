@@ -83,7 +83,7 @@ def test_actual_pg_declarative_proposal_replay_concurrency_and_state():
     from mate_kernel.ontology import ClassRef
     from mate_kernel.action.engine import ProposalNotConfirmed
     dsn=os.environ['MP11_APPHUB_PG_DSN']; target=urlparse(dsn)
-    assert target.hostname=='127.0.0.1' and target.port==55497 and target.path.startswith('/codex_mp11_apphub_')
+    assert target.hostname=='127.0.0.1' and target.port==55497 and (target.path.startswith('/codex_mp11_apphub_') or target.path=='/codex_mp11_candidate_tests_20261012')
     tenant='mp11-app-ui'; repo=PgOntologyRepository(dsn=dsn)
     def proposal():
         with repo.tenant_scope(tenant):

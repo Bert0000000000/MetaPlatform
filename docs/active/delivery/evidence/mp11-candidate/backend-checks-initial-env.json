@@ -1,0 +1,127 @@
+[
+  {
+    "name": "mate-kernel",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "packages/mate-kernel/tests",
+      "-q",
+      "--tb=short",
+      "-o",
+      "cache_dir=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-cache",
+      "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-mate-kernel-34d27976"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+    "exit_code": 0,
+    "elapsed_seconds": 25.24,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "mate-platform",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "packages/mate-platform/tests",
+      "-q",
+      "--tb=short",
+      "-o",
+      "cache_dir=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-cache",
+      "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-mate-platform-88161d00"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+    "exit_code": 1,
+    "elapsed_seconds": 13.57,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "mate-tech-data",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "packages/mate-tech-data/tests",
+      "-q",
+      "--tb=short",
+      "-o",
+      "cache_dir=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-cache",
+      "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-mate-tech-data-c4cd564c"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+    "exit_code": 1,
+    "elapsed_seconds": 18.39,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "mate-app-hub",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "packages/mate-app-hub/tests",
+      "-q",
+      "--tb=short",
+      "-o",
+      "cache_dir=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-cache",
+      "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-mate-app-hub-44feb036"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+    "exit_code": 1,
+    "elapsed_seconds": 138.73,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "mate-tech-mcp",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "packages/mate-tech-mcp/tests",
+      "-q",
+      "--tb=short",
+      "-o",
+      "cache_dir=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-cache",
+      "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-mate-tech-mcp-a91bcd76"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+    "exit_code": 1,
+    "elapsed_seconds": 89.47,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "mate-tech-ont",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "packages/mate-tech-ont/tests",
+      "-q",
+      "--tb=short",
+      "-o",
+      "cache_dir=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-cache",
+      "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-mate-tech-ont-9fb64781"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+    "exit_code": 1,
+    "elapsed_seconds": 161.05,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "auth-service",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "services/auth-service/tests/test_mp11_login_tenant.py",
+      "-q",
+      "--tb=short",
+      "-o",
+      "cache_dir=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\pytest-cache"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+    "exit_code": 0,
+    "elapsed_seconds": 3.09,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  }
+]

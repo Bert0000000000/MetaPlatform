@@ -147,11 +147,11 @@ def test_streamable_http_roundtrip() -> None:
         time.sleep(.02)
 
     from mcp.client.session import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.client.streamable_http import streamable_http_client
 
     async def run() -> tuple[list[str], object]:
         async with (
-            streamablehttp_client("http://127.0.0.1:55517/api/v1/mcp/protocol/mcp") as (
+            streamable_http_client("http://127.0.0.1:55517/api/v1/mcp/protocol/mcp") as (
                 read,
                 write,
                 _sid,

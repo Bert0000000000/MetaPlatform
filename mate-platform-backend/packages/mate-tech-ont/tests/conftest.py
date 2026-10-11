@@ -69,7 +69,7 @@ from mate_tech_ont.instances.store import store as instance_store
 from mate_tech_ont.security.tenant import TenantContext
 from mate_tech_ont.versioning.store import version_store
 
-_TEST_JWT_SECRET = "test-secret"
+_TEST_JWT_SECRET = "mp11-unit-fixture-only-hmac-key-at-least-32-bytes"
 
 
 def make_keycloak_token(
@@ -94,6 +94,7 @@ def make_keycloak_token(
             "aud": "metaplatform-backend",
             "azp": "metaplatform-backend",
             "preferred_username": sub,
+            "sid": "unit-human-session",
             "realm_access": {"roles": resolved},
             "scope": scopes,
             "attributes": {"tenant_id": [tenant_id]},

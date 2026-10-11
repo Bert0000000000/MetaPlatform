@@ -1,0 +1,58 @@
+[
+  {
+    "name": "all-web",
+    "command": [
+      "pnpm.cmd",
+      "exec",
+      "vitest",
+      "run"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+    "exit_code": 0,
+    "elapsed_seconds": 24.31,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "web-types",
+    "command": [
+      "pnpm.cmd",
+      "exec",
+      "tsc",
+      "--noEmit"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+    "exit_code": 0,
+    "elapsed_seconds": 15.58,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "web-build",
+    "command": [
+      "pnpm.cmd",
+      "run",
+      "build"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+    "exit_code": 0,
+    "elapsed_seconds": 47.8,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  },
+  {
+    "name": "shared-login",
+    "command": [
+      "pnpm.cmd",
+      "exec",
+      "vitest",
+      "run",
+      "--root",
+      "../../packages/shared",
+      "--environment",
+      "jsdom",
+      "src/components/SharedLoginPage.test.tsx"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+    "exit_code": 0,
+    "elapsed_seconds": 8.63,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  }
+]

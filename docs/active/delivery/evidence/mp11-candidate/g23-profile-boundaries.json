@@ -1,0 +1,59 @@
+[
+  {
+    "profile": "ordinary-no-pg",
+    "exit": 0,
+    "expected_exit": 0,
+    "result": "explicit optional integration skip",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "-c",
+      "pyproject.toml",
+      "packages/mate-tech-ont/tests/test_ont_g23_functions.py::TestWebSocketSubscription::test_ws_receives_outbox_event",
+      "-q",
+      "--tb=short",
+      "-p",
+      "no:cacheprovider"
+    ],
+    "cwd": "mate-platform-backend"
+  },
+  {
+    "profile": "required-missing",
+    "exit": 1,
+    "expected_exit": 1,
+    "result": "required configuration hard failure",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "-c",
+      "pyproject.toml",
+      "packages/mate-tech-ont/tests/test_ont_g23_functions.py::TestWebSocketSubscription::test_ws_receives_outbox_event",
+      "-q",
+      "--tb=short",
+      "-p",
+      "no:cacheprovider"
+    ],
+    "cwd": "mate-platform-backend"
+  },
+  {
+    "profile": "required-invalid",
+    "exit": 1,
+    "expected_exit": 1,
+    "result": "required configuration hard failure",
+    "command": [
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "-c",
+      "pyproject.toml",
+      "packages/mate-tech-ont/tests/test_ont_g23_functions.py::TestWebSocketSubscription::test_ws_receives_outbox_event",
+      "-q",
+      "--tb=short",
+      "-p",
+      "no:cacheprovider"
+    ],
+    "cwd": "mate-platform-backend"
+  }
+]

@@ -4604,9 +4604,14 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute(
-                    "SELECT * FROM ont_outbox_event ORDER BY created_at DESC LIMIT %s", (limit,)
-                )
+                tenant = self._current_tenant()
+                if tenant is None:
+                    # Explicit unscoped maintenance consumers retain global access.
+                    cur.execute("SELECT * FROM ont_outbox_event ORDER BY created_at DESC LIMIT %s", (limit,))
+                else:
+                    # RLS can be bypassed by the database owner/superuser. Scope
+                    # before LIMIT so neighboring traffic cannot hide own events.
+                    cur.execute("SELECT * FROM ont_outbox_event WHERE tenant_id=%s ORDER BY created_at DESC LIMIT %s", (tenant, limit))
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()

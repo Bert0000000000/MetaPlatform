@@ -1101,12 +1101,32 @@ async def invoke_function(
 
 @router.websocket("/ws/object-changes")
 async def ws_object_changes(websocket: WebSocket) -> None:
-    """G25：对象变更 WebSocket 订阅（outbox 事件推送）。
+    """Verified tenant-bound recent outbox updates; no credentials in URLs.
 
-    连接即订阅：服务端轮询 repo outbox 增量（~1.5s）推 JSON 事件
-    {event_id, event_type, payload}；客户端断开即退订。WS 不经过 HTTP
-    认证中间件 —— 鉴权由网关层 WS 透传承担（dev 直连）。
+    HTTP middleware does not run for WebSockets. Verify a bearer header with
+    the installed verifier before accepting. Header-capable clients are
+    supported; native browser WebSocket requires a trusted gateway integration. This bounded refresh
+    stream does not promise indefinite historical delivery.
     """
+    from mate_platform.auth.middleware import _extract_bearer
+    from mate_platform.auth.tenant import TenantError, resolve_tenant
+    from mate_platform.auth.verifier import TokenError
+
+    verifier = getattr(websocket.app.state, "token_verifier", None)
+    token = _extract_bearer(websocket.headers.get("authorization"))
+    if verifier is None or not token:
+        await websocket.close(code=4401)
+        return
+    try:
+        claims = await asyncio.to_thread(verifier.verify, token)
+        # Event subscriptions never switch tenant, even for cross-tenant admins.
+        binding = resolve_tenant(claims, header_tenant=websocket.headers.get("x-tenant-id"), allow_switch=False)
+        if not binding.tenant_id or not {"platform.read", "ont.read"} <= claims.scopes:
+            await websocket.close(code=4403)
+            return
+    except (TokenError, TenantError):
+        await websocket.close(code=4403)
+        return
     await websocket.accept()
     repo = getattr(websocket.app.state, "kernel_repo", None)
     if repo is None:
@@ -1115,22 +1135,30 @@ async def ws_object_changes(websocket: WebSocket) -> None:
         return
     await websocket.send_json({"type": "subscribed", "topic": "object-changes"})
     sent: set[str] = set()
-    import asyncio
 
     # P1-5：PG repo 时接 LISTEN/NOTIFY hub（毫秒级推）；memory/PG 缺位回退轮询。
     from .notify_hub import hub_for, parse_event_id
 
     dsn = getattr(repo, "_dsn", None) or ""
     hub = hub_for(websocket.app.state, dsn) if dsn else None
+    if hub is not None:
+        hub.bind_loop(asyncio.get_running_loop())
     queue = hub.subscribe() if hub is not None else None
-    pending: set[str] = set()
+    def _events(limit: int) -> list[dict]:
+        # Bind in the worker that reads SQL; filtering also protects superusers.
+        scope = getattr(repo, "tenant_scope", None)
+        if scope is None:
+            return []
+        with scope(binding.tenant_id):
+            return repo.list_outbox_events("0", limit)
 
-    async def _send_event(eid: str) -> None:
+
+    async def _send_event(eid: str) -> bool:
         # 取事件体（按 event_id 精确定位；outbox list 后匹配）
         try:
-            events = await asyncio.to_thread(repo.list_outbox_events, "0", 100)
+            events = await asyncio.to_thread(_events, 100)
         except Exception:
-            return
+            return False
         for ev in events:
             if str(ev.get("event_id", "")) == eid:
                 await websocket.send_json(
@@ -1140,23 +1168,30 @@ async def ws_object_changes(websocket: WebSocket) -> None:
                         "payload": ev.get("payload") or {},
                     }
                 )
-                return
+                return True
+
+        return False
 
     try:
         while True:
+            # Existing sockets cannot outlive their signed access grant.
+            import time
+            if claims.expires_at <= int(time.time()):
+                await websocket.close(code=4401)
+                return
             if queue is not None:
                 # LISTEN/NOTIFY 唤醒路径：等 hub 队列（秒级超时 → 兜底轮询对齐）
                 try:
                     payload = await asyncio.wait_for(queue.get(), timeout=1.0)
                     eid = parse_event_id(payload)
                     if eid and eid not in sent:
-                        sent.add(eid)
-                        await _send_event(eid)
+                        if await _send_event(eid):
+                            sent.add(eid)
                     continue
                 except TimeoutError:
                     pass
             try:
-                events = await asyncio.to_thread(repo.list_outbox_events, "0", 20)
+                events = await asyncio.to_thread(_events, 20)
             except Exception:
                 events = []
             for ev in events:
@@ -1171,7 +1206,8 @@ async def ws_object_changes(websocket: WebSocket) -> None:
                         "payload": ev.get("payload") or {},
                     }
                 )
-            await asyncio.sleep(1.5)
+            if queue is None:
+                await asyncio.sleep(1.5)
     except Exception:
         # 客户端断开 / 发送失败 → 退订
         try:

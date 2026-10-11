@@ -1,0 +1,51 @@
+{
+  "recorded_at": "2026-10-12T03:49:17.8539413+08:00",
+  "kind": "controller-official-docker-restoration",
+  "observation": "LinuxEngine version/containers API HTTP500 or hang; shared gateway/auth health timeouts; website remained reachable",
+  "action": "docker desktop restart --detach",
+  "action_exit_code": 0,
+  "engine": {
+    "platform": "Docker Desktop 4.90.0 (238679)",
+    "server": "29.7.2",
+    "api": "1.55",
+    "os": "linux"
+  },
+  "after": {
+    "platform_healthchecked_containers": 30,
+    "additional_control_plane_without_healthcheck": 1,
+    "endpoints": [
+      {
+        "url": "http://127.0.0.1:8100/healthz",
+        "status": 200,
+        "bytes": 33
+      },
+      {
+        "url": "http://127.0.0.1:8101/healthz",
+        "status": 200,
+        "bytes": 33
+      },
+      {
+        "url": "http://127.0.0.1:9200/website/",
+        "status": 200,
+        "bytes": 29096
+      },
+      {
+        "url": "http://127.0.0.1:9200/home",
+        "status": 200,
+        "bytes": 1115
+      }
+    ]
+  },
+  "source_tool_chunks": [
+    "9ada0b",
+    "bbb0cc",
+    "cad34a",
+    "5757c3"
+  ],
+  "boundaries": [
+    "Original Docker backend images are not current-source candidate deployment",
+    "No continuous uptime or 72h SLO claim",
+    "Owned Goal PG and candidate dependencies require exact-manifest guarded start after restart",
+    "No Docker reset, volume removal, image rebuild or configuration replacement issued by this restoration"
+  ]
+}

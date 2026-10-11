@@ -1,8 +1,10 @@
+import {readFileSync} from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 test('real UI/API/PG: save, refresh, restore, competing creation and successful publication', async ({page, request}) => {
-  const base='http://127.0.0.1:55498/api/v1/ont/v2';
-  const session=await (await request.get('http://127.0.0.1:55498/__mp11/session')).json();
+  const suffix=Date.now().toString(36); const draftSlug='ui-draft-'+suffix; const publishedSlug='ui-published-'+suffix; const draftName='浏览器草稿 '+suffix; const publishedName='浏览器发布 '+suffix;
+  const base=process.env.MP11_API_URL!+'/ont/v2';
+  const session=JSON.parse(readFileSync(process.env.MP11_SESSION_FILE!,'utf8')).writer;
   const headers={Authorization:'Bearer '+session.token};
   await page.addInitScript(({token,tenant})=>{
     localStorage.setItem('mate_platform_token',token);
@@ -17,35 +19,35 @@ test('real UI/API/PG: save, refresh, restore, competing creation and successful 
     const scanned=page.waitForResponse(r=>r.url().includes('/object-types/precheck'));
     await page.getByLabel('业务说明',{exact:true}).click(); const result=await scanned; if(result.ok() && (await result.json()).candidates?.length) await page.getByRole('button',{name:'继续创建',exact:true}).click();
   };
-  await open();await fill('ui-draft','浏览器草稿');
+  await open();await fill(draftSlug,draftName);
   await page.getByRole('button',{name:'保存草稿',exact:true}).click();
   await expect(page.getByText('草稿已保存，刷新后可恢复；尚未发布。')).toBeVisible();
-  const rid=`ont.${session.tenant}.obj.crm.ui-draft.v1`;
+  const rid=`ont.${session.tenant}.obj.crm.${draftSlug}.v1`;
   expect((await request.get(base+'/object-types/'+rid,{headers})).status()).toBe(404);
   await page.reload(); await open();
-  await page.getByRole('button',{name:'恢复草稿：浏览器草稿'}).click();
-  await expect(page.getByLabel('业务标识',{exact:true})).toHaveValue('ui-draft');
+  await page.getByRole('button',{name:'恢复草稿：'+draftName}).click();
+  await expect(page.getByLabel('业务标识',{exact:true})).toHaveValue(draftSlug);
   const wips=await (await request.get(base+'/object-types/wip',{headers})).json();
   const draft=wips.find((w:{rid:string})=>w.rid===rid);
-  expect(draft.create_only).toBe(true);expect(draft.author).toBe('mp11-ui-test');
+  expect(draft.create_only).toBe(true);expect(draft.author).toBe(session.subject);
   const winnerResponse=await request.post(base+'/object-types?create_only=true',{headers,data:{...draft.payload,display_name:'并发胜者',description:'must remain unchanged'}});
   expect(winnerResponse.status()).toBe(200);const winner=await winnerResponse.json();
   await page.getByRole('button',{name:'发布对象类型',exact:true}).click();
   await page.getByRole('button',{name:'继续创建',exact:true}).click();
   await page.getByRole('button',{name:'发布对象类型',exact:true}).click();
   await expect(page.getByText('该对象类型已存在，请打开已有类型或修改标识')).toBeVisible();
-  await expect(page.getByLabel('业务名称',{exact:true})).toHaveValue('浏览器草稿');
+  await expect(page.getByLabel('业务名称',{exact:true})).toHaveValue(draftName);
   expect(await (await request.get(base+'/object-types/'+rid,{headers})).json()).toEqual(winner);
   await page.getByRole('button',{name:'关闭',exact:true}).last().click();
-  await open(); await fill('ui-published','浏览器发布');
+  await open(); await fill(publishedSlug,publishedName);
   await page.getByRole('button',{name:'保存草稿',exact:true}).click();
   await expect(page.getByText('草稿已保存，刷新后可恢复；尚未发布。')).toBeVisible();
   await page.getByRole('button',{name:'预检与影响',exact:true}).click();
   await expect(page.getByText('模型校验通过')).toBeVisible();
   await page.getByRole('button',{name:'发布对象类型',exact:true}).click();
   await expect(page.getByRole('heading',{name:'新建对象类型',exact:true})).toHaveCount(0);
-  const published=await request.get(base+`/object-types/ont.${session.tenant}.obj.crm.ui-published.v1`,{headers});
-  expect(published.status()).toBe(200);expect((await published.json()).display_name).toBe('浏览器发布');
+  const published=await request.get(base+`/object-types/ont.${session.tenant}.obj.crm.${publishedSlug}.v1`,{headers});
+  expect(published.status()).toBe(200);expect((await published.json()).display_name).toBe(publishedName);
   // Establish real same-document BrowserRouter history through its visible UI.
   await page.goto('/ontology');
   await page.getByRole('button',{name:'去语义模型',exact:true}).click();

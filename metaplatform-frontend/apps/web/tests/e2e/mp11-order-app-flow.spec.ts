@@ -4,8 +4,8 @@ import { injectAuthIntoPage } from './helpers/auth';
 
 test.use({ trace: 'off', video: 'off' });
 test.describe('MP11 actual order application', () => {
-  test.skip(!process.env.MP11_UI_TOKEN, 'Requires explicitly owned Task6 API/PG and fixture identity');
-  const api = 'http://127.0.0.1:55510/api/v1';
+  test.skip(!process.env.MP11_UI_TOKEN, 'Requires explicitly owned API/PG and signed private identity');
+  const api = process.env.MP11_API_URL!;
   test('empty tenant explicitly creates its own business group and order page', async ({ page, request }) => {
     const token = process.env.MP11_EMPTY_TOKEN!;
     const tenant = process.env.MP11_EMPTY_TENANT!;
@@ -26,7 +26,7 @@ test.describe('MP11 actual order application', () => {
   test('actual metadata preview save publish shortlink and human receipt survive reopening', async ({ page, request }) => {
     test.setTimeout(120000);
     const token = process.env.MP11_UI_TOKEN!;
-    const tenant = 'mp11-app-ui';
+    const tenant = process.env.MP11_UI_TENANT!;
     const headers = { Authorization: 'Bearer ' + token };
     const pendingStatus = 'pending-browser-' + Date.now();
     const orderRid = 'ont.' + tenant + '.ind.order.' + pendingStatus;
@@ -92,7 +92,7 @@ test.describe('MP11 actual order application', () => {
     // The visible runtime also reads the persisted audit list, not a local success label.
     await page.goto(shortUrl);
     await expect(page.getByRole('heading', { name: '实际执行回执' })).toBeVisible();
-    await expect(page.getByText(/执行人 mp11-order-reviewer/).first()).toBeVisible();
+    await expect(page.getByText(new RegExp('执行人 '+process.env.MP11_UI_SUBJECT)).first()).toBeVisible();
     const runtime = await request.get(api + '/apphub/apps/' + appId + '/runtime/data?page_id=' + pageId, { headers });
     expect(runtime.ok()).toBeTruthy();
     expect((await runtime.json()).orders).toHaveLength(0);
@@ -102,19 +102,19 @@ test.describe('MP11 actual order application', () => {
     expect(receipts).toHaveLength(1); expect(receipts[0].target_iid).toBe(orderRid);
     const proposal = await request.get(api + '/ont/v2/proposals/' + receipts[0].proposal_id, { headers });
     expect((await proposal.json()).parameters.provenance).toMatchObject({ app_id: appId, page_id: pageId });
-    await page.screenshot({ path: process.env.MP11_UI_SCREENSHOT, fullPage: true });
+
   });
   test('onboarding resumes selected real artifacts and treats query failures as unknown', async ({ page }) => {
     const evidence = JSON.parse(readFileSync(process.env.MP11_API_EVIDENCE!, 'utf8'));
-    await injectAuthIntoPage(page, process.env.MP11_UI_TOKEN!, { tenantId: 'mp11-app-ui' });
+    await injectAuthIntoPage(page, process.env.MP11_UI_TOKEN!, { tenantId: process.env.MP11_UI_TENANT! });
     await page.goto('/');
     const guide = page.getByRole('region', { name: '开始使用平台' });
     await guide.getByRole('button', { name: '接入真实数据', exact: true }).click();
     await guide.getByLabel('本次数据源', { exact: true }).selectOption(evidence.source_id);
-    await guide.getByLabel('本次对象模型', { exact: true }).selectOption('ont.mp11-app-ui.obj.order');
+    await guide.getByLabel('本次对象模型', { exact: true }).selectOption(`ont.${process.env.MP11_UI_TENANT}.obj.order`);
     await guide.getByLabel('本次映射', { exact: true }).selectOption(evidence.mappings[1].rid);
     await guide.getByLabel('本次导入运行', { exact: true }).selectOption(evidence.runs[1].run_id);
-    await guide.getByLabel('本次客户关系', { exact: true }).selectOption('ont.mp11-app-ui.link.customer_orders');
+    await guide.getByLabel('本次客户关系', { exact: true }).selectOption(`ont.${process.env.MP11_UI_TENANT}.link.customer_orders`);
     await guide.getByLabel('本次应用', { exact: true }).selectOption(evidence.app.id);
     await expect(guide.getByText(/：已验证/)).toHaveCount(5);
     await guide.getByRole('button', { name: '前往创建应用', exact: true }).click();
@@ -132,4 +132,50 @@ test.describe('MP11 actual order application', () => {
     await expect(guide.getByText(/：已验证/)).toHaveCount(5);
   });
 
+});
+
+
+test('anonymous website to signed human home, server logout, relogin and persisted receipt', async ({page,request}) => {
+  await page.goto('/website/');
+  await page.getByRole('link',{name:'进入平台',exact:true}).first().click();
+  await expect(page).toHaveURL(/\/login(?:\?|$)/);
+  const login=async()=>{
+    await page.getByPlaceholder('用户名',{exact:true}).fill(process.env.E2E_USERNAME!);
+    await page.getByPlaceholder('密码',{exact:true}).fill(process.env.E2E_PASSWORD!);
+    await page.getByTestId('shared-login-submit').click();
+    await expect(page).toHaveURL(/\/home$/);
+    expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mate_platform_user')!).tenantId)).toBe(process.env.MP11_UI_TENANT);
+  };
+  await login();
+  const previousRefresh=await page.evaluate(()=>localStorage.getItem('mate_platform_refresh_token'));
+  expect(Boolean(previousRefresh)).toBe(true);
+  await page.locator('.mp-user').click();
+  const loggedOut=page.waitForResponse(r=>r.url().endsWith('/iam/auth/logout'));
+  await page.getByText('退出登录',{exact:true}).click();
+  expect((await loggedOut).status()).toBe(200);
+  await expect(page).toHaveURL(/\/login$/);
+  expect(await page.evaluate(()=>localStorage.getItem('mate_platform_token'))).toBeNull();
+  const rejected=await request.post(process.env.E2E_IAM_LOGIN_URL!.replace('/login','/refresh'),{data:{refreshToken:previousRefresh}});
+  expect(rejected.status()).toBe(400);
+  await login();
+  const evidence=JSON.parse(readFileSync(process.env.MP11_API_EVIDENCE!,'utf8'));
+  const token=await page.evaluate(()=>localStorage.getItem('mate_platform_token'));
+  const chain=evidence.checks.published_app_human_receipt;
+  const history=await request.get(process.env.MP11_API_URL!+'/apphub/apps/'+chain.app_id+'/runtime/history?page_id='+chain.page_id,{headers:{Authorization:'Bearer '+token}});
+  expect(history.status()).toBe(200);
+  expect((await history.json()).some((r:{proposal_id:string})=>r.proposal_id===chain.proposal_id)).toBe(true);
+});
+
+
+test('actual published application and action appear together in model impact precheck',async({page})=>{
+  await injectAuthIntoPage(page,process.env.MP11_UI_TOKEN!,{tenantId:process.env.MP11_UI_TENANT!});
+  await page.goto('/ontology/model/object-types');
+  await page.getByTitle('ont.'+process.env.MP11_UI_TENANT+'.obj.order',{exact:true}).click();
+  await page.getByRole('row').filter({has:page.getByRole('cell',{name:'Order',exact:true})}).getByRole('button',{name:'编辑',exact:true}).click();
+  await page.getByRole('button',{name:'预检与影响',exact:true}).click();
+  await expect(page.getByLabel('预检结果')).toContainText('模型校验通过');
+  await expect(page.getByText('引用动作：',{exact:false})).toContainText('ont.'+process.env.MP11_UI_TENANT+'.act.review');
+  const evidence=JSON.parse(readFileSync(process.env.MP11_API_EVIDENCE!,'utf8'));
+  await expect(page.getByLabel('应用引用')).toContainText(evidence.app.id);
+  await expect(page.getByLabel('应用引用')).toContainText('已发布');
 });

@@ -23,6 +23,14 @@ on:
       - "scripts/ci/ontology-core-e2e.sh"
       - "metaplatform-frontend/tests/e2e/ontology-loop/**"
       - "metaplatform-frontend/tests/e2e/helpers/**"
+      - "metaplatform-frontend/apps/web/**"
+      - "metaplatform-frontend/packages/shared/**"
+      - "scripts/acceptance/**"
+      - "mate-platform-backend/contracts/**"
+      - "mate-platform-backend/packages/mate-platform/**"
+      - "mate-platform-backend/packages/mate-app-hub/**"
+      - "mate-platform-backend/packages/mate-tech-data/**"
+      - "mate-platform-backend/packages/mate-tech-mcp/**"
       - "metaplatform-frontend/playwright.config.ts"
       - "metaplatform-frontend/package.json"
       - "mate-platform-backend/packages/mate-tech-ont/**"
@@ -73,6 +81,21 @@ jobs:
           pnpm rebuild puppeteer esbuild
           pnpm exec playwright install --with-deps chromium
 
+      - name: MP11 web unit, type and production build
+        working-directory: metaplatform-frontend/apps/web
+        env:
+          NODE_OPTIONS: --no-experimental-webstorage
+        run: |
+          pnpm exec vitest run
+          pnpm exec tsc --noEmit
+          pnpm run build
+          pnpm exec vitest run --root ../../packages/shared --environment jsdom src/components/SharedLoginPage.test.tsx
+
+      # Deliberate split: this ephemeral Linux stack runs ontology-loop-core.
+      # The signed MP11 DATA/AppHub/relationship/application/website projects
+      # run via scripts/acceptance/mp11/playwright.config.ts on the isolated
+      # candidate, with private issuer inputs and exact owned resource guards.
+      # Do not silently add those files to a project whose testDir ignores them.
       # docker-compose.override.yml 引用本地敏感文件（.env.local，gitignore）；
       # 脚本的 prepare_env 会生成等价的最小 .env / 空 .env.local。
       - name: Prepare compose inputs
@@ -94,17 +117,8 @@ jobs:
             docker compose logs --tail=200 "$svc" || true
           done
 
-      - name: Upload playwright artifacts (trace / screenshot / report)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ontology-core-e2e-artifacts
-          path: |
-            metaplatform-frontend/tests/e2e/.artifacts/**
-            metaplatform-frontend/playwright-report/**
-            metaplatform-frontend/test-results/**
-          if-no-files-found: ignore
-          retention-days: 14
+      # Real-auth traces/video/screenshots are disabled in the core spec.
+      # Do not upload broad playwright directories containing session material.
 
       - name: Teardown (always)
         if: always()

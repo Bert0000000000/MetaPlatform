@@ -1,10 +1,9 @@
+import {readFileSync} from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 test('real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries', async ({ page, request }) => {
-  const api = 'http://127.0.0.1:55498';
-  const sessionResponse = await request.get(api + '/__mp11/session');
-  expect(sessionResponse.status()).toBe(200);
-  const session = await sessionResponse.json();
+  const api=process.env.MP11_API_URL!.replace(/\/api\/v1$/, '');
+  const session=JSON.parse(readFileSync(process.env.MP11_SESSION_FILE!,'utf8')).relation;
   const base = api + '/api/v1/ont/v2';
   const headers = { Authorization: 'Bearer ' + session.token };
   const initialTypes = await request.get(base + '/link-types', { headers });
@@ -103,13 +102,13 @@ test('real API/PostgreSQL: definition, association, cardinality, reload and both
   await form.getByRole('button', { name: '保存关系' }).click();
   expect((await laterCreated).status()).toBe(200);
 
-  // Directory failure is explicitly injected by the dedicated test helper, then actual PG reads resume.
-  await request.post(api + '/__mp11/fault/catalog');
+  // UI catalog failure is intercepted in the browser; actual service recovery is separately verified.
+  await page.route('**/api/v1/ont/v2/link-types', route => route.fulfill({status:503,json:{detail:'MP11 UI catalog fault'}}));
   await page.goto('/ontology/model/link-types?create=1');
   await form.getByLabel('关系名称', { exact: true }).fill('Catalog Retry');
   await expect(form.getByRole('alert')).toContainText('关系目录读取失败');
   await expect(form.getByRole('button', { name: '保存关系' })).toBeDisabled();
-  await request.post(api + '/__mp11/fault/clear');
+  await page.unroute('**/api/v1/ont/v2/link-types');
   await form.getByRole('button', { name: '重试关系目录' }).click();
   await expect(form.getByRole('button', { name: '保存关系' })).toBeEnabled();
   await expect(form.getByLabel('关系名称', { exact: true })).toHaveValue('Catalog Retry');
@@ -139,12 +138,12 @@ test('real API/PostgreSQL: definition, association, cardinality, reload and both
   const paged = page.getByRole('row').filter({ hasText: 'paged_relationship' });
   await paged.getByRole('button', { name: '实例', exact: true }).click();
   await expect(page.getByText('200 条实例', { exact: true })).toBeVisible();
-  await request.post(api + '/__mp11/fault/page');
+  await page.route('**/api/v1/ont/v2/link-instances?*', async route => { if(new URL(route.request().url()).searchParams.get('offset')==='200'){await route.fulfill({status:503,json:{detail:'MP11 injected transient read failure'}});}else await route.continue(); });
   await page.getByRole('button', { name: '下一页实例' }).click();
   await expect(page.getByRole('alert')).toContainText('MP11 injected transient read failure');
   await expect(page.getByRole('button', { name: '上一页实例' })).toBeEnabled();
   await page.getByRole('button', { name: '上一页实例' }).click();
   await expect(page.getByText('200 条实例', { exact: true })).toBeVisible();
   await expect(page.getByText('MP11 injected transient read failure', { exact: true })).toHaveCount(0);
-  await request.post(api + '/__mp11/fault/clear');
+  await page.unroute('**/api/v1/ont/v2/link-instances?*');
 });

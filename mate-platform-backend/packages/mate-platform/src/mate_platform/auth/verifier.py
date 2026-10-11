@@ -30,6 +30,9 @@ class VerifiedClaims:
     expires_at: int
     not_before: int
     jti: str
+    preferred_username: str = ""
+    session_id: str = ""
+    service_account_client_id: str = ""
 
 
 class TokenVerifier:
@@ -78,6 +81,9 @@ class TokenVerifier:
             expires_at=_coerce_int(claims.get("exp")),
             not_before=_coerce_int(claims.get("nbf")),
             jti=_coerce_str(claims.get("jti")) or "",
+            preferred_username=_identity_string(claims.get("preferred_username")),
+            session_id=_identity_string(claims.get("sid")) or _identity_string(claims.get("session_state")),
+            service_account_client_id=_identity_string(claims.get("client_id")) or _identity_string(claims.get("clientId")),
         )
 
     def _verify_with_cache(self, token: str) -> dict[str, Any]:
@@ -210,3 +216,8 @@ def _extract_tenant_id(claims: dict[str, Any]) -> str:
     if isinstance(fallback, str):
         return fallback
     return ""
+
+
+def _identity_string(value: Any) -> str:
+    """Identity metadata must be a nonempty signed string, never coerced objects."""
+    return value.strip() if isinstance(value, str) else ""

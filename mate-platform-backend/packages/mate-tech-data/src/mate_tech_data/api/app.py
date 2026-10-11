@@ -772,7 +772,7 @@ async def data_product_versions_endpoint(
 from dataclasses import asdict as _asdict
 
 
-@router.post("/lineage/edges")
+@router.post("/lineage/edges", operation_id="dataPostDataLineageEdges")
 async def create_lineage_edge_endpoint(request: Request, body: dict) -> dict:
     """登记 lineage 依赖边（DATA-D6）。body: {source_entity, target_entity, edge_type?}。"""
     tid = _tid(request)
@@ -793,7 +793,7 @@ async def create_lineage_edge_endpoint(request: Request, body: dict) -> dict:
     return _asdict(edge)
 
 
-@router.get("/lineage/graph")
+@router.get("/lineage/graph", operation_id="dataGetDataLineageGraph")
 async def lineage_graph_endpoint(
     request: Request, entity: str | None = Query(default=None)
 ) -> dict:
@@ -802,7 +802,7 @@ async def lineage_graph_endpoint(
     return lineage_graph(tid, entity)
 
 
-@router.post("/quality/rules")
+@router.post("/quality/rules", operation_id="dataPostDataQualityRules")
 async def create_quality_rule_endpoint(request: Request, body: dict) -> dict:
     """登记 quality 规则（DATA-D7）。body: {entity_id, field, rule_type, params?}。"""
     tid = _tid(request)
@@ -824,7 +824,7 @@ async def create_quality_rule_endpoint(request: Request, body: dict) -> dict:
     return _asdict(rule)
 
 
-@router.get("/quality/rules")
+@router.get("/quality/rules", operation_id="dataGetDataQualityRules")
 async def list_quality_rules_endpoint(
     request: Request, entity_id: str | None = Query(default=None)
 ) -> dict:
@@ -833,7 +833,7 @@ async def list_quality_rules_endpoint(
     return {"items": [_asdict(r) for r in rules], "total": len(rules)}
 
 
-@router.post("/quality/run")
+@router.post("/quality/run", operation_id="dataPostDataQualityRun")
 async def run_quality_endpoint(request: Request, body: dict | None = None) -> dict:
     """执行本租户全部 enabled 规则，结果落库（DATA-D7）。"""
     tid = _tid(request)
@@ -853,7 +853,7 @@ async def run_quality_endpoint(request: Request, body: dict | None = None) -> di
     return summary
 
 
-@router.get("/quality/results")
+@router.get("/quality/results", operation_id="dataGetDataQualityResults")
 async def list_quality_results_endpoint(
     request: Request, limit: int = Query(default=50, le=200)
 ) -> dict:
@@ -862,7 +862,7 @@ async def list_quality_results_endpoint(
     return {"items": [_asdict(r) for r in results], "total": len(results)}
 
 
-@router.get("/catalog/search")
+@router.get("/catalog/search", operation_id="dataGetDataCatalogSearch")
 async def catalog_search_endpoint(request: Request, q: str = Query(...)) -> dict:
     """跨 sources + data products 检索（catalog 面）。"""
     tid = _tid(request)

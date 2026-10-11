@@ -742,9 +742,9 @@ def s3_write_client(s3_client):
 
 
 class TestS3ApiDispatch:
-    def test_declarative_via_propose_endpoint_e2e(self, s3_client) -> None:
+    def test_declarative_via_propose_endpoint_e2e(self, s3_write_client) -> None:
         """声明式 ActionType 调 /propose（action 端点）→ execute 不再 500。"""
-        client, _ = s3_client
+        client, _ = s3_write_client
         resp = client.post(
             f"{BASE}/action-types/{ACT_PURE}/propose",
             json={"parameters": {"new-status": "away"}, "target_iid": ALICE},
@@ -763,12 +763,12 @@ class TestS3ApiDispatch:
             f"{BASE}/proposals/{pid}/execute", headers={"Idempotency-Key": f"s3a-{pid}"}
         )
         assert ex.status_code == 200, ex.text
-        client2, r = s3_client  # 同一 fixture repo
+        client2, r = s3_write_client  # 同一 fixture repo
         assert r.get_individual(ALICE).get(ClassRef(P_STATUS)) == "away"
 
-    def test_propose_edit_set_on_function_only_action(self, s3_client) -> None:
+    def test_propose_edit_set_on_function_only_action(self, s3_write_client) -> None:
         """对称：function 式 ActionType 调 propose-edit-set（空 edits）不再 422。"""
-        client, r = s3_client
+        client, r = s3_write_client
         r.upsert_action_type(
             ActionType(
                 rid=ClassRef(ACT_FN_ONLY),
@@ -802,9 +802,9 @@ class TestS3ApiDispatch:
         assert ex.status_code == 200, ex.text
         assert r.get_individual(ALICE).get(ClassRef(P_LEVEL)) == "principal"
 
-    def test_inmemory_revert_restores(self, s3_client) -> None:
+    def test_inmemory_revert_restores(self, s3_write_client) -> None:
         """C7：InMemory revert_proposal 与 PG 同语义（逆编辑补偿回旧值）。"""
-        client, r = s3_client
+        client, r = s3_write_client
         resp = client.post(
             f"{BASE}/action-types/{ACT_PURE}/propose",
             json={"parameters": {"new-status": "to-revert"}, "target_iid": ALICE},
@@ -835,9 +835,9 @@ class TestS3ApiDispatch:
         assert rv.json()["equivalence"] == "equivalent"
         assert r.get_individual(ALICE).get(ClassRef(P_STATUS)) == "active"
 
-    def test_function_not_registered_maps_422(self, s3_client) -> None:
+    def test_function_not_registered_maps_422(self, s3_write_client) -> None:
         """混合式但 fn 未注册 → execute 422（不再 500）。"""
-        client, _ = s3_client  # 未注册 FN
+        client, _ = s3_write_client  # 未注册 FN
         resp = client.post(
             f"{BASE}/action-types/{ACT_HYBRID}/propose-edit-set",
             json={"parameters": {"new-status": "away"}, "target_iid": ALICE},
@@ -857,9 +857,9 @@ class TestS3ApiDispatch:
         )
         assert ex.status_code == 422, ex.text
 
-    def test_execute_gate_denial_maps_422_with_scoped_header(self, s3_client) -> None:
+    def test_execute_gate_denial_maps_422_with_scoped_header(self, s3_write_client) -> None:
         """闸门拒写 → 422；X-Scope-Markings 收窄参与判定（G7 端到端）。"""
-        client, r = s3_client
+        client, r = s3_write_client
 
         r.upsert_security_policy(
             {"kind": "column", "property_rid": P_LEVEL, "required_markings": ["hr-privileged"]}

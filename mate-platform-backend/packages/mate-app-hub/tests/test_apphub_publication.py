@@ -314,9 +314,7 @@ def test_page_save_reports_partial_result_when_app_metadata_conflicts(client,aut
     assert next(p for p in mem.list_pages('tenant-acme') if p.id=='partial').definition['name']=='Saved input'
 
 def test_stale_release_approval_cannot_replace_new_running_snapshot(client,auth_headers_acme):
-    import jwt
-    claims=jwt.decode(auth_headers_acme['Authorization'].split()[1],options={'verify_signature':False});claims.pop('azp',None)
-    headers={'Authorization':'Bearer '+jwt.encode(claims,'fixture-signing-key-at-least-32-characters',algorithm='HS256')}
+    headers=auth_headers_acme
     mem.put_app('tenant-acme',mem.ApphubApp('stale-release','tenant-acme','Release','stale-release','business',''))
     mem.put_module('tenant-acme',mem.ApphubModule('stale-release','tenant-acme','Release','stale-release','stale-release','',''))
     mem.put_page('tenant-acme',replace(mem.ApphubPage('stale-release','tenant-acme','Release','stale-release','stale-release','grid'),definition={'widgets':[{'id':'text','type':'text'}]}))
