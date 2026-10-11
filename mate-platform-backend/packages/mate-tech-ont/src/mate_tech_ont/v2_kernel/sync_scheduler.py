@@ -152,6 +152,8 @@ class SyncScheduler:
         out: list[tuple[str, str]] = []
         seen: set[tuple[str, str]] = set()
         for row in rows:
+            if row.get("kind") == "csv":
+                continue  # uploaded CSV is an explicit batch, never an incremental subscription
             tenant = str(row.get("tenant_id") or "")
             cls = str(row.get("class_rid") or "")
             key = (tenant, cls)

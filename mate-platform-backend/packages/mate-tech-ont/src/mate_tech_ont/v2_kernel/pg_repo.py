@@ -394,6 +394,8 @@ DDL: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS ix_ont_eo_tenant ON ont_edit_overlay (tenant_id)",
     # CDC 增量腿：水位 + 时间戳列
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMPTZ",
+    "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS source_id TEXT",
+    "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS run_history JSONB NOT NULL DEFAULT '[]'::jsonb",
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS ts_column TEXT NOT NULL DEFAULT 'updated_at'",
     # DATA-SYNC-INTEGRITY：游标 = 已可靠处理的**源端**边界 (ts, pk)（不是目标端 now()）；
     # 失败可追踪：上一次错误 + 失败行数。
@@ -4812,20 +4814,26 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 cur.execute(
                     """INSERT INTO ont_backing_datasource
-                       (rid, tenant_id, class_rid, name, kind, dsn_env,
+                       (rid, tenant_id, class_rid, name, kind, dsn_env, source_id,
                         table_name, pk_column, field_mapping, priority, ts_column,
                         last_synced_at, last_synced_pk, updated_at)
-                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s,now())
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s,now())
                        ON CONFLICT (rid) DO UPDATE SET
                          name=EXCLUDED.name, kind=EXCLUDED.kind,
-                         dsn_env=EXCLUDED.dsn_env, table_name=EXCLUDED.table_name,
+                         dsn_env=EXCLUDED.dsn_env, source_id=EXCLUDED.source_id, table_name=EXCLUDED.table_name,
                          pk_column=EXCLUDED.pk_column,
                          field_mapping=EXCLUDED.field_mapping,
                          priority=EXCLUDED.priority, ts_column=EXCLUDED.ts_column,
-                         last_synced_at=COALESCE(EXCLUDED.last_synced_at,
-                                                 ont_backing_datasource.last_synced_at),
-                         last_synced_pk=COALESCE(EXCLUDED.last_synced_pk,
-                                                 ont_backing_datasource.last_synced_pk),
+                         last_synced_at=CASE WHEN (ont_backing_datasource.source_id, ont_backing_datasource.table_name,
+                               ont_backing_datasource.pk_column, ont_backing_datasource.ts_column,
+                               ont_backing_datasource.field_mapping)
+                           IS DISTINCT FROM (EXCLUDED.source_id, EXCLUDED.table_name,
+                               EXCLUDED.pk_column, EXCLUDED.ts_column, EXCLUDED.field_mapping) THEN NULL ELSE COALESCE(EXCLUDED.last_synced_at, ont_backing_datasource.last_synced_at) END,
+                         last_synced_pk=CASE WHEN (ont_backing_datasource.source_id, ont_backing_datasource.table_name,
+                               ont_backing_datasource.pk_column, ont_backing_datasource.ts_column,
+                               ont_backing_datasource.field_mapping)
+                           IS DISTINCT FROM (EXCLUDED.source_id, EXCLUDED.table_name,
+                               EXCLUDED.pk_column, EXCLUDED.ts_column, EXCLUDED.field_mapping) THEN NULL ELSE COALESCE(EXCLUDED.last_synced_pk, ont_backing_datasource.last_synced_pk) END,
                          updated_at=now()""",
                     (
                         rid,
@@ -4834,11 +4842,12 @@ class PgOntologyRepository(OntologyRepository):
                         decl["name"],
                         decl.get("kind", "pg_table"),
                         decl.get("dsn_env", "ONT_SOURCE_DSN"),
+                        decl.get("source_id"),
                         decl["table"],
                         decl["pk_column"],
                         json.dumps(decl.get("field_mapping") or {}),
                         int(decl.get("priority", 100)),
-                        decl.get("ts_column") or "updated_at",
+                        (decl.get("ts_column") or "") if decl.get("source_id") else (decl.get("ts_column") or "updated_at"),
                         decl.get("last_synced_at"),
                         decl.get("last_synced_pk"),
                     ),
@@ -5049,11 +5058,81 @@ class PgOntologyRepository(OntologyRepository):
                     )
                 else:
                     cur.execute("SELECT * FROM ont_backing_datasource ORDER BY priority, name")
-                return [dict(r) for r in cur.fetchall()]
+                rows = [dict(r) for r in cur.fetchall()]
+                if class_rid and any(run.get('status') == 'running' for row in rows for run in row.get('run_history') or []):
+                    tenant = self._current_tenant() or class_rid.split('.')[1]
+                    key = 'sync:' + tenant + ':' + class_rid
+                    cur.execute("SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired", (key,))
+                    if cur.fetchone()['acquired']:
+                        try:
+                            from datetime import UTC, datetime
+                            for row in rows:
+                                for run in row.get('run_history') or []:
+                                    if run.get('status') == 'running':
+                                        run.update(status='interrupted', ended_at=datetime.now(UTC).isoformat(), error={'message':'Previous sync process ended; retry is idempotent'})
+                                cur.execute("UPDATE ont_backing_datasource SET run_history=%s::jsonb WHERE rid=%s AND tenant_id=%s", (json.dumps(row.get('run_history') or [], default=str), row['rid'], tenant))
+                            conn.commit()
+                        finally:
+                            cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (key,))
+                return rows
         finally:
             conn.close()
 
-    def sync_backing_datasources(
+    def sync_backing_datasources(self, class_rid: str, incremental: bool = False, *, batch_limit: int = 5000, delete_missing: bool = False) -> dict[str, Any]:
+        """Keep a bounded durable history; interrupted runs are visible on retry."""
+        import uuid
+        from datetime import UTC, datetime
+        from mate_tech_data.services.source_connector import SourceError, safe_error
+        run_id = uuid.uuid4().hex
+        tenant = self._current_tenant() or class_rid.split('.')[1]
+        lock, _ = self._connect()
+        with self._cursor(lock) as cur:
+            cur.execute("SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired", ('sync:' + tenant + ':' + class_rid,))
+            acquired = cur.fetchone()
+        if not (acquired.get('acquired') if isinstance(acquired, dict) else acquired[0]):
+            lock.close()
+            raise ValueError('A sync is already running for this object type')
+        run = {'run_id': run_id, 'trace_id': uuid.uuid4().hex, 'status': 'running',
+               'started_at': datetime.now(UTC).isoformat(), 'ended_at': None, 'incremental': incremental}
+        try:
+            self._record_backing_run(class_rid, tenant, run, begin=True)
+            try:
+                result = self._sync_backing_datasources_once(class_rid, incremental, batch_limit=batch_limit, delete_missing=delete_missing)
+                run.update(result)
+                run['status'] = 'succeeded' if result['ok'] else 'failed'
+            except Exception as exc:
+                error = exc if isinstance(exc, SourceError) else safe_error(exc)
+                run.update(ok=False, status='failed', error=error.detail(), total_synced=0, total_failed=0, total_deleted=0, sources={})
+            run['ended_at'] = datetime.now(UTC).isoformat()
+            self._record_backing_run(class_rid, tenant, run)
+            return run
+        finally:
+            with self._cursor(lock) as cur:
+                cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", ('sync:' + tenant + ':' + class_rid,))
+            lock.close()
+
+    def _record_backing_run(self, class_rid, tenant, run, *, begin=False):
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT rid, run_history FROM ont_backing_datasource WHERE class_rid=%s AND tenant_id=%s FOR UPDATE", (class_rid, tenant))
+                declarations = cur.fetchall()
+                if not declarations:
+                    raise KeyError('No backing datasource declared')
+                for declaration in declarations:
+                    history = list(declaration['run_history'] or [])
+                    if begin:
+                        for previous in history:
+                            if previous.get('status') == 'running':
+                                previous.update(status='interrupted', ended_at=run['started_at'], error={'message': 'Previous process ended before completing sync; retry is idempotent'})
+                    history = [entry for entry in history if entry.get('run_id') != run['run_id']]
+                    history.append(run)
+                    cur.execute("UPDATE ont_backing_datasource SET run_history=%s::jsonb WHERE rid=%s AND tenant_id=%s", (json.dumps(history[-20:], default=str), declaration['rid'], tenant))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _sync_backing_datasources_once(
         self,
         class_rid: str,
         incremental: bool = False,
@@ -5074,6 +5153,8 @@ class PgOntologyRepository(OntologyRepository):
         from .backing_datasources import BackingDatasource, sync_backing_datasource
 
         decls = self.list_backing_datasources(class_rid)
+        if incremental:
+            decls = [d for d in decls if d["kind"] != "csv"]
         if not decls:
             raise KeyError(f"no backing datasources declared for {class_rid}")
         ot = self.get_object_type(ClassRef(class_rid))
@@ -5084,6 +5165,9 @@ class PgOntologyRepository(OntologyRepository):
         sources = [
             BackingDatasource(
                 name=d["name"],
+                source_id=d.get("source_id"),
+                tenant_id=tenant,
+                ts_column=d.get("ts_column") if d.get("source_id") and d["kind"] != "csv" else None,
                 kind=d["kind"],
                 dsn_env=d["dsn_env"],
                 table=d["table_name"],

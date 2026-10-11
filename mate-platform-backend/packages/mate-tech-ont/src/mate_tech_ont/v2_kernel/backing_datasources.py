@@ -60,10 +60,13 @@ class BackingDatasource:
     table: str = ""
     pk_column: str = ""
     field_mapping: dict[str, str] = field(default_factory=dict)  # prop_rid → 列
+    source_id: str | None = None
+    tenant_id: str = ""
+    ts_column: str | None = None
     priority: int = 100  # 小 = 优先（MDO 字段合并序）
 
     def __post_init__(self) -> None:
-        if self.kind != "pg_table":
+        if self.kind not in {"pg_table", "csv"}:
             raise ValueError(f"BackingDatasource.kind v1 supports pg_table only: {self.kind!r}")
         if not self.table or not self.pk_column:
             raise ValueError("BackingDatasource requires table + pk_column")
@@ -76,10 +79,151 @@ def _connect_source(ds: BackingDatasource) -> Any:
 
     import psycopg2
 
+    if ds.source_id:
+        from mate_tech_data.services.source_connector import connect_postgres
+
+        return connect_postgres(_registered_source(ds))
     dsn = os.environ.get(ds.dsn_env, "")
     if not dsn:
         raise ValueError(f"env {ds.dsn_env} not set (backing datasource {ds.name})")
     return psycopg2.connect(dsn)
+
+
+def _registered_source(ds: BackingDatasource):
+    from mate_tech_data.repositories import get_source
+    from mate_tech_data.services.source_connector import SourceError
+
+    if not ds.tenant_id:
+        raise SourceError(
+            "PERMISSION", "A verified tenant is required to resolve a registered source"
+        )
+    source = get_source(ds.tenant_id, ds.source_id)
+    if source is None:
+        raise SourceError("PERMISSION", "Registered source is unavailable in this tenant")
+    expected = {"csv"} if ds.kind == "csv" else {"postgres", "postgresql", "pg_table"}
+    if source.type.lower() not in expected:
+        raise SourceError("SCHEMA", "Registered source type does not match mapping kind")
+    return source
+
+
+def preflight(ds: BackingDatasource, ot: Any | None = None) -> dict:
+    """Validate actual columns before mapping or writing; never return sample fields."""
+    from mate_tech_data.services.source_connector import SourceError, discover
+
+    schema = discover(_registered_source(ds))
+    table = next(
+        (
+            t
+            for t in schema["tables"]
+            if ds.table in {t["name"], f"{t.get('schema', '')}.{t['name']}"}
+        ),
+        None,
+    )
+    if table is None:
+        raise SourceError("SCHEMA", "Mapped table is not present in discovered schema")
+    columns = {c["name"]: c for c in table["columns"]}
+    required = {ds.pk_column, *ds.field_mapping.values()}
+    if ds.ts_column:
+        required.add(ds.ts_column)
+    missing = sorted(required - columns.keys())
+    if missing:
+        raise SourceError("SCHEMA", "Unknown source columns: " + ", ".join(missing))
+    if ds.kind == "pg_table":
+        keys = [c["name"] for c in table["columns"] if c.get("primary_key")]
+        if keys != [ds.pk_column]:
+            raise SourceError(
+                "SCHEMA",
+                "Select the table's single stable primary key; composite keys are unsupported",
+            )
+        if ds.ts_column and (
+            columns[ds.ts_column].get("nullable")
+            or not columns[ds.ts_column]["type"].startswith("timestamp")
+        ):
+            raise SourceError("SCHEMA", "Incremental time column must be a non-null timestamp")
+    if ot is not None:
+        properties = {p.rid.rid: p for p in ot.properties}
+        unknown = sorted(set(ds.field_mapping) - properties.keys())
+        if unknown:
+            raise SourceError("SCHEMA", "Unknown target properties: " + ", ".join(unknown))
+        for prop in ot.properties:
+            key = prop.rid.rid
+            if not prop.nullable and key not in ds.field_mapping:
+                raise SourceError("SCHEMA", f"Required property is unmapped: {key}")
+            if key in ds.field_mapping and ds.kind == "pg_table":
+                col = columns[ds.field_mapping[key]]
+                if not prop.nullable and col.get("nullable"):
+                    raise SourceError(
+                        "SCHEMA", f"Nullable source cannot map to required property: {key}"
+                    )
+                target = str(prop.type_id).lower()
+                src = col["type"].lower()
+                if target in {"integer", "int", "number", "float", "decimal", "double"} and not any(
+                    t in src for t in ("int", "numeric", "decimal", "real", "double")
+                ):
+                    raise SourceError("SCHEMA", f"Type conflict for property: {key}")
+        if any(ds.field_mapping.get(key.rid) != ds.pk_column for key in ot.primary_key):
+            raise SourceError(
+                "SCHEMA", "Map the object primary key to the stable source primary key"
+            )
+    if ot is not None and ds.kind == "csv":
+        _prepare_csv_rows(ot, ds)
+    return schema
+
+
+def _prepare_csv_rows(ot, ds):
+    from mate_tech_data.services.source_connector import SourceError, csv_rows
+
+    _, rows = csv_rows(_registered_source(ds))
+    keys = [row[ds.pk_column] for row in rows]
+    if any(not key for key in keys) or len(keys) != len(set(keys)):
+        raise SourceError("SCHEMA", "CSV primary keys must be non-empty and unique")
+    properties = {p.rid.rid: p for p in ot.properties}
+    for row in rows:
+        for key, column in ds.field_mapping.items():
+            prop = properties[key]
+            value = row[column]
+            try:
+                if value == "":
+                    if not prop.nullable:
+                        raise ValueError()
+                    row[column] = None
+                elif str(prop.type_id).lower() in {"integer", "int"}:
+                    row[column] = int(value)
+                elif str(prop.type_id).lower() in {"number", "float", "decimal", "double"}:
+                    row[column] = float(value)
+            except ValueError:
+                raise SourceError("SCHEMA", f"CSV value conflicts with property: {key}") from None
+    return rows
+
+
+def _csv_batch(repo, ot, ds, overlay):
+    rows = _prepare_csv_rows(ot, ds)
+    result = apply_cdc_changes(
+        repo,
+        ot,
+        [
+            {
+                "op": "upsert",
+                "pk": row[ds.pk_column],
+                "data": row,
+                "source": ds.name,
+                "priority": ds.priority,
+            }
+            for row in rows
+        ],
+        pk_column=ds.pk_column,
+        field_mapping=ds.field_mapping,
+        overlay_props=overlay,
+        default_priority=ds.priority,
+    )
+    return {
+        "synced": result["upserted"],
+        "failed": result["failed"],
+        "deleted": result["deleted"],
+        "failures": result["failures"],
+        "cursor": {"ts": None, "pk": None},
+        "mode": "csv_batch",
+    }
 
 
 def _split_rid(ot: Any) -> tuple[str, str]:
@@ -129,6 +273,18 @@ def sync_backing_datasource(
     out: dict[str, dict[str, Any]] = {}
     ordered = sorted(sources, key=lambda s: s.priority)
     for ds in ordered:
+        if ds.source_id:
+            if incremental and not ds.ts_column and ds.kind == "pg_table":
+                raise ValueError("Incremental sync requires a configured non-null timestamp column")
+            preflight(ds, ot)
+    for ds in ordered:
+        if ds.kind == "csv":
+            if incremental or delete_missing:
+                raise ValueError(
+                    "CSV supports explicit batch upsert only; incremental/delete-missing is unavailable"
+                )
+            out[ds.name] = _csv_batch(repo, ot, ds, overlay)
+            continue
         out[ds.name] = _sync_one_source(
             repo,
             ot,
@@ -139,7 +295,7 @@ def sync_backing_datasource(
             incremental=incremental,
             overlay=overlay,
             cursor=dict(cursors.get(ds.name) or {}),
-            ts_column=ts_columns.get(ds.name) or "updated_at",
+            ts_column=ds.ts_column or ts_columns.get(ds.name) or "updated_at",
             now=now,
             delete_missing=delete_missing and ds is ordered[0],
         )
@@ -173,23 +329,51 @@ def _sync_one_source(
     boundary_ts = done_ts
     boundary_pk = cursor.get("pk")
 
-    conn = _connect_source(ds)
+    conn = None
     try:
+        conn = _connect_source(ds)
         while True:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                if incremental and done_ts is not None:
-                    # keyset：(ts,pk) 严格递增 —— 同时间戳靠 pk 决胜（不漏行）
+                from psycopg2 import sql
+
+                table_ident = sql.Identifier(*ds.table.split("."))
+                pk_ident = sql.Identifier(pk_col)
+                ts_ident = sql.Identifier(ts_column)
+                if ds.ts_column:
+                    if done_ts is not None:
+                        cur.execute(
+                            sql.SQL(
+                                "SELECT * FROM {} WHERE ({},{}) > (%s,%s) ORDER BY {},{} LIMIT %s"
+                            ).format(table_ident, ts_ident, pk_ident, ts_ident, pk_ident),
+                            (done_ts, done_pk, batch_limit),
+                        )
+                    else:
+                        cur.execute(
+                            sql.SQL("SELECT * FROM {} ORDER BY {},{} LIMIT %s").format(
+                                table_ident, ts_ident, pk_ident
+                            ),
+                            (batch_limit,),
+                        )
+                elif incremental and done_ts is not None:
                     cur.execute(
-                        f"SELECT * FROM {ds.table} "
-                        f"WHERE ({ts_column}, {pk_col}) > (%s, %s) "
-                        f"ORDER BY {ts_column}, {pk_col} LIMIT %s",
+                        sql.SQL(
+                            "SELECT * FROM {} WHERE ({},{}) > (%s,%s) ORDER BY {},{} LIMIT %s"
+                        ).format(table_ident, ts_ident, pk_ident, ts_ident, pk_ident),
                         (done_ts, done_pk, batch_limit),
                     )
-                else:
-                    # 全量 / 首次增量 / 源无 ts：按 pk keyset 分页（稳定，不漏行）
+                elif done_pk != "":
                     cur.execute(
-                        f"SELECT * FROM {ds.table} WHERE {pk_col} > %s ORDER BY {pk_col} LIMIT %s",
+                        sql.SQL("SELECT * FROM {} WHERE {} > %s ORDER BY {} LIMIT %s").format(
+                            table_ident, pk_ident, pk_ident
+                        ),
                         (done_pk, batch_limit),
+                    )
+                else:
+                    cur.execute(
+                        sql.SQL("SELECT * FROM {} ORDER BY {} LIMIT %s").format(
+                            table_ident, pk_ident
+                        ),
+                        (batch_limit,),
                     )
                 rows = cur.fetchall()
             if not rows:
@@ -226,8 +410,23 @@ def _sync_one_source(
                 break
         if delete_missing and not failed:
             deleted = _delete_absent(repo, ot, tenant, cls_slug, seen_pks)
+    except Exception as exc:
+        from mate_tech_data.services.source_connector import safe_error
+
+        error = safe_error(exc)
+        failed += 1
+        failures.append(
+            {
+                "pk": boundary_pk,
+                "stage": "source_read",
+                "error": str(error),
+                "error_code": error.code,
+                "trace_id": error.trace_id,
+            }
+        )
     finally:
-        conn.close()
+        if conn is not None:
+            conn.close()
 
     return {
         "synced": synced,

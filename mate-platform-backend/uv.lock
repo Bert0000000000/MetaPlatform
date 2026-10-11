@@ -2700,7 +2700,7 @@ requires-dist = [
 
 [[package]]
 name = "mate-tech-agent-team"
-version = "0.1.0"
+version = "2.1.0"
 source = { editable = "packages/mate-tech-agent-team" }
 dependencies = [
     { name = "fastapi" },
@@ -2784,6 +2784,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "mate-clients" },
     { name = "mate-platform" },
+    { name = "psycopg2-binary" },
     { name = "pydantic" },
 ]
 
@@ -2803,6 +2804,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "mate-clients", editable = "packages/mate-clients" },
     { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "psycopg2-binary", specifier = ">=2.9.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
 ]
 
@@ -3253,6 +3255,7 @@ dependencies = [
     { name = "mate-common" },
     { name = "mate-kernel" },
     { name = "mate-platform" },
+    { name = "mate-tech-data" },
     { name = "neo4j" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
@@ -3284,6 +3287,7 @@ requires-dist = [
     { name = "mate-common", editable = "packages/mate-common" },
     { name = "mate-kernel", editable = "packages/mate-kernel" },
     { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "mate-tech-data", editable = "packages/mate-tech-data" },
     { name = "neo4j", specifier = ">=5.25.0" },
     { name = "opentelemetry-api", specifier = ">=1.27.0" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.27.0" },

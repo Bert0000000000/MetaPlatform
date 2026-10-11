@@ -69,3 +69,90 @@ test.describe('Ontology IA v2 · 数据映射（IA2-3）', () => {
     await expect(page.locator('.mp-onto-sidenav-link', { hasText: '资产清单' })).toHaveCount(0);
   });
 });
+
+// MP11 isolated acceptance: fixture JWT only; all source/schema/sync calls hit real HTTP + PostgreSQL.
+// Disable trace recording because the browser holds a test bearer token.
+if (process.env.MP11_UI_TOKEN) test.use({ trace: 'off', video: 'off' });
+test.describe('MP11 verified PG and CSV ingestion', () => {
+  test.skip(!process.env.MP11_UI_TOKEN, 'Requires the dedicated Task5 API and fixture token');
+  test('real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent', async ({ page, request }) => {
+    const { injectAuthIntoPage } = await import('./helpers/auth');
+    const token = process.env.MP11_UI_TOKEN!;
+    await injectAuthIntoPage(page, token, { tenantId: 'mp11-ingestion-ui' });
+    const headers = { Authorization: `Bearer ${token}` };
+    const api = 'http://127.0.0.1:55508/api/v1';
+    const sources = await request.get(`${api}/data/sources`, { headers });
+    expect(sources.ok()).toBeTruthy();
+    const pgSource = (await sources.json()).items.find((s: { name: string }) => s.name === 'MP11 Verified PostgreSQL');
+    expect(pgSource).toBeTruthy();
+    expect(pgSource.connection_config).not.toHaveProperty('password');
+    await page.goto('/gov/data/sources');
+    const sourceRow = page.getByRole('row').filter({ hasText: 'MP11 Verified PostgreSQL' });
+    await sourceRow.getByRole('button', { name: '测试连接' }).click();
+    await expect(page.getByRole('status')).toContainText('连接已验证');
+    await sourceRow.getByRole('button', { name: '发现字段' }).click();
+    await expect(page.getByRole('heading', { name: 'mp11_ui_source.orders' })).toBeVisible();
+
+    // Actual Task4 importer consumes the same verified discovery contract.
+    await page.goto('/ontology/model/object-types');
+    await page.getByRole('button', { name: '新建对象类型', exact: true }).click();
+    await page.getByRole('button', { name: '读取数据源', exact: true }).click();
+    await page.getByLabel('选择数据源').selectOption(pgSource.id);
+    const realTotal = page.getByRole('button', { name: '添加字段 total（integer）', exact: true });
+    await expect(realTotal).toBeVisible();
+    await realTotal.click();
+    await expect(page.getByText('属性定义（2 个，主键 1 个）', { exact: true })).toBeVisible();
+
+    async function bind(type: string, source: string, table: string, csv = false) {
+      await page.goto(`/ontology/data/mappings?source=${encodeURIComponent(source)}`);
+      await page.getByLabel('对象类型', { exact: true }).selectOption(`ont.mp11-ingestion-ui.obj.${type}`);
+      await page.getByRole('button', { name: '验证连接并发现字段', exact: true }).click();
+      await page.getByLabel('源表', { exact: true }).selectOption(table);
+      if (csv) await page.getByLabel('主键列', { exact: true }).selectOption('id');
+      else await page.getByLabel('时间列', { exact: true }).selectOption('modified_at');
+      await page.getByLabel('确认字段映射', { exact: true }).check();
+      const saved = page.waitForResponse(r => r.url().endsWith('/datasources') && r.request().method() === 'POST');
+      await page.getByRole('button', { name: '预检并保存映射', exact: true }).click();
+      expect((await saved).ok()).toBeTruthy();
+      await expect(page.getByRole('status')).toContainText('服务器预检通过');
+      const synced = page.waitForResponse(r => r.url().includes('/datasources/sync') && r.request().method() === 'POST');
+      await page.getByRole('button', { name: '全量同步 / CSV批量导入', exact: true }).click();
+      const body = await (await synced).json();
+      expect(body.ok).toBe(true); expect(body.run_id).toBeTruthy();
+      await expect(page.getByRole('status').last()).toContainText('succeeded');
+      return body;
+    }
+    await bind('customer', pgSource.id, 'mp11_ui_source.customers');
+    await bind('order', pgSource.id, 'mp11_ui_source.orders');
+    const csvName = `MP11 CSV ${Date.now()}`;
+    await page.goto('/gov/data/sources');
+    await page.getByLabel('数据源名称').fill(csvName);
+    await page.getByLabel('数据源类型').selectOption('CSV');
+    await page.getByLabel('CSV文件').setInputFiles({ name: 'orders.csv', mimeType: 'text/csv', buffer: Buffer.from('id,total\n10,100\n11,110\n') });
+    await page.getByLabel('CSV表名').fill('orders_csv');
+    const created = page.waitForResponse(r => r.url().endsWith('/data/sources') && r.request().method() === 'POST');
+    await page.getByRole('button', { name: '保存数据源', exact: true }).click();
+    const csvSource = await (await created).json();
+    expect(csvSource.id).toBeTruthy();
+    await bind('order', csvSource.id, 'orders_csv', true);
+    const count = async () => {
+      const response = await request.get(`${api}/ont/v2/individuals`, { headers, params: { class_rid: 'ont.mp11-ingestion-ui.obj.order' } });
+      expect(response.ok()).toBeTruthy(); return (await response.json()).length;
+    };
+    const before = await count(); expect(before).toBe(4);
+    const retryResponse = page.waitForResponse(r => r.url().includes('/datasources/sync') && r.request().method() === 'POST');
+    await page.getByRole('button', { name: '全量同步 / CSV批量导入', exact: true }).click();
+    expect((await (await retryResponse).json()).ok).toBe(true);
+    await expect(page.getByRole('status').last()).toContainText('succeeded');
+    expect(await count()).toBe(before);
+    const linkType = { rid: 'ont.mp11-ingestion-ui.link.customer_orders', src: 'ont.mp11-ingestion-ui.obj.customer', dst: 'ont.mp11-ingestion-ui.obj.order', cardinality: '1:N', directionality: 'directed' };
+    expect((await request.post(`${api}/ont/v2/link-types`, { headers, data: linkType })).ok()).toBeTruthy();
+    const link = { rid: 'ont.mp11-ingestion-ui.lnk.customer_orders.1', link_type_rid: linkType.rid, src: 'ont.mp11-ingestion-ui.ind.customer.1', dst: 'ont.mp11-ingestion-ui.ind.order.1', props: {} };
+    expect((await request.post(`${api}/ont/v2/link-instances`, { headers, data: link })).ok()).toBeTruthy();
+    const links = await request.get(`${api}/ont/v2/link-instances`, { headers });
+    expect(links.ok()).toBeTruthy();
+    expect((await links.json()).some((l: { rid: string }) => l.rid === link.rid)).toBeTruthy();
+    await page.getByRole('status').last().scrollIntoViewIfNeeded();
+    await page.screenshot({ path: process.env.MP11_UI_SCREENSHOT ?? 'tests/e2e/.artifacts/mp11-task5.png', fullPage: true });
+  });
+});

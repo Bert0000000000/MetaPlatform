@@ -1135,6 +1135,9 @@ export interface KernelBackingDatasource {
   name: string;
   kind: string;
   dsn_env: string;
+  source_id?: string;
+  last_synced_pk?: string | null;
+  run_history?: BackingSyncResult[];
   table_name: string;
   pk_column: string;
   field_mapping: Record<string, string>;
@@ -1150,6 +1153,8 @@ export interface BackingDatasourceCreate {
   name: string;
   kind?: string;
   dsn_env?: string;
+  source_id?: string;
+  ts_column?: string;
   table: string;
   pk_column: string;
   field_mapping: Record<string, string>;
@@ -1174,12 +1179,26 @@ export async function upsertBackingDatasource(
 /** 批量/增量同步（incremental=true 按 ts_column > 水位）；返回 {源名: 同步行数}。 */
 export async function syncBackingDatasources(
   classRid: string, incremental = false,
-): Promise<Record<string, number>> {
+): Promise<BackingSyncResult> {
   const resp = await apiClient.post(
     v2(`/object-types/${encodeURIComponent(classRid)}/datasources/sync`), {},
     { params: incremental ? { incremental: true } : undefined },
   );
-  return resp.data as Record<string, number>;
+  return resp.data as BackingSyncResult;
+}
+
+export interface BackingSyncResult {
+  run_id: string;
+  trace_id: string;
+  status: 'running' | 'succeeded' | 'failed' | 'interrupted';
+  started_at: string;
+  ended_at?: string | null;
+  ok: boolean;
+  total_synced: number;
+  total_failed: number;
+  total_deleted: number;
+  error?: { message: string; error_code?: string; trace_id?: string };
+  sources: Record<string, { synced: number; failed: number; deleted: number; failures: { pk: string; error: string }[]; cursor: { ts: string | null; pk: string | null } }>;
 }
 
 /** DATA-15：物化行集（对象最新状态回流读端点）。 */

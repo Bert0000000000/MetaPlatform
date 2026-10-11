@@ -737,6 +737,8 @@ class BackingDatasourceDTO(BaseModel):
     class_rid: str
     name: str
     kind: str = "pg_table"
+    source_id: str | None = None
+    ts_column: str | None = None
     dsn_env: str = "ONT_SOURCE_DSN"
     table: str
     pk_column: str
@@ -777,6 +779,20 @@ async def upsert_backing_datasource(
     tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not rid.startswith(f"ont.{tenant}."):
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
+    from .backing_datasources import BackingDatasource, preflight
+    from mate_tech_data.services.source_connector import SourceError
+    try:
+        ds = BackingDatasource(name=payload.name, kind=payload.kind, table=payload.table,
+            pk_column=payload.pk_column, field_mapping=payload.field_mapping,
+            source_id=payload.source_id, tenant_id=tenant, ts_column=payload.ts_column)
+        if ds.source_id:
+            ot = await _call_scoped(request, "get_object_type", ClassRef(rid))
+            preflight(ds, ot)
+    except (SourceError, ValueError, KeyError) as exc:
+        detail = exc.detail() if isinstance(exc, SourceError) else str(exc)
+        raise HTTPException(status_code=422, detail=detail) from None
     decl = payload.model_dump()
     decl["class_rid"] = rid
     decl["tenant_id"] = tenant
@@ -818,11 +834,11 @@ async def delete_security_policy(rid: str, request: Request) -> dict:
 )
 async def get_sync_status(request: Request) -> list[dict]:
     """P1-4：数据源同步健康面（per-class last_ok/last_error/duration/failures）。"""
-    _ctx(request)
+    ctx = _ctx(request)
     sched = getattr(request.app.state, "sync_scheduler", None)
     if sched is None:
         return []
-    return sched.status()
+    return [row for row in sched.status() if row.get("tenant_id") == str(ctx.tenant_id)]
 
 
 @router.post(
@@ -839,12 +855,27 @@ async def sync_backing_datasources(
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     try:
         return await _call_scoped(request, "sync_backing_datasources", rid, incremental)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+@router.get("/object-types/{rid:path}/datasources/runs/{run_id}", response_model=dict, operation_id="ontGetV2BackingSyncRun")
+async def get_backing_sync_run(rid: str, run_id: str, request: Request) -> dict:
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant access denied")
+    declarations = await _call_scoped(request, "list_backing_datasources", rid)
+    for declaration in declarations:
+        for run in declaration.get("run_history") or []:
+            if run.get("run_id") == run_id:
+                return run
+    raise HTTPException(status_code=404, detail="Sync run is outside the retained 20-run history or does not exist")
 
 
 class CdcApplyDTO(BaseModel):

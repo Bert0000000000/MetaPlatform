@@ -386,6 +386,8 @@ async def create_source_endpoint(
 ) -> dict[str, Any]:
     """Create a data source (FR-DATA-DATAPOSTDATASOURCES)."""
     tid = _tid(request)
+    if not request.state.ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     source = create_source(
         tid,
         name=body.name,
@@ -423,6 +425,8 @@ async def update_source_endpoint(
 ) -> dict[str, Any]:
     """Update a data source (FR-DATA-DATAPUTDATASOURCESID)."""
     tid = _tid(request)
+    if not request.state.ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     source = update_source(
         tid,
         source_id,
@@ -449,6 +453,8 @@ async def delete_source_endpoint(
 ) -> dict[str, Any]:
     """Delete a data source (FR-DATA-DATADELETEDATASOURCESID)."""
     tid = _tid(request)
+    if not request.state.ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     removed = delete_source(tid, source_id)
     if not removed:
         raise HTTPException(status_code=404, detail="data source not found")
@@ -469,7 +475,11 @@ async def source_schema_endpoint(
 ) -> dict[str, Any]:
     """Discover schema for a data source (FR-DATA-DATAGETDATASOURCESIDSCHEMA)."""
     tid = _tid(request)
-    schema = get_source_schema(tid, source_id)
+    from ..services.source_connector import SourceError
+    try:
+        schema = get_source_schema(tid, source_id)
+    except SourceError as exc:
+        raise HTTPException(status_code=422, detail=exc.detail()) from None
     if schema is None:
         raise HTTPException(status_code=404, detail="data source not found")
     return schema
