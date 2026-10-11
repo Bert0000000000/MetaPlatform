@@ -858,6 +858,10 @@ paths:
       security: [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
       tags: [ont]
       operationId: ontListV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-requirements: [MP11-ONT-02, MP11-ONT-08]
+      x-mate-implementation-status: implemented
       summary: List persisted schema drafts for the current tenant
       responses:
         "200":
@@ -869,6 +873,10 @@ paths:
       security: [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       operationId: ontSaveV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements: [MP11-ONT-02, MP11-ONT-08]
+      x-mate-implementation-status: implemented
       summary: Save a schema draft without changing the live model
       parameters:
         - in: query
@@ -902,6 +910,10 @@ paths:
       security: [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       operationId: ontApplyV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements: [MP11-ONT-02, MP11-ONT-03, MP11-ONT-08]
+      x-mate-implementation-status: implemented
       summary: Publish a saved schema draft atomically against its live baseline
       parameters:
         - in: query
@@ -930,6 +942,10 @@ paths:
       security: [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       operationId: ontDiscardV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements: [MP11-ONT-02, MP11-ONT-08]
+      x-mate-implementation-status: implemented
       summary: Discard a persisted draft without deleting the live model
       responses:
         "200": { description: Draft discarded }
