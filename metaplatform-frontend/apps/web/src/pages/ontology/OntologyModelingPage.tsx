@@ -879,6 +879,9 @@ export default function OntologyModelingPage({
                 }
                 ）
               </div>
+              <p className="mp-text-sm mp-text-2">继承表示对象类型层级；这里的关系定义表示业务关联。普通 customer_id 属性不会自动关联对象。</p>
+              <Button onClick={() => navigate('/ontology/model/link-types?create=1&source=' + encodeURIComponent(selectedConceptDetail.rid))}>新建此对象的关系</Button>
+              <Button onClick={() => navigate('/ontology/model/link-types?source=' + encodeURIComponent(selectedConceptDetail.rid))}>管理关系定义</Button>
               {linkTypes.filter((lt) => lt.src === selectedConceptDetail.rid || lt.dst === selectedConceptDetail.rid)
                 .length === 0 ? (
                 <div className="mp-text-sm mp-text-2">暂无关系定义。</div>

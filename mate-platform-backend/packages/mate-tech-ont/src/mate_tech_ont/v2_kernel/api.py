@@ -4601,9 +4601,11 @@ async def upsert_link_type(
 async def list_link_types(
     request: Request,
 ) -> list[LinkTypeDTO]:
-    _ctx(request)
+    ctx = _ctx(request)
     items = await _call_scoped(request, "list_link_types")
-    return [_link_type_to_dto(i) for i in items]
+    prefix = f"ont.{ctx.tenant_id}."
+    # Repository adapters without RLS must never leak neighboring tenant definitions.
+    return [_link_type_to_dto(i) for i in items if str(i.rid).startswith(prefix)]
 
 
 @router.get(

@@ -3057,7 +3057,14 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("SELECT * FROM ont_link_type ORDER BY rid")
+                tenant = self._current_tenant()
+                if tenant:
+                    cur.execute(
+                        "SELECT * FROM ont_link_type WHERE tenant_id = %s ORDER BY rid",
+                        (tenant,),
+                    )
+                else:
+                    cur.execute("SELECT * FROM ont_link_type ORDER BY rid")
                 rows = cur.fetchall()
             return [_row_to_lt(r) for r in rows]
         finally:

@@ -111,6 +111,24 @@ export async function listActionTypes(): Promise<KernelActionType[]> {
   return list<KernelActionType>('/action-types');
 }
 
+/** Uses the existing backend upsert contract; the UI distinguishes create from edit. */
+export async function createLinkType(payload: KernelLinkType): Promise<KernelLinkType> {
+  const resp = await apiClient.post(v2('/link-types'), payload);
+  return resp.data as KernelLinkType;
+}
+export interface KernelLinkInstanceCreate {
+  rid: string;
+  link_type_rid: string;
+  src: string;
+  dst: string;
+  props: Record<string, { value: unknown }>;
+  marking?: string[];
+}
+export async function createLinkInstance(payload: KernelLinkInstanceCreate): Promise<KernelLinkInstance> {
+  const resp = await apiClient.post(v2('/link-instances'), payload);
+  return resp.data as KernelLinkInstance;
+}
+
 export async function listLinkTypes(): Promise<KernelLinkType[]> {
   return list<KernelLinkType>('/link-types');
 }
@@ -1244,7 +1262,7 @@ export interface KernelLinkInstance {
   link_type_rid: string;
   src: string;
   dst: string;
-  props: Array<[string, unknown]>;
+  props: Record<string, unknown>;
   created_at?: string;
   tenant_id: string;
   marking?: string[];
