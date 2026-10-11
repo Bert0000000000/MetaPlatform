@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import SemiPlugin from '@douyinfe/semi-vite-plugin';
 import path from 'path';
@@ -27,10 +27,25 @@ const forwardAuth = {
   },
 };
 
+// Vite's SPA fallback otherwise sends /website/ to the authenticated app.
+// Both dev and preview resolve the public directory to its canonical static HTML.
+function publicWebsiteEntry(): Plugin {
+  const install = (server: { middlewares: { use: (handler: (req: { url?: string }, res: unknown, next: () => void) => void) => void } }) => {
+    server.middlewares.use((req, _res, next) => {
+      const [pathname, query] = (req.url ?? '').split('?');
+      if (pathname === '/website' || pathname === '/website/') {
+        req.url = `/website/index.html${query === undefined ? '' : `?${query}`}`;
+      }
+      next();
+    });
+  };
+  return { name: 'public-website-entry', configureServer: install, configurePreviewServer: install };
+}
+
 export default defineConfig({
   // Semi 官方主题定制：DSM 主题包（构建期替换官方 SCSS 变量）。
   // 见 docs/active/specs/2026-09-14-ui-redesign/DESIGN-SPEC.md §4 与 packages/semi-theme-mate。
-  plugins: [react(), SemiPlugin({ theme: '@mate/semi-theme' })],
+  plugins: [publicWebsiteEntry(), react(), SemiPlugin({ theme: '@mate/semi-theme' })],
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
