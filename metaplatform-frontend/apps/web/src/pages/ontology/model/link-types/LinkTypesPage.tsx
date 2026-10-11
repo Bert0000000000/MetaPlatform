@@ -17,6 +17,8 @@ export default function LinkTypesPage() {
   const [editor, setEditor] = useState<KernelLinkType | 'create' | null>(() => params.get('create') === '1' ? 'create' : null);
   const [refresh, setRefresh] = useState(0);
   const [existingRids, setExistingRids] = useState<string[]>([]);
+  const [catalogReady, setCatalogReady] = useState(false);
+  const [catalogError, setCatalogError] = useState('');
   const loadStats = useCallback(async () => {
     setStatsError('');
     try { setCounts((await getLinkInstanceStats()).by_link_type); }
@@ -24,7 +26,15 @@ export default function LinkTypesPage() {
   }, []);
   useEffect(() => { void loadStats(); }, [loadStats]);
   const load = useCallback(async () => {
-    const rows = await listLinkTypes(); setExistingRids(rows.map(r => r.rid)); return rows;
+    setCatalogReady(false); setCatalogError('');
+    try {
+      const rows = await listLinkTypes();
+      setExistingRids(rows.map(r => r.rid)); setCatalogReady(true);
+      return rows;
+    } catch (e) {
+      const message = errDetailText(e, '关系目录读取失败');
+      setCatalogError(message); throw new Error(message);
+    }
   }, [refresh]);
   const closeEditor = () => {
     setEditor(null);
@@ -56,6 +66,7 @@ export default function LinkTypesPage() {
     <SheetDetail title={editor === 'create' ? '新建关系' : '编辑关系'} open={editor !== null} onClose={closeEditor} width={600}>
       {editor ? <LinkTypeEditor key={editor === 'create' ? 'create' : editor.rid} initial={editor === 'create' ? undefined : editor}
         source={params.get('source') || ''} existingRids={existingRids}
+        catalogReady={catalogReady} catalogError={catalogError} onRetryCatalog={() => setRefresh(v => v + 1)}
         protectedStructure={counts === null || Boolean(statsError) || (editor !== 'create' && (counts[editor.rid] || 0) > 0)}
         onSaved={savedType} onCancel={closeEditor} /> : null}
     </SheetDetail>
@@ -93,7 +104,7 @@ function LinkInstanceList({ linkType, onSaved }: { linkType: KernelLinkType; onS
       ]} dataSource={shown} rowKey="rid" loading={rows === null}
         empty={<EmptyState illustration="no-content" title="该关系类型还没有实例" desc="选择关联对象创建业务关联。" />} />}
     {page > 1 || shown.length === LINK_PAGE_SIZE ? <div className="mp-flex mp-gap-2">
-      <Button disabled={rows === null || page === 1} onClick={() => setPage(v => v - 1)}>上一页实例</Button>
+      <Button disabled={(rows === null && !error) || page === 1} onClick={() => setPage(v => v - 1)}>上一页实例</Button>
       <span>第 {page} 页</span><Button disabled={rows === null || shown.length < LINK_PAGE_SIZE} onClick={() => setPage(v => v + 1)}>下一页实例</Button>
     </div> : null}
   </>;

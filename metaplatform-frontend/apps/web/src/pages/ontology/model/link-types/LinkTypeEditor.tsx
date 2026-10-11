@@ -5,8 +5,9 @@ import { ridTail } from '../../rid';
 import PropertyEditorV2, { draftFromProperty, draftToPropertyDTO, emptyPropertyDraft, validatePropertyDraft, type PropertyDraft } from '../../components/PropertyEditorV2';
 
 const slug = (name: string) => name.trim().toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu, '_').replace(/^_+|_+$/g, '');
-export default function LinkTypeEditor({ initial, source = '', protectedStructure, existingRids, onSaved, onCancel }: {
+export default function LinkTypeEditor({ initial, source = '', protectedStructure, existingRids, catalogReady, catalogError, onRetryCatalog, onSaved, onCancel }: {
   initial?: KernelLinkType; source?: string; protectedStructure: boolean; existingRids: string[];
+  catalogReady: boolean; catalogError: string; onRetryCatalog: () => void;
   onSaved: () => void; onCancel: () => void;
 }) {
   const [name, setName] = useState(initial?.src_display_name || '');
@@ -29,14 +30,24 @@ export default function LinkTypeEditor({ initial, source = '', protectedStructur
   const locked = Boolean(initial && protectedStructure);
   useEffect(() => {
     let alive = true; setLoading(true); setLoadError('');
-    Promise.all([listObjectTypes(), listValueTypes()]).then(([ots, vts]) => {
+    const loadTypes = async () => {
+      const found = new Map<string, KernelObjectType>();
+      for (let offset = 0; alive; offset += 100) {
+        const page = await listObjectTypes({ limit: 100, offset });
+        if (page.length === 100 && page.every(t => found.has(t.rid))) throw new Error('对象类型分页未前进，请重试');
+        page.forEach(t => found.set(t.rid, t));
+        if (page.length < 100) break;
+      }
+      return [...found.values()];
+    };
+    Promise.all([loadTypes(), listValueTypes()]).then(([ots, vts]) => {
       if (alive) { setObjectTypes(ots); setValueTypes(vts); }
     }).catch(e => { if (alive) setLoadError(errDetailText(e, '对象类型读取失败')); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [retry]);
   const save = async (e: React.FormEvent) => {
-    e.preventDefault(); if (submitting.current || loading || loadError) return;
+    e.preventDefault(); if (submitting.current || loading || loadError || (!initial && !catalogReady)) return;
     const drafts = properties.map(p => ({ ...p, rid: p.isNew ? rid + '.prop.' + p.name : p.rid }));
     const errors = drafts.flatMap(p => validatePropertyDraft(p, valueTypes));
     if (!name.trim() || !identifier.trim() || !src || !dst) errors.push('请填写关系名称、标识和两端对象类型');
@@ -45,7 +56,7 @@ export default function LinkTypeEditor({ initial, source = '', protectedStructur
     submitting.current = true; setSaving(true); setError('');
     try {
       await createLinkType({ rid, src, dst, cardinality, directionality, src_display_name: name.trim(),
-        dst_display_name: dstName.trim(), description: description.trim(), link_properties: drafts.map(p => draftToPropertyDTO(p, valueTypes)) });
+        dst_display_name: dstName.trim(), description: description.trim(), link_properties: drafts.map(p => draftToPropertyDTO(p, valueTypes)) }, !initial);
       onSaved();
     } catch (e) { setError(errDetailText(e, '保存关系失败')); }
     finally { submitting.current = false; setSaving(false); }
@@ -81,9 +92,13 @@ export default function LinkTypeEditor({ initial, source = '', protectedStructur
       </div>)}
       <button type="button" onClick={() => setProperties(ps => [...ps, emptyPropertyDraft()])}>添加关系属性</button>
     </fieldset>
+    {!initial && !catalogReady ? <div role={catalogError ? 'alert' : 'status'}>
+      {catalogError ? '关系目录读取失败：' + catalogError : '关系目录加载中…'}
+      {catalogError ? <button type="button" onClick={onRetryCatalog}>重试关系目录</button> : null}
+    </div> : null}
     {error ? <div role="alert">{error}</div> : null}
     <p>关系定义描述业务关联；继承属于对象类型层级。普通 customer_id 属性不会自动生成关联。</p>
-    <div className="mp-flex mp-gap-2"><button type="submit" disabled={saving || loading || Boolean(loadError)}>{saving ? '保存中…' : '保存关系'}</button>
+    <div className="mp-flex mp-gap-2"><button type="submit" disabled={saving || loading || Boolean(loadError) || (!initial && !catalogReady)}>{saving ? '保存中…' : '保存关系'}</button>
       <button type="button" disabled={saving} onClick={onCancel}>取消</button></div>
   </form>;
 }

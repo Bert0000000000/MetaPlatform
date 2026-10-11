@@ -28,7 +28,7 @@ from uuid import uuid4
 from mate_kernel.objectset.compiler import CompiledFilter, FilterCompiler, individual_to_row
 from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp, QueryResult
 from mate_kernel.objectset.sql_compiler import SQLCompiler
-from mate_kernel.ontology.api import OntologyRepository
+from mate_kernel.ontology.api import LinkTypeAlreadyExistsError, OntologyRepository
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import (
     ClassRef,
@@ -2825,7 +2825,7 @@ class PgOntologyRepository(OntologyRepository):
             kind="merge_suggestion",
         )
 
-    def upsert_link_type(self, lt: LinkType) -> LinkType:
+    def upsert_link_type(self, lt: LinkType, *, create_only: bool = False) -> LinkType:
         self._ensure_schema()
         row = _lt_to_row(lt)
         conn, _ = self._connect()
@@ -2834,6 +2834,8 @@ class PgOntologyRepository(OntologyRepository):
                 self._lock_link_type(cur, row["rid"])
                 cur.execute("SELECT * FROM ont_link_type WHERE rid = %s", (row["rid"],))
                 existing = cur.fetchone()
+                if create_only and existing is not None:
+                    raise LinkTypeAlreadyExistsError(f"LinkType already exists: {lt.rid}")
                 if existing is not None and any(
                     existing[field] != row[field]
                     for field in ("src_rid", "dst_rid", "cardinality", "directionality")
@@ -2846,14 +2848,8 @@ class PgOntologyRepository(OntologyRepository):
                         raise LinkTypeInUseError(
                             "Cannot change src/dst/cardinality/directionality while link instances exist"
                         )
-                cur.execute(
-                    """
-                    INSERT INTO ont_link_type
-                        (rid, tenant_id, src_rid, dst_rid, cardinality, directionality,
-                         link_properties, src_display_name, dst_display_name,
-                         description, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, now())
-                    ON CONFLICT (rid) DO UPDATE SET
+                conflict = "DO NOTHING" if create_only else """
+                    DO UPDATE SET
                         src_rid = EXCLUDED.src_rid,
                         dst_rid = EXCLUDED.dst_rid,
                         cardinality = EXCLUDED.cardinality,
@@ -2863,6 +2859,15 @@ class PgOntologyRepository(OntologyRepository):
                         dst_display_name = EXCLUDED.dst_display_name,
                         description = EXCLUDED.description,
                         updated_at = now()
+                """
+                cur.execute(
+                    f"""
+                    INSERT INTO ont_link_type
+                        (rid, tenant_id, src_rid, dst_rid, cardinality, directionality,
+                         link_properties, src_display_name, dst_display_name,
+                         description, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, now())
+                    ON CONFLICT (rid) {conflict}
                     """,
                     (
                         row["rid"],
@@ -2877,6 +2882,8 @@ class PgOntologyRepository(OntologyRepository):
                         row.get("description", ""),
                     ),
                 )
+                if create_only and cur.rowcount != 1:
+                    raise LinkTypeAlreadyExistsError(f"LinkType already exists: {lt.rid}")
             conn.commit()
             return lt
         except Exception:

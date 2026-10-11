@@ -99,8 +99,9 @@ async function getOne<T>(path: string): Promise<T> {
   return resp.data as T;
 }
 
-export async function listObjectTypes(): Promise<KernelObjectType[]> {
-  return list<KernelObjectType>('/object-types');
+export async function listObjectTypes(params?: { limit?: number; offset?: number }): Promise<KernelObjectType[]> {
+  const resp = await apiClient.get(v2('/object-types'), { params });
+  return resp.data as KernelObjectType[];
 }
 
 export async function getObjectType(rid: string): Promise<KernelObjectType> {
@@ -112,8 +113,8 @@ export async function listActionTypes(): Promise<KernelActionType[]> {
 }
 
 /** Uses the existing backend upsert contract; the UI distinguishes create from edit. */
-export async function createLinkType(payload: KernelLinkType): Promise<KernelLinkType> {
-  const resp = await apiClient.post(v2('/link-types'), payload);
+export async function createLinkType(payload: KernelLinkType, createOnly = false): Promise<KernelLinkType> {
+  const resp = await apiClient.post(v2('/link-types'), payload, { params: createOnly ? { create_only: true } : undefined });
   return resp.data as KernelLinkType;
 }
 export interface KernelLinkInstanceCreate {

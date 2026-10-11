@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from threading import RLock
 from typing import TYPE_CHECKING, Any
 
-from mate_kernel.ontology.api import OntologyRepository
+from mate_kernel.ontology.api import LinkTypeAlreadyExistsError, OntologyRepository
 from mate_kernel.ontology.identity import ClassRef, Version, VersionConflict, definition_checksum
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
@@ -39,6 +40,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._properties: dict[ClassRef, Property] = {}
         self._object_types: dict[ClassRef, ObjectType] = {}
         self._link_types: dict[ClassRef, LinkType] = {}
+        self._link_type_lock = RLock()
         self._action_types: dict[ClassRef, ActionType] = {}
         self._interfaces: dict[ClassRef, Interface] = {}
         # ONT-VERSION-MECHANISM：全家族版本日志（family = tenant + slug）
@@ -319,11 +321,14 @@ class InMemoryOntologyRepository(OntologyRepository):
 
         return [_node(r) for r in roots]
 
-    def upsert_link_type(self, lt: LinkType) -> LinkType:
-        for p in lt.link_properties:
-            self._properties[p.rid] = p
-        self._link_types[lt.rid] = lt
-        return lt
+    def upsert_link_type(self, lt: LinkType, *, create_only: bool = False) -> LinkType:
+        with self._link_type_lock:
+            if create_only and lt.rid in self._link_types:
+                raise LinkTypeAlreadyExistsError(f"LinkType already exists: {lt.rid}")
+            for p in lt.link_properties:
+                self._properties[p.rid] = p
+            self._link_types[lt.rid] = lt
+            return lt
 
     def upsert_action_type(self, at: ActionType) -> ActionType:
         for p in at.parameters:

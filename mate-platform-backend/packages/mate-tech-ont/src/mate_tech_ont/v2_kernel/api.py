@@ -47,7 +47,7 @@ from mate_kernel.objectset.ir import (
     SortKey,
     TraversalStep,
 )
-from mate_kernel.ontology.api import OntologyRepository
+from mate_kernel.ontology.api import LinkTypeAlreadyExistsError, OntologyRepository
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import ClassRef, definition_checksum
 from mate_kernel.ontology.instances import Individual, LinkInstance
@@ -4550,6 +4550,7 @@ async def get_action_type(rid: str, request: Request) -> ActionTypeDTO:
 async def upsert_link_type(
     payload: LinkTypeDTO,
     request: Request,
+    create_only: bool = False,
 ) -> LinkTypeDTO:
     ctx = _ctx(request)
     if not ctx.has_scope("platform.write"):
@@ -4587,8 +4588,10 @@ async def upsert_link_type(
                 detail="Cannot change src/dst/cardinality/directionality while link instances exist",
             )
     try:
-        saved = await _call_scoped(request, "upsert_link_type", lt)
-    except LinkTypeInUseError as e:
+        saved = await _call_scoped(
+            request, "upsert_link_type", lt, **({"create_only": True} if create_only else {})
+        )
+    except (LinkTypeInUseError, LinkTypeAlreadyExistsError) as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     return _link_type_to_dto(saved)
 

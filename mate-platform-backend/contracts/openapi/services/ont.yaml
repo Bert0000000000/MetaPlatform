@@ -740,7 +740,14 @@ paths:
       security:
         [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
-      summary: Create LinkType
+      summary: Create or update LinkType
+      description: Default calls retain upsert behavior. With create_only=true, an existing RID returns 409 atomically and its definition remains unchanged. Structural edits with existing instances also return 409.
+      parameters:
+        - in: query
+          name: create_only
+          required: false
+          schema: { type: boolean, default: false }
+          description: Strict creation without overwriting an existing RID; duplicate or competing creation returns 409.
       operationId: ontCreateV2LinkType
       x-mate-owner: ontology-platform
       x-mate-permission: ont.write
