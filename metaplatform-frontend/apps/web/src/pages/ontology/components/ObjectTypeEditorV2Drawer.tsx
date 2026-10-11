@@ -140,6 +140,7 @@ export default function ObjectTypeEditorV2Drawer({
   const [error, setError] = useState('');
   // G33：409 破坏性变更二段确认（页面 onSubmit 返回 DestructiveConfirmDetail 时激活）
   const [destructive, setDestructive] = useState<DestructiveConfirmDetail | null>(null);
+  const [destructiveChecksum, setDestructiveChecksum] = useState<string | undefined>();
   const [confirmInput, setConfirmInput] = useState('');
 
   const vts = valueTypes.length > 0 ? valueTypes : FALLBACK_VALUE_TYPES;
@@ -174,6 +175,7 @@ export default function ObjectTypeEditorV2Drawer({
     setSubmitting(false);
     setExpanded(null);
     setDestructive(null);
+    setDestructiveChecksum(undefined);
     setConfirmInput('');
     const pf = prefillRef.current;
     if (mode === 'edit' && objectType) {
@@ -367,6 +369,7 @@ export default function ObjectTypeEditorV2Drawer({
     setSubmitting(true);
     setError('');
     setDestructive(null);
+    setDestructiveChecksum(undefined);
     try {
       if (action === 'draft') {
         await saveSchemaWip(payload, mode === 'create', baseline);
@@ -385,17 +388,21 @@ export default function ObjectTypeEditorV2Drawer({
         setImpact(assessment); setActionReferences(inspection.actions);
       }
       if (!report.valid || action === 'preflight') return;
-      const result = await onSubmit(payload, mode, retryChecksum ?? baseline);
+      const submittedChecksum = retryChecksum ?? baseline;
+      const result = await onSubmit(payload, mode, submittedChecksum);
       if (result && typeof result === 'object') {
         // 409 destructive_confirm_required：抽屉底部展开二段确认区
         setDestructive(result);
+        setDestructiveChecksum(submittedChecksum);
         setConfirmInput('');
       } else if (result) {
+        setLatest(null);
         setError(result);
       } else {
         setDirty(false); onClose();
       }
     } catch (cause) {
+      setLatest(null);
       setError(errDetailText(cause, cause instanceof Error ? cause.message : '操作失败，请重试；输入已保留。'));
     } finally {
       setSubmitting(false);
@@ -752,7 +759,7 @@ export default function ObjectTypeEditorV2Drawer({
                 />
                 <button
                   type="button"
-                  onClick={() => void submit(confirmInput.trim())}
+                  onClick={() => void submit(confirmInput.trim(), 'publish', destructiveChecksum)}
                   disabled={submitting || !confirmInput.trim()}
                   className="mp-fw-600 mp-onto-btn mp-onto-btn--md mp-onto-btn--solid-danger"
                 >
@@ -760,7 +767,7 @@ export default function ObjectTypeEditorV2Drawer({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setDestructive(null); setConfirmInput(''); }}
+                  onClick={() => { setDestructive(null); setDestructiveChecksum(undefined); setConfirmInput(''); }}
                   disabled={submitting}
                   className="mp-onto-btn mp-onto-btn--md"
                 >

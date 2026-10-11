@@ -6706,6 +6706,10 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                # A set_property may lock an individual before a later add_link
+                # locks its definition. Serialize this whole edit-set against
+                # supersede before either lock, avoiding the reverse-order cycle.
+                self._lock_schema_definitions(cur, tenant_id, shared=True)
                 for e in ops:
                     if e.op == "set_property":
                         cur.execute(

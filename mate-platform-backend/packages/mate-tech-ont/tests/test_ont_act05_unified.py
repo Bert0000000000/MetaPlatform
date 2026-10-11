@@ -682,7 +682,7 @@ class TestS2PgUnified:
 BASE = "/api/v1/ont/v2"
 
 
-def _api_app(repo: InMemoryOntologyRepository):
+def _api_app(repo: InMemoryOntologyRepository, *, scopes: tuple[str, ...] = ()):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
@@ -706,7 +706,7 @@ def _api_app(repo: InMemoryOntologyRepository):
             user_id=UserId("tester"),
             roles=frozenset({"editor"}),
             permissions=frozenset({"ont.read", "ont.write"}),
-            scopes=frozenset(),
+            scopes=frozenset(scopes),
             auth_method=AuthMethod.USER,
         )
         return await call_next(request)
@@ -733,6 +733,12 @@ def s3_client():
         )
     )
     return _api_app(r), r
+
+
+@pytest.fixture()
+def s3_write_client(s3_client):
+    _, repo = s3_client
+    return _api_app(repo, scopes=("platform.write",)), repo
 
 
 class TestS3ApiDispatch:
@@ -893,8 +899,8 @@ class TestC8Delete:
         # ACT_PURE 不是 obj rid → 该 rid 不存在 → 404（守门/存在性先于删除）
         assert resp.status_code in (403, 404)
 
-    def test_soft_delete_existing_object_type(self, s3_client) -> None:
-        client, r = s3_client
+    def test_soft_delete_existing_object_type(self, s3_write_client) -> None:
+        client, r = s3_write_client
         resp = client.delete(f"{BASE}/object-types/{OBJ}")
         assert resp.status_code == 200, resp.text
         assert resp.json()["hard"] is False
@@ -902,8 +908,8 @@ class TestC8Delete:
         with pytest.raises(KeyError):
             r.get_object_type(ClassRef(OBJ))
 
-    def test_hard_delete_refused_when_instances_exist(self, s3_client) -> None:
-        client, _ = s3_client
+    def test_hard_delete_refused_when_instances_exist(self, s3_write_client) -> None:
+        client, _ = s3_write_client
         resp = client.delete(f"{BASE}/object-types/{OBJ}?hard=true")
         assert resp.status_code == 409, resp.text
         assert "instances" in resp.text

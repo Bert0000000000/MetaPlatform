@@ -293,3 +293,103 @@ def test_explicit_compared_checksum_can_retry_stale_draft(client):
     result = client.post(f'{BASE}/object-types/wip/{original["rid"]}/apply', params={'expected_checksum': latest['checksum']})
     assert result.status_code == 200, result.text
     assert result.json()['description'] == 'My retained changes'
+
+
+def test_pg_edit_set_then_link_and_supersede_do_not_deadlock(store, monkeypatch):
+    if isinstance(store, InMemoryOntologyRepository):
+        pytest.skip('PG transactional edit-set lock regression')
+    from contextlib import contextmanager
+    import time
+    import psycopg2
+
+    with store.tenant_scope(T):
+        source = _dto_to_ot(ObjectTypeDTO(**definition('Edit source')))
+        target = _dto_to_ot(ObjectTypeDTO(**definition('Edit target')))
+        store.upsert_object_type(source)
+        store.upsert_object_type(target)
+        relation = LinkType(rid=ClassRef(f'ont.{T}.link.editrace{uuid4().hex}.v1'), src=source.rid, dst=target.rid,
+                            cardinality=Cardinality.ONE_TO_MANY, directionality=Directionality.DIRECTED)
+        store.upsert_link_type(relation)
+        now = datetime.now(UTC)
+        individuals = []
+        for object_type in [source, target]:
+            iid = f'ont.{T}.ind.editrace.{uuid4().hex}'
+            individual = Individual(rid=iid, class_rid=object_type.rid, props=((object_type.primary_key[0], iid),),
+                                    primary_key=iid, tenant_id=T, created_at=now, updated_at=now)
+            store.create_individual(individual)
+            individuals.append(individual)
+        v2 = replace(source, rid=ClassRef(source.rid.rid[:-2] + 'v2'))
+
+    edit_locked, publish_attempted, resume_edit = threading.Event(), threading.Event(), threading.Event()
+    pids = {}
+    original_cursor, original_schema_lock = store._cursor, store._lock_schema_definitions
+
+    class CursorProxy:
+        def __init__(self, cursor):
+            self.cursor = cursor
+        def __getattr__(self, key):
+            return getattr(self.cursor, key)
+        def execute(self, query, parameters=None):
+            result = self.cursor.execute(query, parameters)
+            if threading.current_thread().name == 'mp11-edit-race' and 'SELECT props FROM ont_individual' in query and 'FOR UPDATE' in query:
+                pids['edit'] = self.cursor.connection.get_backend_pid()
+                edit_locked.set()
+                assert resume_edit.wait(12), 'Publisher never reached its blocked transaction'
+            return result
+
+    @contextmanager
+    def intercept(connection):
+        with original_cursor(connection) as cursor:
+            cursor.execute("SET LOCAL statement_timeout = '12s'")
+            yield CursorProxy(cursor)
+
+    def record_publish(cursor, tenant, *, shared):
+        if threading.current_thread().name == 'mp11-publish-race' and not shared:
+            pids['publish'] = cursor.connection.get_backend_pid()
+            publish_attempted.set()
+        return original_schema_lock(cursor, tenant, shared=shared)
+
+    monkeypatch.setattr(store, '_cursor', intercept)
+    monkeypatch.setattr(store, '_lock_schema_definitions', record_publish)
+
+    def edit():
+        threading.current_thread().name = 'mp11-edit-race'
+        with store.tenant_scope(T):
+            return store.apply_edit_set_now(f'ont.{T}.act.editrace.v1', individuals[0].rid, {}, [
+                {'op':'set_property','target':individuals[0].rid,'property_rid':source.primary_key[0].rid,'value':'edited'},
+                {'op':'add_link','link_type_rid':relation.rid.rid,'src':individuals[0].rid,'dst':individuals[1].rid},
+            ], actor='verified-test-actor')
+
+    def publish():
+        threading.current_thread().name = 'mp11-publish-race'
+        with store.tenant_scope(T):
+            return store.upsert_object_type(v2, supersede_rids=(source.rid.rid,))
+
+    with ThreadPoolExecutor(2) as pool:
+        editing = pool.submit(edit)
+        try:
+            assert edit_locked.wait(8), 'Edit-set did not acquire the individual row lock'
+            publishing = pool.submit(publish)
+            assert publish_attempted.wait(8)
+            # Observe a real database wait, not a sleep-based assumption. Before the
+            # fix publisher waits for the row; after it waits for shared schema lock.
+            with psycopg2.connect(os.environ['MP11_OBJECT_PG_DSN']) as observer:
+                observer.autocommit = True
+                with observer.cursor() as cursor:
+                    deadline = time.monotonic() + 8
+                    while time.monotonic() < deadline:
+                        cursor.execute('SELECT pg_blocking_pids(%s)', (pids['publish'],))
+                        if pids['edit'] in cursor.fetchone()[0]:
+                            break
+                        time.sleep(0.02)
+                    else:
+                        pytest.fail('Publisher was not blocked by the edit-set transaction')
+        finally:
+            resume_edit.set()
+        assert editing.result(timeout=15)['applied_count'] == 2
+        publishing.result(timeout=15)
+    with store.tenant_scope(T):
+        assert store.get_individual(individuals[0].rid).class_rid == v2.rid
+        assert store.get_individual(individuals[0].rid).get(source.primary_key[0]) == 'edited'
+        assert store.get_link_type(relation.rid).src == v2.rid
+        assert store.search_around(individuals[0].rid)[0]['peers'][0]['__rid__'] == individuals[1].rid

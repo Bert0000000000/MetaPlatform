@@ -139,3 +139,34 @@ it('does not publish or invent zero references when inspection fails',async()=>{
   expect(screen.getByText('引用动作：尚未取得，请重试预检')).toBeInTheDocument();
   expect(onSubmit).not.toHaveBeenCalled();
 });
+
+it.each([false, true])('keeps the compared checksum through destructive confirmation (new conflict: %s)', async (newConflict) => {
+  onSubmit.mockReset().mockResolvedValue(null);
+  vi.mocked(kernel.getObjectType).mockReset();
+  const destructive={error:'destructive_confirm_required',changes:['删除属性'],confirm_with:'客户',hint:'确认名称'};
+  onSubmit.mockResolvedValueOnce('草稿基线已过期' as never).mockResolvedValueOnce(destructive as never);
+  if (newConflict) onSubmit.mockResolvedValueOnce('模型再次更新，请重新比较' as never).mockResolvedValueOnce(destructive as never);
+  onSubmit.mockResolvedValueOnce(null);
+  vi.mocked(kernel.getObjectType).mockResolvedValueOnce({...editable,checksum:'B'}).mockResolvedValueOnce({...editable,checksum:'C'});
+  mountEdit();
+  fireEvent.change(screen.getByLabelText('业务说明'),{target:{value:'保留我的修改'}});
+  fireEvent.click(screen.getByRole('button',{name:'发布对象类型'}));
+  fireEvent.click(await screen.findByRole('button',{name:'比较最新模型'}));
+  fireEvent.click(await screen.findByRole('button',{name:'使用最新基线重试发布'}));
+  fireEvent.change(await screen.findByPlaceholderText('输入 客户 以确认'),{target:{value:'客户'}});
+  fireEvent.click(screen.getByRole('button',{name:'确认重发'}));
+  await waitFor(()=>expect(onSubmit).toHaveBeenCalledTimes(3));
+  expect(onSubmit).toHaveBeenLastCalledWith(expect.objectContaining({confirm_name:'客户',description:'保留我的修改'}),'edit','B');
+  if (newConflict) {
+    await screen.findByText('模型再次更新，请重新比较');
+    expect(screen.queryByRole('button',{name:'使用最新基线重试发布'})).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button',{name:'比较最新模型'}));
+    fireEvent.click(await screen.findByRole('button',{name:'使用最新基线重试发布'}));
+    fireEvent.change(await screen.findByPlaceholderText('输入 客户 以确认'),{target:{value:'客户'}});
+    fireEvent.click(screen.getByRole('button',{name:'确认重发'}));
+    await waitFor(()=>expect(onSubmit).toHaveBeenCalledTimes(5));
+    expect(onSubmit).toHaveBeenLastCalledWith(expect.objectContaining({confirm_name:'客户',description:'保留我的修改'}),'edit','C');
+  }
+  await waitFor(()=>expect(onClose).toHaveBeenCalledTimes(1));
+});
