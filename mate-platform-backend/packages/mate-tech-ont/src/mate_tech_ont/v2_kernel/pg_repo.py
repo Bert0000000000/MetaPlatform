@@ -4587,8 +4587,13 @@ class PgOntologyRepository(OntologyRepository):
             source += " JOIN ont_proposal p ON p.proposal_id = a.proposal_id AND p.tenant_id = a.tenant_id"
             clauses.append("a.tenant_id = %s")
             params.append(tenant)
+            # The edit-set aliases wrap business parameters; ordinary actions
+            # persist them directly. Select by kind, never coalesce competing
+            # attribution from a different parameter shape.
+            provenance = ("(CASE WHEN p.kind = 'edit_set' THEN p.parameters->'parameters'->'provenance' "
+                          "WHEN p.kind = 'action' THEN p.parameters->'provenance' ELSE NULL END)")
             for key, value in (("app_id", app_id), ("page_id", page_id), ("app_version_id", app_version_id)):
-                clauses.append("p.parameters->'provenance'->>%s = %s")
+                clauses.append(provenance + "->>%s = %s")
                 params.extend((key, value))
         conds = " WHERE " + " AND ".join(clauses) if clauses else ""
         conn, _ = self._connect()

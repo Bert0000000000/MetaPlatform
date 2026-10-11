@@ -3197,7 +3197,7 @@ components:
           type: string
         comment:
           type: string
-        completedAt:
+        endTime:
           type: string
       required:
       - id

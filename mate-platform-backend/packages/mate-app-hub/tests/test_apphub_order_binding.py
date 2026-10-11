@@ -179,7 +179,8 @@ except ValueError:
 
 
 @pytest.mark.skipif(not __import__('os').getenv('MP11_APPHUB_PG_DSN'), reason='explicit isolated Task6 PG required')
-def test_actual_pg_history_filters_before_limit_and_survives_new_process():
+@pytest.mark.parametrize("kind", ["action", "edit_set"])
+def test_actual_pg_history_filters_before_limit_and_survives_new_process(kind):
     import os, sys, uuid, subprocess, json
     from urllib.parse import urlparse
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
@@ -192,10 +193,25 @@ def test_actual_pg_history_filters_before_limit_and_survives_new_process():
     receipts = []
     with repo.tenant_scope(tenant):
         for provenance in (base, {**base, 'app_id': 'other-app'}, {**base, 'page_id': 'other-page'}, {**base, 'app_version_id': 'v2'}, {}):
-            p = repo.propose_action(ClassRef(f'ont.{tenant}.act.review'), {}, f'ont.{tenant}.ind.order.2', 'History fixture', provenance=provenance)
+            if kind == 'action':
+                p = repo.propose_action(ClassRef(f'ont.{tenant}.act.review'), {}, f'ont.{tenant}.ind.order.2', 'History fixture', provenance=provenance)
+            else:
+                p = repo.propose_edit_set(f'ont.{tenant}.act.review', f'ont.{tenant}.ind.order.2', {'provenance': provenance}, [], 'History fixture')
             repo.confirm_proposal(p.proposal_id, 'history-user', idempotency_key='confirm-' + uuid.uuid4().hex)
             receipts.append(repo.execute_proposal(p.proposal_id, actor_id='history-user', idempotency_key='execute-' + uuid.uuid4().hex))
-        filtered = repo.list_action_audit(1, app_id=app_id, page_id='page', app_version_id='v1')
+            if provenance.get('app_id') == 'other-app':
+                # A competing wrong-shape attribution must never override the
+                # provenance owned by this persisted proposal kind.
+                decoy = {'provenance': base} if kind == 'edit_set' else {'parameters': {'provenance': base}}
+                connection, _ = repo._connect()
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute('UPDATE ont_proposal SET parameters = parameters || %s::jsonb WHERE proposal_id = %s AND tenant_id = %s',
+                                       (json.dumps(decoy), p.proposal_id, tenant))
+                    connection.commit()
+                finally:
+                    connection.close()
+        filtered = repo.list_action_audit(1, action_rid=f'ont.{tenant}.act.review', app_id=app_id, page_id='page', app_version_id='v1')
         assert [r['audit_id'] for r in filtered] == [receipts[0]['audit_id']]
     with repo.tenant_scope('other-tenant'):
         assert repo.list_action_audit(1, app_id=app_id, page_id='page', app_version_id='v1') == []
@@ -292,3 +308,19 @@ def test_verified_direct_application_attribution_preserves_action_parameters(mon
     assert checked['amount']==7 and trusted['app_version_id']=='old-published'
     assert trusted['app_version']=='1.0.0'
     assert observed==[{'page_id':'page','version_id':'old-published','action_rid':'ont.a.act.review','target_iid':'target'}]
+
+
+def test_completed_release_task_canonical_declares_actual_completion_time():
+    from pathlib import Path
+    import yaml
+    import jsonschema
+    contract = Path(__file__).resolve().parents[3] / 'contracts/openapi/services/apphub.yaml'
+    schema = yaml.safe_load(contract.read_text(encoding='utf-8'))['components']['schemas']['AppHubReleaseTask']
+    # Actual completed response shape; check declared properties, because an
+    # additionalProperties-permissive validator alone misses a wrong field name.
+    completed = {'id': 'task-completed', 'name': 'Review', 'assignee': 'reviewer',
+        'status': 'COMPLETED', 'createTime': '2026-10-11T17:15:09.387177+00:00',
+        'endTime': '2026-10-11T17:15:09.399150+00:00'}
+    assert set(completed) <= set(schema['properties'])
+    assert 'completedAt' not in schema['properties']
+    jsonschema.Draft202012Validator(schema).validate(completed)
