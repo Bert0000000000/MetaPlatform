@@ -21,241 +21,359 @@ paths:
   /api/v1/data/sources:
     get:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.read
+      - bearerAuth: []
       tags:
-        - data
+      - data
       summary: 列表 大数据源
       operationId: dataGetDataSources
-      parameters: []
+      parameters:
+      - name: type
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      description: 列表 大数据源
+                $ref: '#/components/schemas/SourcePage'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '404':
+          description: Source not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '422':
+          description: Request validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+      description: 列表 大数据源 Verified tenant is taken from authentication; source credentials are never returned.
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-        - FR-DATA-DATAGETDATASOURCES
+      - FR-DATA-DATAGETDATASOURCES
       x-mate-implementation-status: implemented
     post:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
       tags:
-        - data
+      - data
       summary: 新建 大数据源
       operationId: dataPostDataSources
       parameters: []
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      description: 新建 大数据源
+                $ref: '#/components/schemas/SourcePublic'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '404':
+          description: Source not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '422':
+          description: Request validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+      description: 新建 大数据源 Verified tenant is taken from authentication; source credentials are never returned.
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-        - FR-DATA-DATAPOSTDATASOURCES
+      - FR-DATA-DATAPOSTDATASOURCES
       x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceCreate'
   /api/v1/data/sources/{id}:
     get:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.read
+      - bearerAuth: []
       tags:
-        - data
+      - data
       summary: 详情 大数据源
       operationId: dataGetDataSourcesId
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      description: 详情 大数据源
+                $ref: '#/components/schemas/SourcePublic'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '404':
+          description: Source not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+      description: 详情 大数据源 Verified tenant is taken from authentication; source credentials are never returned.
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-        - FR-DATA-DATAGETDATASOURCESID
+      - FR-DATA-DATAGETDATASOURCESID
       x-mate-implementation-status: implemented
     put:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
       tags:
-        - data
+      - data
       summary: 更新 大数据源
       operationId: dataPutDataSourcesId
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      description: 更新 大数据源
+                $ref: '#/components/schemas/SourcePublic'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '404':
+          description: Source not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '422':
+          description: Request validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+      description: 更新 大数据源 Verified tenant is taken from authentication; source credentials are never returned.
       x-mate-owner: data-platform
       x-mate-permission: data.put
       x-mate-requirements:
-        - FR-DATA-DATAPUTDATASOURCESID
+      - FR-DATA-DATAPUTDATASOURCESID
       x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceUpdate'
     delete:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
       tags:
-        - data
+      - data
       summary: 删除 大数据源
       operationId: dataDeleteDataSourcesId
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      description: 删除 大数据源
+                $ref: '#/components/schemas/SourceDeleted'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '404':
+          description: Source not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+      description: 删除 大数据源 Verified tenant is taken from authentication; source credentials are never returned. Deleting
+        configuration preserves existing ontology objects.
       x-mate-owner: data-platform
       x-mate-permission: data.delete
       x-mate-requirements:
-        - FR-DATA-DATADELETEDATASOURCESID
+      - FR-DATA-DATADELETEDATASOURCESID
       x-mate-implementation-status: implemented
   /api/v1/data/sources/{id}/test:
     post:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
+      - bearerAuth: []
       tags:
-        - data
+      - data
       summary: 测试 测试连接
       operationId: dataPostDataSourcesIdTest
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      description: 测试 测试连接
+                $ref: '#/components/schemas/SourceProbe'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '404':
+          description: Source not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '422':
+          description: Request validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+      description: 测试 测试连接 Verified tenant is taken from authentication; source credentials are never returned.
       x-mate-owner: data-platform
       x-mate-permission: data.post
       x-mate-requirements:
-        - FR-DATA-DATAPOSTDATASOURCESIDTEST
+      - FR-DATA-DATAPOSTDATASOURCESIDTEST
       x-mate-implementation-status: implemented
   /api/v1/data/sources/{id}/schema:
     get:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.read
+      - bearerAuth: []
       tags:
-        - data
+      - data
       summary: 发现 发现schema
       operationId: dataGetDataSourcesIdSchema
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      description: 发现 发现schema
+                $ref: '#/components/schemas/SourceDiscovery'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '404':
+          description: Source not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+        '422':
+          description: Actual discovery failed; detail is SourceDiagnostic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceHttpError'
+      description: 发现 发现schema Verified tenant is taken from authentication; source credentials are never returned.
       x-mate-owner: data-platform
       x-mate-permission: data.get
       x-mate-requirements:
-        - FR-DATA-DATAGETDATASOURCESIDSCHEMA
+      - FR-DATA-DATAGETDATASOURCESIDSCHEMA
       x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks:
     get:
@@ -1435,6 +1553,307 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    SourceConnectionInput:
+      type: object
+      properties:
+        host:
+          type: string
+        database:
+          type: string
+        dbname:
+          type: string
+        schema:
+          type: string
+        username:
+          type: string
+        user:
+          type: string
+        sslmode:
+          type: string
+        table:
+          type: string
+        auth_type:
+          type: string
+        port:
+          type:
+          - integer
+          - string
+        password:
+          type: string
+          writeOnly: true
+        dsn:
+          type: string
+          writeOnly: true
+        passwd:
+          type: string
+          writeOnly: true
+        secret:
+          type: string
+          writeOnly: true
+        token:
+          type: string
+          writeOnly: true
+        url:
+          type: string
+          writeOnly: true
+        connection_string:
+          type: string
+          writeOnly: true
+        api_key:
+          type: string
+          writeOnly: true
+        csv_content:
+          type: string
+          writeOnly: true
+          description: UTF-8 CSV header and rows, at most 10 MiB encoded; batch import only. Never returned.
+      description: Server-side connection configuration. PostgreSQL needs an explicit host, database and username (or
+        full DSN). Empty/omitted/display-mask secrets on update retain the stored value.
+      additionalProperties: true
+    SourceCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          description: 'Verified adapters: postgres, postgresql, pg_table or csv. Other stored types fail verified discovery
+            with UNSUPPORTED.'
+        connection_config:
+          anyOf:
+          - $ref: '#/components/schemas/SourceConnectionInput'
+          - type: 'null'
+          default: null
+      required:
+      - name
+      - type
+    SourceUpdate:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+          default: null
+        type:
+          type:
+          - string
+          - 'null'
+          default: null
+        connection_config:
+          anyOf:
+          - $ref: '#/components/schemas/SourceConnectionInput'
+          - type: 'null'
+          default: null
+      description: Patch semantics; omitted/null fields preserve existing values.
+    SourcePublicConfig:
+      type: object
+      properties:
+        host:
+          type: string
+        database:
+          type: string
+        dbname:
+          type: string
+        schema:
+          type: string
+        username:
+          type: string
+        user:
+          type: string
+        sslmode:
+          type: string
+        table:
+          type: string
+        auth_type:
+          type: string
+        port:
+          type:
+          - integer
+          - string
+        credentials_configured:
+          type: boolean
+        csv_uploaded:
+          type: boolean
+      required:
+      - credentials_configured
+      - csv_uploaded
+      additionalProperties: false
+      description: 'Public whitelist only: no credentials, DSN, tokens or uploaded CSV contents.'
+    SourcePublic:
+      type: object
+      properties:
+        id:
+          type: string
+        tenant_id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        connection_config:
+          $ref: '#/components/schemas/SourcePublicConfig'
+        status:
+          type: string
+          description: Stored status is not a fresh connection probe.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - tenant_id
+      - name
+      - type
+      - connection_config
+      - status
+      - created_at
+      - updated_at
+    SourcePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourcePublic'
+        total:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+        pages:
+          type: integer
+      required:
+      - items
+      - total
+      - page
+      - size
+      - pages
+    SourceDeleted:
+      type: object
+      properties:
+        id:
+          type: string
+        deleted:
+          type: boolean
+      required:
+      - id
+      - deleted
+    SourceDiagnostic:
+      type: object
+      properties:
+        error_code:
+          type: string
+          enum:
+          - AUTHENTICATION
+          - PERMISSION
+          - NETWORK
+          - SCHEMA
+          - UNSUPPORTED
+        message:
+          type: string
+        trace_id:
+          type: string
+      required:
+      - error_code
+      - message
+      - trace_id
+    SourceProbe:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        source_id:
+          type: string
+        latency_ms:
+          type: integer
+          minimum: 1
+        error:
+          type: string
+          description: Empty on success; safe diagnostic on failure.
+        message:
+          type: string
+        trace_id:
+          type: string
+        error_code:
+          type: string
+          enum:
+          - AUTHENTICATION
+          - PERMISSION
+          - NETWORK
+          - SCHEMA
+          - UNSUPPORTED
+      required:
+      - ok
+      - source_id
+      - latency_ms
+      - error
+      - message
+      - trace_id
+      description: Actual probe; HTTP 200 with ok=false is a failed connection, never a cached/random success. error_code
+        is present on failure.
+    SourceDiscovery:
+      type: object
+      properties:
+        source_id:
+          type: string
+        discovered_at:
+          type: string
+          format: date-time
+        trace_id:
+          type: string
+        tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceDiscoveredTable'
+      required:
+      - source_id
+      - tables
+      - discovered_at
+      - trace_id
+    SourceDiscoveredTable:
+      type: object
+      properties:
+        name:
+          type: string
+        schema:
+          type: string
+          description: PostgreSQL namespace; omitted for uploaded CSV.
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceDiscoveredColumn'
+      required:
+      - name
+      - columns
+    SourceDiscoveredColumn:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        nullable:
+          type: boolean
+        primary_key:
+          type: boolean
+      required:
+      - name
+      - type
+    SourceHttpError:
+      type: object
+      properties:
+        detail:
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/SourceDiagnostic'
+          - type: array
+            items:
+              type: object
+      required:
+      - detail
     ErrorResponse:
       type: object
       required:

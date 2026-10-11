@@ -17,6 +17,239 @@ security:
     tenantHeader: []
     oidcScopes: [platform.read]
 paths:
+  /api/v1/ont/v2/object-types/{rid}/datasources:
+    parameters:
+    - name: rid
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: ontListV2BackingDatasources
+      summary: List mappings, cursors and recent runs
+      description: 'Tenant-bound backing datasource operation. '
+      tags:
+      - ont
+      security:
+      - bearerAuth: []
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+      - MP11-DATA-02
+      - MP11-DATA-03
+      - MP11-DATA-04
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BackingDatasourceDeclaration'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '404':
+          description: Object type, binding or retained run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '422':
+          description: Preflight, concurrent run or request validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+    post:
+      operationId: ontUpsertV2BackingDatasource
+      summary: Preflight and save backing source
+      description: 'Tenant-bound backing datasource operation. Requires platform.write. '
+      tags:
+      - ont
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+      - MP11-DATA-02
+      - MP11-DATA-03
+      - MP11-DATA-04
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceSaved'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '404':
+          description: Object type, binding or retained run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '422':
+          description: Preflight, concurrent run or request validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackingDatasourceDTO'
+  /api/v1/ont/v2/object-types/{rid}/datasources/sync:
+    parameters:
+    - name: rid
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      operationId: ontSyncV2BackingDatasources
+      summary: Run PostgreSQL sync or CSV batch
+      description: Tenant-bound backing datasource operation. Requires platform.write. Synchronous request; runtime
+        failures return HTTP 200 with ok=false/status=failed and diagnostics. Retry uses stable PKs. Failed rows do
+        not advance the source boundary.
+      tags:
+      - ont
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+      - MP11-DATA-02
+      - MP11-DATA-03
+      - MP11-DATA-04
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingSyncRun'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '404':
+          description: Object type, binding or retained run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '422':
+          description: Preflight, concurrent run or request validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+      parameters:
+      - name: incremental
+        in: query
+        schema:
+          type: boolean
+          default: false
+        description: True skips CSV and uses PG timestamp+PK checkpoint. False upserts all source rows; missing rows
+          are not deleted. No destructive rebuild or cancellation parameter.
+  /api/v1/ont/v2/object-types/{rid}/datasources/runs/{run_id}:
+    parameters:
+    - name: rid
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: ontGetV2BackingSyncRun
+      summary: Read a retained sync run
+      description: Tenant-bound backing datasource operation. Returns the original failed/interrupted record after
+        retries. Missing or expired IDs outside the most recent 20 runs return 404.
+      tags:
+      - ont
+      security:
+      - bearerAuth: []
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+      - MP11-DATA-02
+      - MP11-DATA-03
+      - MP11-DATA-04
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingSyncRun'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '404':
+          description: Object type, binding or retained run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '422':
+          description: Preflight, concurrent run or request validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
   /healthz:
     get:
       security:
@@ -1937,6 +2170,269 @@ components:
             platform.admin: Service-to-service admin
             tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
+    BackingDatasourceDTO:
+      type: object
+      properties:
+        class_rid:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          default: pg_table
+          description: 'Supported kinds: pg_table (PostgreSQL) and csv (batch only).'
+        source_id:
+          type:
+          - string
+          - 'null'
+          default: null
+          description: Registered source in the verified tenant. Resolution failure never falls back to dsn_env.
+        ts_column:
+          type:
+          - string
+          - 'null'
+          default: null
+          description: Optional non-null source timestamp for (timestamp, primary-key) incremental ordering. CSV has
+            no incremental cursor.
+        dsn_env:
+          type: string
+          default: ONT_SOURCE_DSN
+          description: Legacy server environment variable name, not a DSN value; used only without source_id.
+        table:
+          type: string
+          description: Schema-qualified PostgreSQL table or discovered CSV table name.
+        pk_column:
+          type: string
+          description: Stable single-column primary key; CSV values must be unique and nonblank.
+        field_mapping:
+          type: object
+          additionalProperties:
+            type: string
+          default: {}
+          description: Target property RID to actual source column; unknown supplied fields are rejected.
+        priority:
+          type: integer
+          default: 100
+      required:
+      - class_rid
+      - name
+      - table
+      - pk_column
+      description: Verified tenant/path class override body identity. Registered sources are preflighted for actual
+        fields, primary key, nullable and type compatibility.
+    BackingDatasourceSaved:
+      type: object
+      properties:
+        rid:
+          type: string
+        name:
+          type: string
+      required:
+      - rid
+      - name
+    BackingDatasourceDeclaration:
+      type: object
+      properties:
+        class_rid:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          default: pg_table
+          description: 'Supported kinds: pg_table (PostgreSQL) and csv (batch only).'
+        source_id:
+          type:
+          - string
+          - 'null'
+          default: null
+          description: Registered source in the verified tenant. Resolution failure never falls back to dsn_env.
+        ts_column:
+          type:
+          - string
+          - 'null'
+          default: null
+          description: Optional non-null source timestamp for (timestamp, primary-key) incremental ordering. CSV has
+            no incremental cursor.
+        dsn_env:
+          type: string
+          default: ONT_SOURCE_DSN
+          description: Legacy server environment variable name, not a DSN value; used only without source_id.
+        pk_column:
+          type: string
+          description: Stable single-column primary key; CSV values must be unique and nonblank.
+        field_mapping:
+          type: object
+          additionalProperties:
+            type: string
+          default: {}
+          description: Target property RID to actual source column; unknown supplied fields are rejected.
+        priority:
+          type: integer
+          default: 100
+        rid:
+          type: string
+        tenant_id:
+          type: string
+        table_name:
+          type: string
+        last_synced_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        last_synced_pk:
+          type:
+          - string
+          - 'null'
+        last_error:
+          type:
+          - string
+          - 'null'
+        last_failed:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+        run_history:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/BackingSyncRun'
+          description: Oldest to newest, at most 20 recent runs.
+      required:
+      - rid
+      - tenant_id
+      - class_rid
+      - name
+      - kind
+      - table_name
+      - pk_column
+      - field_mapping
+      - run_history
+    BackingSyncCursor:
+      type: object
+      properties:
+        ts:
+          type:
+          - string
+          - 'null'
+          description: Source timestamp boundary, never target wall clock.
+        pk:
+          type:
+          - string
+          - 'null'
+      required:
+      - ts
+      - pk
+    BackingSyncFailure:
+      type: object
+      properties:
+        pk:
+          type:
+          - string
+          - 'null'
+        error:
+          type: string
+        stage:
+          type: string
+        error_code:
+          type: string
+        trace_id:
+          type: string
+      required:
+      - error
+    BackingSyncSourceResult:
+      type: object
+      properties:
+        synced:
+          type: integer
+        failed:
+          type: integer
+        deleted:
+          type: integer
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackingSyncFailure'
+        cursor:
+          $ref: '#/components/schemas/BackingSyncCursor'
+      required:
+      - synced
+      - failed
+      - deleted
+      - failures
+      - cursor
+    BackingSyncError:
+      type: object
+      properties:
+        message:
+          type: string
+        error_code:
+          type: string
+        trace_id:
+          type: string
+      required:
+      - message
+    BackingSyncRun:
+      type: object
+      properties:
+        run_id:
+          type: string
+        trace_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - running
+          - succeeded
+          - failed
+          - interrupted
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        incremental:
+          type: boolean
+        ok:
+          type: boolean
+        total_synced:
+          type: integer
+        total_failed:
+          type: integer
+        total_deleted:
+          type: integer
+        sources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BackingSyncSourceResult'
+        error:
+          $ref: '#/components/schemas/BackingSyncError'
+      required:
+      - run_id
+      - trace_id
+      - status
+      - started_at
+      - ended_at
+      - incremental
+      description: Persistent run. Counts/results appear when completed; running/interrupted records may have no counts.
+        Original failed/interrupted run IDs survive retry within the 20-run retention limit.
+    BackingDatasourceHttpError:
+      type: object
+      properties:
+        detail:
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/BackingSyncError'
+          - type: array
+            items:
+              type: object
+      required:
+      - detail
     OntologyCreate:
       type: object
       required:
