@@ -796,7 +796,11 @@ async def upsert_backing_datasource(
     decl = payload.model_dump()
     decl["class_rid"] = rid
     decl["tenant_id"] = tenant
-    return await _call_scoped(request, "upsert_backing_datasource", decl)
+    from .backing_datasources import BackingSyncBusyError
+    try:
+        return await _call_scoped(request, "upsert_backing_datasource", decl)
+    except BackingSyncBusyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
 
 
 @router.get(
@@ -857,8 +861,11 @@ async def sync_backing_datasources(
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     if not ctx.has_scope("platform.write"):
         raise HTTPException(status_code=403, detail="platform.write scope required")
+    from .backing_datasources import BackingSyncBusyError
     try:
         return await _call_scoped(request, "sync_backing_datasources", rid, incremental)
+    except BackingSyncBusyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:

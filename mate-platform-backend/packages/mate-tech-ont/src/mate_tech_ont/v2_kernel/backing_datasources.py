@@ -31,7 +31,7 @@ mate-tech-etl 侧（本模块提供无状态入口）。
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -50,6 +50,10 @@ __all__ = [
 ]
 
 
+class BackingSyncBusyError(ValueError):
+    """A mapping cannot change while its object type is synchronizing."""
+
+
 @dataclass(frozen=True, slots=True)
 class BackingDatasource:
     """对象类型的背挂数据源（v1: 同实例 PG 表）。"""
@@ -64,6 +68,9 @@ class BackingDatasource:
     tenant_id: str = ""
     ts_column: str | None = None
     priority: int = 100  # 小 = 优先（MDO 字段合并序）
+    source_snapshot: Any = field(default=None, repr=False, compare=False)
+    connection_dsn: str | None = field(default=None, repr=False, compare=False)
+    resolved_table: tuple[str, str] | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.kind not in {"pg_table", "csv"}:
@@ -83,7 +90,7 @@ def _connect_source(ds: BackingDatasource) -> Any:
         from mate_tech_data.services.source_connector import connect_postgres
 
         return connect_postgres(_registered_source(ds))
-    dsn = os.environ.get(ds.dsn_env, "")
+    dsn = ds.connection_dsn if ds.connection_dsn is not None else os.environ.get(ds.dsn_env, "")
     if not dsn:
         raise ValueError(f"env {ds.dsn_env} not set (backing datasource {ds.name})")
     return psycopg2.connect(dsn)
@@ -97,7 +104,11 @@ def _registered_source(ds: BackingDatasource):
         raise SourceError(
             "PERMISSION", "A verified tenant is required to resolve a registered source"
         )
-    source = get_source(ds.tenant_id, ds.source_id)
+    source = (
+        ds.source_snapshot
+        if ds.source_snapshot is not None
+        else get_source(ds.tenant_id, ds.source_id)
+    )
     if source is None:
         raise SourceError("PERMISSION", "Registered source is unavailable in this tenant")
     expected = {"csv"} if ds.kind == "csv" else {"postgres", "postgresql", "pg_table"}
@@ -106,16 +117,100 @@ def _registered_source(ds: BackingDatasource):
     return source
 
 
+def _relation_parts(ds: BackingDatasource) -> tuple[str, ...]:
+    from mate_tech_data.services.source_connector import SourceError
+
+    if ds.resolved_table:
+        return ds.resolved_table
+    if ds.source_id:
+        schema = _registered_source(ds).connection_config.get("schema") or "public"
+        prefix = schema + "."
+        if not ds.table.startswith(prefix) or not ds.table[len(prefix) :]:
+            raise SourceError(
+                "SCHEMA", "PostgreSQL table must be schema-qualified in the configured schema"
+            )
+        # The discovered name can itself contain dots; never split that identifier.
+        return schema, ds.table[len(prefix) :]
+    return tuple(ds.table.split("."))
+
+
+def snapshot_source(ds: BackingDatasource) -> BackingDatasource:
+    """Pin server-only configuration once for preflight and every read in this run."""
+    import copy
+    import os
+
+    if ds.source_id:
+        if ds.source_snapshot is None:
+            return replace(ds, source_snapshot=copy.deepcopy(_registered_source(ds)))
+        return ds
+    if ds.connection_dsn is None:
+        return replace(ds, connection_dsn=os.environ.get(ds.dsn_env, ""))
+    return ds
+
+
+def prepare_checkpoint_source(
+    ds: BackingDatasource, *, time_column: str | None = None
+) -> tuple[BackingDatasource, str | None]:
+    """Resolve an exact relation and fingerprint non-secret effective dataset identity."""
+    import hashlib
+    import json
+
+    from mate_tech_data.services.source_connector import SourceError
+    from psycopg2 import sql
+
+    ds = snapshot_source(ds)
+    if ds.kind == "csv":
+        return ds, None  # CSV has no persistent incremental checkpoint.
+    conn = _connect_source(ds)
+    try:
+        parts = _relation_parts(ds)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT current_database(), current_user, n.nspname, c.relname, c.oid::text "
+                "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+                "WHERE c.oid=to_regclass(%s)",
+                (sql.Identifier(*parts).as_string(conn),),
+            )
+            relation = cur.fetchone()
+            if relation is None:
+                raise SourceError("SCHEMA", "Mapped source relation does not exist")
+        params = conn.get_dsn_parameters()
+        identity = {
+            # Exclude credentials, display names, SSL credentials and raw DSNs.
+            "endpoint": {k: params.get(k) for k in ("host", "hostaddr", "port")},
+            "relation": list(relation),
+            "kind": ds.kind,
+            "pk": ds.pk_column,
+            "time": time_column if time_column is not None else ds.ts_column,
+            "mapping": ds.field_mapping,
+        }
+        digest = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+        return replace(ds, resolved_table=(relation[2], relation[3])), digest
+    finally:
+        conn.close()
+
+
+def current_checkpoint_identity(
+    ds: BackingDatasource, *, time_column: str | None = None
+) -> str | None:
+    return prepare_checkpoint_source(
+        replace(ds, source_snapshot=None, connection_dsn=None, resolved_table=None),
+        time_column=time_column,
+    )[1]
+
+
 def preflight(ds: BackingDatasource, ot: Any | None = None) -> dict:
     """Validate actual columns before mapping or writing; never return sample fields."""
     from mate_tech_data.services.source_connector import SourceError, discover
 
+    if ds.kind == "pg_table":
+        _relation_parts(ds)
     schema = discover(_registered_source(ds))
     table = next(
         (
             t
             for t in schema["tables"]
-            if ds.table in {t["name"], f"{t.get('schema', '')}.{t['name']}"}
+            if ds.table == (f"{t['schema']}.{t['name']}" if ds.kind == "pg_table" else t["name"])
         ),
         None,
     )
@@ -174,13 +269,17 @@ def _prepare_csv_rows(ot, ds):
     from mate_tech_data.services.source_connector import SourceError, csv_rows
 
     _, rows = csv_rows(_registered_source(ds))
-    keys = [row[ds.pk_column] for row in rows]
-    if any(not key for key in keys) or len(keys) != len(set(keys)):
-        raise SourceError("SCHEMA", "CSV primary keys must be non-empty and unique")
     properties = {p.rid.rid: p for p in ot.properties}
+    primary = [p for p in ot.properties if p.primary_key]
+    if len(primary) != 1:
+        raise SourceError("SCHEMA", "CSV requires one target primary key")
+    # Convert each column once. The primary-key property's type defines target identity.
+    conversions = {column: properties[key] for key, column in ds.field_mapping.items()}
+    conversions[ds.pk_column] = primary[0]
+    keys: set[str] = set()
     for row in rows:
-        for key, column in ds.field_mapping.items():
-            prop = properties[key]
+        for column, prop in conversions.items():
+            key = prop.rid.rid
             value = row[column]
             try:
                 if value == "":
@@ -193,6 +292,12 @@ def _prepare_csv_rows(ot, ds):
                     row[column] = float(value)
             except ValueError:
                 raise SourceError("SCHEMA", f"CSV value conflicts with property: {key}") from None
+        canonical = str(row[ds.pk_column]) if row[ds.pk_column] is not None else ""
+        if not canonical.strip() or canonical in keys:
+            raise SourceError(
+                "SCHEMA", "CSV primary keys must be nonblank and unique after normalization"
+            )
+        keys.add(canonical)
     return rows
 
 
@@ -271,7 +376,7 @@ def sync_backing_datasource(
         cursors.setdefault(name, {"ts": wm, "pk": None})
 
     out: dict[str, dict[str, Any]] = {}
-    ordered = sorted(sources, key=lambda s: s.priority)
+    ordered = sorted((snapshot_source(ds) for ds in sources), key=lambda s: s.priority)
     for ds in ordered:
         if ds.source_id:
             if incremental and not ds.ts_column and ds.kind == "pg_table":
@@ -336,7 +441,7 @@ def _sync_one_source(
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 from psycopg2 import sql
 
-                table_ident = sql.Identifier(*ds.table.split("."))
+                table_ident = sql.Identifier(*_relation_parts(ds))
                 pk_ident = sql.Identifier(pk_col)
                 ts_ident = sql.Identifier(ts_column)
                 if ds.ts_column:

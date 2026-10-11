@@ -362,7 +362,7 @@ from mate_kernel.ontology import ClassRef
 p=PgOntologyRepository(dsn=os.environ['MP11_SOURCE_PG_DSN'])
 with p.tenant_scope(TENANT):
  r=p.sync_backing_datasources(CLASS)
- print(json.dumps({'ok':r['ok'],'count':len(p.list_individuals(ClassRef(CLASS))),'run_id':r['run_id']}))
+ print(json.dumps({'ok':r['ok'],'count':len(p.list_individuals(ClassRef(CLASS))),'run_id':r['run_id'],'identity':all(d['checkpoint_identity'] for d in p.list_backing_datasources(CLASS,internal=True) if d['kind']=='pg_table'),'public_private_field':any('checkpoint_identity' in d for d in p.list_backing_datasources(CLASS))}))
 """.replace("TENANT", repr(tenant)).replace("CLASS", repr(order))
         # Terminate an actual process after its durable 'running' checkpoint.
         import time
@@ -396,6 +396,7 @@ with p.tenant_scope(TENANT):
         assert completed.returncode == 0, "Isolated restart child failed"
         actual = json.loads(completed.stdout.strip().splitlines()[-1])
         assert actual["ok"] and actual["count"] == 5
+        assert actual["identity"] and not actual["public_private_field"]
         assert any(
             r["run_id"] == observed and r["status"] == "interrupted"
             for r in pg.list_backing_datasources(order)[0]["run_history"]
@@ -487,10 +488,12 @@ def test_fresh_schema_and_old_backing_schema_upgrade(real_pg):
             cur.execute(
                 "SELECT column_name FROM information_schema.columns WHERE table_name='ont_backing_datasource'"
             )
-            assert {"source_id", "run_history", "ts_column"} <= {r[0] for r in cur.fetchall()}
+            assert {"source_id", "run_history", "ts_column", "checkpoint_identity"} <= {
+                r[0] for r in cur.fetchall()
+            }
             # Simulate the exact previously deployed table shape before reinitialization.
             cur.execute(
-                "ALTER TABLE ont_backing_datasource DROP COLUMN source_id, DROP COLUMN run_history"
+                "ALTER TABLE ont_backing_datasource DROP COLUMN source_id, DROP COLUMN run_history, DROP COLUMN checkpoint_identity"
             )
         conn.commit()
         conn.close()
@@ -501,7 +504,9 @@ def test_fresh_schema_and_old_backing_schema_upgrade(real_pg):
             cur.execute(
                 "SELECT column_name FROM information_schema.columns WHERE table_name='ont_backing_datasource'"
             )
-            assert {"source_id", "run_history", "ts_column"} <= {r[0] for r in cur.fetchall()}
+            assert {"source_id", "run_history", "ts_column", "checkpoint_identity"} <= {
+                r[0] for r in cur.fetchall()
+            }
         conn.close()
         # Existing environment-backed sources still resolve without a registered source.
         os.environ["MP11_LEGACY_SOURCE_DSN"] = target
@@ -536,3 +541,464 @@ def test_incomplete_connection_never_falls_back_to_machine_pg_defaults(monkeypat
     result = repo.test_source_connection("mp11-safe", source.id)
     assert calls == []
     assert not result["ok"] and result["error_code"] == "SCHEMA"
+
+
+@pytest.fixture
+def mp11_sync_case(real_pg, monkeypatch):
+    from types import SimpleNamespace
+
+    from mate_tech_data.repositories import sql_models, sql_store
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from mate_kernel.ontology import ClassRef, ObjectType, Property, PropertyFormat
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+    conn, config, _, _ = real_pg
+    engine = create_engine(os.environ["MP11_SOURCE_PG_DSN"])
+    sql_models.DataSourceORM.__table__.create(engine, checkfirst=True)
+    monkeypatch.setattr(sql_store, "_session", sessionmaker(bind=engine))
+    monkeypatch.setattr(repo, "get_source", sql_store.get_source)
+    tenant = "mp11-fix-" + uuid.uuid4().hex[:8]
+    pg = PgOntologyRepository(dsn=os.environ["MP11_SOURCE_PG_DSN"])
+    pg._ensure_schema()
+    source = sql_store.create_source(tenant, "registered", "postgres", config)
+    rid = f"ont.{tenant}.obj.order"
+    pk = Property(
+        rid=ClassRef(f"ont.{tenant}.prop.id"),
+        type_id="integer",
+        primary_key=True,
+        nullable=False,
+        title="id",
+        format=PropertyFormat.INTEGER,
+    )
+    total = Property(
+        rid=ClassRef(f"ont.{tenant}.prop.total"),
+        type_id="integer",
+        primary_key=False,
+        nullable=False,
+        title="total",
+        format=PropertyFormat.INTEGER,
+    )
+    ot = ObjectType(
+        rid=ClassRef(rid),
+        primary_key=(pk.rid,),
+        properties=(pk, total),
+        interfaces=(),
+        display_name="Orders",
+    )
+    decl = dict(
+        tenant_id=tenant,
+        class_rid=rid,
+        name="orders",
+        source_id=source.id,
+        kind="pg_table",
+        table=f"{config['schema']}.orders",
+        pk_column="id",
+        ts_column="modified_at",
+        field_mapping={pk.rid.rid: "id", total.rid.rid: "total"},
+    )
+    with pg.tenant_scope(tenant):
+        pg.upsert_object_type(ot)
+        pg.upsert_backing_datasource(decl)
+        yield SimpleNamespace(
+            pg=pg,
+            source=source,
+            tenant=tenant,
+            rid=rid,
+            ot=ot,
+            decl=decl,
+            sql=sql_store,
+            conn=conn,
+            config=config,
+            pk=pk,
+            total=total,
+        )
+    engine.dispose()
+
+
+@pytest.fixture
+def mp11_retarget_db(mp11_sync_case):
+    import psycopg2
+    from psycopg2.extensions import make_dsn, parse_dsn
+
+    c = mp11_sync_case
+    database = "codex_mp11_retarget_" + uuid.uuid4().hex[:8]
+    with c.conn.cursor() as q:
+        q.execute(f"CREATE DATABASE {database}")
+    cfg = parse_dsn(os.environ["MP11_SOURCE_PG_DSN"])
+    other_dsn = make_dsn(**(cfg | {"dbname": database}))
+    other = psycopg2.connect(other_dsn)
+    other.autocommit = True
+    try:
+        with other.cursor() as q:
+            q.execute(f"CREATE SCHEMA {c.config['schema']}")
+            q.execute(
+                f"CREATE TABLE {c.config['schema']}.orders (id integer PRIMARY KEY,total integer NOT NULL,modified_at timestamptz NOT NULL)"
+            )
+            q.execute(f"INSERT INTO {c.config['schema']}.orders VALUES (21,210,'2020-01-01')")
+            q.execute(
+                "CREATE TABLE public.orders (id integer PRIMARY KEY,total integer NOT NULL,modified_at timestamptz NOT NULL)"
+            )
+            q.execute("INSERT INTO public.orders VALUES (99,990,'2020-01-01')")
+        yield database, other_dsn
+    finally:
+        other.close()
+        with c.conn.cursor() as q:
+            q.execute(f"DROP DATABASE {database} WITH (FORCE)")
+
+
+def test_fix_i1_same_registered_source_retarget_restarts_older_dataset(
+    mp11_sync_case, mp11_retarget_db
+):
+    c = mp11_sync_case
+    database, _ = mp11_retarget_db
+    assert c.pg.sync_backing_datasources(c.rid)["total_synced"] == 2
+    c.sql.update_source(c.tenant, c.source.id, connection_config={"database": database})
+    result = c.pg.sync_backing_datasources(c.rid, True)
+    assert result["ok"] and result["total_synced"] == 1, result
+    assert {str(i.primary_key) for i in c.pg.list_individuals(c.ot.rid)} == {"1", "2", "21"}
+
+
+def test_fix_i1_legacy_env_retarget_restarts_older_dataset(
+    mp11_sync_case, mp11_retarget_db, monkeypatch
+):
+    c = mp11_sync_case
+    _, other_dsn = mp11_retarget_db
+    monkeypatch.setenv("MP11_FIX_LEGACY", os.environ["MP11_SOURCE_PG_DSN"])
+    decl = c.decl | {"source_id": None, "dsn_env": "MP11_FIX_LEGACY"}
+    c.pg.upsert_backing_datasource(decl)
+    assert c.pg.sync_backing_datasources(c.rid)["total_synced"] == 2
+    monkeypatch.setenv("MP11_FIX_LEGACY", other_dsn)
+    result = c.pg.sync_backing_datasources(c.rid, True)
+    assert result["ok"] and result["total_synced"] == 1, result
+
+
+def test_fix_i1_mapping_edit_rejected_while_sync_owns_lock(mp11_sync_case, monkeypatch):
+    c = mp11_sync_case
+    original = c.pg._sync_backing_datasources_once
+
+    def during(*args, **kwargs):
+        with pytest.raises(ValueError, match=r"sync.*running"):
+            c.pg.upsert_backing_datasource(c.decl | {"ts_column": ""})
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(c.pg, "_sync_backing_datasources_once", during)
+    result = c.pg.sync_backing_datasources(c.rid)
+    assert result["ok"], result
+    assert c.pg.list_backing_datasources(c.rid)[0]["ts_column"] == "modified_at"
+
+
+@pytest.mark.parametrize("edit_before_read", [False, True])
+def test_fix_i1_source_edit_during_run_never_restores_old_checkpoint(
+    mp11_sync_case, mp11_retarget_db, monkeypatch, edit_before_read
+):
+    c = mp11_sync_case
+    database, _ = mp11_retarget_db
+    from mate_tech_ont.v2_kernel import backing_datasources as backing
+
+    original = backing.sync_backing_datasource
+
+    def edit_after_read(*args, **kwargs):
+        if edit_before_read:
+            c.sql.update_source(c.tenant, c.source.id, connection_config={"database": database})
+        result = original(*args, **kwargs)
+        if not edit_before_read:
+            c.sql.update_source(c.tenant, c.source.id, connection_config={"database": database})
+        return result
+
+    with monkeypatch.context() as scoped:
+        scoped.setattr(backing, "sync_backing_datasource", edit_after_read)
+        result = c.pg.sync_backing_datasources(c.rid)
+    declaration = c.pg.list_backing_datasources(c.rid)[0]
+    assert not result["ok"] and result["status"] == "failed", result
+    assert result["total_synced"] == 2 and result["total_failed"] == 1
+    assert {str(i.primary_key) for i in c.pg.list_individuals(c.ot.rid)} == {"1", "2"}
+    assert declaration["last_synced_at"] is None and declaration["last_synced_pk"] is None
+    resumed = c.pg.sync_backing_datasources(c.rid, True)
+    assert resumed["ok"] and resumed["total_synced"] == 1, resumed
+
+
+def test_fix_i2_recovery_rereads_after_lock_and_preserves_terminal_history(
+    mp11_sync_case, monkeypatch
+):
+    import json
+
+    c = mp11_sync_case
+    running = dict(
+        run_id="interleaved",
+        trace_id="trace",
+        status="running",
+        started_at="2026-01-01T00:00:00+00:00",
+        ended_at=None,
+        incremental=False,
+    )
+    terminal = running | dict(
+        status="failed",
+        ended_at="2026-01-01T00:00:01+00:00",
+        total_synced=7,
+        total_failed=1,
+        error={"message": "original terminal error"},
+    )
+    newest = running | dict(
+        run_id="newer", status="succeeded", total_synced=9, ended_at="2026-01-01T00:00:02+00:00"
+    )
+    c.pg._record_backing_run(c.rid, c.tenant, running, begin=True)
+    factory = c.pg._cursor
+    fired = False
+
+    class Interleave:
+        def __init__(self, cur):
+            self.cur = cur
+
+        def __enter__(self):
+            self.cur.__enter__()
+            return self
+
+        def __exit__(self, *a):
+            return self.cur.__exit__(*a)
+
+        def __getattr__(self, n):
+            return getattr(self.cur, n)
+
+        def execute(self, query, params=None):
+            nonlocal fired
+            if "pg_try_advisory_lock" in str(query) and not fired:
+                fired = True
+                with c.conn.cursor() as q:
+                    q.execute(
+                        "UPDATE ont_backing_datasource SET run_history=%s::jsonb WHERE tenant_id=%s AND class_rid=%s",
+                        (json.dumps([terminal, newest]), c.tenant, c.rid),
+                    )
+            return self.cur.execute(query, params)
+
+    monkeypatch.setattr(c.pg, "_cursor", lambda conn: Interleave(factory(conn)))
+    history = c.pg.list_backing_datasources(c.rid)[0]["run_history"]
+    assert fired and history == [terminal, newest], history
+
+
+def test_fix_i2_active_owner_and_abandoned_run_recovery(mp11_sync_case):
+    c = mp11_sync_case
+    running = dict(
+        run_id="active",
+        trace_id="trace",
+        status="running",
+        started_at="2026-01-01T00:00:00+00:00",
+        ended_at=None,
+        incremental=False,
+    )
+    c.pg._record_backing_run(c.rid, c.tenant, running, begin=True)
+    key = "sync:" + c.tenant + ":" + c.rid
+    with c.conn.cursor() as q:
+        q.execute("SELECT pg_advisory_lock(hashtext(%s))", (key,))
+    try:
+        assert c.pg.list_backing_datasources(c.rid)[0]["run_history"][-1]["status"] == "running"
+    finally:
+        with c.conn.cursor() as q:
+            q.execute("SELECT pg_advisory_unlock(hashtext(%s))", (key,))
+    recovered = c.pg.list_backing_datasources(c.rid)[0]["run_history"][-1]
+    assert recovered["run_id"] == "active" and recovered["status"] == "interrupted"
+
+
+def test_fix_i3_bare_table_rejected_before_conflicting_schema_import(
+    mp11_sync_case, mp11_retarget_db
+):
+    from mate_tech_data.services.source_connector import SourceError
+
+    from mate_tech_ont.v2_kernel.backing_datasources import BackingDatasource, preflight
+
+    c = mp11_sync_case
+    database, _ = mp11_retarget_db
+    c.sql.update_source(c.tenant, c.source.id, connection_config={"database": database})
+    args = {k: v for k, v in c.decl.items() if k not in {"class_rid"}}
+    with pytest.raises(SourceError, match="qualified"):
+        preflight(BackingDatasource(**(args | {"table": "orders"})), c.ot)
+    assert c.pg.list_individuals(c.ot.rid) == []
+    result = c.pg.sync_backing_datasources(c.rid)
+    assert result["ok"] and result["total_synced"] == 1, result
+    assert {str(i.primary_key) for i in c.pg.list_individuals(c.ot.rid)} == {"21"}
+
+
+def test_fix_i4_normalized_csv_pk_collision_is_zero_write_then_replay(mp11_sync_case):
+    from mate_tech_data.services.source_connector import SourceError
+
+    from mate_tech_ont.v2_kernel.backing_datasources import BackingDatasource, preflight
+
+    c = mp11_sync_case
+    source = c.sql.create_source(
+        c.tenant, "csv", "csv", {"csv_content": "id,total\n01,10\n1,20\n", "table": "orders"}
+    )
+    decl = c.decl | {"source_id": source.id, "kind": "csv", "table": "orders", "ts_column": None}
+    ds = BackingDatasource(**{k: v for k, v in decl.items() if k != "class_rid"})
+    with pytest.raises(SourceError, match="normaliz"):
+        preflight(ds, c.ot)
+    c.pg.upsert_backing_datasource(decl)
+    failed = c.pg.sync_backing_datasources(c.rid)
+    assert not failed["ok"] and c.pg.list_individuals(c.ot.rid) == []
+    c.sql.update_source(
+        c.tenant, source.id, connection_config={"csv_content": "id,total\n1,10\n2,20\n"}
+    )
+    assert c.pg.sync_backing_datasources(c.rid)["total_synced"] == 2
+    assert c.pg.sync_backing_datasources(c.rid)["total_synced"] == 2
+    assert len(c.pg.list_individuals(c.ot.rid)) == 2
+
+
+def test_fix_i1_display_and_password_rotation_preserve_checkpoint(mp11_sync_case, real_pg):
+    c = mp11_sync_case
+    _, _, role, password = real_pg
+    with c.conn.cursor() as q:
+        q.execute(f"GRANT USAGE ON SCHEMA {c.config['schema']} TO {role}")
+        q.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA {c.config['schema']} TO {role}")
+    c.sql.update_source(
+        c.tenant, c.source.id, connection_config={"username": role, "password": password}
+    )
+    assert c.pg.sync_backing_datasources(c.rid)["total_synced"] == 2
+    before = c.pg.list_backing_datasources(c.rid, internal=True)[0]["checkpoint_identity"]
+    assert before and "checkpoint_identity" not in c.pg.list_backing_datasources(c.rid)[0]
+    rotated = uuid.uuid4().hex
+    with c.conn.cursor() as q:
+        q.execute(f"ALTER ROLE {role} PASSWORD %s", (rotated,))
+    c.sql.update_source(
+        c.tenant,
+        c.source.id,
+        name="Harmless renamed source",
+        connection_config={"password": rotated},
+    )
+    result = c.pg.sync_backing_datasources(c.rid, True)
+    assert result["ok"] and result["total_synced"] == 0, result
+    assert c.pg.list_backing_datasources(c.rid, internal=True)[0]["checkpoint_identity"] == before
+
+
+def test_fix_i1_busy_mapping_and_sync_http409_preserve_state(mp11_sync_case):
+    import time
+
+    import jwt
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from mate_platform.auth import install_auth
+    from mate_tech_ont.v2_kernel.api import router
+
+    c = mp11_sync_case
+    app = FastAPI()
+    install_auth(app)
+    app.include_router(router)
+    app.state.kernel_repo = c.pg
+    now = int(time.time())
+    token = jwt.encode(
+        {
+            "sub": "fix-fixture",
+            "iss": "http://localhost:8080/realms/metaplatform",
+            "aud": "metaplatform-backend",
+            "tenant_id": c.tenant,
+            "scope": "platform.read platform.write",
+            "iat": now,
+            "exp": now + 300,
+        },
+        uuid.uuid4().hex,
+        algorithm="HS256",
+    )
+    key = "sync:" + c.tenant + ":" + c.rid
+    with c.conn.cursor() as q:
+        q.execute("SELECT pg_advisory_lock(hashtext(%s))", (key,))
+    try:
+        with TestClient(app, headers={"Authorization": "Bearer " + token}) as http:
+            url = f"/api/v1/ont/v2/object-types/{c.rid}/datasources"
+            assert http.post(url, json=c.decl | {"priority": 42}).status_code == 409
+            assert http.post(url + "/sync").status_code == 409
+            listing = http.get(url)
+            assert listing.status_code == 200 and "checkpoint_identity" not in listing.json()[0]
+        assert c.pg.list_backing_datasources(c.rid)[0]["priority"] == 100
+    finally:
+        with c.conn.cursor() as q:
+            q.execute("SELECT pg_advisory_unlock(hashtext(%s))", (key,))
+
+
+def test_fix_i1_legacy_search_path_retarget_resolves_relation(
+    mp11_sync_case, mp11_retarget_db, monkeypatch
+):
+    from psycopg2.extensions import make_dsn, parse_dsn
+
+    c = mp11_sync_case
+    _, other_dsn = mp11_retarget_db
+    config = parse_dsn(other_dsn)
+    monkeypatch.setenv(
+        "MP11_FIX_SEARCH", make_dsn(**(config | {"options": "-c search_path=public"}))
+    )
+    c.pg.upsert_backing_datasource(
+        c.decl | {"source_id": None, "dsn_env": "MP11_FIX_SEARCH", "table": "orders"}
+    )
+    first = c.pg.sync_backing_datasources(c.rid)
+    assert first["ok"] and first["total_synced"] == 1, first
+    monkeypatch.setenv(
+        "MP11_FIX_SEARCH",
+        make_dsn(**(config | {"options": "-c search_path=" + c.config["schema"]})),
+    )
+    result = c.pg.sync_backing_datasources(c.rid, True)
+    assert result["ok"] and result["total_synced"] == 1, result
+    assert {str(i.primary_key) for i in c.pg.list_individuals(c.ot.rid)} == {"99", "21"}
+
+
+def test_fix_i3_qualified_dotted_table_keeps_identifier_components(
+    mp11_sync_case, mp11_retarget_db
+):
+    import psycopg2
+    from psycopg2 import sql
+
+    c = mp11_sync_case
+    database, other_dsn = mp11_retarget_db
+    with psycopg2.connect(other_dsn) as other:
+        with other.cursor() as q:
+            q.execute(
+                sql.SQL(
+                    "CREATE TABLE {} (id integer PRIMARY KEY,total integer NOT NULL,modified_at timestamptz NOT NULL)"
+                ).format(sql.Identifier(c.config["schema"], "orders.detail"))
+            )
+            q.execute(
+                sql.SQL("INSERT INTO {} VALUES (31,310,'2020-01-01')").format(
+                    sql.Identifier(c.config["schema"], "orders.detail")
+                )
+            )
+    c.sql.update_source(c.tenant, c.source.id, connection_config={"database": database})
+    c.pg.upsert_backing_datasource(c.decl | {"table": c.config["schema"] + ".orders.detail"})
+    result = c.pg.sync_backing_datasources(c.rid)
+    assert result["ok"] and result["total_synced"] == 1, result
+    assert {str(i.primary_key) for i in c.pg.list_individuals(c.ot.rid)} == {"31"}
+
+
+def test_fix_i1_registered_source_reads_release_sql_session(mp11_sync_case, monkeypatch):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    c = mp11_sync_case
+    engine = create_engine(
+        os.environ["MP11_SOURCE_PG_DSN"], pool_size=1, max_overflow=0, pool_timeout=0.1
+    )
+    factory = sessionmaker(bind=engine)
+    sessions = []
+
+    def session():
+        value = factory()
+        sessions.append(value)  # Make lifecycle deterministic instead of relying on GC.
+        return value
+
+    monkeypatch.setattr(c.sql, "_session", session)
+    try:
+        for _ in range(3):
+            assert c.sql.get_source(c.tenant, c.source.id).id == c.source.id
+        assert engine.pool.checkedout() == 0
+        assert c.sql.get_source(c.tenant, "missing-source") is None
+        assert c.sql.get_source("another-tenant", c.source.id) is None
+        assert engine.pool.checkedout() == 0
+
+        def reject_conversion(_row):
+            raise ValueError("synthetic conversion failure")
+
+        monkeypatch.setattr(c.sql, "_orm_to_source", reject_conversion)
+        with pytest.raises(ValueError, match="synthetic conversion failure"):
+            c.sql.get_source(c.tenant, c.source.id)
+        assert engine.pool.checkedout() == 0
+    finally:
+        for value in sessions:
+            value.close()
+        engine.dispose()

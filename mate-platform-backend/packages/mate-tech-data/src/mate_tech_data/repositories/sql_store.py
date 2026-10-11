@@ -166,14 +166,14 @@ def list_sources(
 def get_source(tenant_id: str, source_id: str) -> DataSource | None:
     if not tenant_id:
         return None
-    s = _session()
-    row = s.execute(
-        select(models.DataSourceORM).where(
-            models.DataSourceORM.tenant_id == tenant_id,
-            models.DataSourceORM.id == source_id,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_source(row) if row else None
+    with _session() as session:
+        row = session.execute(
+            select(models.DataSourceORM).where(
+                models.DataSourceORM.tenant_id == tenant_id,
+                models.DataSourceORM.id == source_id,
+            )
+        ).scalar_one_or_none()
+        return _orm_to_source(row) if row else None
 
 
 # ---------------------------------------------------------------------------

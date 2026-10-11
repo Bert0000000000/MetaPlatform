@@ -90,6 +90,12 @@ paths:
       - MP11-DATA-04
       x-mate-implementation-status: implemented
       responses:
+        '409':
+          description: A sync owns this tenant/object-type lock; retry the mapping edit or run after it finishes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
         '200':
           description: OK
           content:
@@ -115,7 +121,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BackingDatasourceHttpError'
         '422':
-          description: Preflight, concurrent run or request validation failure
+          description: Preflight or request validation failure
           content:
             application/json:
               schema:
@@ -153,6 +159,12 @@ paths:
       - MP11-DATA-04
       x-mate-implementation-status: implemented
       responses:
+        '409':
+          description: A sync owns this tenant/object-type lock; retry the mapping edit or run after it finishes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
         '200':
           description: OK
           content:
@@ -178,7 +190,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BackingDatasourceHttpError'
         '422':
-          description: Preflight, concurrent run or request validation failure
+          description: Preflight or request validation failure
           content:
             application/json:
               schema:

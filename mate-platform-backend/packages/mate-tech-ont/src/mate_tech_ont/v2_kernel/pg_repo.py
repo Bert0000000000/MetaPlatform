@@ -395,6 +395,7 @@ DDL: tuple[str, ...] = (
     # CDC 增量腿：水位 + 时间戳列
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMPTZ",
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS source_id TEXT",
+    "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS checkpoint_identity TEXT",
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS run_history JSONB NOT NULL DEFAULT '[]'::jsonb",
     "ALTER TABLE ont_backing_datasource ADD COLUMN IF NOT EXISTS ts_column TEXT NOT NULL DEFAULT 'updated_at'",
     # DATA-SYNC-INTEGRITY：游标 = 已可靠处理的**源端**边界 (ts, pk)（不是目标端 now()）；
@@ -4809,9 +4810,16 @@ class PgOntologyRepository(OntologyRepository):
             f"ont.{decl.get('tenant_id', 't')}.bds."
             f"{decl['class_rid'].split('.')[-2]}-{decl['name']}"
         )
+        from .backing_datasources import BackingSyncBusyError
+        tenant = decl.get("tenant_id") or self._current_tenant() or "tenant-default"
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                # Same session lock as sync; fail immediately rather than race its checkpoint.
+                cur.execute("SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired",
+                            ("sync:" + tenant + ":" + decl["class_rid"],))
+                if not cur.fetchone()["acquired"]:
+                    raise BackingSyncBusyError("A sync is already running for this object type")
                 cur.execute(
                     """INSERT INTO ont_backing_datasource
                        (rid, tenant_id, class_rid, name, kind, dsn_env, source_id,
@@ -4824,16 +4832,23 @@ class PgOntologyRepository(OntologyRepository):
                          pk_column=EXCLUDED.pk_column,
                          field_mapping=EXCLUDED.field_mapping,
                          priority=EXCLUDED.priority, ts_column=EXCLUDED.ts_column,
-                         last_synced_at=CASE WHEN (ont_backing_datasource.source_id, ont_backing_datasource.table_name,
+                         last_synced_at=CASE WHEN (ont_backing_datasource.kind, ont_backing_datasource.dsn_env, ont_backing_datasource.source_id, ont_backing_datasource.table_name,
                                ont_backing_datasource.pk_column, ont_backing_datasource.ts_column,
                                ont_backing_datasource.field_mapping)
-                           IS DISTINCT FROM (EXCLUDED.source_id, EXCLUDED.table_name,
+                           IS DISTINCT FROM (EXCLUDED.kind, EXCLUDED.dsn_env, EXCLUDED.source_id, EXCLUDED.table_name,
                                EXCLUDED.pk_column, EXCLUDED.ts_column, EXCLUDED.field_mapping) THEN NULL ELSE COALESCE(EXCLUDED.last_synced_at, ont_backing_datasource.last_synced_at) END,
-                         last_synced_pk=CASE WHEN (ont_backing_datasource.source_id, ont_backing_datasource.table_name,
+                         last_synced_pk=CASE WHEN (ont_backing_datasource.kind, ont_backing_datasource.dsn_env, ont_backing_datasource.source_id, ont_backing_datasource.table_name,
                                ont_backing_datasource.pk_column, ont_backing_datasource.ts_column,
                                ont_backing_datasource.field_mapping)
-                           IS DISTINCT FROM (EXCLUDED.source_id, EXCLUDED.table_name,
+                           IS DISTINCT FROM (EXCLUDED.kind, EXCLUDED.dsn_env, EXCLUDED.source_id, EXCLUDED.table_name,
                                EXCLUDED.pk_column, EXCLUDED.ts_column, EXCLUDED.field_mapping) THEN NULL ELSE COALESCE(EXCLUDED.last_synced_pk, ont_backing_datasource.last_synced_pk) END,
+                         checkpoint_identity=CASE WHEN (ont_backing_datasource.kind, ont_backing_datasource.dsn_env,
+                               ont_backing_datasource.source_id, ont_backing_datasource.table_name,
+                               ont_backing_datasource.pk_column, ont_backing_datasource.ts_column,
+                               ont_backing_datasource.field_mapping)
+                           IS DISTINCT FROM (EXCLUDED.kind, EXCLUDED.dsn_env, EXCLUDED.source_id, EXCLUDED.table_name,
+                               EXCLUDED.pk_column, EXCLUDED.ts_column, EXCLUDED.field_mapping)
+                           THEN NULL ELSE ont_backing_datasource.checkpoint_identity END,
                          updated_at=now()""",
                     (
                         rid,
@@ -5045,7 +5060,7 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def list_backing_datasources(self, class_rid: str | None = None) -> list[dict[str, Any]]:
+    def list_backing_datasources(self, class_rid: str | None = None, *, internal: bool = False) -> list[dict[str, Any]]:
         self._ensure_schema()
         conn, _ = self._connect()
         try:
@@ -5066,6 +5081,10 @@ class PgOntologyRepository(OntologyRepository):
                     if cur.fetchone()['acquired']:
                         try:
                             from datetime import UTC, datetime
+                            # Completion can commit between the first SELECT and lock acquisition.
+                            # Only transition fresh rows, never write the pre-lock history snapshot.
+                            cur.execute("SELECT * FROM ont_backing_datasource WHERE class_rid=%s AND tenant_id=%s ORDER BY priority, name FOR UPDATE", (class_rid, tenant))
+                            rows = [dict(r) for r in cur.fetchall()]
                             for row in rows:
                                 for run in row.get('run_history') or []:
                                     if run.get('status') == 'running':
@@ -5074,6 +5093,9 @@ class PgOntologyRepository(OntologyRepository):
                             conn.commit()
                         finally:
                             cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (key,))
+                if not internal:
+                    for row in rows:
+                        row.pop("checkpoint_identity", None)
                 return rows
         finally:
             conn.close()
@@ -5091,7 +5113,8 @@ class PgOntologyRepository(OntologyRepository):
             acquired = cur.fetchone()
         if not (acquired.get('acquired') if isinstance(acquired, dict) else acquired[0]):
             lock.close()
-            raise ValueError('A sync is already running for this object type')
+            from .backing_datasources import BackingSyncBusyError
+            raise BackingSyncBusyError('A sync is already running for this object type')
         run = {'run_id': run_id, 'trace_id': uuid.uuid4().hex, 'status': 'running',
                'started_at': datetime.now(UTC).isoformat(), 'ended_at': None, 'incremental': incremental}
         try:
@@ -5150,9 +5173,10 @@ class PgOntologyRepository(OntologyRepository):
         返回 ``{ok, total_synced, total_failed, total_deleted, sources:{name:{...}}}``；
         ``ok=False`` = 存在失败行，调用方**不得**据此报整体成功。
         """
-        from .backing_datasources import BackingDatasource, sync_backing_datasource
+        from .backing_datasources import (BackingDatasource, sync_backing_datasource,
+            prepare_checkpoint_source, current_checkpoint_identity)
 
-        decls = self.list_backing_datasources(class_rid)
+        decls = self.list_backing_datasources(class_rid, internal=True)
         if incremental:
             decls = [d for d in decls if d["kind"] != "csv"]
         if not decls:
@@ -5178,6 +5202,11 @@ class PgOntologyRepository(OntologyRepository):
             for d in decls
         ]
 
+        time_columns = {d["name"]: d.get("ts_column") for d in decls}
+        prepared = [prepare_checkpoint_source(source, time_column=time_columns[source.name]) for source in sources]
+        sources = [source for source, _ in prepared]
+        identities = {source.name: identity for source, identity in prepared}
+
         def _iso(v: Any) -> Any:
             return v.isoformat() if hasattr(v, "isoformat") else v
 
@@ -5189,13 +5218,32 @@ class PgOntologyRepository(OntologyRepository):
             incremental=incremental,
             overlay_props=overlay,
             cursors={
-                d["name"]: {"ts": _iso(d.get("last_synced_at")), "pk": d.get("last_synced_pk")}
+                d["name"]: (
+                    {"ts": _iso(d.get("last_synced_at")), "pk": d.get("last_synced_pk")}
+                    if d.get("checkpoint_identity") == identities[d["name"]]
+                    else {"ts": None, "pk": None}
+                )
                 for d in decls
             },
             ts_columns={d["name"]: d.get("ts_column") or "updated_at" for d in decls},
             delete_missing=delete_missing,
         )
 
+        # Sources may be edited independently of mapping locks. An old snapshot's
+        # result is retained, but its boundary cannot be attached to the new dataset.
+        for source in sources:
+            try:
+                unchanged = current_checkpoint_identity(source, time_column=time_columns[source.name]) == identities[source.name]
+            except Exception:
+                unchanged = False
+            if not unchanged:
+                result[source.name]["failed"] += 1
+                result[source.name]["failures"].append({
+                    "stage": "source_changed",
+                    "error": "Source changed during sync; checkpoint cleared, retry rescans the current dataset",
+                })
+                result[source.name]["cursor"] = {"ts": None, "pk": None}
+                identities[source.name] = None
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -5207,11 +5255,10 @@ class PgOntologyRepository(OntologyRepository):
                     last_err = str(fails[0].get("error", ""))[:300] if fails else ""
                     cur.execute(
                         "UPDATE ont_backing_datasource SET "
-                        "last_synced_at = COALESCE(%s, last_synced_at), "
-                        "last_synced_pk = COALESCE(%s, last_synced_pk), "
+                        "last_synced_at = %s, last_synced_pk = %s, checkpoint_identity = %s, "
                         "last_error = %s, last_failed = %s "
-                        "WHERE class_rid = %s AND name = %s",
-                        (cur_ts, cur_pk, last_err, int(r.get("failed", 0)), class_rid, d["name"]),
+                        "WHERE class_rid = %s AND name = %s AND tenant_id = %s",
+                        (cur_ts, cur_pk, identities[d["name"]], last_err, int(r.get("failed", 0)), class_rid, d["name"], tenant),
                     )
             conn.commit()
         finally:
