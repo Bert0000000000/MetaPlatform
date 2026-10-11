@@ -4,7 +4,7 @@
 @media(max-width:1100px){.cover,.flow{margin-left:22px;margin-right:22px}.layout{grid-template-columns:190px minmax(0,1fr);padding:0 22px 45px;gap:20px}.article{padding:25px}.topinner{padding:13px 22px}.cover{grid-template-columns:1fr 200px;padding:30px}.pipeline{grid-template-columns:repeat(3,1fr)}.bottom{margin:0 22px 25px}}
 @media(max-width:760px){.topinner{flex-wrap:wrap;gap:10px;padding:12px 16px}.brand small{display:none}.topmeta{font-size:10px}.tabs{order:3;flex-basis:100%;justify-content:center}.tabs button{flex:1;text-align:center}.cover{margin:16px 12px;display:block;padding:25px 24px;border-radius:15px}.cover h1{font-size:32px;letter-spacing:-.6px}.coverstats{margin-top:25px;grid-template-columns:repeat(3,1fr);gap:12px}.stat b{font-size:29px}.stat span{font-size:10px}.statnote{grid-column:auto;font-size:10px;align-self:center}.flow{margin:12px;padding:15px}.flowtop{display:block}.flowtop span{display:block;font-size:10px}.pipeline{grid-template-columns:repeat(2,1fr)}.pipeline button{padding:10px}.pipeline b{font-size:12px}.layout{display:block;padding:0 12px 30px}.toc{display:none}.article{padding:19px 16px;border-radius:12px}.article h1{font-size:21px}.article h2{font-size:20px}.article p,.article li{font-size:14px}.researchtools{display:block}.researchtools label{display:block}.researchtools input{margin-top:7px;max-width:100%}.researchtools output{display:block;margin:5px 0}.bottom{margin:0 12px 24px;display:block}.tablewrap{margin:15px 0}.article table{font-size:11px}.article th,.article td{padding:10px}html{scroll-padding-top:150px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}@media print{.top,.toc,.researchtools{display:none}.cover,.flow{break-inside:avoid}.layout{display:block;padding:0}.article{border:none;padding:0}.tablewrap{max-height:none;overflow:visible}.article table{min-width:0}.bottom{margin:15px 0}.panel[hidden]{display:block!important}}
-</style></head><body><a href="#content" class="skip">跳到报告正文</a><header class="top"><div class="topinner"><div class="brand">MetaPlatform <small>产品研究 / 1.1</small></div><div class="tabs" role="tablist" aria-label="报告内容"><button type="button" id="tab-research" role="tab" aria-controls="research" aria-selected="true">开源平台调研</button><button type="button" id="tab-spec" role="tab" aria-controls="spec" aria-selected="false">1.1 产品设计</button></div><span class="topmeta">2026.10.11 · 源码基线 2c13952c</span></div></header><section class="cover"><div><div class="eyebrow">Ontology platforms · Evidence / Design</div><h1>从本体能力，<br>到<span>可用的业务平台。</span></h1><p>围绕应用中心、真实数据、本体操作、外部 Agent 和稳定性，确定 MetaPlatform 下一步应补齐的完整业务链路。</p></div><div class="coverstats"><div class="stat"><b>20</b><span>GitHub 候选与实际许可</span></div><div class="stat"><b>32</b><span>有验收标准的产品需求</span></div><div class="statnote">实时 API · 固定提交源码<br>产品设计草案 · 官网待确认</div></div></section><section class="flow" aria-label="1.1 验收主线"><div class="flowtop"><b>一个可以交付的完整链路</b><span>选择阶段，可跳到对应产品设计</span></div><ol class="pipeline"><li><button data-section="官网"><small>01 / DISCOVER</small><b>官网 → 工作区</b></button></li><li><button data-section="数据平台"><small>02 / CONNECT</small><b>真实数据接入</b></button></li><li><button data-section="本体体验"><small>03 / MODEL</small><b>建模 → 校验发布</b></button></li><li><button data-section="应用中心"><small>04 / BUILD</small><b>模板 → 运行应用</b></button></li><li><button data-section="dsh"><small>05 / ACT</small><b>Agent → 确认动作</b></button></li><li><button data-section="稳定性"><small>06 / RECOVER</small><b>回执 → 恢复验证</b></button></li></ol></section><main id="content" class="layout"><aside class="toc" aria-label="报告目录"><p class="toclabel">ON THIS PAGE</p><nav id="toc"></nav></aside><div class="article"><section id="research" class="panel" role="tabpanel" aria-labelledby="tab-research"><h1>MetaPlatform 1.1：Ontology 开源平台深度调研</h1>
+</style></head><body><a href="#content" class="skip">跳到报告正文</a><header class="top"><div class="topinner"><div class="brand">MetaPlatform <small>产品研究 / 1.1</small></div><div class="tabs" role="tablist" aria-label="报告内容"><button type="button" id="tab-research" role="tab" aria-controls="research" aria-selected="true">开源平台调研</button><button type="button" id="tab-spec" role="tab" aria-controls="spec" aria-selected="false">1.1 产品设计</button></div><span class="topmeta">2026.10.11 · 源码基线 2c13952c</span></div></header><section class="cover"><div><div class="eyebrow">Ontology platforms · Evidence / Design</div><h1>从本体能力，<br>到<span>可用的业务平台。</span></h1><p>围绕应用中心、真实数据、本体操作、外部 Agent 和稳定性，确定 MetaPlatform 下一步应补齐的完整业务链路。</p></div><div class="coverstats"><div class="stat"><b>20</b><span>GitHub 候选与实际许可</span></div><div class="stat"><b>32</b><span>有验收标准的产品需求</span></div><div class="statnote">实时 API · 固定提交源码<br>规划已授权 · 目标执行中</div></div></section><section class="flow" aria-label="1.1 验收主线"><div class="flowtop"><b>一个可以交付的完整链路</b><span>选择阶段，可跳到对应产品设计</span></div><ol class="pipeline"><li><button data-section="官网"><small>01 / DISCOVER</small><b>官网 → 工作区</b></button></li><li><button data-section="数据平台"><small>02 / CONNECT</small><b>真实数据接入</b></button></li><li><button data-section="本体体验"><small>03 / MODEL</small><b>建模 → 校验发布</b></button></li><li><button data-section="应用中心"><small>04 / BUILD</small><b>模板 → 运行应用</b></button></li><li><button data-section="dsh"><small>05 / ACT</small><b>Agent → 确认动作</b></button></li><li><button data-section="稳定性"><small>06 / RECOVER</small><b>回执 → 恢复验证</b></button></li></ol></section><main id="content" class="layout"><aside class="toc" aria-label="报告目录"><p class="toclabel">ON THIS PAGE</p><nav id="toc"></nav></aside><div class="article"><section id="research" class="panel" role="tabpanel" aria-labelledby="tab-research"><h1>MetaPlatform 1.1：Ontology 开源平台深度调研</h1>
 <blockquote>
 <p>调研日期：2026-10-11（Asia/Shanghai） · 20 个仓库 · GitHub API 实时元数据 + 许可证原文 + 固定提交源码。
 本地基线：<code>feat/ont-migration-plan</code> / <code>2c13952c</code>。结论是产品设计与源码审计，不是部署、兼容性或整个平台验收报告。</p>
@@ -436,7 +436,7 @@
 <p>官网沿用现有静态页面而做内容和部署接线更新，统一为 MetaPlatform：产品主张、数据 → 本体 → 应用 → Agent 链路、实际能力、订单场景、1.1 规划、常见问题。清除未核实的 demo/邮箱/客户/测试数/GA 口径，开发中的能力明确标注规划。</p>
 <p>本地与现有部署：<strong>公开 <code>/website/</code> → “进入平台” → <code>/home</code> → 现有登录 → 工作台</strong>。原有八域业务路由与鉴权不被官网代替。独立官网部署用公开平台地址配置，公网域名/DNS 尚未提供。</p>
 <p>预期改动：现有 <code>metaplatform-website/index.html</code>；前端 Vite 的开发/构建静态接线；Docker 构建确保官网源文件可用；官网 README 和入口测试。关键验收是页面匿名可打开、主按钮可进入真实平台登录、移动端与键盘可用、生产产物包含官网。</p>
-<p><strong>状态：方案已拟定，官网实现等待本次设计确认。</strong> 这是源码仓库的设计确认步骤，不是对外发布许可或生产状态声明。</p>
+<p><strong>状态：用户已授权按产品 1.1 规划实施，目标模式执行中。</strong> 官网纳入 1.1.0；代码、构建与本地接线按任务验收，正式公网发布另行记录。</p>
 <h2>8. 三种下一步路径</h2>
 <table>
 <thead>
@@ -834,12 +834,12 @@
 <ol>
 <li>官网 → 登录 → 工作区 → PG/CSV 接入 → 字段映射 → 预检 → 发布 → 应用 → 人工批准 → 执行回执，重新登录与重启后仍可追踪。</li>
 <li>错密码、断网、缺权限、重复主键、无效时间列、字段删除、同步中断与重复重试，每个场景都得到可恢复结果。</li>
-<li>dsh 与 WorkBuddy 查询同一对象；另一个租户读不到；只读身份无法确认或执行；批准过期不能执行；相同幂等键最多一次副作用。</li>
+<li>1.1.0 的 MCP 协议验证查询同一对象；另一个租户读不到；只读身份无法确认或执行；批准过期不能执行；相同幂等键最多一次副作用。dsh 与 WorkBuddy 真客户端复验纳入 1.1.1。</li>
 <li>空运行树/无效短链/无权应用可解释地失败；任何正式失败不能静默变成演示成功。</li>
 <li>新建测试库与从前一版本升级的测试库都通过；使用临时数据库和独立预览端口，不替换用户正在使用的服务。</li>
 </ol>
 <h2>9. 按依赖交付的实施顺序</h2>
-<p>建议 6–8 周，假设 2 名前端、2 名后端、1 名 QA/产品验收的并行投入；这是估算，不是已承诺排期。每阶段到达出口后再推进依赖阶段，需求 ID 可对应已有 PRD 补充条款，不手工改既有 Accepted 或 Gate 状态。</p>
+<p>原草案容量估算为 6–8 周、2 名前端、2 名后端、1 名 QA/产品验收，并非承诺排期。下表保留产品 1.1 系列的投入顺序参考；当前目标按第 11 节的 1.1.0/1.1.1/1.2 出口执行，每阶段达到出口后再推进依赖阶段，不手工改既有 Accepted 或 Gate 状态。</p>
 <table>
 <thead>
 <tr>
@@ -853,7 +853,7 @@
 <tbody><tr>
 <td>A 基线与入口</td>
 <td>第 1 周</td>
-<td>REL-01/02 基线、APP-01、官网确认后接线、订单样例固定</td>
+<td>REL-01/02 基线、APP-01、官网接线、订单样例固定</td>
 <td>登录入口和真实字段一致；失败状态可复核；数据/应用存储路径明确</td>
 <td>前端、后端、QA</td>
 </tr>
@@ -898,7 +898,7 @@
 </thead>
 <tbody><tr>
 <td>官网</td>
-<td><code>metaplatform-website/</code>、前端 Vite 构建接线、<code>metaplatform-frontend/Dockerfile</code> 的静态产物打包</td>
+<td><code>apps/web/public/website/index.html</code> 为唯一内容源；<code>metaplatform-website/</code> 保留兼容入口和独立部署说明；Vite 与容器交付同一静态产物</td>
 </tr>
 <tr>
 <td>应用中心</td>
@@ -922,7 +922,7 @@
 </tr>
 </tbody></table>
 <p>每个研发增量附：明确需求 ID、契约变更、源码、必要测试、实际目标环境验收和未完成边界。验收前只记录设计或局部证据；官网显示和对外发布口径随实际结果更新。</p>
-<h2>10. 执行授权与版本边界</h2>
+<h2>11. 执行授权与版本边界</h2>
 <p>本次用户要求整理规划并以目标模式执行，覆盖 1.1.0 全部 P0 候选版工作；高级资产契约、插件生命周期、dsh/WorkBuddy 真客户端兼容列为 1.1.1；语义互操作为 1.2。详细任务、接口、验证与依赖见 <a href="../../superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md">实施计划</a>。正式域名部署、5 人用户试用和 72 小时试运行单独登记，不将开发测试当作发布验收。</p>
 <table>
 <thead>

@@ -74,6 +74,13 @@ assert response.status_code == 409  # 1:N 的同一订单再次归属于另一�
 ## Task 2: 关系定义和实例关联界面
 
 **Files:**
+- Modify: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py（关系列表的租户响应边界）
+- Modify: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py（关系列表显式租户过滤）
+- Create: mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_reads.py
+- Modify: mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py（严格新增冲突/并发回归）
+- Modify: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/api.py（向后兼容 create_only）
+- Modify: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/in_memory.py（严格新增语义）
+- Modify: mate-platform-backend/contracts/openapi/services/ont.yaml（可选 create_only 查询参数）
 - Modify: metaplatform-frontend/apps/web/src/api/ont/kernel.ts
 - Modify: metaplatform-frontend/apps/web/src/pages/ontology/model/link-types/LinkTypesPage.tsx
 - Create: metaplatform-frontend/apps/web/src/pages/ontology/model/link-types/LinkTypeEditor.tsx
@@ -82,7 +89,7 @@ assert response.status_code == 409  # 1:N 的同一订单再次归属于另一�
 - Create: metaplatform-frontend/apps/web/tests/e2e/ontology-relationship-flow.spec.ts
 - Modify: metaplatform-frontend/apps/web/src/pages/ontology/OntologyModelingPage.tsx
 
-**Interfaces:** createLinkType(payload: KernelLinkType): Promise<KernelLinkType>；createLinkInstance(payload: KernelLinkInstanceCreate): Promise<KernelLinkInstance>，后者请求形状服从 Task 1。端点选项来自已授权 listObjectTypes / listIndividuals；关系编辑复用已有属性 DTO，不发明第二套模型。
+**Interfaces:** createLinkType 支持明确 createOnly 模式，新建发送 POST /link-types?create_only=true，存在同 RID 返回 409 且不覆盖；编辑和旧调用保留默认 upsert。repo 的可选 create_only=False 保持兼容，PG 判定与写入在同一原子边界。createLinkInstance(payload: KernelLinkInstanceCreate): Promise<KernelLinkInstance> 保持 Task 1 请求形状。端点选项来自已授权 listObjectTypes / listIndividuals；关系编辑复用已有属性 DTO，不发明第二套模型。
 
 - [ ] 用 Vitest/Testing Library 编写行为测试：新建表单→选择 Customer/Order→保存；关联 C001/O001→刷新可见；服务端 409 保留输入；请求失败显示错误而非空列表。
 ```tsx
@@ -90,8 +97,10 @@ expect(screen.getByRole('button', { name: '新建关系' })).toBeEnabled();
 expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 ```
 - [ ] 提供名称/标识、源/目标对象类型、基数、方向、两端名称、说明与关系属性；标识由业务名生成可编辑默认值，技术 RID 放高级区域；已有实例的结构字段说明受保护。
+- [ ] 严格区分新建和编辑：目录读取未知/失败时有提示与重试，权威创建保护拒绝读取后其他会话抢占的同 RID；旧定义保持不变。类型选项覆盖所有已授权页，后页类型和深链预选均可用；实例选择与真实接口的分页能力一致，失败页可返回上页。
 - [ ] 实例抽屉增加“关联对象”，按关系定义限制端点类型，选择实际对象及关系属性；保存期间防重复；成功重拉列表与统计，失败保留表单与重试。
 - [ ] 对象详情的“关系定义”增加指向关系页并预选当前对象的入口；显示继承与业务关系的区别，不将普通 customer_id 属性当作关联。
+- [ ] 同一独立数据库放入两租户关系，HTTP/PG 列表仅返回当前租户；PG 在请求租户上下文中显式过滤，HTTP 响应守住租户边界，不依赖建库角色的 RLS 行为。无上下文的旧直接 repo 调用保持兼容；不扩建身份系统。
 - [ ] 提供真实 API + 独立 PostgreSQL 的 E2E：创建定义/实例、负向基数、重载、两侧查询；UI Mock 测试单独标注。运行类型检查和构建，审查后提交。
 
 ## Task 3: 官网进入平台
@@ -120,6 +129,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Modify: metaplatform-frontend/apps/web/src/api/ont/kernel.ts
 - Modify: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py
 - Modify: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py
+- Modify: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/api.py
 - Modify: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/in_memory.py
 - Create: mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py
 - Create: metaplatform-frontend/apps/web/src/pages/ontology/components/ObjectTypeEditorV2Drawer.test.tsx
@@ -136,6 +146,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 
 **Files:**
 - Modify: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py
+- Modify: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/__init__.py
 - Modify: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/in_memory.py
 - Modify: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/sql_store.py
 - Modify: metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.tsx
@@ -163,6 +174,9 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Modify: metaplatform-frontend/apps/web/src/pages/apphub/components/FormBinding.tsx
 - Modify: metaplatform-frontend/apps/web/src/pages/apphub/components/PublishValidation.tsx
 - Modify: metaplatform-frontend/apps/web/src/pages/apphub/runtime/AppRuntimePage.tsx
+- Modify: metaplatform-frontend/apps/web/src/pages/dashboard/DashboardPage.tsx
+- Create: metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.tsx
+- Create: metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.test.tsx
 - Create: metaplatform-frontend/apps/web/src/pages/apphub/AppListPage.test.tsx
 - Create: metaplatform-frontend/apps/web/tests/e2e/mp11-order-app-flow.spec.ts
 
@@ -170,6 +184,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 
 - [ ] 编写应用状态和空运行树失败回归；未发布应用不能显示已发布，错误运行树不能自动落到演示数据。
 - [ ] 修正卡片和详情的真实元数据，明确运行/编辑/发布入口；保护未保存变更。
+- [ ] 首页提供“从样例开始 / 接入真实数据 / 打开已有应用”和可恢复任务引导（UX-01）；选择与当前位置按用户/租户隔离保存，完成状态来自实际数据、类型、关系、应用与发布输出，不能用手工勾选或 seed 伪装完成；错误状态可重试。
 - [ ] 用已有模板与组件生成订单审核应用，绑定已发布 Order/ObjectSet、真实字段、Customer 关联和已注册审核 Action。
 - [ ] 发布前核验缺失对象/字段/权限/动作依赖，预览使用实际绑定；发布版本与运行入口一致。
 - [ ] 验证发布→短链→读取订单→人工确认→执行回执→重新登录仍可追踪；无权/无效短链有明确错误。审查后提交。
@@ -179,12 +194,16 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 **Files:**
 - Modify: metaplatform-frontend/apps/web/src/pages/mcp/IdeConfigPage.tsx
 - Modify: metaplatform-frontend/apps/web/src/pages/mcp/McpClientPage.tsx
+- Modify: mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/protocol/streamable.py
+- Modify: mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/server.py
+- Modify: mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/caller_context.py
+- Modify: mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/security/api_keys.py
 - Modify: mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/ontology_proxy.py
 - Create: metaplatform-frontend/apps/web/src/pages/mcp/IdeConfigPage.test.tsx
 - Create: mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py
 - Create: docs/active/delivery/evidence/MP11-AGENT-COMPATIBILITY.md
 
-**Interfaces:** 复用 /api/v1/mcp/protocol/mcp 与既有 scoped/revocable API Key；dsh 使用已核实的 HTTP 配置格式，WorkBuddy 导出文档支持的 stdio 配置，未实现桥时不能标已连接。工具 schema 与现有 operationId 对齐；Agent 建议经 Proposal，批准由已认证有权限主体完成。
+**Interfaces:** 复用 /api/v1/mcp/protocol/mcp 与既有租户绑定、可撤销 API Key，并补齐最小 scope；dsh 使用已核实的 HTTP 配置格式，WorkBuddy 导出文档支持的 stdio 配置，未实现桥时不能标已连接。工具 schema 与现有 operationId 对齐；Agent 建议经 Proposal，批准由已认证有权限主体完成。
 
 - [ ] 编写配置导出无凭据、只读工具过滤、未授权调用拒绝、跨租户和过期确认的回归。
 - [ ] 提供工作区/权限选择、配置、发现测试、样例查询；仅实际 initialize/tools-list/query 成功后显示已连接。
@@ -199,6 +218,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Create: docs/active/delivery/evidence/MP11-ACCEPTANCE.md
 - Create: docs/active/delivery/evidence/MP11-RELEASE-NOTES.md
 - Modify: .github/workflows/ontology-loop.yml
+- Modify: metaplatform-frontend/apps/web/src/pages/ontology/components/ProposalConfirmDrawer.test.tsx（已复现基线的状态模拟顺序错误）
 - Modify: metaplatform-frontend/apps/web/tests/e2e/ontology-relationship-flow.spec.ts
 - Modify: metaplatform-frontend/apps/web/tests/e2e/mp11-order-app-flow.spec.ts
 
