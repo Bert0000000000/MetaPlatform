@@ -7,8 +7,28 @@ import { resolve } from 'node:path';
 test.use({ trace: 'off', video: 'off', screenshot: 'off' });
 
 const artifactMode = process.env.MP11_ARTIFACT_MODE ?? 'dev';
-const websiteTitle = '让业务数据成为可理解、可操作的业务对象';
+const websiteTitle = '让企业的数据、AI 与业务行动协同起来';
 
+test('product introduction leads visitors through capabilities, scenarios, development updates and version planning', async ({ page }) => {
+  await page.goto('/website/');
+  await expect(page.getByText('本体驱动的企业 AI 操作平台', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: '了解平台', exact: true })).toHaveAttribute('href', '#platform');
+  expect(await page.locator('main > section[id]').evaluateAll(elements => elements.map(element => element.id))).toEqual(['top', 'platform', 'capabilities', 'orders', 'updates', 'plan', 'faq']);
+  for (const [name, anchor] of [['平台介绍', 'platform'], ['产品能力', 'capabilities'], ['业务场景', 'orders'], ['产品更新', 'updates'], ['版本规划', 'plan']]) {
+    await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name, exact: true }).first().click();
+    await expect(page).toHaveURL(new RegExp(`#${anchor}$`));
+    await expect(page.locator(`#${anchor} h2`)).toBeInViewport();
+  }
+  await expect(page.locator('#updates time')).toHaveCount(4);
+  await expect(page.locator('#updates')).toContainText('2026-10-11');
+  for (const theme of ['关系定义与关联', '对象创建与模型发布', '真实数据接入与恢复', '官网与平台入口']) await expect(page.locator('#updates')).toContainText(theme);
+  for (const state of ['1.1.0 开发中', '1.1.1 规划', '1.2 研究 / 规划']) await expect(page.locator('#plan')).toContainText(state);
+  await expect(page.locator('#plan')).toContainText('尚未发布');
+  await expect(page.locator('#plan')).toContainText('OWL / RDF / SHACL');
+  await expect(page.locator('#updates')).not.toContainText('正式发布');
+  await page.goto('/website/#chain');
+  await expect(page.getByRole('heading', { name: '把业务语言变成协作基础' })).toBeInViewport();
+});
 test('anonymous website directory and index expose real platform links', async ({ page }) => {
   const requests: string[] = [];
   const responses: { path: string; status: number }[] = [];
@@ -21,7 +41,7 @@ test('anonymous website directory and index expose real platform links', async (
     const entries = page.getByRole('link', { name: '进入平台', exact: true });
     expect(await entries.count()).toBe(4);
     for (const entry of await entries.all()) await expect(entry).toHaveAttribute('href', '/home');
-    await expect(page.getByText('1.1 规划 / 验证中', { exact: true })).toBeVisible();
+    await expect(page.getByText('产品 1.1.0 · 开发中', { exact: true })).toBeVisible();
   }
   expect(requests.filter(path => path.startsWith('/api/'))).toEqual([]);
   writeFileSync(`tests/e2e/.artifacts/MP11-website-${artifactMode}-requests.json`, JSON.stringify({ responses, requests }, null, 2));
@@ -40,7 +60,20 @@ test('default entry remains available with JavaScript disabled', async ({ browse
   const page = await context.newPage();
   await page.goto('/website/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(websiteTitle);
-  await expect(page.getByRole('link', { name: '进入平台', exact: true }).first()).toHaveAttribute('href', '/home');
+  for (const entry of await page.getByRole('link', { name: '进入平台', exact: true }).all()) await expect(entry).toHaveAttribute('href', '/home');
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.getByText('菜单', { exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('link', { name: '产品更新', exact: true }).locator('visible=true').first().focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/#updates$/);
+  await expect(page.locator('#updates h2')).toBeInViewport();
+  await page.getByText('菜单', { exact: true }).click();
+  await page.goto('/website/#faq');
+  await page.getByText('什么是业务本体？', { exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#faq details').first()).toHaveAttribute('open', '');
+  await expect(page.locator('#faq details').first()).toContainText('审核等动作');
   await page.getByRole('link', { name: '进入平台', exact: true }).first().click();
   await expect(page).toHaveURL(/\/home$/);
   await context.close();
@@ -52,25 +85,44 @@ for (const width of [360, 390, 768, 1440]) {
     await page.goto('/website/');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `tests/e2e/.artifacts/MP11-website-${artifactMode}-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `tests/e2e/.artifacts/MP11-website-${artifactMode}-${width}-hero.png` });
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: '跳过导航' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('main')).toBeFocused();
-    if (width <= 720) {
+    if (width <= 820) {
       await page.getByText('菜单', { exact: true }).focus();
       await page.keyboard.press('Enter');
-      await expect(page.getByRole('link', { name: '订单场景', exact: true }).first()).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('.mobile-menu')).not.toHaveAttribute('open', '');
+      await expect(page.getByText('菜单', { exact: true })).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('link', { name: '业务场景', exact: true }).locator('visible=true').first()).toBeVisible();
     }
-    await page.getByRole('link', { name: '订单场景', exact: true }).first().click();
+    const scenarioLink = page.getByRole('link', { name: '业务场景', exact: true }).locator('visible=true').first();
+    await scenarioLink.focus();
+    await page.keyboard.press('Enter');
+    if (width <= 820) await expect(page.locator('.mobile-menu')).not.toHaveAttribute('open', '');
     await expect(page).toHaveURL(/#orders$/);
-    await expect(page.getByRole('heading', { name: '从一笔订单开始' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '从一笔订单，到一次有依据的决策' })).toBeInViewport();
+    for (const [name, id] of [['平台介绍', 'platform'], ['产品能力', 'capabilities'], ['产品更新', 'updates'], ['版本规划', 'plan']]) {
+      if (width <= 820) {
+        await page.getByText('菜单', { exact: true }).focus();
+        await page.keyboard.press('Enter');
+      }
+      await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name, exact: true }).locator('visible=true').first().focus();
+      await page.keyboard.press('Enter');
+      await expect(page).toHaveURL(new RegExp(`#${id}$`));
+      await expect(page.locator(`#${id} h2`)).toBeInViewport();
+      if (width <= 820) await expect(page.locator('.mobile-menu')).not.toHaveAttribute('open', '');
+    }
   });
 }
 
 test('reduced motion removes animated effects', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/website/');
-  expect(await page.locator('.hero-badge-dot').evaluate(el => getComputedStyle(el, '::before').animationName)).toBe('none');
+  expect(await page.locator('.hero').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('auto');
 });
 

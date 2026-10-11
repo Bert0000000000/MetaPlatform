@@ -3,6 +3,14 @@
 唯一官网内容源是 `../metaplatform-frontend/apps/web/public/website/index.html`。
 本目录 `index.html` 仅为旧入口兼容页面，导航至同源 `/website/`；不要单独发布它作为官网正文。
 
+## 内容与维护
+
+页面按平台定位与介绍、产品能力、业务场景、产品更新、版本规划、FAQ 和平台入口组织。
+产品更新只记录已完成的开发改进；版本规划单独说明 1.1.0 开发中、1.1.1 规划和 1.2 研究方向。
+不要把历史架构版本、局部测试通过或规划能力写成当前产品已发布。场景示例不代表客户案例。
+旧锚点 `#capabilities`、`#chain`、`#orders`、`#plan` 与 `#top` 保持可用。
+桌面与手机使用同一份语义正文；移动菜单和 FAQ 基于原生 details，无 JavaScript 仍可操作。
+
 ## 与平台一起运行
 
 在 `metaplatform-frontend` 执行 `pnpm --filter @mate/web dev`，打开其实际打印的地址下的 `/website/` 或 `/website/index.html`。
