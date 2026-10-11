@@ -219,7 +219,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Create: mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py
 - Create: docs/active/delivery/evidence/MP11-AGENT-COMPATIBILITY.md
 
-**Interfaces:** 复用 /api/v1/mcp/protocol/mcp 与既有租户绑定、可撤销 API Key，并补齐最小 scope；dsh 使用已核实的 HTTP 配置格式，WorkBuddy 导出文档支持的 stdio 配置，未实现桥时不能标已连接。工具 schema 与现有 operationId 对齐；Agent 建议经 Proposal，批准由已认证有权限主体完成。
+**Interfaces:** 复用 /api/v1/mcp/protocol/mcp 与既有租户绑定、可撤销 API Key，并补齐最小 scope；dsh 导出原生 Cordis streamable-http 配置，WorkBuddy 导出官方连接器 mcp.json 的 streamableHttp 配置；凭据仅变量引用，实际发现/查询成功才标已连接，未实现的 stdio 桥明确列为前置依赖。工具 schema 与现有 operationId 对齐；Agent 建议经 Proposal，批准由已认证有权限主体完成。
 
 - [ ] 编写配置导出无凭据、只读工具过滤、未授权调用拒绝、跨租户和过期确认的回归。
 - [ ] 提供工作区/权限选择、配置、发现测试、样例查询；仅实际 initialize/tools-list/query 成功后显示已连接。

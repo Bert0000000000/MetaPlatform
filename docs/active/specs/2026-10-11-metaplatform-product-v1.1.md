@@ -118,13 +118,13 @@ MCP 能力面沿用现有服务，默认提供只读发现、Schema、对象查�
 | 客户端 | 已核实 | 1.1 接入方式 | 尚未验证 |
 |---|---|---|---|
 | dsh | 官方源码 `dsh-mcp-client` 支持 stdio/Streamable HTTP、headers、超时与重连；当前 master 包是 alpha | 优先原生 HTTP 指向现有协议端点；导出 Cordis 配置，凭据来自环境或授权流程；固定稳定客户端版本 | 用户安装版本与 master 差异、实际服务发现、OAuth 自动续期、运行和网络故障恢复 |
-| WorkBuddy | 官方文档支持 MCP、用户/项目级配置和 command/args/env 的本地 stdio；插件有不同类型 | 首先提供受控本地 stdio 桥连接现有平台 HTTP 服务；Skill/插件只包装配置和操作指南 | 当前客户端直接 HTTP 与自定义头兼容、插件包具体格式、授权续期和目标操作系统行为 |
+| WorkBuddy | [官方连接器文档](https://open.workbuddy.cn/docs/connector) 支持 HTTPS streamableHttp、headers 和本地 stdio；凭据用 ${VAR_NAME} 引用，版本字段按文档声明 | 优先导出连接器 mcp.json 的原生 HTTP 配置访问既有协议端点；Skill/插件包装配置和操作指南；需要本地进程时再评估 stdio 桥 | 用户安装版本、配置导入/发现/调用、授权续期和目标操作系统行为；仅提供 Bearer 不声称完整 OAuth |
 
 | ID | 优先级 | 增量 | 验收 |
 |---|---|---|---|
 | MP11-AGENT-01 | P0 | 客户端连接向导和配置导出 | 选客户端 → 选工作区/工具权限 → 配置/授权 → 测试发现 → 一次样例查询；界面仅在探测成功后显示已连接 |
 | MP11-AGENT-02 | P0 | 只读 scope 与 Proposal 写操作约束 | 未授权工具不可见且不可调用；伪造批准者、跨租户、过期确认和重复调用均拒绝或幂等返回 |
-| MP11-AGENT-03 | P1 | dsh HTTP 适配与 WorkBuddy stdio 桥 | 两客户端完成真实 `initialize`、`tools/list`、`tools/call` 和资源读取；桥不伪造权限，也不把日志写进 stdout |
+| MP11-AGENT-03 | P1 | dsh / WorkBuddy 真客户端适配，按需提供 stdio 桥 | 两客户端完成真实 `initialize`、`tools/list`、`tools/call` 和资源读取；如需桥，不伪造权限，也不把日志写进 stdout |
 | MP11-AGENT-04 | P1 | 连接诊断、撤销、重连与审计深链 | 区分协议/权限/连接/工具错误；凭据撤销立即有效；超时不自动重复有副作用动作；记录 user/agent/tenant/trace/run |
 | MP11-PLUGIN-01 | P1 | 插件清单、依赖、能力和更新可视化 | 复用现有 marketplace；展示平台/协议兼容范围、所需权限、健康探测、停用影响、版本与许可证；禁止任意 server 端 npm 自动执行 |
 

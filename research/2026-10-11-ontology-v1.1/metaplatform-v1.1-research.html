@@ -393,12 +393,12 @@
 </tr>
 <tr>
 <td>WorkBuddy</td>
-<td>官方文档提供 MCP、用户/项目级 mcp.json、command/args/env 的 stdio 示例；有 Skill/MCP/Hook/Agent/Rule 插件</td>
-<td>优先受控本地 stdio 桥访问平台 HTTP；插件/Skill 提供安装与业务操作说明</td>
-<td>原生 HTTP/headers 与插件打包未实测；不承诺两个客户端使用同一个插件包</td>
+<td>开放平台连接器文档明确支持 HTTPS streamableHttp、headers 与 stdio；凭据使用 ${VAR_NAME} 引用；不同插件类型有各自格式</td>
+<td>优先导出连接器 mcp.json 的原生 HTTP 配置访问既有平台协议端点；本地 stdio 桥按真客户端需要评估</td>
+<td>用户安装版本、实际导入/发现/查询、授权续期与插件打包仍需真客户端验收</td>
 </tr>
 </tbody></table>
-<p><a href="https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/src/transport.ts">dsh 传输实现</a>、<a href="https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/README.md">官方使用说明</a>、<a href="https://www.workbuddy.ai/docs/zh/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/MCP-Guide">WorkBuddy MCP 文档</a>、<a href="https://www.workbuddy.cn/docs/workbuddy/Plugins">WorkBuddy 插件文档</a>。本轮 WorkBuddy 原文已直接获取 HTTP 200 并缓存；浏览检索器打开失败不代表官方站没有内容。</p>
+<p><a href="https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/src/transport.ts">dsh 传输实现</a>、<a href="https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/README.md">官方使用说明</a>、<a href="https://www.workbuddy.ai/docs/zh/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/MCP-Guide">WorkBuddy MCP 文档</a>、<a href="https://www.workbuddy.cn/docs/workbuddy/Plugins">WorkBuddy 插件文档</a>。本轮 WorkBuddy 原文已直接获取 HTTP 200 并缓存；浏览检索器打开失败不代表官方站没有内容。执行前补充核实 <a href="https://open.workbuddy.cn/docs/connector">WorkBuddy 开放平台连接器</a>：远程 type 为 streamableHttp，headers/env 使用变量引用，Token 连接器需声明对应最低版本；此格式与企业版 CLI 或 Expert 插件的 type:http 不混用。</p>
 <p>工具沿用实际 <code>ont_list_classes / ont_inspect_class / ont_object_query</code> 等名称，默认只读；写入复用现有 <code>ont_preview_proposal / ont_confirm_proposal / ont_execute_proposal</code>。后端验证权限、批准主体、租户与幂等，模型提示词不能代替执行检查。短期复用已有可撤销凭据，后续 HTTP OAuth 完整发现、PKCE 与续期按<a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization">协议规范</a>及目标客户端能力逐项验收。</p>
 <p>标准 MCP HTTP 路径已存在；1.1 不以新增独立 FastMCP 为前置条件。官方 Python SDK 内置的 FastMCP 与 PrefectHQ 的独立包名称相似，升级必须根据实际 API 和协议版本验证。</p>
 <h2>6. 产品 1.1：优先级与可见变化</h2>
@@ -749,9 +749,9 @@
 </tr>
 <tr>
 <td>WorkBuddy</td>
-<td>官方文档支持 MCP、用户/项目级配置和 command/args/env 的本地 stdio；插件有不同类型</td>
-<td>首先提供受控本地 stdio 桥连接现有平台 HTTP 服务；Skill/插件只包装配置和操作指南</td>
-<td>当前客户端直接 HTTP 与自定义头兼容、插件包具体格式、授权续期和目标操作系统行为</td>
+<td><a href="https://open.workbuddy.cn/docs/connector">官方连接器文档</a> 支持 HTTPS streamableHttp、headers 和本地 stdio；凭据用 ${VAR_NAME} 引用，版本字段按文档声明</td>
+<td>优先导出连接器 mcp.json 的原生 HTTP 配置访问既有协议端点；Skill/插件包装配置和操作指南；需要本地进程时再评估 stdio 桥</td>
+<td>用户安装版本、配置导入/发现/调用、授权续期和目标操作系统行为；仅提供 Bearer 不声称完整 OAuth</td>
 </tr>
 </tbody></table>
 <table>
@@ -778,8 +778,8 @@
 <tr>
 <td>MP11-AGENT-03</td>
 <td>P1</td>
-<td>dsh HTTP 适配与 WorkBuddy stdio 桥</td>
-<td>两客户端完成真实 <code>initialize</code>、<code>tools/list</code>、<code>tools/call</code> 和资源读取；桥不伪造权限，也不把日志写进 stdout</td>
+<td>dsh / WorkBuddy 真客户端适配，按需提供 stdio 桥</td>
+<td>两客户端完成真实 <code>initialize</code>、<code>tools/list</code>、<code>tools/call</code> 和资源读取；如需桥，不伪造权限，也不把日志写进 stdout</td>
 </tr>
 <tr>
 <td>MP11-AGENT-04</td>

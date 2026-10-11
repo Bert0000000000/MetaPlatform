@@ -123,9 +123,9 @@ Graphiti `edges.py` 和 `graphiti.py` 提供关系、分组与时态属性，是
 | 项目 | 当前已证实 | 采用路径 | 验收边界 |
 |---|---|---|---|
 | dsh | 固定官方源码支持 stdio 与 streamable-http、自定义 headers、超时和重连；master package 为 alpha | 原生 MCP client + Cordis 配置指向 `/api/v1/mcp/protocol/mcp`；固定目标发行版本 | 配置导入、真实发现/查询、身份/租户、断线、撤销与写操作确认 |
-| WorkBuddy | 官方文档提供 MCP、用户/项目级 mcp.json、command/args/env 的 stdio 示例；有 Skill/MCP/Hook/Agent/Rule 插件 | 优先受控本地 stdio 桥访问平台 HTTP；插件/Skill 提供安装与业务操作说明 | 原生 HTTP/headers 与插件打包未实测；不承诺两个客户端使用同一个插件包 |
+| WorkBuddy | 开放平台连接器文档明确支持 HTTPS streamableHttp、headers 与 stdio；凭据使用 ${VAR_NAME} 引用；不同插件类型有各自格式 | 优先导出连接器 mcp.json 的原生 HTTP 配置访问既有平台协议端点；本地 stdio 桥按真客户端需要评估 | 用户安装版本、实际导入/发现/查询、授权续期与插件打包仍需真客户端验收 |
 
-[dsh 传输实现](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/src/transport.ts)、[官方使用说明](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/README.md)、[WorkBuddy MCP 文档](https://www.workbuddy.ai/docs/zh/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/MCP-Guide)、[WorkBuddy 插件文档](https://www.workbuddy.cn/docs/workbuddy/Plugins)。本轮 WorkBuddy 原文已直接获取 HTTP 200 并缓存；浏览检索器打开失败不代表官方站没有内容。
+[dsh 传输实现](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/src/transport.ts)、[官方使用说明](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/README.md)、[WorkBuddy MCP 文档](https://www.workbuddy.ai/docs/zh/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/MCP-Guide)、[WorkBuddy 插件文档](https://www.workbuddy.cn/docs/workbuddy/Plugins)。本轮 WorkBuddy 原文已直接获取 HTTP 200 并缓存；浏览检索器打开失败不代表官方站没有内容。执行前补充核实 [WorkBuddy 开放平台连接器](https://open.workbuddy.cn/docs/connector)：远程 type 为 streamableHttp，headers/env 使用变量引用，Token 连接器需声明对应最低版本；此格式与企业版 CLI 或 Expert 插件的 type:http 不混用。
 
 工具沿用实际 `ont_list_classes / ont_inspect_class / ont_object_query` 等名称，默认只读；写入复用现有 `ont_preview_proposal / ont_confirm_proposal / ont_execute_proposal`。后端验证权限、批准主体、租户与幂等，模型提示词不能代替执行检查。短期复用已有可撤销凭据，后续 HTTP OAuth 完整发现、PKCE 与续期按[协议规范](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization)及目标客户端能力逐项验收。
 
