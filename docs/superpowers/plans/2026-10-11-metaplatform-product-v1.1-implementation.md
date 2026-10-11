@@ -51,6 +51,8 @@
 **Files:**
 - Modify: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py
 - Modify: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py
+- Modify: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/api.py（可选 strict 写参数，默认兼容）
+- Modify: mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/in_memory.py（对应 strict 验证）
 - Create: mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py
 - Test: mate-platform-backend/packages/mate-kernel/tests/test_ontology_api.py
 - Contract: mate-platform-backend/contracts/openapi/services/ont.yaml（仅在实际契约变化时更新）
@@ -64,7 +66,7 @@ assert response.status_code == 404  # 关系类型/端点不存在
 assert response.status_code == 422  # 实例 class_rid 与 LinkType.src/dst 不匹配
 assert response.status_code == 409  # 1:N 的同一订单再次归属于另一客户
 ```
-- [ ] 补 API 层关系类型两端同租户、存在性和枚举错误归一化；实例写入验证关系类型存在、两端存在且类型正确，保留服务端写权限。
+- [ ] 补 API 层关系类型两端同租户、存在性和枚举错误归一化；实例写入验证关系类型存在、两端存在且类型正确，保留服务端写权限。HTTP 通过 create_link_instance(li, require_endpoints=True) 在 PG 事务内重验，并通过排序后的 FOR SHARE 与删除前 FOR UPDATE 保证端点生命周期；默认 False 仅保留已有直接 repo 调用兼容。
 - [ ] 关系已有实例时，阻止直接修改 src/dst/cardinality/directionality，允许名称与说明更新；不静默破坏已有实例。
 - [ ] 修复 PG upsert 更新分支未保存 description 的缺口；新增真实 PG 回归用例，DSN 只指向独立测试库，覆盖保存→更新→重新读取。
 - [ ] 运行新套件和邻近关系测试，保存命令/结果与 RED→GREEN 证据；审查后提交本任务文件。
@@ -96,6 +98,8 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 
 **Files:**
 - Modify: metaplatform-website/index.html
+- Create: metaplatform-frontend/apps/web/public/website/index.html（官网唯一内容源；迁入已有静态设计）
+- Create: metaplatform-website/README.md（独立部署与兼容入口说明）
 - Modify: metaplatform-frontend/apps/web/vite.config.ts
 - Modify: metaplatform-frontend/Dockerfile
 - Create: metaplatform-frontend/apps/web/tests/e2e/website-entry.spec.ts
@@ -104,7 +108,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 
 - [ ] 写入口测试：未登录可打开官网，CTA 到 /home 后进入现有登录；正式 build 产物含官网。
 - [ ] 沿用现有静态资源和品牌，展示真实能力、订单场景、数据→本体→应用→Agent 关系图；尚未通过验收的能力标“1.1 规划/验证中”。清除虚构链接、邮箱、不可打开的本地文档链接和历史测试数承诺。
-- [ ] 开发、构建、生产静态服务使用同一官网来源；不依赖容器外宿主路径；平台认证与 API 配置不变。
+- [ ] 开发、构建、生产静态服务使用 frontend public/website/index.html 这一官网内容源；原 metaplatform-website/index.html 作为兼容入口并说明实际部署来源。容器构建上下文为 metaplatform-frontend，不依赖外层宿主文件；既有 dist COPY 已覆盖官网时不做无意义 Dockerfile 修改。平台认证与 API 配置不变。
 - [ ] Playwright 验证 390/768/1440 宽度、键盘、导航/按钮和无横向溢出；保存截图与请求结果。审查后提交。
 
 ## Task 4: 对象创建与草稿操作一致性
@@ -126,7 +130,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - [ ] 将入口文案统一为“新建对象类型”；基础/高级字段渐进显示，名称/主键/属性问题就地提示。
 - [ ] 修复相似候选后的继续创建、合并和取消路径；未保存源概念不能调用要求源对象存在的 merge，改为复用已有类型或回到表单。
 - [ ] 打通保存草稿、恢复、未保存离开提示、预检与发布；变更影响沿用既有机制，验证乐观并发冲突提示。
-- [ ] 测试重复 slug/RID、候选 API 不可用、错误恢复、刷新草稿、发布后真实对象查询。审查后提交。
+- [ ] 测试重复 slug/RID、候选 API 不可用、错误恢复、刷新草稿、发布后真实对象查询；复核同族版本发布/存量实例迁移后已有关系和新关联的类型引用，先确认既有实现再修复断点，避免重建 PR #95。审查后提交。
 
 ## Task 5: 真实数据接入与同步恢复
 
@@ -150,6 +154,8 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 ## Task 6: 应用中心的对象绑定、发布和运行
 
 **Files:**
+- Modify: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py
+- Modify: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py
 - Modify: metaplatform-frontend/apps/web/src/api/apphub/apps.ts
 - Modify: metaplatform-frontend/apps/web/src/pages/apphub/AppListPage.tsx
 - Modify: metaplatform-frontend/apps/web/src/pages/apphub/AppDetailPage.tsx
@@ -196,7 +202,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Modify: metaplatform-frontend/apps/web/tests/e2e/ontology-relationship-flow.spec.ts
 - Modify: metaplatform-frontend/apps/web/tests/e2e/mp11-order-app-flow.spec.ts
 
-**Interfaces:** 统一 runner 接收明确测试库/端口/服务地址，拒绝无 mp11_ 前缀的写测试数据库；运行结果包含 commit、配置摘要、命令、用例、结果和错误。不得把 skipped 或 NOT_EXERCISED 写为通过。
+**Interfaces:** 统一 runner 接收明确测试库/端口/服务地址，拒绝无 codex_mp11_ 前缀的写测试数据库；运行结果包含 commit、配置摘要、命令、用例、结果和错误。不得把 skipped 或 NOT_EXERCISED 写为通过。
 
 - [ ] 集成新关系、对象创建、数据、应用、官网和 Agent 契约检查，并覆盖现有 ontology-migration-plan.spec.ts。
 - [ ] 新库与升级库运行 Customer/Order 样例；重启、同幂等键重放、基数冲突、错列和断连恢复；健康探针辅以实际业务查询。
