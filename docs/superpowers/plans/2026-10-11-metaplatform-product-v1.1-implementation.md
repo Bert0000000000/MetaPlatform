@@ -109,6 +109,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Modify: metaplatform-website/index.html
 - Create: metaplatform-frontend/apps/web/public/website/index.html（官网唯一内容源；迁入已有静态设计）
 - Create: metaplatform-website/README.md（独立部署与兼容入口说明）
+- Create: metaplatform-website/configure-platform.mjs（校验公开平台地址并生成静态入口 href）
 - Modify: metaplatform-frontend/apps/web/vite.config.ts
 - Modify: metaplatform-frontend/Dockerfile
 - Create: metaplatform-frontend/apps/web/tests/e2e/website-entry.spec.ts
@@ -118,11 +119,12 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - [ ] 写入口测试：未登录可打开官网，CTA 到 /home 后进入现有登录；正式 build 产物含官网。
 - [ ] 沿用现有静态资源和品牌，展示真实能力、订单场景、数据→本体→应用→Agent 关系图；尚未通过验收的能力标“1.1 规划/验证中”。清除虚构链接、邮箱、不可打开的本地文档链接和历史测试数承诺。
 - [ ] 开发、构建、生产静态服务使用 frontend public/website/index.html 这一官网内容源；原 metaplatform-website/index.html 作为兼容入口并说明实际部署来源。容器构建上下文为 metaplatform-frontend，不依赖外层宿主文件；既有 dist COPY 已覆盖官网时不做无意义 Dockerfile 修改。平台认证与 API 配置不变。
-- [ ] Playwright 验证 390/768/1440 宽度、键盘、导航/按钮和无横向溢出；保存截图与请求结果。审查后提交。
+- [ ] Playwright 验证 360/390/768/1440 宽度、键盘、减少动态效果、导航/按钮和无横向溢出；同源默认入口及独立部署配置后的入口在禁用 JS 时均可用；保存仅公开官网的截图与无凭据请求结果。审查后提交。
 
 ## Task 4: 对象创建与草稿操作一致性
 
 **Files:**
+- Modify: mate-platform-backend/contracts/openapi/services/ont.yaml
 - Modify: metaplatform-frontend/apps/web/src/pages/ontology/model/object-types/ObjectTypesPage.tsx
 - Modify: metaplatform-frontend/apps/web/src/pages/ontology/components/ObjectTypeEditorV2Drawer.tsx
 - Modify: metaplatform-frontend/apps/web/src/pages/ontology/OntologyModelingPage.tsx
@@ -134,7 +136,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Create: mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py
 - Create: metaplatform-frontend/apps/web/src/pages/ontology/components/ObjectTypeEditorV2Drawer.test.tsx
 
-**Interfaces:** POST /object-types 可增加向后兼容的 create_only 查询参数；仅界面新建设置 true，已有更新/发布继续原语义；存在同 RID 时 409，禁止检查后覆盖竞态。草稿复用已存在 schema-wip / publish 接口，status 元数据与草稿存储明确区分。
+**Interfaces:** POST /object-types 可增加向后兼容的 create_only 查询参数；仅界面新建设置 true，已有更新/发布继续原语义；存在同 RID 时 409，禁止检查后覆盖竞态。草稿复用已存在 schema-wip / publish 接口，status 元数据与草稿存储明确区分；新建草稿保存和恢复后发布仍保留原子新增意图，所有写接口沿用 runtime platform.write，乐观 checksum 在写事务中生效。
 
 - [ ] 编写同 RID 重复新增与并发新增不覆盖、正常编辑仍可更新的回归；新建返回 409 时表单保留并可定位已有类型。
 - [ ] 将入口文案统一为“新建对象类型”；基础/高级字段渐进显示，名称/主键/属性问题就地提示。
