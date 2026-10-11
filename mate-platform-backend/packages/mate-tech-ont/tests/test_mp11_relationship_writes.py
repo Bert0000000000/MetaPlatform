@@ -453,3 +453,136 @@ def test_pg_instance_revalidates_endpoint_classes_after_definition_commits(monke
     assert "class_rid" in outcome, outcome
     with writer.tenant_scope(T):
         assert writer.list_link_instances(tenant_id=T, link_type_rid=link) == []
+
+
+@pytest.fixture
+def pg_http_pair(auth_headers):
+    dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
+    if not dsn:
+        pytest.skip("Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database")
+    target = urlparse(dsn)
+    assert target.hostname in {"127.0.0.1", "localhost"}
+    assert target.port and target.port != 5432
+    assert target.path.startswith("/codex_mp11_")
+    from uuid import uuid4
+
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+    writer, deleter = PgOntologyRepository(dsn=dsn), PgOntologyRepository(dsn=dsn)
+    link = f"ont.{T}.link.endpoint_lifetime.{uuid4().hex}"
+    with writer.tenant_scope(T):
+        _seed(writer)
+        writer.upsert_link_type(
+            LinkType(
+                rid=ClassRef(link),
+                src=ClassRef(CUSTOMER),
+                dst=ClassRef(ORDER),
+                cardinality=Cardinality.ONE_TO_MANY,
+                directionality=Directionality.DIRECTED,
+            )
+        )
+    deleter._ensure_schema()
+    app = FastAPI()
+    install_auth(app)
+    app.include_router(router)
+    app.state.kernel_repo = writer
+    with TestClient(app, headers=auth_headers, raise_server_exceptions=False) as client:
+        yield (
+            writer,
+            deleter,
+            client,
+            _instance(link_type_rid=link, rid=f"ont.{T}.lnk.endpoint_lifetime.{uuid4().hex}"),
+        )
+
+
+def test_pg_http_rejects_endpoint_deleted_after_api_reads(pg_http_pair, monkeypatch):
+    writer, deleter, client, payload = pg_http_pair
+    api_read, proceed = threading.Event(), threading.Event()
+    create = writer.create_link_instance
+
+    def pause_before_transaction(*args, **kwargs):
+        api_read.set()
+        assert proceed.wait(5)
+        return create(*args, **kwargs)
+
+    monkeypatch.setattr(writer, "create_link_instance", pause_before_transaction)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        creating = pool.submit(client.post, f"{BASE}/link-instances", json=payload)
+        try:
+            assert api_read.wait(5)
+            with deleter.tenant_scope(T):
+                assert deleter.delete_individual(O1)
+        finally:
+            proceed.set()
+        response = creating.result(timeout=5)
+    assert response.status_code == 404, response.text
+    assert "not found" in response.json()["detail"]
+    with writer.tenant_scope(T):
+        assert writer.list_link_instances(tenant_id=T, link_type_rid=payload["link_type_rid"]) == []
+
+
+def test_pg_delete_waits_before_cascade_scan_for_validated_http_write(pg_http_pair, monkeypatch):
+    writer, deleter, client, payload = pg_http_pair
+    validated, proceed, delete_started, delete_finished = (threading.Event() for _ in range(4))
+    check = writer._check_link_cardinality
+
+    def pause_after_endpoint_validation(*args, **kwargs):
+        check(*args, **kwargs)
+        validated.set()
+        assert proceed.wait(5)
+
+    monkeypatch.setattr(writer, "_check_link_cardinality", pause_after_endpoint_validation)
+
+    def delete():
+        delete_started.set()
+        try:
+            with deleter.tenant_scope(T):
+                return deleter.delete_individual(O1)
+        finally:
+            delete_finished.set()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        creating = pool.submit(client.post, f"{BASE}/link-instances", json=payload)
+        try:
+            assert validated.wait(5)
+            deleting = pool.submit(delete)
+            assert delete_started.wait(5)
+            # The real delete must wait before scanning links, so it sees the new edge after commit.
+            blocked = not delete_finished.wait(0.3)
+        finally:
+            proceed.set()
+        response = creating.result(timeout=5)
+        assert deleting.result(timeout=5)
+    assert blocked, "deletion scanned/cascaded before the in-flight link write committed"
+    assert response.status_code == 200, response.text
+    with writer.tenant_scope(T):
+        with pytest.raises(KeyError):
+            writer.get_individual(O1)
+        assert writer.list_link_instances(tenant_id=T, link_type_rid=payload["link_type_rid"]) == []
+
+
+def test_in_memory_strict_write_requires_materialized_endpoints(repo):
+    from mate_kernel.ontology import LinkInstance
+
+    repo.upsert_link_type(
+        LinkType(
+            rid=ClassRef(LINK),
+            src=ClassRef(CUSTOMER),
+            dst=ClassRef(ORDER),
+            cardinality=Cardinality.ONE_TO_MANY,
+            directionality=Directionality.DIRECTED,
+        )
+    )
+    repo.delete_individual(O1)
+    link = LinkInstance(
+        rid=f"ont.{T}.lnk.strict_missing",
+        link_type_rid=ClassRef(LINK),
+        src=C1,
+        dst=O1,
+        props=(),
+        created_at=datetime.now(UTC),
+        tenant_id=T,
+    )
+    with pytest.raises(KeyError):
+        repo.create_link_instance(link, require_endpoints=True)
+    assert repo.list_link_instances() == []

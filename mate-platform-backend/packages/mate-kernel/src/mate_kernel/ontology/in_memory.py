@@ -756,11 +756,20 @@ class InMemoryOntologyRepository(OntologyRepository):
             items = [i for i in items if i.class_rid.rid in allowed]
         return list(items)
 
-    def create_link_instance(self, li: LinkInstance) -> LinkInstance:
+    def create_link_instance(self, li: LinkInstance, *, require_endpoints: bool = False) -> LinkInstance:
         # EXP-03：注册 LinkType 的基数约束（未注册类型 legacy 宽松）
         from .types.link_type import check_cardinality
 
         lt = self._link_types.get(li.link_type_rid)
+        if require_endpoints:
+            if lt is None:
+                raise KeyError(f"Link type not found: {li.link_type_rid}")
+            for side, rid, expected in (("src", li.src, lt.src), ("dst", li.dst, lt.dst)):
+                endpoint = self._individuals.get(rid)
+                if endpoint is None:
+                    raise KeyError(f"{side} individual not found: {rid}")
+                if endpoint.class_rid != expected:
+                    raise ValueError(f"{side} class_rid must be {expected}, got {endpoint.class_rid}")
         if lt is not None:
             # 同 rid 的既有行不算（upsert 语义：重建同一条链接不违反基数）
             src_out = sum(

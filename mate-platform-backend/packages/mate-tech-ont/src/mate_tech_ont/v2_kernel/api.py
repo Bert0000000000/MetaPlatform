@@ -5276,7 +5276,9 @@ async def create_link_instance(
             tenant_id=tenant_id,
             marking=tuple(payload.marking),
         )
-        saved = await _call_scoped(request, "create_link_instance", li)
+        saved = await _call_scoped(request, "create_link_instance", li, require_endpoints=True)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
         msg = str(e)
         status = 409 if "cardinality" in msg else 422

@@ -3261,7 +3261,7 @@ class PgOntologyRepository(OntologyRepository):
         parts.append("rid")  # 稳定决胜键：同键值集的分页顺序唯一
         return " ORDER BY " + ", ".join(parts)
 
-    def create_link_instance(self, li: LinkInstance) -> LinkInstance:
+    def create_link_instance(self, li: LinkInstance, *, require_endpoints: bool = False) -> LinkInstance:
         self._ensure_schema()
         row = _li_to_row(li)
         conn, _ = self._connect()
@@ -3277,16 +3277,23 @@ class PgOntologyRepository(OntologyRepository):
                     (row["link_type_rid"],),
                 )
                 definition = cur.fetchone()
+                if require_endpoints and definition is None:
+                    raise KeyError(f"Link type not found: {row['link_type_rid']}")
                 if definition is not None:
+                    # Lifetime/class locks stay held through insert+commit. Deletion takes
+                    # FOR UPDATE before its cascade scan, so it cannot miss an in-flight edge.
                     cur.execute(
-                        "SELECT rid, class_rid FROM ont_individual WHERE rid IN (%s, %s)",
+                        "SELECT rid, class_rid FROM ont_individual "
+                        "WHERE rid IN (%s, %s) ORDER BY rid FOR SHARE",
                         (row["src"], row["dst"]),
                     )
                     endpoints = {endpoint["rid"]: endpoint["class_rid"] for endpoint in cur.fetchall()}
                     for side in ("src", "dst"):
                         actual = endpoints.get(row[side])
-                        # Legacy direct repo writes may reference unmaterialized endpoints;
-                        # HTTP writes always require both endpoints before entering the repo.
+                        # Explicit opt-in keeps direct legacy callers compatible; HTTP
+                        # writes require both resources inside this protected transaction.
+                        if require_endpoints and actual is None:
+                            raise KeyError(f"{side} individual not found: {row[side]}")
                         if actual is not None and actual != definition[f"{side}_rid"]:
                             raise ValueError(
                                 f"{side} class_rid must be {definition[f'{side}_rid']}, got {actual}"
@@ -4949,12 +4956,18 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                # Acquire the endpoint lifetime lock before scanning edges. A strict link
+                # writer holding FOR SHARE commits first; then this cascade sees its edge.
+                cur.execute("SELECT rid FROM ont_individual WHERE rid = %s FOR UPDATE", (rid,))
                 cur.execute("DELETE FROM ont_link_instance WHERE src = %s OR dst = %s", (rid, rid))
                 cur.execute("DELETE FROM ont_edit_overlay WHERE individual_rid = %s", (rid,))
                 cur.execute("DELETE FROM ont_individual WHERE rid = %s", (rid,))
                 deleted = cur.rowcount == 1
             conn.commit()
             return deleted
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 
