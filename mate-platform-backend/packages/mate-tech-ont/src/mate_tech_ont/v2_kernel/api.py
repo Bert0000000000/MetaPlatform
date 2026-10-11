@@ -47,7 +47,7 @@ from mate_kernel.objectset.ir import (
     SortKey,
     TraversalStep,
 )
-from mate_kernel.ontology.api import LinkTypeAlreadyExistsError, OntologyRepository
+from mate_kernel.ontology.api import LinkTypeAlreadyExistsError, ObjectTypeAlreadyExistsError, OntologyRepository
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import ClassRef, definition_checksum
 from mate_kernel.ontology.instances import Individual, LinkInstance
@@ -742,28 +742,6 @@ class BackingDatasourceDTO(BaseModel):
     pk_column: str
     field_mapping: dict[str, str] = Field(default_factory=dict)
     priority: int = 100
-
-
-@router.delete(
-    "/object-types/{rid:path}",
-    response_model=dict,
-    operation_id="ontDeleteV2ObjectType",
-)
-async def delete_object_type(rid: str, request: Request, hard: bool = False) -> dict:
-    """C8：删除 ObjectType。默认软删（archived，与 merge 同口径）；
-    ``?hard=true`` 物理删（供清理演练残留）。
-
-    保护：近 30 天有读量 → 409（先 Deprecate）；hard 且仍有实例 → 409。
-    """
-    ctx = _ctx(request)
-    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
-        raise HTTPException(status_code=403, detail="cross-tenant object type denied")
-    try:
-        return await _call_scoped(request, "delete_object_type", rid, hard=hard)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
 
 
 @router.delete(
@@ -1494,6 +1472,8 @@ async def apply_lifecycle(
 ) -> dict:
     """GOV-17：Cleanup 三级处置（Snooze/Deprecate/Delete）+ 使用量删除保护。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
@@ -1580,9 +1560,13 @@ class SchemaWipDTO(BaseModel):
 async def save_schema_wip(
     payload: SchemaWipDTO,
     request: Request,
+    create_only: bool = False,
+    expected_checksum: str | None = None,
 ) -> dict:
-    """G33：schema 变更暂存（他人不可见；不落正式表、不做门禁）。"""
+    """G33：schema 变更暂存（租户内草稿；不落正式表、不做发布门禁）。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not payload.payload.rid.startswith(f"ont.{tenant}."):
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
@@ -1591,7 +1575,9 @@ async def save_schema_wip(
         "save_schema_wip",
         payload.payload.rid,
         payload.payload.model_dump(exclude={"confirm_name"}),
-        payload.author,
+        str(ctx.user_id),
+        create_only=create_only,
+        expected_checksum=expected_checksum,
     )
 
 
@@ -1601,8 +1587,9 @@ async def save_schema_wip(
     operation_id="ontListV2SchemaWip",
 )
 async def list_schema_wip(request: Request) -> list[dict]:
-    _ctx(request)
-    return await _call_scoped(request, "list_schema_wip")
+    ctx = _ctx(request)
+    rows = await _call_scoped(request, "list_schema_wip")
+    return [row for row in rows if row["rid"].startswith(f"ont.{ctx.tenant_id}.")]
 
 
 @router.post(
@@ -1625,9 +1612,14 @@ async def apply_schema_wip(
       不一致 → 409。客户端可用 ``expected_checksum`` 显式声明"我已看过新状态"来覆盖。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
-    wip = await _call_scoped(request, "get_schema_wip", rid)
+    try:
+        wip = await _call_scoped(request, "get_schema_wip", rid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="Draft no longer exists; reload the model") from e
     payload = dict(wip["payload"])
     # 显式确认优先于草稿载荷里的值（草稿可能是旧/空确认）
     if confirm_name:
@@ -1635,26 +1627,11 @@ async def apply_schema_wip(
     dto = ObjectTypeDTO(**payload)
     # 显式 expected_checksum 优先；否则用草稿基线（自动发现"我编辑期间别人已改过"）
     declared = expected_checksum or str(wip.get("base_checksum") or "")
-    if declared:
-        try:
-            current = await _call_scoped(request, "definition_checksum", ClassRef(rid))
-        except KeyError:
-            current = ""  # 该类型尚不存在 → 与任何非空声明冲突
-        if current != declared:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "E409_VERSION_CONFLICT",
-                    "message": (
-                        f"草稿基线已过期：模型已被他人改动（当前 {current or '<不存在>'}，"
-                        f"草稿基线 {declared}）；请重新打开并保存草稿后再发布"
-                    ),
-                    "current_checksum": current,
-                    "declared_checksum": declared,
-                },
-            )
-    # 复用主 upsert 端点的门禁逻辑：直接调内部实现
-    saved = await _upsert_object_type_gated(dto, request, ctx)
+    # The repository compares under the same lock/transaction as the write.
+    saved = await _upsert_object_type_gated(
+        dto, request, ctx, create_only=bool(wip.get("create_only")),
+        expected_checksum=declared if declared else ("" if wip.get("create_only") else None),
+    )
     await _call_scoped(request, "delete_schema_wip", rid)
     return _ot_to_dto(saved)
 
@@ -1666,10 +1643,37 @@ async def apply_schema_wip(
 )
 async def discard_schema_wip(rid: str, request: Request) -> dict:
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
     ok = await _call_scoped(request, "delete_schema_wip", rid)
     return {"rid": rid, "discarded": bool(ok)}
+
+
+@router.delete(
+    "/object-types/{rid:path}",
+    response_model=dict,
+    operation_id="ontDeleteV2ObjectType",
+)
+async def delete_object_type(rid: str, request: Request, hard: bool = False) -> dict:
+    """C8：删除 ObjectType。默认软删（archived，与 merge 同口径）；
+    ``?hard=true`` 物理删（供清理演练残留）。
+
+    保护：近 30 天有读量 → 409（先 Deprecate）；hard 且仍有实例 → 409。
+    """
+    ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant object type denied")
+    try:
+        return await _call_scoped(request, "delete_object_type", rid, hard=hard)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
 
 
 def _assert_publishable(ot: ObjectType) -> None:
@@ -1697,6 +1701,7 @@ async def _upsert_object_type_gated(
     payload: ObjectTypeDTO,
     request: Request,
     ctx: Any,
+    *, create_only: bool = False, expected_checksum: str | None = None,
 ) -> ObjectType:
     """G33：与 POST /object-types 相同的门禁 + upsert（WIP apply 复用）。"""
     from mate_kernel.ontology.types.object_type import detect_destructive_changes
@@ -1705,9 +1710,17 @@ async def _upsert_object_type_gated(
     _assert_publishable(ot)
     try:
         existing = await _call_scoped(request, "get_object_type", ClassRef(payload.rid))
-        destructive = detect_destructive_changes(existing, ot)
     except KeyError:
-        destructive = []
+        existing = None
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Model comparison unavailable; retry") from e
+    if expected_checksum is not None and not create_only:
+        current = definition_checksum(_ot_to_row(existing)) if existing is not None else ""
+        if current != expected_checksum:
+            raise HTTPException(status_code=409, detail={"code": "E409_VERSION_CONFLICT",
+                "message": "草稿基线已过期，请比较最新模型后重试", "current_checksum": current,
+                "declared_checksum": expected_checksum})
+    destructive = detect_destructive_changes(existing, ot) if existing is not None and not create_only else []
     if destructive and payload.confirm_name != existing.display_name:
         raise HTTPException(
             status_code=409,
@@ -1718,9 +1731,21 @@ async def _upsert_object_type_gated(
             },
         )
     try:
-        return await _call_scoped(request, "upsert_object_type", ot)
+        options: dict[str, Any] = {}
+        if create_only:
+            options["create_only"] = True
+        if expected_checksum is not None:
+            options["expected_checksum"] = expected_checksum
+        return await _call_scoped(request, "upsert_object_type", ot, **options)
+    except ObjectTypeAlreadyExistsError as e:
+        raise HTTPException(status_code=409, detail={"error": "object_type_exists",
+            "message": "该对象类型已存在，请打开已有类型或修改标识", "existing_rid": payload.rid}) from e
+    except VersionConflict as e:
+        raise HTTPException(status_code=409, detail={"code": "E409_VERSION_CONFLICT",
+            "message": "草稿基线已过期，请比较最新模型后重新编辑", "existing_rid": payload.rid}) from e
     except SlugConflictError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail={"error": "slug_conflict", "message": str(e),
+            "existing_rid": e.existing_rid, "existing_display_name": e.existing_display_name, "slug": e.slug, "hint": "Call precheck to locate the existing type; merge requires two persisted types."}) from e
     except ModelValidationUnavailable as e:
         # 一致性校验所需读取失败 → 503（依赖不可用，可重试），**不得**视为通过
         raise HTTPException(status_code=503, detail=str(e)) from e
@@ -1825,61 +1850,19 @@ async def list_interface_implementations(rid: str, request: Request) -> list[str
 async def upsert_object_type(
     payload: ObjectTypeDTO,
     request: Request,
+    create_only: bool = False,
 ) -> ObjectTypeResponse:
     """Upsert an ObjectType — registers Property + Class in kernel repo.
 
     MP-DEDUP-01：DB UNIQUE (tenant_id, slug) 触发 → 409 + 建议合并到已有 rid。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not payload.rid.startswith(f"ont.{ctx.tenant_id}."):
         # GOVERN-06 第一道防线：外租户前缀 rid 一律拒绝写入
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
-    ot = _dto_to_ot(payload)
-    _assert_publishable(ot)
-    # G33：破坏性变更门禁 —— 删属性/改 format/改主键/改 parent 须 confirm_name
-    from mate_kernel.ontology.types.object_type import detect_destructive_changes
-
-    try:
-        existing = await _call_scoped(request, "get_object_type", ClassRef(payload.rid))
-        destructive = detect_destructive_changes(existing, ot)
-    except KeyError:
-        destructive = []  # 类型不存在 → 无破坏性变更可言
-    except HTTPException:
-        raise
-    except Exception as e:
-        # 读取失败**不得**视为「无破坏性变更」（fail-closed）
-        raise HTTPException(
-            status_code=503, detail=f"destructive-change check unavailable: {e}"
-        ) from e
-    if destructive and payload.confirm_name != existing.display_name:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "error": "destructive_confirm_required",
-                "changes": destructive,
-                "confirm_with": existing.display_name,
-                "hint": "resend with confirm_name == 该类型当前 display_name",
-            },
-        )
-    try:
-        saved = await _call_scoped(request, "upsert_object_type", ot)
-    except SlugConflictError as e:
-        # 409 + 让前端引导用户 precheck / merge
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "error": "slug_conflict",
-                "message": str(e),
-                "existing_rid": e.existing_rid,
-                "existing_display_name": e.existing_display_name,
-                "slug": e.slug,
-                "hint": "Call POST /v2/object-types/precheck to find similar types, "
-                "or POST /v2/object-types/merge to merge into the existing one.",
-            },
-        ) from e
-    except ModelValidationUnavailable as e:
-        # 一致性校验读取失败 → 503（不得视为通过）
-        raise HTTPException(status_code=503, detail=str(e)) from e
+    saved = await _upsert_object_type_gated(payload, request, ctx, create_only=create_only)
     return _ot_to_dto(saved)
 
 
@@ -1970,6 +1953,8 @@ async def export_object_type(rid: str, request: Request, format: str = "jsonld")
 async def import_object_type(request: Request, payload: dict) -> ObjectTypeResponse:
     """ONT-G9/G20：从 export 的 JSON-LD content 回灌类型（同 rid upsert 语义）。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     content = payload.get("content") or {}
     rid = str(content.get("@id") or payload.get("rid") or "")
     if not rid.startswith(f"ont.{ctx.tenant_id}.obj."):
@@ -2407,6 +2392,8 @@ async def branch_object_type(
     发布下线（`archived=TRUE`，定义已先入不可变快照），家族在生效集合里保持唯一。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     body = payload or {}
     new_rid = str((body or {}).get("new_rid") or "")
     note = str((body or {}).get("note") or "")
@@ -2470,6 +2457,8 @@ async def rollback_object_type(
     （实例 / 关系实例），**不**补偿已发生的副作用（Action side effects / 外联写入）。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     body = payload or {}
     from_rid = str((body or {}).get("from_rid") or "")
     tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
@@ -2569,6 +2558,8 @@ async def run_migration_endpoint(
       与 ADR-0080 §2.5 同口径 —— 重新 assess 后再执行）。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant migration run denied")
     key = _require_idempotency_key(request)
@@ -2662,6 +2653,8 @@ async def append_object_type_property(
     5. 返回更新后的 OT
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant object type denied")
     try:
@@ -3728,6 +3721,8 @@ async def merge_object_types(
     source 设置 archived=true，UNIQUE INDEX 自动让出 slug，可后续复用。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not payload.source_rid.startswith(f"ont.{tenant_id}."):
         raise HTTPException(status_code=403, detail="cross-tenant merge denied")
@@ -4589,9 +4584,13 @@ async def upsert_link_type(
             )
     try:
         saved = await _call_scoped(
-            request, "upsert_link_type", lt, **({"create_only": True} if create_only else {})
+            request, "upsert_link_type", lt, require_endpoints=True, **({"create_only": True} if create_only else {})
         )
     except (LinkTypeInUseError, LinkTypeAlreadyExistsError) as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     return _link_type_to_dto(saved)
 
@@ -4989,7 +4988,10 @@ async def execute_object_query(
 )
 async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
     """Type introspection for agents (ADR-0043 §2.2)."""
-    _ctx(request)
+    ctx = _ctx(request)
+    prefix = f"ont.{ctx.tenant_id}."
+    if not class_rid.startswith(prefix):
+        raise HTTPException(status_code=403, detail="cross-tenant class inspection denied")
     try:
         ot = await _call_scoped(request, "get_object_type", ClassRef(class_rid))
     except KeyError as e:
@@ -4997,6 +4999,8 @@ async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
     link_types = await _call_scoped(request, "list_link_types")
     links: list[InspectLinkDTO] = []
     for lt in link_types:
+        if not all(ref.rid.startswith(prefix) for ref in (lt.rid, lt.src, lt.dst)):
+            continue
         if lt.src.rid == class_rid:
             links.append(
                 InspectLinkDTO(
@@ -5015,7 +5019,8 @@ async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
             )
     action_types = await _call_scoped(request, "list_action_types")
     actions = [
-        at.rid.rid for at in action_types if class_rid in [str(r) for r in getattr(at, "on", ())]
+        at.rid.rid for at in action_types
+        if at.rid.rid.startswith(prefix) and class_rid in [r.rid for r in getattr(at, "on", ())]
     ]
     return ClassInspectDTO(
         rid=ot.rid.rid,

@@ -191,8 +191,8 @@ export async function appendObjectTypeProperty(rid: string, payload: KernelPrope
 }
 
 /** Upsert 一个 ObjectType（POST /object-types）。 */
-export async function createObjectType(payload: KernelObjectTypeCreate): Promise<KernelObjectType> {
-  const resp = await apiClient.post(v2('/object-types'), payload);
+export async function createObjectType(payload: KernelObjectTypeCreate, createOnly = false): Promise<KernelObjectType> {
+  const resp = await apiClient.post(v2('/object-types'), payload, { params: createOnly ? { create_only: true } : undefined });
   return resp.data as KernelObjectType;
 }
 
@@ -870,8 +870,16 @@ export function errDetailText(e: unknown, fallback: string): string {
 export interface SchemaWipEntry {
   rid: string;
   author: string;
+  create_only?: boolean;
+  base_checksum?: string;
   payload: Record<string, unknown>;
   created_at?: string;
+}
+
+/** Persist a schema draft separately from the live type's status metadata. */
+export async function saveSchemaWip(payload: KernelObjectTypeCreate, createOnly = false, expectedChecksum?: string): Promise<{ status: string; base_checksum?: string }> {
+  const response = await apiClient.post(v2('/object-types/wip'), { payload }, { params: { create_only: createOnly, expected_checksum: expectedChecksum } });
+  return response.data;
 }
 
 /** WIP 暂存清单（G33，他人不可见）。 */
@@ -954,6 +962,12 @@ export interface ModelPreflight {
   destructive: string[];
   references: { resolved: string[]; unresolved: string[]; dependencies: string[] };
   rid: string;
+}
+
+/** Actual same-tenant ActionType.on references from the existing class inspector. */
+export async function inspectObjectType(rid: string): Promise<{ actions: string[] }> {
+  const response = await apiClient.get(v2(`/classes/${encodeURIComponent(rid)}/inspect`));
+  return response.data;
 }
 
 /** 发布前预检：静态错误 + 破坏性差异 + 引用解析 + 必要依赖。 */

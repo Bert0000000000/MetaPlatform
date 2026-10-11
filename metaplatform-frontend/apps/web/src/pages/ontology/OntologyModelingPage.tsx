@@ -9,7 +9,7 @@ import {
 import {
   listObjectTypes, listActionTypes, listLinkTypes,
   listValueTypes, listInterfaces,
-  createObjectType,
+  saveSchemaWip, applySchemaWip,
   getObjectType,
   precheckObjectTypes, mergeObjectTypes,
   getTypeHierarchy,
@@ -179,6 +179,7 @@ export default function OntologyModelingPage({
 
   // 相似候选扫描（precheck） + 合并 drawer
   const [precheckLoading, setPrecheckLoading] = useState(false);
+  const [candidateError, setCandidateError] = useState('');
   const [candidates, setCandidates] = useState<ObjectTypeCandidate[]>([]);
   const [candidateModalOpen, setCandidateModalOpen] = useState(false);
   const [precheckSource, setPrecheckSource] = useState<{ name: string; slug: string; domain: string } | null>(null);
@@ -372,7 +373,7 @@ export default function OntologyModelingPage({
       }
     } catch (e) {
       // precheck 失败不阻塞创建流程（best-effort）
-      console.warn('precheck 失败', e);
+      setCandidateError('相似候选服务暂不可用，可以重试扫描或继续填写；发布仍会检查重复标识。');
     } finally {
       setPrecheckLoading(false);
     }
@@ -390,7 +391,7 @@ export default function OntologyModelingPage({
   // 返回 null=成功；string=错误信息；DestructiveConfirmDetail 对象=409 破坏性门禁
   // （编辑器抽屉底部展示二段确认区，确认重发时 payload 顶层带 confirm_name）。
   const submitEditor = async (
-    payload: KernelObjectTypeCreate, mode: 'create' | 'edit',
+    payload: KernelObjectTypeCreate, mode: 'create' | 'edit', expectedChecksum?: string,
   ): Promise<string | DestructiveConfirmDetail | null> => {
     const domain = domainOfObjectType(payload.rid);
     // rid = ont.<tenant>.obj.<domain>.<slug>.v1 → slug 段（与 handleCreateNameBlur 的 key 同构）
@@ -405,18 +406,19 @@ export default function OntologyModelingPage({
           });
           const list = resp?.candidates ?? [];
           if (list.length > 0) {
-            // 抽屉正常关闭，由候选 Modal 续接（合并 / 仍要新建直接落库 / 取消）
+            // 保留抽屉输入，由候选对话框选择复用、继续或返回。
             setPendingCreatePayload(payload);
             setCandidates(list);
             setPrecheckSource({ name: payload.display_name, slug, domain });
             setCandidateModalOpen(true);
-            return null;
+            return "发现相似对象类型，请选择复用或继续创建；输入已保留。";
           }
         } catch {
           // precheck 失败不阻塞创建（best-effort）
         }
       }
-      await createObjectType(payload);
+      await saveSchemaWip(payload, mode === 'create', expectedChecksum);
+      await applySchemaWip(payload.rid, payload.confirm_name ?? '', expectedChecksum ?? '');
       await afterEditorSave(payload.rid);
       return null;
     } catch (e) {
@@ -434,53 +436,26 @@ export default function OntologyModelingPage({
     setPendingCreatePayload(null);
   };
 
-  // 候选 Modal「仍要新建」：
-  //   - 提交时触发的扫描（payload 已完整、抽屉已关）→ 直接落库
-  //   - 失焦触发的扫描（抽屉还在、表单未填完）→ 只记录「本次已忽略」，回到编辑器继续
+  // 候选 Modal「继续创建」只忽略本次候选并回到保留的表单，由用户再次发布。
   const continueCreateAnyway = async () => {
     setCandidateModalOpen(false);
-    if (pendingCreatePayload) {
-      const payload = pendingCreatePayload;
-      try {
-        await createObjectType(payload);
-        await afterEditorSave(payload.rid);
-      } catch (e) {
-        console.warn('新建概念失败', e);
-      }
-    } else if (precheckSource) {
+    if (precheckSource) {
       setPrecheckDismissedKey(`${precheckSource.name}|${precheckSource.slug}|${precheckSource.domain}`);
     }
+    setPendingCreatePayload(null);
   };
 
-  // 用户在候选 Modal 里选了某个候选 → 打开合并 drawer（先 resolve source / target 完整定义）
+  // 未发布表单没有可合并的源对象；选择候选即定位并复用已存在的类型。
   const openMergeDrawerForCandidate = async (candidate: ObjectTypeCandidate) => {
-    if (!precheckSource) return;
-    setCandidateModalOpen(false);
-    // 合并 drawer zIndex(1100) 低于 V2 编辑器(1200)：先关编辑器避免遮挡
-    setEditorOpen(false);
-    setCreateOpen(false);
-    setPendingCreatePayload(null);
+    // A new form has no persisted source to merge. Reuse the selected existing type.
     try {
-      const tenant = getTenantId() || 'demo';
-      const sourceRid = `ont.${tenant}.obj.${precheckSource.domain}.${precheckSource.slug}.v1`;
-      const [source, target] = await Promise.all([
-        getObjectType(sourceRid).catch(() => null),
-        getObjectType(candidate.rid).catch(() => null),
-      ]);
-      // 兜底：若 source 还没建出来（仅 precheck 命中），从现有列表里挑一个等价的 rid
-      const resolvedSource = source ?? objectTypes.find((ot) =>
-        ot.display_name === precheckSource.name || slugAndVersionOfObjectType(ot.rid).slug === `obj.${precheckSource.domain}.${precheckSource.slug}`,
-      ) ?? null;
-      const resolvedTarget = target ?? objectTypes.find((ot) => ot.rid === candidate.rid) ?? null;
-      if (!resolvedSource || !resolvedTarget) {
-        console.warn('无法 resolve source / target rid，跳过合并 drawer');
-        return;
-      }
-      setMergeSource(resolvedSource);
-      setMergeTarget(resolvedTarget);
-      setMergeOpen(true);
-    } catch (e) {
-      console.warn('resolve 合并对象失败', e);
+      await getObjectType(candidate.rid);
+      await afterEditorSave(candidate.rid);
+      setCandidateModalOpen(false);
+      closeEditor();
+    } catch {
+      setCandidateModalOpen(false);
+      setCandidateError('已有类型暂时无法读取，输入已保留，请重试。');
     }
   };
 
@@ -904,6 +879,7 @@ export default function OntologyModelingPage({
         ) : null}
       </SheetDetail>
 
+      {candidateError && <div role="alert">{candidateError}<button onClick={() => setCandidateError('')}>知道了</button></div>}
       {/* V2 类型/属性编辑器：create（Shell 按钮）/ edit（编辑概念 / 新增属性 / 行内编辑） */}
       <ObjectTypeEditorV2Drawer
         open={editorOpen}
@@ -918,6 +894,7 @@ export default function OntologyModelingPage({
         prefill={editorPrefill}
         onClose={closeEditor}
         onSubmit={submitEditor}
+        onLocateExisting={async rid => { await getObjectType(rid); await afterEditorSave(rid); closeEditor(); }}
         onCreateNameBlur={handleCreateNameBlur}
         prechecking={precheckLoading}
       />
@@ -939,8 +916,7 @@ export default function OntologyModelingPage({
       >
         <div className="mp-mb-3 mp-text-sm mp-text-2 mp-lh-16" >
           概念名「<strong className="mp-text-1">{precheckSource?.name}</strong>」与下方已有概念相似，
-          请选择「合并到它」（走合并 drawer，迁移数据后软删源）或「仍要新建」
-          {pendingCreatePayload ? '（忽略提示，直接创建新概念）' : '（忽略提示，回到编辑器继续填写）'}。
+          请选择「复用已有类型」或「继续创建」。继续创建将返回表单，输入会保留。
         </div>
         <div className="mp-flex mp-gap-2 mp-flex-col" >
           {candidates.map((c) => {
@@ -965,7 +941,7 @@ export default function OntologyModelingPage({
                   onClick={() => openMergeDrawerForCandidate(c)}
                   className="mp-clickable mp-rounded mp-text-sm mp-border-none mp-onto-btn mp-onto-btn--primary mp-onto-btn--md"
                 >
-                  合并到它
+                  复用已有类型
                 </button>
               </div>
             );
@@ -984,7 +960,7 @@ export default function OntologyModelingPage({
             onClick={() => void continueCreateAnyway()}
             className="mp-clickable mp-rounded mp-text-body mp-border-none mp-onto-btn mp-onto-btn--primary mp-onto-btn--lg"
           >
-            仍要新建
+            继续创建
           </button>
         </div>
       </Modal>

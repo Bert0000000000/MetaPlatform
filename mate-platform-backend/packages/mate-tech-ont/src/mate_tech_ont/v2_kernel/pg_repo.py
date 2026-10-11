@@ -28,7 +28,7 @@ from uuid import uuid4
 from mate_kernel.objectset.compiler import CompiledFilter, FilterCompiler, individual_to_row
 from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp, QueryResult
 from mate_kernel.objectset.sql_compiler import SQLCompiler
-from mate_kernel.ontology.api import LinkTypeAlreadyExistsError, OntologyRepository
+from mate_kernel.ontology.api import ObjectTypeAlreadyExistsError, LinkTypeAlreadyExistsError, OntologyRepository
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import (
     ClassRef,
@@ -440,6 +440,7 @@ DDL: tuple[str, ...] = (
     # 应用时基线 != 当前 live → 409（"我编辑期间别人已改过"）——不需要客户端配合，
     # 因此默认就不可能静默覆盖他人改动。
     "ALTER TABLE ont_schema_wip ADD COLUMN IF NOT EXISTS base_checksum TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_schema_wip ADD COLUMN IF NOT EXISTS create_only BOOLEAN NOT NULL DEFAULT FALSE",
     # G23：Function 版本快照 + 别名
     """
     CREATE TABLE IF NOT EXISTS ont_function_version (
@@ -1654,6 +1655,8 @@ class PgOntologyRepository(OntologyRepository):
         self,
         ot: ObjectType,
         *,
+        create_only: bool = False,
+        expected_checksum: str | None = None,
         supersede_rids: tuple[str, ...] = (),
         author: str = "",
         note: str = "",
@@ -1680,6 +1683,33 @@ class PgOntologyRepository(OntologyRepository):
             self._assert_parent_acyclic(row["rid"], row["parent_class"])
         conn, _ = self._connect()
         try:
+            with self._cursor(conn) as cur:
+                # Definition creation cannot slip into a supersede scan. Runtime links
+                # retain their existing definition -> endpoint lock order.
+                self._lock_schema_definitions(cur, row["tenant_id"], shared=not bool(supersede_rids))
+                cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                            (f"{row['rid']}|object-definition",))
+                cur.execute("SELECT * FROM ont_object_type WHERE rid = %s FOR UPDATE", (row["rid"],))
+                current = cur.fetchone()
+                if create_only and current is not None:
+                    raise ObjectTypeAlreadyExistsError(f"ObjectType already exists: {row['rid']}")
+                if expected_checksum is not None:
+                    actual = definition_checksum(_ot_to_row(_row_to_ot(current))) if current else ""
+                    if actual != expected_checksum:
+                        raise VersionConflict("Model changed since the draft was saved; compare and retry")
+                if supersede_rids:
+                    cur.execute("SELECT rid FROM ont_link_type WHERE tenant_id = %s "
+                                "AND (src_rid = ANY(%s) OR dst_rid = ANY(%s)) ORDER BY rid",
+                                (row["tenant_id"], list(supersede_rids), list(supersede_rids)))
+                    for link in cur.fetchall():
+                        self._lock_link_type(cur, link["rid"])
+                    cur.execute("UPDATE ont_link_type SET "
+                                "src_rid = CASE WHEN src_rid = ANY(%s) THEN %s ELSE src_rid END, "
+                                "dst_rid = CASE WHEN dst_rid = ANY(%s) THEN %s ELSE dst_rid END, "
+                                "updated_at = now() WHERE tenant_id = %s "
+                                "AND (src_rid = ANY(%s) OR dst_rid = ANY(%s))",
+                                (list(supersede_rids), row["rid"], list(supersede_rids), row["rid"],
+                                 row["tenant_id"], list(supersede_rids), list(supersede_rids)))
             # 发布同族新版本：先下线旧 rid（同一事务）。archived 行被 UNIQUE INDEX
             # 排除 → 同 slug 立刻可再次使用；旧版定义已由下方快照逻辑保留。
             if supersede_rids:
@@ -1773,6 +1803,7 @@ class PgOntologyRepository(OntologyRepository):
                             type_group = EXCLUDED.type_group,
                             render_hints = EXCLUDED.render_hints,
                             updated_at = now()
+                        WHERE NOT %s
                         """,
                         (
                             row["rid"],
@@ -1788,8 +1819,11 @@ class PgOntologyRepository(OntologyRepository):
                             row["status"],
                             row["type_group"],
                             json.dumps(row["render_hints"]),
+                            create_only,
                         ),
                     )
+                    if create_only and cur.rowcount != 1:
+                        raise ObjectTypeAlreadyExistsError(row["rid"])
                 except psycopg2_errors.UniqueViolation as e:
                     # race：另一并发事务先 commit 了同 slug 的另一 rid。回滚后
                     # 重新查 existing_rid 抛 SlugConflictError。diag.constraint_name
@@ -2825,12 +2859,22 @@ class PgOntologyRepository(OntologyRepository):
             kind="merge_suggestion",
         )
 
-    def upsert_link_type(self, lt: LinkType, *, create_only: bool = False) -> LinkType:
+    def upsert_link_type(self, lt: LinkType, *, create_only: bool = False, require_endpoints: bool = False) -> LinkType:
         self._ensure_schema()
         row = _lt_to_row(lt)
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                self._lock_schema_definitions(cur, row["tenant_id"], shared=True)
+                # Re-read after the schema lock: API reads may precede publication.
+                cur.execute("SELECT rid, archived FROM ont_object_type WHERE rid IN (%s, %s) ORDER BY rid FOR SHARE",
+                            (row["src_rid"], row["dst_rid"]))
+                endpoints = {endpoint["rid"]: endpoint for endpoint in cur.fetchall()}
+                for ref in (row["src_rid"], row["dst_rid"]):
+                    if ref in endpoints and endpoints[ref]["archived"]:
+                        raise ValueError(f"Object type version is archived: {ref}; select the active version")
+                    if require_endpoints and ref not in endpoints:
+                        raise KeyError(f"active object type not found: {ref}")
                 self._lock_link_type(cur, row["rid"])
                 cur.execute("SELECT * FROM ont_link_type WHERE rid = %s", (row["rid"],))
                 existing = cur.fetchone()
@@ -3352,6 +3396,10 @@ class PgOntologyRepository(OntologyRepository):
             raise
         finally:
             conn.close()
+
+    def _lock_schema_definitions(self, cur: Any, tenant: str, *, shared: bool) -> None:
+        function = "pg_advisory_xact_lock_shared" if shared else "pg_advisory_xact_lock"
+        cur.execute(f"SELECT {function}(hashtextextended(%s, 0))", (f"{tenant}|schema-definitions",))
 
     def _lock_link_type(self, cur: Any, link_type_rid: str, *, shared: bool = False) -> None:
         """Keep definitions stable for writes while unrelated endpoints can write concurrently."""
@@ -4347,7 +4395,7 @@ class PgOntologyRepository(OntologyRepository):
     # ───── G33：schema WIP 暂存 ─────
 
     def save_schema_wip(
-        self, rid: str, payload: dict[str, Any], author: str = ""
+        self, rid: str, payload: dict[str, Any], author: str = "", *, create_only: bool = False, expected_checksum: str | None = None
     ) -> dict[str, Any]:
         """暂存草稿，并记下**当时的 live 定义指纹**（冲突基线）。
 
@@ -4363,12 +4411,14 @@ class PgOntologyRepository(OntologyRepository):
                     if live_row is not None
                     else ""
                 )
+                if expected_checksum is not None:
+                    base = expected_checksum
                 cur.execute(
-                    """INSERT INTO ont_schema_wip (rid, tenant_id, author, payload, base_checksum)
-                       VALUES (%s, %s, %s, %s::jsonb, %s)
+                    """INSERT INTO ont_schema_wip (rid, tenant_id, author, payload, base_checksum, create_only)
+                       VALUES (%s, %s, %s, %s::jsonb, %s, %s)
                        ON CONFLICT (rid) DO UPDATE SET
                          payload = EXCLUDED.payload, author = EXCLUDED.author,
-                         base_checksum = EXCLUDED.base_checksum,
+                         create_only = ont_schema_wip.create_only OR EXCLUDED.create_only,
                          created_at = now()""",
                     (
                         rid,
@@ -4376,6 +4426,7 @@ class PgOntologyRepository(OntologyRepository):
                         author,
                         json.dumps(payload, default=str),
                         base,
+                        create_only,
                     ),
                 )
             conn.commit()
@@ -4389,7 +4440,7 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT rid, author, payload, base_checksum, created_at FROM ont_schema_wip "
+                    "SELECT rid, author, payload, base_checksum, create_only, created_at FROM ont_schema_wip "
                     "ORDER BY created_at DESC"
                 )
                 return [dict(r) for r in cur.fetchall()]
