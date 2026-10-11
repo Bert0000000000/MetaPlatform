@@ -335,3 +335,131 @@ async def test_concrete_operation_authority_and_preview_metadata():
             assert [t['name'] for t in await server.list_tools('a')]==['ont_validate_preflight']
     finally:
         for tool in tools:await tool.aclose()
+
+
+@pytest.fixture
+def owned_embedding_repo(monkeypatch):
+    """Dedicated Fix1 DB; never alter the accepted published Order schema."""
+    import os, uuid
+    from urllib.parse import urlparse
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+    from mate_kernel.ontology import ClassRef
+    from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat
+    source = os.environ.get('MP11_APPHUB_PG_DSN')
+    if not source:
+        pytest.skip('explicit owned PG required')
+    parsed = urlparse(source)
+    assert parsed.hostname == '127.0.0.1' and parsed.port == 55497
+    assert parsed.path.startswith('/codex_mp11_')
+    dsn = source.rsplit('/', 1)[0] + '/codex_mp11_agent_pgvector_fix1_20261012'
+    monkeypatch.setenv('ONT_VECTOR_DIM', '3')
+    repo = PgOntologyRepository(dsn=dsn)
+    tenant = 'mp11-vector-fix'
+    slug = 'case-' + uuid.uuid4().hex[:10]
+    rid = f'ont.{tenant}.obj.{slug}'
+    pk = ClassRef(f'ont.{tenant}.prop.id')
+    status = ClassRef(f'ont.{tenant}.prop.status')
+    calls = []
+    class Embedder:
+        def embed(self, text):
+            calls.append(text)
+            return [0.25, 0.5, 0.75]
+    repo.set_embedder(Embedder())
+    with repo.tenant_scope(tenant):
+        repo.upsert_object_type(ObjectType(
+            rid=ClassRef(rid), primary_key=(pk,), properties=(
+                Property(pk, 'string', False, True, 'id', PropertyFormat.STRING),
+                Property(status, 'string', True, False, 'status', PropertyFormat.STRING),
+            ),
+        ))
+        class OwnedEmbeddingFixture(tuple):
+            def __repr__(self): return "<owned embedding fixture: loopback55497/codex_mp11_agent_pgvector_fix1_20261012>"
+        yield OwnedEmbeddingFixture((repo, dsn, tenant, rid, calls))
+
+
+def test_actual_pg_proposal_embedding_unavailable_extension_falls_back(owned_embedding_repo, monkeypatch):
+    """Real failed CREATE EXTENSION aborts PG, not a Python-only mock error."""
+    import uuid, psycopg2
+    from psycopg2.extensions import TRANSACTION_STATUS_INERROR
+    repo, dsn, tenant, rid, embeddings = owned_embedding_repo
+    original_cursor = repo._cursor
+    failures = []
+    class ExtensionUnavailableCursor:
+        def __init__(self, cursor): self.cursor = cursor
+        def __enter__(self): self.cursor.__enter__(); return self
+        def __exit__(self, *args): return self.cursor.__exit__(*args)
+        def __getattr__(self, name): return getattr(self.cursor, name)
+        def execute(self, statement, params=None):
+            if statement == 'CREATE EXTENSION IF NOT EXISTS vector':
+                try:
+                    self.cursor.execute('CREATE EXTENSION codex_mp11_unavailable_vector')
+                except psycopg2.Error as exc:
+                    failures.append((exc.pgcode, self.cursor.connection.get_transaction_status()))
+                    raise
+            return self.cursor.execute(statement, params)
+    monkeypatch.setattr(repo, '_cursor', lambda conn: ExtensionUnavailableCursor(original_cursor(conn)))
+    repo._pgvector_ready = False
+    repo._pgvector_dim = 0
+    repo._try_pgvector_upgrade()  # Prove genuine unavailable extension on owned PG.
+    assert failures == [('0A000', TRANSACTION_STATUS_INERROR)]
+    proposal = repo.propose_create_instance(rid, {'id': uuid.uuid4().hex, 'status': 'new'}, 'Fix1 JSONB fallback')
+    repo.confirm_proposal(proposal.proposal_id, 'human')
+    key = uuid.uuid4().hex
+    receipt = repo.execute_proposal(proposal.proposal_id, 'human', key)
+    assert receipt['kind'] == 'create_instance' and embeddings
+    assert len(failures) == 1  # Lease never performs opportunistic extension DDL.
+    assert repo._pgvector_ready is False and repo._pgvector_dim == 0
+    with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute('SELECT embedding,embedding_vec IS NULL FROM ont_object_embedding WHERE individual_rid=%s', (receipt['individual_rid'],))
+        rows = cur.fetchall()
+        assert len(rows) == 2 and all(row == ([0.25, 0.5, 0.75], True) for row in rows)
+    assert repo.execute_proposal(proposal.proposal_id, 'human', key) == receipt
+    # Ordinary create still tries the optional upgrade on its own connection;
+    # its genuine SQL failure is isolated and JSONB embeddings still commit.
+    ind = repo.get_individual(receipt['individual_rid'])
+    direct = replace(ind, rid=ind.rid+'ordinary', primary_key=ind.primary_key+'ordinary')
+    repo.create_individual(direct)
+    assert len(failures) > 1
+    with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute('SELECT count(*) FROM ont_object_embedding WHERE individual_rid=%s', (direct.rid,))
+        assert cur.fetchone() == (2,)
+
+
+def test_actual_pg_proposal_embedding_receipt_rollback_keeps_readiness_honest(owned_embedding_repo, monkeypatch):
+    import uuid, psycopg2
+    repo, dsn, tenant, rid, embeddings = owned_embedding_repo
+    # Isolated Fix1 DB only: make the optional vector column genuinely absent.
+    with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute('ALTER TABLE ont_object_embedding DROP COLUMN IF EXISTS embedding_vec')
+    repo._pgvector_ready = False
+    repo._pgvector_dim = 0
+    proposal = repo.propose_create_instance(rid, {'id': uuid.uuid4().hex, 'status': 'new'}, 'Fix1 receipt rollback')
+    repo.confirm_proposal(proposal.proposal_id, 'human')
+    original = repo._persist_proposal_transition
+    def fail(*args, **kwargs): raise RuntimeError('injected post-embedding receipt failure')
+    monkeypatch.setattr(repo, '_persist_proposal_transition', fail)
+    key = uuid.uuid4().hex
+    with pytest.raises(RuntimeError, match='post-embedding'):
+        repo.execute_proposal(proposal.proposal_id, 'human', key)
+    assert embeddings
+    iid = 'ont.'+tenant+'.ind.'+rid.split('.')[-1]+'.'+proposal.parameters['props']['id']
+    with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute('SELECT 1 FROM ont_individual WHERE rid=%s', (iid,)); assert cur.fetchone() is None
+        cur.execute('SELECT 1 FROM ont_object_embedding WHERE individual_rid=%s', (iid,)); assert cur.fetchone() is None
+        cur.execute("SELECT 1 FROM pg_attribute WHERE attrelid='ont_object_embedding'::regclass AND attname='embedding_vec' AND NOT attisdropped")
+        assert cur.fetchone() is None
+    assert repo._pgvector_ready is False and repo._pgvector_dim == 0
+    assert repo.get_proposal(proposal.proposal_id).status == 'confirmed'
+    with pytest.raises(KeyError): repo.get_proposal_execution(proposal.proposal_id)
+    monkeypatch.setattr(repo, '_persist_proposal_transition', original)
+    receipt = repo.execute_proposal(proposal.proposal_id, 'human', key)
+    assert repo.execute_proposal(proposal.proposal_id, 'human', key) == receipt
+    # Outside a Proposal, existing upgrade/indexing still succeeds and commits.
+    repo._try_pgvector_upgrade()
+    assert repo._pgvector_ready is True and repo._pgvector_dim == 3
+    ind = repo.get_individual(receipt['individual_rid'])
+    direct = replace(ind, rid=ind.rid+'ordinary', primary_key=ind.primary_key+'ordinary')
+    repo.create_individual(direct)
+    with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute('SELECT embedding_vec::text FROM ont_object_embedding WHERE individual_rid=%s', (direct.rid,))
+        assert cur.fetchall() == [('[0.25,0.5,0.75]',), ('[0.25,0.5,0.75]',)]

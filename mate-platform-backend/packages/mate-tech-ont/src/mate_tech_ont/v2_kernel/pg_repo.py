@@ -1421,6 +1421,14 @@ class PgOntologyRepository(OntologyRepository):
         扩展不可用（非 pgvector 镜像）→ 标志保持 False，检索走 JSONB cosine
         兜底（同接口双实现）。HNSW 2000 维上限 → dim>2000 用 halfvec。
         """
+        # This optional schema upgrade owns its commit and readiness flags.
+        # A borrowed Proposal connection cannot commit it independently: failed
+        # DDL would abort the business transaction, while receipt rollback could
+        # undo successful DDL after readiness was published. Keep JSONB indexing
+        # in the Proposal transaction and defer upgrades to an ordinary call.
+        lease = _LEGACY_PROPOSAL_TX.get()
+        if lease is not None and lease.owner is self and lease.active:
+            return
         import os as _os
 
         try:
