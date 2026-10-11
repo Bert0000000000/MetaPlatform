@@ -31,6 +31,7 @@ stall the whole service.
 from __future__ import annotations
 
 import hashlib
+import json
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -67,6 +68,7 @@ class McpApiKeyRecord:
     last_active_at: datetime | None
     created_at: str
     created_by: str
+    scopes: frozenset[str] = frozenset()
 
 
 def generate_api_key() -> tuple[str, str, str]:
@@ -116,6 +118,7 @@ def _to_record(row: Any) -> McpApiKeyRecord:
         last_active_at=_as_utc(row.last_active_at),
         created_at=row.created_at or "",
         created_by=row.created_by or "",
+        scopes=frozenset(json.loads(row.scopes or "[]")),
     )
 
 
@@ -129,6 +132,7 @@ class McpApiKeyStore:
         key_name: str = "",
         expires_at: datetime | None = None,
         created_by: str = "",
+        scopes: frozenset[str] = frozenset(),
     ) -> tuple[McpApiKeyRecord, str]:
         from mate_tech_db.base import get_session
 
@@ -143,6 +147,7 @@ class McpApiKeyStore:
             expires_at=expires_at,
             created_at=datetime.now(UTC).isoformat(),
             created_by=created_by,
+            scopes=json.dumps(sorted(scopes)),
         )
         session = get_session()
         try:
@@ -254,6 +259,8 @@ async def mcp_api_key_verifier(request: object, token: str) -> RequestContext:
         state.mcp_api_key = record
 
     headers = getattr(request, "headers", {})
+    if headers.get("x-tenant-id") and headers.get("x-tenant-id") != record.tenant_id:
+        raise McpApiKeyRejected("api key cannot switch tenant")
     return RequestContext(
         request_id=headers.get("x-request-id", ""),
         trace_id=headers.get("x-trace-id", ""),
@@ -261,7 +268,7 @@ async def mcp_api_key_verifier(request: object, token: str) -> RequestContext:
         user_id=UserId(f"apikey:{record.key_id}"),
         roles=frozenset(),
         permissions=frozenset(),
-        scopes=frozenset(),
+        scopes=record.scopes,
         client_id="mate-tech-mcp-api-key",
         auth_method=AuthMethod.API_KEY,
     )

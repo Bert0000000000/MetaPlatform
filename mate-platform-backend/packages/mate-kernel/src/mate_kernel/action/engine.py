@@ -20,7 +20,8 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+import os
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
@@ -57,6 +58,18 @@ class FunctionTimeout(FunctionExecutionError):
 
 class ProposalNotConfirmed(RuntimeError):
     """MP-SAL-04（ADR-0044 §2.1）：proposal 未确认/已拒绝/不匹配 —— 未确认的 proposal 永不落库。"""
+
+
+def approval_ttl_seconds() -> int:
+    value = int(os.getenv("ONT_APPROVAL_TTL_SECONDS", "900"))
+    if not 60 <= value <= 86400:
+        raise ValueError("ONT_APPROVAL_TTL_SECONDS must be between 60 and 86400")
+    return value
+
+
+def require_current_approval(deadline: datetime | None) -> None:
+    if deadline is None or deadline <= datetime.now(UTC):
+        raise ProposalNotConfirmed("approval expired or undated; create and approve a fresh proposal")
 
 
 class ProposalStatus(StrEnum):
@@ -169,6 +182,7 @@ class ActionProposal:
     expected_diff: dict[str, Any] = field(default_factory=dict)  # 预期 diff（staging 语义）
     confirmed_by: str | None = None
     confirmed_at: datetime | None = None
+    approval_expires_at: datetime | None = None
     # ONT-PROV-01：提案级溯源（source=ai|user、model、agent_id…；executed
     # 时 create_instance 落实例记录级 provenance，其它 kind 随提案存档）
     provenance: dict[str, Any] | None = None
@@ -303,11 +317,14 @@ class ActionService:
                 f"proposal {proposal_id} is {p.status.value}, only pending can transition "
                 f"(to {to_status.value})"
             )
+        now = datetime.now(UTC)
         updated = replace(
             p,
             status=to_status,
+            approval_expires_at=(now + timedelta(seconds=approval_ttl_seconds()))
+            if to_status is ProposalStatus.CONFIRMED else p.approval_expires_at,
             confirmed_by=by,
-            confirmed_at=datetime.now(UTC)
+            confirmed_at=now
             if to_status is ProposalStatus.CONFIRMED
             else p.confirmed_at,
         )
@@ -393,6 +410,8 @@ class ActionService:
                     f"proposal {proposal_id} is {proposal.status.value}; "
                     "apply requires a confirmed proposal"
                 )
+
+            require_current_approval(proposal.approval_expires_at)
 
         # 1) submission_criteria 全部通过
         for expr in submission_criteria:

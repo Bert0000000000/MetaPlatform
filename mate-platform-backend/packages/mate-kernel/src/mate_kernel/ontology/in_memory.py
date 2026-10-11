@@ -1244,6 +1244,8 @@ class InMemoryOntologyRepository(OntologyRepository):
             raise ProposalNotConfirmed(
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
             )
+        from mate_kernel.action.engine import require_current_approval
+        require_current_approval(p.approval_expires_at)
         if p.kind == "action":
             # ADR-0064 S3：声明式/混合式 ActionType 走统一执行器（edits 是本体）；
             # 纯 function 式仍走 apply_action 协议路径（legacy，is_compat 观察中）。

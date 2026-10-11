@@ -258,15 +258,14 @@ def test_api_key_cannot_reach_hitl_tool() -> None:
         )
 
 
-def test_hitl_tool_is_advertised_as_not_agent_invokable() -> None:
+def test_hitl_tool_is_not_advertised() -> None:
     server = create_server("test-hitl-advert")
     tool = _HitlTool()
     tool.handler = tool  # type: ignore[attr-defined]
     server.register_tool(tool)
 
     listed = asyncio.run(server.list_tools())
-    entry = next(t for t in listed if t["name"] == "ont_confirm_proposal")
-    assert entry["agentInvokable"] is False
+    assert not any(t["name"] == "ont_confirm_proposal" for t in listed)
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +288,7 @@ def _keys_app() -> FastAPI:
             user_id=UserId("u-admin"),
             roles=frozenset({"PLATFORM_SUPER_ADMIN"}),
             permissions=frozenset(),
+            scopes=frozenset({"platform.read", "platform.write"}),
             auth_method=AuthMethod.USER,
         )
         return await call_next(request)

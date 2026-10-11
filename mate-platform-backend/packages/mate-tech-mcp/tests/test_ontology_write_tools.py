@@ -300,9 +300,9 @@ def test_confirm_proposal_blocks_agent_caller() -> None:
     asyncio.run(run())
 
 
-@respx.mock
-def test_confirm_proposal_allows_user_caller() -> None:
-    """显式 __caller__="user" 可走通，转发到 tech-ont。"""
+@respx.mock(assert_all_called=False)
+def test_confirm_proposal_rejects_forged_user_caller() -> None:
+    """A caller string cannot make Agent tooling a human approval route."""
     route = respx.post(
         f"{ONT_BASE}/api/v1/ont/v2/proposals/prop-1/confirm",
     ).mock(
@@ -336,11 +336,9 @@ def test_confirm_proposal_allows_user_caller() -> None:
         finally:
             await tool.aclose()
 
-    out = asyncio.run(run())
-    assert route.called
-    body = json.loads(route.calls.last.request.content)
-    assert body["confirmed_by"] == "u-1"
-    assert out["status"] == "confirmed"
+    with pytest.raises(PermissionError):
+        asyncio.run(run())
+    assert not route.called
 
 
 @respx.mock

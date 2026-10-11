@@ -770,6 +770,27 @@ async def delete_integration(request: Request, iid: str) -> dict[str, Any]:
     return {"deleted": iid}
 
 
+class CreateMcpApiKeyRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    scopes: list[str] = Field(default_factory=lambda: ["platform.read"])
+    expiresAt: str | None = None
+
+
+class McpApiKeyResponse(BaseModel):
+    id: str
+    name: str
+    prefix: str
+    scopes: list[str]
+    createdAt: str
+    lastUsedAt: str | None = None
+    expiresAt: str | None = None
+    enabled: bool
+
+
+class McpApiKeyCreatedResponse(McpApiKeyResponse):
+    key: str
+
+
 def _api_key_store_or_503() -> Any:
     store = get_api_key_store()
     if store is None:
@@ -788,8 +809,8 @@ def _api_key_tenant(request: Request) -> str:
     persist its own access indefinitely.
     """
     ctx = getattr(request.state, "ctx", None)
-    if getattr(ctx, "auth_method", None) == AuthMethod.API_KEY:
-        raise HTTPException(status_code=403, detail="api keys cannot manage api keys")
+    if getattr(ctx, "auth_method", None) != AuthMethod.USER:
+        raise HTTPException(status_code=403, detail="only authenticated human users can manage api keys")
     return _tid(request)
 
 
@@ -800,7 +821,7 @@ def _api_key_payload(record: McpApiKeyRecord) -> dict[str, Any]:
         "id": record.key_id,
         "name": record.key_name,
         "prefix": record.key_prefix,
-        "scopes": [],
+        "scopes": sorted(record.scopes),
         "createdAt": record.created_at,
         "lastUsedAt": record.last_active_at.isoformat() if record.last_active_at else None,
         "expiresAt": record.expires_at.isoformat() if record.expires_at else None,
@@ -820,22 +841,29 @@ def _parse_expires_at(raw: Any) -> Any:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
 
 
-@router.get("/api-keys")
+@router.get("/api-keys", response_model=list[McpApiKeyResponse], operation_id="mcpGetMcpApiKeys")
 async def list_api_keys(request: Request) -> list[dict[str, Any]]:
     tenant_id = _api_key_tenant(request)
     store = _api_key_store_or_503()
     return [_api_key_payload(record) for record in store.list_keys(tenant_id)]
 
 
-@router.post("/api-keys", status_code=201)
-async def create_api_key(request: Request) -> dict[str, Any]:
+@router.post("/api-keys", status_code=201, response_model=McpApiKeyCreatedResponse, operation_id="mcpPostMcpApiKeys")
+async def create_api_key(request: Request, body: CreateMcpApiKeyRequest) -> dict[str, Any]:
     tenant_id = _api_key_tenant(request)
     store = _api_key_store_or_503()
-    payload = await request.json()
+    payload = body.model_dump()
     name = str(payload.get("name", "") or "").strip()
     if not name:
         raise HTTPException(status_code=422, detail="name is required")
+    requested = payload.get("scopes", ["platform.read"])
+    if not isinstance(requested, list) or not all(isinstance(s, str) for s in requested):
+        raise HTTPException(status_code=422, detail="scopes must be a list")
+    grants = frozenset(requested)
+    if not grants or not grants <= {"platform.read", "platform.write", "ont.read", "ont.write"} or not grants <= request.state.ctx.scopes:
+        raise HTTPException(status_code=403, detail="requested grants exceed verified issuer authority")
     record, plaintext = store.create(
+        scopes=grants,
         tenant_id=tenant_id,
         key_name=name,
         expires_at=_parse_expires_at(payload.get("expiresAt")),
@@ -846,7 +874,7 @@ async def create_api_key(request: Request) -> dict[str, Any]:
     return {**_api_key_payload(record), "key": plaintext}
 
 
-@router.delete("/api-keys/{kid}")
+@router.delete("/api-keys/{kid}", operation_id="mcpDeleteMcpApiKeysKid")
 async def delete_api_key(request: Request, kid: str) -> dict[str, Any]:
     tenant_id = _api_key_tenant(request)
     store = _api_key_store_or_503()

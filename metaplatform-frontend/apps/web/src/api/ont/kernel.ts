@@ -394,6 +394,8 @@ export interface EditSetImpact {
 
 /** Proposal 预览（GET /ont/v2/proposals/{id}/preview）。 */
 export interface ProposalPreview {
+  approval_expires_at?: string | null;
+  approval_ttl_seconds?: number;
   id?: string;
   proposal_id?: string;
   kind: ProposalKind;
@@ -440,6 +442,8 @@ export interface ProposalRecord {
   kind: ProposalKind;
   confirmed_by?: string | null;
   confirmed_at?: string | null;
+  approval_expires_at?: string | null;
+  approval_ttl_seconds?: number;
   /** ONT-GATE-01：三闸门预检（schema×SHACL×Axiom；GET 时实时重算） */
   preflight?: ProposalPreflight | null;
 }

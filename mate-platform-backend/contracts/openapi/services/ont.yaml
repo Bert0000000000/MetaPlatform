@@ -2679,6 +2679,58 @@ paths:
                 type: array
                 items: { type: object, additionalProperties: true }
         "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+  /api/v1/ont/v2/proposals/{proposal_id}/preview:
+    get:
+      tags:
+      - ont
+      summary: Get Proposal Preview
+      description: 'MP-SAL-04c：pending proposal 渲染（前端 staging 卡片用）。
+
+
+        返回 proposal 的渲染信息 + 自动算出的 ``impact_summary``：
+
+        - kind=model_type：受影响 Property 表 / 主键 / interface / 反向引用列表
+
+        - kind=create_instance：字段值 / class 关联 / 验证状态
+
+        - kind=merge_suggestion：source/target 对比 + property mapping 建议
+
+        - kind=action：透传参数 + 提示走 /apply
+
+
+        已确认/已应用/已拒绝的 proposal 返回 409（preview 已不可改）。'
+      operationId: ontPreviewV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalPreviewResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.read
+        tenantHeader: []
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-implementation-status: implemented
+      x-mate-required-tenant: true
+      x-mate-requirements:
+      - MP11-AGENT-01
 components:
   securitySchemes:
     bearerAuth:
@@ -2855,61 +2907,81 @@ components:
     ProposalResponse:
       properties:
         proposal_id:
-          type: string
           title: Proposal Id
-        action_rid:
           type: string
+        action_rid:
           title: Action Rid
+          type: string
         target_iid:
           anyOf:
           - type: string
           - type: 'null'
+          default: null
           title: Target Iid
         parameters:
           additionalProperties: true
-          type: object
           title: Parameters
+          type: object
         impact_summary:
-          type: string
-          title: Impact Summary
           default: ''
+          title: Impact Summary
+          type: string
         expected_diff:
           additionalProperties: true
-          type: object
           title: Expected Diff
+          type: object
         status:
-          type: string
           title: Status
-        kind:
           type: string
-          title: Kind
+        kind:
           default: action
+          title: Kind
+          type: string
         confirmed_by:
           anyOf:
           - type: string
           - type: 'null'
+          default: null
           title: Confirmed By
         created_at:
-          type: string
-          title: Created At
           default: ''
+          title: Created At
+          type: string
         confirmed_at:
           anyOf:
           - type: string
           - type: 'null'
+          default: null
           title: Confirmed At
+        approval_expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Approval Expires At
+          description: Server-owned nullable legacy deadline. Missing or expired approvals
+            cannot authorize new execution.
+        approval_ttl_seconds:
+          title: Approval Ttl Seconds
+          type: integer
+          minimum: 60
+          maximum: 86400
+          description: Server duration in seconds; default 900. Invalid configuration refuses
+            confirmation.
         preflight:
           anyOf:
           - additionalProperties: true
             type: object
           - type: 'null'
+          default: null
           title: Preflight
-      type: object
       required:
       - proposal_id
       - action_rid
       - status
+      - approval_ttl_seconds
       title: ProposalResponse
+      type: object
     ProposalConfirmDTO:
       properties: {}
       type: object
@@ -4031,20 +4103,83 @@ components:
         config: { type: object, additionalProperties: true }
         updated_at: { type: string, format: date-time }
     ProposalV2:
-      type: object
-      additionalProperties: false
-      required: [proposal_id, action_rid, status]
       properties:
-        proposal_id: { type: string }
-        action_rid: { type: string }
-        target_iid: { type: [string, "null"] }
-        parameters: { type: object, additionalProperties: true }
-        impact_summary: { type: string }
-        expected_diff: { type: object, additionalProperties: true }
-        status: { type: string, enum: [pending, confirmed, rejected, applied] }
-        confirmed_by: { type: [string, "null"] }
-        created_at: { type: string }
-        confirmed_at: { type: [string, "null"] }
+        proposal_id:
+          title: Proposal Id
+          type: string
+        action_rid:
+          title: Action Rid
+          type: string
+        target_iid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Target Iid
+        parameters:
+          additionalProperties: true
+          title: Parameters
+          type: object
+        impact_summary:
+          default: ''
+          title: Impact Summary
+          type: string
+        expected_diff:
+          additionalProperties: true
+          title: Expected Diff
+          type: object
+        status:
+          title: Status
+          type: string
+        kind:
+          default: action
+          title: Kind
+          type: string
+        confirmed_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed By
+        created_at:
+          default: ''
+          title: Created At
+          type: string
+        confirmed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed At
+        approval_expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Approval Expires At
+          description: Server-owned nullable legacy deadline. Missing or expired approvals
+            cannot authorize new execution.
+        approval_ttl_seconds:
+          title: Approval Ttl Seconds
+          type: integer
+          minimum: 60
+          maximum: 86400
+          description: Server duration in seconds; default 900. Invalid configuration refuses
+            confirmation.
+        preflight:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Preflight
+      required:
+      - proposal_id
+      - action_rid
+      - status
+      - approval_ttl_seconds
+      title: ProposalResponse
+      type: object
     ObjectSearchV2:
       type: object
       additionalProperties: false
@@ -4106,6 +4241,154 @@ components:
         change_set:
           type: array
           items: { type: string }
+    ProposalPreviewResponse:
+      description: 'MP-SAL-04c：pending proposal 渲染预览（不落库）。
+
+
+        字段说明：
+
+        - kind: action / create_instance / model_type / merge_suggestion
+
+        - action_type: 后端建议的动作标签（"create" / "upsert" / "execute" / "apply"）
+
+        - impact_summary: 自动算出的影响摘要（受影响个体数 / 跨 schema 引用 / etc）
+
+        - parameters: 原样透传 proposals.parameters（结构化）
+
+        - expected_diff: 原样透传 proposals.expected_diff
+
+        - 额外 kind-specific 字段：properties / field_values / merge_mapping / etc'
+      properties:
+        proposal_id:
+          title: Proposal Id
+          type: string
+        kind:
+          title: Kind
+          type: string
+        action_type:
+          title: Action Type
+          type: string
+        target_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Target Rid
+        status:
+          title: Status
+          type: string
+        parameters:
+          additionalProperties: true
+          title: Parameters
+          type: object
+        expected_diff:
+          additionalProperties: true
+          title: Expected Diff
+          type: object
+        impact_summary:
+          additionalProperties: true
+          title: Impact Summary
+          type: object
+        properties:
+          type: array
+          items:
+            additionalProperties: true
+            type: object
+          title: Properties
+        primary_key:
+          items:
+            type: string
+          title: Primary Key
+          type: array
+        interfaces:
+          items:
+            type: string
+          title: Interfaces
+          type: array
+        display_name:
+          default: ''
+          title: Display Name
+          type: string
+        backward_link_candidates:
+          items:
+            type: string
+          title: Backward Link Candidates
+          type: array
+        field_values:
+          additionalProperties: true
+          title: Field Values
+          type: object
+        class_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Class Rid
+        validation_status:
+          default: unknown
+          title: Validation Status
+          type: string
+        merge_source_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Merge Source Rid
+        merge_target_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Merge Target Rid
+        merge_mapping:
+          additionalProperties:
+            type: string
+          title: Merge Mapping
+          type: object
+        merge_property_overlap:
+          additionalProperties: true
+          title: Merge Property Overlap
+          type: object
+        created_at:
+          default: ''
+          title: Created At
+          type: string
+        confirmed_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed By
+        confirmed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed At
+        approval_expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Approval Expires At
+          description: Server-owned nullable legacy deadline. Missing or expired approvals
+            cannot authorize new execution.
+        approval_ttl_seconds:
+          title: Approval Ttl Seconds
+          type: integer
+          minimum: 60
+          maximum: 86400
+          description: Server duration in seconds; default 900. Invalid configuration refuses
+            confirmation.
+      required:
+      - proposal_id
+      - kind
+      - action_type
+      - status
+      - approval_ttl_seconds
+      title: ProposalPreviewResponse
+      type: object
+
   /api/v1/ont/v2/shacl/validate:
     post:
       security:

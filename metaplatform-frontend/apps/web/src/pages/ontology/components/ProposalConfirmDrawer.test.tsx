@@ -38,6 +38,7 @@ const preview = {
   id: 'proposal-action-1',
   kind: 'action' as const,
   title: '复核高风险订单',
+  approval_ttl_seconds: 600,
   action: {
     action_rid: 'ont.acme.act.review-order.v1',
     target_objects: [{ rid: 'ont.acme.ind.order-42.v1', primary_key: 'ORDER-42' }],
@@ -47,13 +48,16 @@ const preview = {
 
 describe('ProposalConfirmDrawer', () => {
   it('only reports success after the authoritative confirmation and execution states, then shows audit evidence', async () => {
+    const expectedDeadline = new Date(Date.now() + 600000).toISOString();
     getProposalPreview.mockResolvedValue(preview);
     confirmProposal.mockResolvedValue({ id: preview.id, status: 'confirmed' });
     getProposal
+      .mockResolvedValueOnce({proposal_id:preview.id,kind:'action',status:'pending'})
       .mockResolvedValueOnce({
         proposal_id: preview.id,
         kind: 'action',
         status: 'confirmed',
+        approval_expires_at: expectedDeadline,
         confirmed_by: 'ontology-operator',
         confirmed_at: '2026-08-31T12:00:00Z',
       })
@@ -61,6 +65,7 @@ describe('ProposalConfirmDrawer', () => {
         proposal_id: preview.id,
         kind: 'action',
         status: 'executed',
+        approval_expires_at: expectedDeadline,
         confirmed_by: 'ontology-operator',
         confirmed_at: '2026-08-31T12:00:00Z',
       });
@@ -73,13 +78,17 @@ describe('ProposalConfirmDrawer', () => {
 
     render(<ProposalConfirmDrawer open proposalId={preview.id} />);
     await screen.findByText('预览：复核高风险订单');
+    expect(screen.getByText(/批准有效期：10 分钟/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '确认并执行' }));
 
     await waitFor(() => expect(executeProposal).toHaveBeenCalledWith(preview.id));
     expect(getProposal).toHaveBeenNthCalledWith(1, preview.id);
     expect(getProposal).toHaveBeenNthCalledWith(2, preview.id);
+    expect(getProposal).toHaveBeenNthCalledWith(3, preview.id);
+    expect(screen.getByText(/批准有效期：10 分钟/)).toBeInTheDocument();
     expect(await screen.findByText('已执行成功')).toBeInTheDocument();
     expect(screen.getByText('executed')).toBeInTheDocument();
+    expect(screen.getByText(/批准有效期/)).toHaveTextContent(expectedDeadline);
     expect(screen.getByText('ontology-operator')).toBeInTheDocument();
     expect(screen.getByText('2026-08-31T12:00:00Z')).toBeInTheDocument();
     expect(screen.getByText('audit-42')).toBeInTheDocument();
@@ -112,4 +121,17 @@ describe('ProposalConfirmDrawer', () => {
     fireEvent.click(confirmButton);
     expect(confirmProposal).toHaveBeenCalledTimes(1);
   });
+});
+
+
+it.each([null, '2000-01-01T00:00:00Z'])('refuses missing or expired authoritative deadline %s', async deadline => {
+  getProposalPreview.mockResolvedValue(preview);
+  getProposal.mockResolvedValueOnce({proposal_id:preview.id,kind:'action',status:'pending'})
+    .mockResolvedValueOnce({proposal_id:preview.id,kind:'action',status:'confirmed',approval_expires_at:deadline});
+  confirmProposal.mockResolvedValue({id:preview.id,status:'confirmed'});
+  render(<ProposalConfirmDrawer open proposalId={preview.id} />);
+  await screen.findByText('预览：复核高风险订单');
+  fireEvent.click(screen.getByRole('button',{name:'确认并执行'}));
+  await screen.findByText('批准已过期或缺少期限，请创建新提案重新批准');
+  expect(executeProposal).not.toHaveBeenCalled();
 });

@@ -80,6 +80,36 @@ _TENANT_CTX: contextvars.ContextVar[str | None] = contextvars.ContextVar(
 )
 
 
+# Only legacy Proposal execution borrows this connection. Ordinary repository
+# calls and the dedicated action/edit-set transactions keep their own lifecycle.
+_LEGACY_PROPOSAL_TX: contextvars.ContextVar[Any] = contextvars.ContextVar(
+    "ont_legacy_proposal_transaction", default=None
+)
+
+
+class _ProposalConnectionLease:
+    def __init__(self, owner: Any, connection: Any):
+        self.owner = owner
+        self.connection = connection
+        self.tenant = owner._current_tenant()
+        self.active = True
+        self.rollback_requested = False
+
+    def __getattr__(self, name: str) -> Any:
+        if not self.active or self.connection.closed:
+            raise RuntimeError("Proposal transaction lease is no longer active")
+        return getattr(self.connection, name)
+
+    def commit(self) -> None:
+        pass  # The outer Proposal execution owns commit.
+
+    def close(self) -> None:
+        pass  # A nested repository call must not close the outer transaction.
+
+    def rollback(self) -> None:
+        self.rollback_requested = True  # Even swallowed nested failures abort.
+
+
 class ModelValidationUnavailable(RuntimeError):
     """MODEL-WRITE-ATOMICITY：模型一致性校验**所需读取失败** → fail-closed。
 
@@ -574,6 +604,7 @@ DDL: tuple[str, ...] = (
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_outbox_event_proposal ON ont_outbox_event (proposal_id)",
     # MP-SAL-04b: proposal kind（action / create_instance / model_type）
+    "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS approval_expires_at TIMESTAMPTZ",
     "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'action'",
     # ACT-05：edit-set 提案字段（与 kernel ActionProposal 对齐）
     "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS requires_hitl BOOLEAN NOT NULL DEFAULT TRUE",
@@ -1324,6 +1355,11 @@ class PgOntologyRepository(OntologyRepository):
         import psycopg2  # type: ignore
         import psycopg2.extras  # type: ignore
 
+        borrowed = _LEGACY_PROPOSAL_TX.get()
+        if borrowed is not None and borrowed.owner is self:
+            if not borrowed.active or borrowed.connection.closed or borrowed.tenant != self._current_tenant():
+                raise RuntimeError("Proposal transaction lease context mismatch")
+            return borrowed, psycopg2.extras.RealDictCursor
         conn = psycopg2.connect(self._dsn)
         conn.autocommit = False
         psycopg2.extras.register_default_jsonb(conn_or_curs=conn, loads=json.loads)
@@ -6242,6 +6278,7 @@ class PgOntologyRepository(OntologyRepository):
             expected_diff=diff,
             confirmed_by=row.get("confirmed_by"),
             confirmed_at=row.get("confirmed_at"),
+            approval_expires_at=row.get("approval_expires_at"),
         )
         self._action_service._proposals[prop.proposal_id] = prop  # 镜像回填
         return prop
@@ -6263,18 +6300,22 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     """
                     UPDATE ont_proposal
-                    SET status = %s, confirmed_by = %s, confirmed_at = %s,
+                    SET status = %s, confirmed_by = %s, confirmed_at = %s, approval_expires_at = %s,
                         applied_at = CASE WHEN %s = 'executed' THEN now() ELSE applied_at END
-                    WHERE proposal_id = %s
+                    WHERE proposal_id = %s AND status = %s
                     """,
                     (
                         prop.status.value,
                         prop.confirmed_by,
                         prop.confirmed_at,
+                        prop.approval_expires_at,
                         prop.status.value,
                         prop.proposal_id,
+                        from_status,
                     ),
                 )
+                if cur.rowcount != 1:
+                    raise ValueError("proposal state changed concurrently; reload before retry")
                 self._append_proposal_event(
                     cur,
                     proposal_id=prop.proposal_id,
@@ -6433,7 +6474,7 @@ class PgOntologyRepository(OntologyRepository):
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
-                    "SELECT status FROM ont_proposal WHERE proposal_id = %s FOR UPDATE",
+                    "SELECT status, approval_expires_at FROM ont_proposal WHERE proposal_id = %s FOR UPDATE",
                     (proposal.proposal_id,),
                 )
                 row = cur.fetchone()
@@ -6445,6 +6486,8 @@ class PgOntologyRepository(OntologyRepository):
                         "execute requires a confirmed proposal"
                     )
 
+                from mate_kernel.action.engine import require_current_approval
+                require_current_approval(row["approval_expires_at"])
                 outcome = self._action_service.apply(
                     action_rid=action_type.rid.rid,
                     submission_criteria=action_type.submission_criteria,
@@ -6817,13 +6860,15 @@ class PgOntologyRepository(OntologyRepository):
                             raise ValueError("idempotent execution receipt unavailable")
                         value = stored["result"]
                         return dict(value if isinstance(value, dict) else json.loads(value))
-                cur.execute("SELECT status FROM ont_proposal WHERE proposal_id=%s AND tenant_id=%s FOR UPDATE",
+                cur.execute("SELECT status, approval_expires_at FROM ont_proposal WHERE proposal_id=%s AND tenant_id=%s FOR UPDATE",
                             (p.proposal_id, tenant_id))
                 current = cur.fetchone()
                 if current is None:
                     raise KeyError(f"proposal not found: {p.proposal_id}")
                 if current["status"] != "confirmed":
                     raise ProposalNotConfirmed(f"proposal {p.proposal_id} is {current['status']}; execute requires a confirmed proposal")
+                from mate_kernel.action.engine import require_current_approval
+                require_current_approval(current["approval_expires_at"])
                 # 统一装配：ActionType（ad-hoc 编辑可为 None）→ 声明式模板 + function
                 # 两规约产物 → 合并 EditOp 序列。
                 try:
@@ -7095,6 +7140,52 @@ class PgOntologyRepository(OntologyRepository):
         *,
         viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> dict[str, Any]:
+        p = self.get_proposal(proposal_id)
+        kwargs = dict(actor_id=actor_id, idempotency_key=idempotency_key,
+                      viewer_markings=viewer_markings)
+        if p.kind not in {"create_instance", "model_type", "merge_suggestion"}:
+            return self._execute_proposal_command(proposal_id, **kwargs)
+        tenant = self._proposal_tenant_id(p.action_rid)
+        key = (idempotency_key or "").strip()
+        conn, _ = self._connect()
+        lease = _ProposalConnectionLease(self, conn)
+        token = None
+        try:
+            with self._cursor(conn) as cur:
+                self._lock_schema_definitions(cur, tenant, shared=p.kind == "create_instance")
+                if key:
+                    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                                ("ont:execute:" + tenant + ":" + key,))
+                cur.execute("SELECT proposal_id FROM ont_proposal "
+                            "WHERE proposal_id=%s AND tenant_id=%s FOR UPDATE",
+                            (proposal_id, tenant))
+                if cur.fetchone() is None:
+                    raise KeyError(f"proposal not found: {proposal_id}")
+            token = _LEGACY_PROPOSAL_TX.set(lease)
+            # Reload persisted state/deadline after all locks. Mutation, transition,
+            # receipt and command key share this transaction until the outer commit.
+            result = self._execute_proposal_command(proposal_id, **kwargs)
+            if lease.rollback_requested:
+                raise RuntimeError("Proposal repository operation requested rollback")
+            conn.commit()
+            return result
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            lease.active = False
+            if token is not None:
+                _LEGACY_PROPOSAL_TX.reset(token)
+            conn.close()
+
+    def _execute_proposal_command(
+        self,
+        proposal_id: str,
+        actor_id: str = "",
+        idempotency_key: str | None = None,
+        *,
+        viewer_markings: tuple[str, ...] | list[str] = (),
+    ) -> dict[str, Any]:
         """MP-SAL-04b：confirmed proposal 落库执行（create_instance / model_type）。
 
         ADR-0064 S2/S3：viewer_markings 非空时统一执行器走完整安全闸门
@@ -7128,6 +7219,8 @@ class PgOntologyRepository(OntologyRepository):
             raise ProposalNotConfirmed(
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
             )
+        from mate_kernel.action.engine import require_current_approval
+        require_current_approval(p.approval_expires_at)
         if p.kind == "action":
             # ADR-0064 S3：按 ActionType 声明分派 —— 声明式/混合式走统一执行器
             # （edits 是本体），纯 function 式走 legacy 回写（D-5 兼容路径）。

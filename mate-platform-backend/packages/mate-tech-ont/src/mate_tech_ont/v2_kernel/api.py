@@ -60,6 +60,7 @@ from mate_kernel.ontology.types.interface import Interface
 from mate_kernel.ontology.types.link_type import Cardinality, Directionality, LinkType
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+from mate_kernel.action.engine import approval_ttl_seconds
 from mate_kernel.tooling import schema_gen
 from mate_kernel.tooling.schema_gen import agent_tool_schemas
 from mate_platform.runtime import is_production_profile, runtime_profile
@@ -3099,6 +3100,8 @@ class ProposalResponse(BaseModel):
     confirmed_by: str | None = None
     created_at: str = ""
     confirmed_at: str | None = None
+    approval_expires_at: str | None = None
+    approval_ttl_seconds: int
     # ONT-GATE-01：三闸门预检报告（schema×SHACL×Axiom）。propose 时算一份
     # 快照供 UI 展示；execute 时重算为权威判定（快照不作准）。
     preflight: dict[str, Any] | None = None
@@ -3388,6 +3391,8 @@ def _proposal_to_dto(p: Any, preflight: dict[str, Any] | None = None) -> Proposa
         confirmed_by=p.confirmed_by,
         created_at=p.created_at.isoformat() if p.created_at else "",
         confirmed_at=p.confirmed_at.isoformat() if p.confirmed_at else None,
+        approval_expires_at=p.approval_expires_at.isoformat() if p.approval_expires_at else None,
+        approval_ttl_seconds=approval_ttl_seconds(),
         preflight=preflight,
     )
 
@@ -4120,6 +4125,8 @@ class ProposalPreviewResponse(BaseModel):
     created_at: str = ""
     confirmed_by: str | None = None
     confirmed_at: str | None = None
+    approval_expires_at: str | None = None
+    approval_ttl_seconds: int
 
 
 _PREVIEW_LOCK_STATES = {"confirmed", "executed", "rejected"}
@@ -4472,6 +4479,8 @@ async def get_proposal_preview(
         created_at=created_at.isoformat() if created_at else "",
         confirmed_by=confirmed_by,
         confirmed_at=confirmed_at.isoformat() if confirmed_at else None,
+        approval_expires_at=prop.approval_expires_at.isoformat() if prop.approval_expires_at else None,
+        approval_ttl_seconds=approval_ttl_seconds(),
     )
 
 
