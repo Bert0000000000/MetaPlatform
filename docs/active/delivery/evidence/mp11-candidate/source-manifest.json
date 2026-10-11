@@ -149,7 +149,7 @@
       "sha256": "e5f0905f7c7d8458b56b9b05ce8c4ff1d6391e3a02cbb86a3adad5af1084abf7",
       "lines": 80,
       "changed_source_ranges": [
-        "1,80"
+        "46"
       ]
     },
     {
@@ -262,10 +262,19 @@
     },
     {
       "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_http_endpoints.py",
-      "sha256": "1d3539247d74408aabc8447cc1a9c0d4cef4c8c5a656b69512b019b0f6d500c0",
+      "sha256": "867d29299fc76bca7532e36d08c24a3ef4520518a6802e1c02fc7ff358723256",
       "lines": 347,
       "changed_source_ranges": [
-        "1,347"
+        "56,2",
+        "59,6",
+        "77,2",
+        "112,13",
+        "137,0",
+        "140,6",
+        "149,2",
+        "178,2",
+        "185,2",
+        "192"
       ]
     },
     {
@@ -599,5 +608,6 @@
         "1,35"
       ]
     }
-  ]
+  ],
+  "source_commit": "01a5e9d5b2916acf602a26028bee09e16ce8aeb1"
 }

@@ -1,0 +1,293 @@
+{
+  "base": "2f869020a50707857fb5e42151ddd5dcbef03f8c",
+  "source_commit": "01a5e9d5b2916acf602a26028bee09e16ce8aeb1",
+  "initial_integration_commit": "658d2522",
+  "evidence_formatting_commit": "70745ff",
+  "method": "All47 final tested worktree sources equal committed bytes after only CRLF/LF normalization. DATA metadata and Ruling34 amendments have named final covering receipts; source-manifest ranges are fixed BASE to source_commit. Next commit is evidence-only.",
+  "files": [
+    {
+      "path": ".github/workflows/ontology-loop.yml",
+      "tested_worktree_sha256": "d6a1a85d030b5692bd9af47c800ea8ffe72b064ac1bf1dd00274a59264e77a8f",
+      "committed_blob_sha256": "1d9dd6a78cc7dfcb19e7b133af7bfff529a08504ab9887b09e5d544c6d97feeb",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/contracts/openapi/services/data.yaml",
+      "tested_worktree_sha256": "d35d492311184c9ffdad3d07f31699c9f24ff016a29c7980fd04dafb32adf3ae",
+      "committed_blob_sha256": "0a1f249536b0f37246abbf33046cd755047849172d828eaa8f1bef58f4592701",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/contracts/openapi/services/ont.yaml",
+      "tested_worktree_sha256": "0ca7a958e0656b05e7054e027738bbcef6203361d38538f50cc4b8f2ac66eb6d",
+      "committed_blob_sha256": "0ca7a958e0656b05e7054e027738bbcef6203361d38538f50cc4b8f2ac66eb6d",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/conftest.py",
+      "tested_worktree_sha256": "e5f0905f7c7d8458b56b9b05ce8c4ff1d6391e3a02cbb86a3adad5af1084abf7",
+      "committed_blob_sha256": "e5f0905f7c7d8458b56b9b05ce8c4ff1d6391e3a02cbb86a3adad5af1084abf7",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/test_apphub_order_binding.py",
+      "tested_worktree_sha256": "4de64c8b5ef4171b71735a5e80a8ddbf8a1c24ee5a54cb43d52d86376abdf652",
+      "committed_blob_sha256": "cb887e0be719c1620cb64379813b21dd4cd7e4849fd18b427fb0a201f88930c0",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/test_apphub_publication.py",
+      "tested_worktree_sha256": "772993391a5bd2f5f5acb7decd2c385892b384aab72d040f4c8606163f2eb54e",
+      "committed_blob_sha256": "6aa69e7b021f1baee45e5a27ef7d53af9cec30482b5cdd02eb492cc2a222bece",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-kernel/src/mate_kernel/action/engine.py",
+      "tested_worktree_sha256": "85ce1b96bb15292cd07bbcee5d55bb05a5b82b8e3972f1e1a510da147ab25f3c",
+      "committed_blob_sha256": "239f4e3d1603ed0f6b735896787ac3af0d83a43cad689353f866d32321784f94",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-kernel/tests/test_action_engine.py",
+      "tested_worktree_sha256": "72c0c753d3fb2282cd2e2e0ed7eb795015b42068733bae1de70f061902db83f0",
+      "committed_blob_sha256": "384781cd03a39b7f038b12e8449c781cf6932da9fc0494b1378fdeac565473f9",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-kernel/tests/test_mp11_audit_identity.py",
+      "tested_worktree_sha256": "f168d29e4f81faa103265ac56232b463e6ee14b4a13a3cc1819ebfeb54a1c348",
+      "committed_blob_sha256": "26e19210a6ce8e33835b8d5e63c9f08d093771381e66603eb96e062f6f121d17",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-platform/src/mate_platform/auth/middleware.py",
+      "tested_worktree_sha256": "50f5f09e4310f0779d0c19d7a5c4735ddb73c4a59fc504cde491d2a83af0ed0c",
+      "committed_blob_sha256": "6fecc649d11ee8ec4836599b2ccf85104ba5965c9e9772147fc018acdf0825d4",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-platform/src/mate_platform/auth/verifier.py",
+      "tested_worktree_sha256": "e0ff3991b492cd9d02ef625f7ec357def8ee06bf2d382c2a862f7993cedb5b03",
+      "committed_blob_sha256": "8ede0f786c6d1508b9923d39a01a9ace24138b72354d288ba9739fdd8b0e6cae",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-platform/tests/test_mp11_signed_identity.py",
+      "tested_worktree_sha256": "22d5c3f45a62edf822b7856813f0afcf9a72451fd5120c94e9f4e8ba7824b223",
+      "committed_blob_sha256": "4aa5b9db3f0ae34c8db3e990286d55316d1cdb5358fc5a13cb4b40765e7cd40d",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py",
+      "tested_worktree_sha256": "f665410c8e4adc4ae636107a064af14d240d8594b31584d5bb7683475ecaa106",
+      "committed_blob_sha256": "f665410c8e4adc4ae636107a064af14d240d8594b31584d5bb7683475ecaa106",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_dynamic_registry.py",
+      "tested_worktree_sha256": "8815e390cc948d271d4064ba9b8d4d5a8b4fdbe5538c004c52059f4d7a05e8c2",
+      "committed_blob_sha256": "fd621acaacd94c8a96b2c431f21246128ccc2b0d98c43bf1f6f226e90ca00d56",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_llm_adv_mcp.py",
+      "tested_worktree_sha256": "a2e57c04f095fff35f53c9b07faf9682167fc1cb0ddfc966b78472ed60a9694d",
+      "committed_blob_sha256": "354b226fd21a6910397b0283b7cb26383ff7606448aef9f654f82f1300102343",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_http_endpoints.py",
+      "tested_worktree_sha256": "867d29299fc76bca7532e36d08c24a3ef4520518a6802e1c02fc7ff358723256",
+      "committed_blob_sha256": "867d29299fc76bca7532e36d08c24a3ef4520518a6802e1c02fc7ff358723256",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_protocol_tenant_binding.py",
+      "tested_worktree_sha256": "e47b2ec4912447f5225bc90bf04ac234afdea84e46771bfb3d3326eb07f096c3",
+      "committed_blob_sha256": "239ee6992ac94b37163c3dae48a676a4d8150a76a52739f67ce2528223292ecd",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_streamable_http.py",
+      "tested_worktree_sha256": "426f99a9a31b60c75c1b112f8b9aa17ad79e8231e7b37ed183c762e28b076031",
+      "committed_blob_sha256": "a45306ecf441e48bb12822d247ad45143cb1170fb1ccd6dc8e14de8630500b74",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py",
+      "tested_worktree_sha256": "8d8eae2a5e78f349a2a36659979687fd910ff285a3c9a36361e07c6f421662ee",
+      "committed_blob_sha256": "f393ba0890dc77c5201d110b8278727d750315569ac7f7a975ab3764f0321624",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py",
+      "tested_worktree_sha256": "e590775ab8348b52166f31df2e6d9ea580bee1faff02d73d925f26aa6bdc369d",
+      "committed_blob_sha256": "91ceb174f9abf1d19ae65b8b1ce431f6a829f97b645e5058ea06b722867f0872",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/conftest.py",
+      "tested_worktree_sha256": "755fbfae611439243166fa9c84035ada23d7a626bfa368a1ed378e4f79cc6350",
+      "committed_blob_sha256": "7a871f2de42967dd1b7ca9d701cb9f76fbb0d0a2f49e5f62fea14700afa223f0",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_e2e.py",
+      "tested_worktree_sha256": "32417eb454869bdaedcb54e89ee45e1947324edc0bcad102a283f238eae8ef7d",
+      "committed_blob_sha256": "4afb5cfd0ac3bdc148c75a1d18452c566836bebe5bfc9d4f0bf96b7d71adee4b",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_ws_auth.py",
+      "tested_worktree_sha256": "7a5f20c0c6a15338b634b75a8d8a9043f94f4039b22d9315bbb8b92e6f8952c8",
+      "committed_blob_sha256": "b5739bc9d118827a005b5205d63844dc31e53ba286eadc83b1feaeda3b7f1368",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_ont_act05_unified.py",
+      "tested_worktree_sha256": "8c438686e2446347961a3287abbb8448ba01bdb8464525dc240058a631ba2af6",
+      "committed_blob_sha256": "931257bebb3130b19ac1579054d61cc7f1887f01ba7110b4917bbd880b7ab45d",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_ont_ai09_vector_search.py",
+      "tested_worktree_sha256": "243b381ec61299cbb4c2be2b0c8cf62b8a48e65d242c18f987e225328f7cf2d7",
+      "committed_blob_sha256": "025afe83ee3db7ab679b5ec660d4015c37c7c7842a36b7409cc2a63a00f27d9f",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_ont_g23_functions.py",
+      "tested_worktree_sha256": "708d0ed0726a55c1c3615c584e09caea5f11bbb9c0345afd65d5d52a65d0eccc",
+      "committed_blob_sha256": "30e10660ff309867dc6f8b22545dadc673ec29c3aec8e8ce69382040c8125872",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+      "tested_worktree_sha256": "39626498723fb195452e712e9218e943eb1107cf923a5cfa0249530f462c8b20",
+      "committed_blob_sha256": "ba63502559e91d8f8b3519ef492e4849bab0052850fc5324cc3f846a5a179c1f",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "mate-platform-backend/services/auth-service/tests/test_mp11_login_tenant.py",
+      "tested_worktree_sha256": "0280e0414411e2c6a265bb4b89606888dd519fdc16225af8db8f020cf0b0c2ee",
+      "committed_blob_sha256": "cb1f72f2d4e057de203fdee2d135dfe35bb035695a2d33a884e83f44a8baef9f",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/components/shell/TopBar.test.tsx",
+      "tested_worktree_sha256": "36e2165eaef4db7d6ddf2614b297d308c3dfa20d274480ade2f4ca4cc53e7063",
+      "committed_blob_sha256": "9eb0d1a7896dae0cb4e8d369335922f13c24ab0fc6a584e37e6e9cc80e90e9b6",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/components/shell/TopBar.tsx",
+      "tested_worktree_sha256": "d2eb7889345712723a80d212ee9dba9743a82a84c63b434f1cbdf54f7f84b500",
+      "committed_blob_sha256": "ff1381c785c70139fe8444b240e6c791115bda29dda9d7e789da31a9532e8e0c",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/mp11-order-app-flow.spec.ts",
+      "tested_worktree_sha256": "65b9968230b7cd4b0466257a17cdd0259b134c7f3f2c1257ae3df69cf3a2e541",
+      "committed_blob_sha256": "46fa6fbb9305705c34bd2159bf7ce598f2f54c72d391eb507f6ed8e0a1d94739",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-ia-v2-data-flow.spec.ts",
+      "tested_worktree_sha256": "3c568c63016ecd34f9256aa1d2d568488c1f955a0ce3c0842f6a845ce77b8b7d",
+      "committed_blob_sha256": "7c24f9a984b855f194b72b25a4bfdf4b5694f9014a8754d986943ef4e1b3266b",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-object-creation-flow.spec.ts",
+      "tested_worktree_sha256": "381422e25d96ad0ca4089f4935e536720d4623eace41f3e1fe0810d46ed760b0",
+      "committed_blob_sha256": "4620a77d9e5370bd4c67c34771cc74c7520fedc9f07c4c643a0f934fd41e5f7f",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-relationship-flow.spec.ts",
+      "tested_worktree_sha256": "a1dea45ad533c28020ba643468f2cc858c0dcd7543bb5ee27e1e7bb3d1d9f460",
+      "committed_blob_sha256": "55d1b1062c977e4e5a834059c24b61347e7d72129b83bffcc3f9702841dcc673",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/packages/shared/src/api/auth.ts",
+      "tested_worktree_sha256": "e17671008ca33b6fa4af771b7a235e08d6fac49ece055e52c498536d65da2d33",
+      "committed_blob_sha256": "a65c839109bf4a72cd1964e6599e318dfca5ac6e1e0b62cc204879690bcd4209",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/packages/shared/src/components/SharedLoginPage.test.tsx",
+      "tested_worktree_sha256": "4688f4f6cb673f9531062177fadd565567821398fa4bb2fc60237de258bee337",
+      "committed_blob_sha256": "29c561ff746fa75b9d94f176171e05a847e48e9edd1dccbf50200551b29dd23b",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/packages/shared/src/components/SharedLoginPage.tsx",
+      "tested_worktree_sha256": "617f0b2f2abb72049313c86ce6f51cf271b29078214c635982b22aad249ca3c0",
+      "committed_blob_sha256": "94b6f598d7d944082c98fb975658c9478bbf9cf12b20d40fa517ad7244dc8dac",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/tests/e2e/helpers/pg.ts",
+      "tested_worktree_sha256": "00c3fea4c19122f46fff90483b4ca2037cce32b2ece636855f870582d9b459c2",
+      "committed_blob_sha256": "a698a73267e090c7379f87a81e3b4d8eae27c1735219f4860d909ffbfe134aec",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/tests/e2e/ontology-loop/ontology-core.spec.ts",
+      "tested_worktree_sha256": "bb3f2f5db929b6a1d406e76f185d373bea9d3288a41f2237b4530f8c8284eb0c",
+      "committed_blob_sha256": "2b3c94ada300f188eabc302f6dad0eaef077ff817c7850a1be54191f1bd18b55",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/README.md",
+      "tested_worktree_sha256": "a85bda9c955af5f814caf4746a76e77cc436aa3d73fbd095a7fe6237d2807319",
+      "committed_blob_sha256": "8ba7b8e8096b4c1f3200fdbd93a025dddf1f2d2a704ccba50544a1f3adf5f120",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/candidate.py",
+      "tested_worktree_sha256": "9d99789f1d9876a9c35eb538d208c84d6d34b4a69ec381f3e53a11a5822db747",
+      "committed_blob_sha256": "0e5c867b36e50a5fb1ede84663661b491d40a465354372073b8be9296946f25b",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/config.example.json",
+      "tested_worktree_sha256": "f52321d4ec937bfa2a04c0807e819d00440a2e899f200c6fd41530bb028dd8c5",
+      "committed_blob_sha256": "fd8257640de28ad0dcc2f0f655bc9e005fa6ee323ec99bbb167361e44430be83",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/manage.py",
+      "tested_worktree_sha256": "9a887aab5b3b4556faa79c9a01ce56a88bdf2674c5191e6f1654689124734d84",
+      "committed_blob_sha256": "6e8449e956ca67095d29a44853cb8812e4677361ab6f9233d6131c5bb1c33eb5",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/playwright.config.ts",
+      "tested_worktree_sha256": "ead19c330a3103b6c1bbc652cc569a0e14a4cfc4215646951f6af3fa19783c4f",
+      "committed_blob_sha256": "08e9682b9459737a16f90d0d3e4e606f3ea58a517bedf866cf1d1a0718e7f070",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/verify.py",
+      "tested_worktree_sha256": "c828fb6060b3ab6473984666670c994c4f7b82f5f0fb55b614c8fa26b5652bd8",
+      "committed_blob_sha256": "87741a65c0d8315bf59adb32c0b71641510ae66cfe262bb32b761363c9a7684b",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/vite.config.ts",
+      "tested_worktree_sha256": "181bddb439a59d357d9f88db71b2993cd80e70ed3dd90632001a049b197447d2",
+      "committed_blob_sha256": "efec596ed2f2a6c50c64eff63e508ecf748dddc377b00e38307d1225cdd8582b",
+      "normalized_LF_equal": true
+    },
+    {
+      "path": "scripts/acceptance/run-mp11-acceptance.ps1",
+      "tested_worktree_sha256": "77c80df7186ed491e89cd835c338000defd6b1ead7307e9892a435141032d2ed",
+      "committed_blob_sha256": "216b53bda08f4b91c3b05beb6eab5a44172078d1403fcb34089d4700c5355d5b",
+      "normalized_LF_equal": true
+    }
+  ],
+  "final_branch_diff_check": 0,
+  "review_status": "controller task and whole-branch reviews pending"
+}
