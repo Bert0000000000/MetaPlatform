@@ -136,11 +136,14 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Create: mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py
 - Create: metaplatform-frontend/apps/web/src/pages/ontology/components/ObjectTypeEditorV2Drawer.test.tsx
 
+- Create: metaplatform-frontend/apps/web/tests/e2e/ontology-object-creation-flow.spec.ts
+
 **Interfaces:** POST /object-types 可增加向后兼容的 create_only 查询参数；仅界面新建设置 true，已有更新/发布继续原语义；存在同 RID 时 409，禁止检查后覆盖竞态。草稿复用已存在 schema-wip / publish 接口，status 元数据与草稿存储明确区分；新建草稿保存和恢复后发布仍保留原子新增意图，所有写接口沿用 runtime platform.write，乐观 checksum 在写事务中生效。
 
 - [ ] 编写同 RID 重复新增与并发新增不覆盖、正常编辑仍可更新的回归；新建返回 409 时表单保留并可定位已有类型。
 - [ ] 将入口文案统一为“新建对象类型”；基础/高级字段渐进显示，名称/主键/属性问题就地提示。
 - [ ] 修复相似候选后的继续创建、合并和取消路径；未保存源概念不能调用要求源对象存在的 merge，改为复用已有类型或回到表单。
+- [ ] 对象类型写入口使用既有 platform.write 拒绝只读修改；同租户 ActionType.on 精确引用进入预检。应用反向引用由任务 6 的真实 AppHub 绑定契约补齐，并接入同一影响面板；完整 ONT-03 以任务 8 的已发布应用场景验收。
 - [ ] 打通保存草稿、恢复、未保存离开提示、预检与发布；变更影响沿用既有机制，验证乐观并发冲突提示。
 - [ ] 测试重复 slug/RID、候选 API 不可用、错误恢复、刷新草稿、发布后真实对象查询；复核同族版本发布/存量实例迁移后已有关系和新关联的类型引用，先确认既有实现再修复断点，避免重建 PR #95。审查后提交。
 
@@ -151,6 +154,12 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - Modify: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/__init__.py
 - Modify: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/in_memory.py
 - Modify: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/sql_store.py
+- Modify: metaplatform-frontend/apps/web/src/api/ontology-bigdata.ts
+- Modify: metaplatform-frontend/apps/web/src/types/ontology-bigdata.ts
+- Modify: metaplatform-frontend/apps/web/src/routes/gov.tsx
+- Modify: metaplatform-frontend/apps/web/src/components/shell/domains.tsx
+- Create: metaplatform-frontend/apps/web/src/pages/arch/DataSourcesPage.tsx
+- Create: metaplatform-frontend/apps/web/src/pages/arch/DataSourcesPage.test.tsx
 - Modify: metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.tsx
 - Create: mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py
 - Create: metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx
@@ -162,11 +171,15 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - [ ] 将 /test 与 /schema 接线从 stub 移到真实适配器；数据库凭据仅服务端使用，样例按权限掩码。
 - [ ] 补齐时间列与增量参数传递/持久化，使用真实列映射 Customer/Order，同步前显示主键、非空、类型冲突；CSV 上传路径明确为批量导入。
 - [ ] 同步显示真实运行 ID、计数、游标和错误；取消/失败结束 loading，重试不重复生成订单，删除与全量重建行为明确。
+- [ ] 数据与治理域提供可见的 /gov/data/sources 数据源配置入口，并连到既有本体映射；不能只更新未挂载的 AssetsInventoryPage。修正实际 source CRUD 请求/响应与 schema 类型，移除探测失败时随机成功和虚构表字段；真实发现结果带 discovered_at/trace_id，表/列列表契约保持兼容。
 - [ ] 验证首次全量→增量→中断/重试→进程重启→对象及关系查询。审查后提交。
 
 ## Task 6: 应用中心的对象绑定、发布和运行
 
 **Files:**
+- Modify: mate-platform-backend/contracts/openapi/services/apphub.yaml
+- Modify: metaplatform-frontend/apps/web/src/pages/ontology/components/ObjectTypeEditorV2Drawer.tsx（真实应用反向引用显示）
+- Modify: metaplatform-frontend/apps/web/src/api/ont/kernel.ts（仅在反向引用预检契约需要时）
 - Modify: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py
 - Modify: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py
 - Modify: metaplatform-frontend/apps/web/src/api/apphub/apps.ts
@@ -188,6 +201,7 @@ expect(await screen.findByText('订单已关联其他客户')).toBeVisible();
 - [ ] 修正卡片和详情的真实元数据，明确运行/编辑/发布入口；保护未保存变更。
 - [ ] 首页提供“从样例开始 / 接入真实数据 / 打开已有应用”和可恢复任务引导（UX-01）；选择与当前位置按用户/租户隔离保存，完成状态来自实际数据、类型、关系、应用与发布输出，不能用手工勾选或 seed 伪装完成；错误状态可重试。
 - [ ] 用已有模板与组件生成订单审核应用，绑定已发布 Order/ObjectSet、真实字段、Customer 关联和已注册审核 Action。
+- [ ] 基于真实 AppHub 对象/动作绑定提供同租户反向引用清单，接入本体发布影响预览（ONT-03）；动作引用复用 ActionType.on，应用引用显示实际应用 ID/名称/绑定版本/发布状态。接口失败显示未知，禁止把未查询或模糊 RID 字符串扫描当作无引用；任务 8 验证已发布订单应用的模型变更影响。
 - [ ] 发布前核验缺失对象/字段/权限/动作依赖，预览使用实际绑定；发布版本与运行入口一致。
 - [ ] 验证发布→短链→读取订单→人工确认→执行回执→重新登录仍可追踪；无权/无效短链有明确错误。审查后提交。
 
