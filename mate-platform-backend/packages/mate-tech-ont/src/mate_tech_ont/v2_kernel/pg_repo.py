@@ -4570,22 +4570,32 @@ class PgOntologyRepository(OntologyRepository):
     # ───── GOV-16~19：治理四件套 ─────
 
     def list_action_audit(
-        self, limit: int = 100, action_rid: str | None = None
+        self, limit: int = 100, action_rid: str | None = None, *,
+        app_id: str | None = None, page_id: str | None = None, app_version_id: str | None = None,
     ) -> list[dict[str, Any]]:
-        """UI-04：执行历史查询（audit 行倒序；action_rid 过滤可选）。"""
+        """Filter persisted application attribution before limiting the receipt history."""
         self._ensure_schema()
-        conds = ""
-        params: list[Any] = []
+        clauses, params = [], []
+        source = "ont_action_audit a"
         if action_rid:
-            conds = " WHERE action_rid = %s"
+            clauses.append("a.action_rid = %s")
             params.append(action_rid)
+        if any((app_id, page_id, app_version_id)):
+            tenant = self._current_tenant()
+            if not tenant or not all((app_id, page_id, app_version_id)):
+                raise ValueError("Verified tenant and complete application attribution required")
+            source += " JOIN ont_proposal p ON p.proposal_id = a.proposal_id AND p.tenant_id = a.tenant_id"
+            clauses.append("a.tenant_id = %s")
+            params.append(tenant)
+            for key, value in (("app_id", app_id), ("page_id", page_id), ("app_version_id", app_version_id)):
+                clauses.append("p.parameters->'provenance'->>%s = %s")
+                params.extend((key, value))
+        conds = " WHERE " + " AND ".join(clauses) if clauses else ""
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute(
-                    "SELECT * FROM ont_action_audit" + conds + " ORDER BY created_at DESC LIMIT %s",
-                    (*params, limit),
-                )
+                cur.execute("SELECT a.* FROM " + source + conds + " ORDER BY a.created_at DESC LIMIT %s",
+                            (*params, limit))
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()

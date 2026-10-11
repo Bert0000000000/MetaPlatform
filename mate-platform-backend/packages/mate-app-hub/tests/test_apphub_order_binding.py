@@ -135,3 +135,160 @@ def test_actual_pg_insert_only_module_page_concurrency():
             assert sorted(workers.map(create,range(2)))==['conflict','created']
     assert repo.get_page(tenant,tenant+'-p').definition=={'widgets':[{'id':'kept'}]}
     reset_engine()
+
+
+@pytest.mark.skipif(not __import__('os').getenv('MP11_APPHUB_PG_DSN'), reason='explicit isolated Task6 PG required')
+def test_actual_pg_app_create_two_processes_and_legacy_duplicate_rejection():
+    import os, sys, uuid, subprocess, json, time
+    from concurrent.futures import ThreadPoolExecutor
+    from urllib.parse import urlparse
+    from mate_tech_db.base import init_engine, reset_engine
+    from mate_app_hub.repositories import sql_store as repo, in_memory as model
+    from dataclasses import replace
+    dsn = os.environ['MP11_APPHUB_PG_DSN']; target = urlparse(dsn)
+    assert target.hostname == '127.0.0.1' and target.port == 55497 and target.path.startswith('/codex_mp11_')
+    tenant = 'fix-create-' + uuid.uuid4().hex
+    code = "orders"; app_id = 'app-' + uuid.uuid5(uuid.NAMESPACE_URL, f'apphub-app:{tenant}:{code}').hex
+    worker = """import os,sys,json,time
+from mate_tech_db.base import init_engine
+from mate_app_hub.repositories import sql_store as repo,in_memory as model
+payload=json.loads(sys.stdin.read());time.sleep(max(0,payload['start']-time.time()))
+init_engine(os.environ['MP11_APPHUB_PG_DSN'])
+try:
+ repo.put_app(payload['tenant'],model.ApphubApp(payload['id'],payload['tenant'],'Original','orders','business',''),insert_only=True)
+ print('created')
+except ValueError:
+ print('conflict')
+"""
+    processes = [subprocess.Popen([sys.executable, '-c', worker], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) for _ in range(2)]
+    payload = json.dumps({'tenant': tenant, 'id': app_id, 'start': time.time() + 3})
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda process: process.communicate(payload, timeout=60), processes))
+    assert all(p.returncode == 0 for p in processes)
+    assert sorted(out.strip() for out, _ in results) == ['conflict', 'created']
+    reset_engine(); init_engine(dsn)
+    assert len(repo.list_apps(tenant)) == 1
+    legacy = model.ApphubApp('legacy-' + uuid.uuid4().hex, tenant, 'Keep legacy', 'legacy', 'business', '')
+    repo.put_app(tenant, legacy)
+    # A preexisting duplicate code remains untouched; no automatic destructive cleanup.
+    repo.put_app(tenant, replace(legacy, id='legacy-duplicate-' + uuid.uuid4().hex))
+    with pytest.raises(ValueError, match='already'):
+        repo.put_app(tenant, replace(legacy, id='new-' + uuid.uuid4().hex), insert_only=True)
+    assert len([a for a in repo.list_apps(tenant) if a.code == 'legacy']) == 2
+    reset_engine()
+
+
+@pytest.mark.skipif(not __import__('os').getenv('MP11_APPHUB_PG_DSN'), reason='explicit isolated Task6 PG required')
+def test_actual_pg_history_filters_before_limit_and_survives_new_process():
+    import os, sys, uuid, subprocess, json
+    from urllib.parse import urlparse
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+    from mate_kernel.ontology import ClassRef
+    dsn = os.environ['MP11_APPHUB_PG_DSN']; target = urlparse(dsn)
+    assert target.hostname == '127.0.0.1' and target.port == 55497 and target.path.startswith('/codex_mp11_')
+    tenant = 'mp11-app-ui'; repo = PgOntologyRepository(dsn=dsn)
+    app_id = 'history-' + uuid.uuid4().hex
+    base = {'app_id': app_id, 'page_id': 'page', 'app_version_id': 'v1', 'source': 'user'}
+    receipts = []
+    with repo.tenant_scope(tenant):
+        for provenance in (base, {**base, 'app_id': 'other-app'}, {**base, 'page_id': 'other-page'}, {**base, 'app_version_id': 'v2'}, {}):
+            p = repo.propose_action(ClassRef(f'ont.{tenant}.act.review'), {}, f'ont.{tenant}.ind.order.2', 'History fixture', provenance=provenance)
+            repo.confirm_proposal(p.proposal_id, 'history-user', idempotency_key='confirm-' + uuid.uuid4().hex)
+            receipts.append(repo.execute_proposal(p.proposal_id, actor_id='history-user', idempotency_key='execute-' + uuid.uuid4().hex))
+        filtered = repo.list_action_audit(1, app_id=app_id, page_id='page', app_version_id='v1')
+        assert [r['audit_id'] for r in filtered] == [receipts[0]['audit_id']]
+    with repo.tenant_scope('other-tenant'):
+        assert repo.list_action_audit(1, app_id=app_id, page_id='page', app_version_id='v1') == []
+    worker = """import os,sys,json
+from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+p=json.loads(sys.stdin.read());r=PgOntologyRepository(dsn=os.environ['MP11_APPHUB_PG_DSN'])
+with r.tenant_scope('mp11-app-ui'):
+ print(json.dumps([x['audit_id'] for x in r.list_action_audit(1,app_id=p['app_id'],page_id='page',app_version_id='v1')]))
+"""
+    result = subprocess.run([sys.executable, '-c', worker], input=json.dumps({'app_id': app_id}), capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0
+    assert json.loads(result.stdout) == [receipts[0]['audit_id']]
+
+
+@pytest.mark.parametrize("entry", ["top", "parameters"])
+def test_direct_ontology_proposal_rejects_unverified_application_attribution(monkeypatch, entry):
+    from starlette.requests import Request
+    from mate_platform.tenancy.context import RequestContext, TenantId, UserId, AuthMethod
+    from mate_tech_ont.v2_kernel import api
+    from types import SimpleNamespace
+    request = Request({"type": "http", "method": "POST", "path": "/", "headers": [(b'authorization', b'Bearer fixture-only')]})
+    request.state.ctx = RequestContext('r', 't', TenantId('a'), UserId('human'), frozenset(), frozenset(),
+        frozenset({'platform.read', 'platform.write'}), auth_method=AuthMethod.USER)
+    provenance = {'app_id': 'forged', 'page_id': 'fake', 'app_version_id': 'fake'}
+    payload = api.ProposalCreateDTO(target_iid='ont.a.ind.order.1', **({'provenance': provenance} if entry == 'top' else {'parameters': {'provenance': provenance}}))
+    calls = []
+    async def repository(*args, **kwargs):
+        calls.append(args); raise AssertionError('unverified application attribution reached repository')
+    monkeypatch.setattr(api, '_call_scoped', repository)
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(api, 'httpx', SimpleNamespace(AsyncClient=lambda **kwargs: real_client(**kwargs, transport=httpx.MockTransport(lambda req: httpx.Response(404))), HTTPError=httpx.HTTPError), raising=False)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(api.propose_action('ont.a.act.review', payload, request))
+    assert error.value.status_code == 404
+    assert not calls
+
+
+@pytest.mark.parametrize("handler", ["propose_edit_set", "apply_edit_set"])
+@pytest.mark.parametrize("custom_edits", [False, True])
+def test_edit_set_alias_cannot_forge_application_history(monkeypatch, handler, custom_edits):
+    from starlette.requests import Request
+    from mate_platform.tenancy.context import RequestContext, TenantId, UserId, AuthMethod
+    from mate_tech_ont.v2_kernel import api
+    from types import SimpleNamespace
+    request = Request({"type": "http", "method": "POST", "path": "/", "headers": [(b'authorization', b'Bearer fixture-only')]})
+    request.state.ctx = RequestContext('r', 't', TenantId('a'), UserId('human'), frozenset(), frozenset(),
+        frozenset({'platform.read', 'platform.write'}), auth_method=AuthMethod.USER)
+    payload = api.EditSetApplyBodyDTO(target_iid='ont.a.ind.order.1', parameters={'provenance': {'app_id':'fake','page_id':'p','app_version_id':'v'}},
+        edits=[{'op':'set_property'}] if custom_edits else [])
+    async def repository(*args, **kwargs): raise AssertionError('unverified alias reached repository')
+    monkeypatch.setattr(api, '_call_scoped', repository)
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(api, 'httpx', SimpleNamespace(AsyncClient=lambda **kwargs: real_client(**kwargs, transport=httpx.MockTransport(lambda req: httpx.Response(404))), HTTPError=httpx.HTTPError))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(getattr(api, handler)('ont.a.act.review', payload, request))
+    assert error.value.status_code == (422 if custom_edits else 404)
+
+
+@pytest.mark.parametrize('case', ['missing', 'conflict', 'duplicate', 'wrong_version'])
+def test_application_attribution_rejects_incomplete_duplicate_and_conflicting_values(monkeypatch, case):
+    from starlette.requests import Request
+    from mate_tech_ont.v2_kernel import api
+    from types import SimpleNamespace
+    request = Request({'type':'http','method':'POST','path':'/','headers':[(b'authorization',b'Bearer fixture-only')]})
+    provenance = {'app_id':'app','page_id':'page','app_version_id':'v1'}
+    parameters = {}
+    if case == 'missing': provenance.pop('page_id')
+    elif case in ('conflict', 'duplicate'): parameters['provenance'] = {'app_id': 'different' if case == 'conflict' else 'app'}
+    else: provenance['app_version'] = '9.0.0'
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(api, 'httpx', SimpleNamespace(AsyncClient=lambda **kwargs: real_client(**kwargs, transport=httpx.MockTransport(lambda req: httpx.Response(200,json={'app_id':'app','page_id':'page','app_version_id':'v1','app_version':'1.0.0'}))), HTTPError=httpx.HTTPError))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(api._validated_app_provenance(request,'ont.a.act.review','target',parameters,provenance))
+    assert error.value.status_code == 422
+
+
+@pytest.mark.parametrize('entry', ['top', 'parameters'])
+def test_verified_direct_application_attribution_preserves_action_parameters(monkeypatch, entry):
+    from starlette.requests import Request
+    from mate_tech_ont.v2_kernel import api
+    from types import SimpleNamespace
+    request = Request({'type':'http','method':'POST','path':'/','headers':[(b'authorization',b'Bearer fixture-only')]})
+    provenance = {'app_id':'app','page_id':'page','app_version_id':'old-published'}
+    parameters = {'amount':7, **({'provenance':provenance} if entry=='parameters' else {})}
+    observed = []
+    def upstream(req):
+        import json
+        observed.append(json.loads(req.content))
+        assert req.headers['Authorization'] == 'Bearer fixture-only'
+        return httpx.Response(200,json={**provenance,'app_version':'1.0.0'})
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(api, 'httpx', SimpleNamespace(AsyncClient=lambda **kwargs: real_client(**kwargs, transport=httpx.MockTransport(upstream)), HTTPError=httpx.HTTPError))
+    checked, trusted = asyncio.run(api._validated_app_provenance(request,'ont.a.act.review','target',parameters,provenance if entry=='top' else {}))
+    assert checked['amount']==7 and trusted['app_version_id']=='old-published'
+    assert trusted['app_version']=='1.0.0'
+    assert observed==[{'page_id':'page','version_id':'old-published','action_rid':'ont.a.act.review','target_iid':'target'}]

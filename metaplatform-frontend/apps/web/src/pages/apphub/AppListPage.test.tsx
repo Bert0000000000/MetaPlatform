@@ -60,3 +60,9 @@ it('retains a successfully created module for retry after page creation fails', 
   expect(result.id).toBe('page-id');
   expect(api.post.mock.calls.filter(([path]) => path === '/modules')).toHaveLength(1);
 });
+
+it('keeps the running snapshot version distinct from editable draft metadata', async () => {
+  api.get.mockResolvedValue({ data: { items: [{ id: 'a', code: 'orders', name: 'Orders', status: 'PUBLISHED', version: '2.0.0', published_version: '1.0.0', published_version_id: 'v1' }], total: 1 } });
+  const app = (await listApps()).items[0];
+  expect(app.version).toBe('2.0.0'); expect(app.publishedVersion).toBe('1.0.0'); expect(app.publishedVersionId).toBe('v1');
+});

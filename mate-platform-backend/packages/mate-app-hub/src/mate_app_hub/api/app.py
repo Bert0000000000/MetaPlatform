@@ -104,15 +104,15 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
+def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> ApphubApp:
     from ..repositories.in_memory import AppRevisionConflict
     try:
-        return _put_app(tenant_id, app)
-    except AppRevisionConflict as exc:
+        return _put_app(tenant_id, app, insert_only=insert_only)
+    except (AppRevisionConflict, ValueError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from None
 
 
-def _tenant_id(request: Request) -> str:
+def _tenant_id(request: Request, *, require_write: bool = True) -> str:
     """Return the verified tenant_id for the current request.
 
     Reads `request.state.ctx` (populated by `install_auth`) and
@@ -122,7 +122,7 @@ def _tenant_id(request: Request) -> str:
     """
     ctx = request.state.ctx
     tenant_id = require_tenant(ctx)
-    if request.method not in {"GET", "HEAD", "OPTIONS"} and not ctx.has_scope("platform.write"):
+    if require_write and request.method not in {"GET", "HEAD", "OPTIONS"} and not ctx.has_scope("platform.write"):
         raise HTTPException(status_code=403, detail="platform.write required")
     return str(tenant_id)
 
@@ -303,14 +303,8 @@ async def register_app(
             status_code=422,
             detail=f"invalid version '{body.version}'; expected MAJOR.MINOR.PATCH",
         )
-    existing = get_app(tid, body.code)
-    if existing is not None:
-        raise HTTPException(
-            status_code=409,
-            detail=f"app '{body.code}' already registered",
-        )
     app = ApphubApp(
-        id=f"app-{uuid.uuid4().hex}",
+        id="app-" + uuid.uuid5(uuid.NAMESPACE_URL, f"apphub-app:{tid}:{body.code}").hex,
         tenant_id=tid,
         name=body.name,
         code=body.code,
@@ -323,7 +317,7 @@ async def register_app(
         created_at=_now_iso(),
         updated_at=_now_iso(),
     )
-    put_app(tid, app)
+    put_app(tid, app, insert_only=True)
     _emit(
         request,
         "apphub.app.registered",
@@ -331,7 +325,7 @@ async def register_app(
         {"code": body.code, "name": body.name, "version": body.version},
         tid,
     )
-    return asdict(app)
+    return _app_payload(app)
 
 
 @router.patch("/apps/{code}", operation_id='apphubPatchApphubAppsCode')
@@ -384,18 +378,20 @@ async def update_app(
         {"code": code, "version": new_version},
         tid,
     )
-    return asdict(updated)
+    return _app_payload(updated)
 
 
 @router.delete("/apps/{code}", operation_id='apphubDeleteApphubAppsCode')
 async def delete_app_endpoint(request: Request, code: str) -> dict:
     """Delete an application by code."""
     tid = _tenant_id(request)
-    app = next((a for a in list_apps(tid) if code in (a.id, a.code)), None)
+    apps = list_apps(tid)
+    app = next((a for a in apps if a.id == code), None) or next((a for a in apps if a.code == code), None)
     if app is None:
         raise HTTPException(status_code=404, detail="app not found")
-    delete_app(tid, code)
-    _emit(request, "apphub.app.deleted", code, {"code": code}, tid)
+    if not delete_app(tid, app.id, by_id=True):
+        raise HTTPException(status_code=404, detail="app already deleted")
+    _emit(request, "apphub.app.deleted", app.code, {"code": app.code}, tid)
     return {"deleted": code}
 
 
@@ -748,7 +744,10 @@ async def execute_runtime_action(app_id: str, request: Request) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=409 if "publish" in str(exc) else 404, detail=str(exc)) from None
     if body.get("action_type") == "ontology_propose":
-        binding = _runtime_binding(ctx, str(body.get("page_id", "")))
+        page_id = str(body.get("page_id", ""))
+        binding = _runtime_binding(ctx, page_id)
+        if not ctx.published_version_id:
+            raise HTTPException(status_code=409, detail="Published snapshot identity required")
         async with ontology_client(request) as client:
             binding = await validate_order_binding(client, tenant_id, binding)
             rows = await ontology_request(client, "POST", "/object-sets:evaluate", json=binding["object_set"])
@@ -759,7 +758,8 @@ async def execute_runtime_action(app_id: str, request: Request) -> dict:
                 "/action-types/" + quote(binding["action_rid"], safe="") + "/propose",
                 json={"target_iid": target, "parameters": body.get("payload", {}).get("parameters", {}),
                       "impact_summary": f"Application {ctx.app_id} version {ctx.version}",
-                      "provenance": {"source": "user", "app_id": ctx.app_id, "app_version": ctx.version}})
+                      "provenance": {"source": "user", "app_id": ctx.app_id, "page_id": page_id,
+                                     "app_version": ctx.version, "app_version_id": ctx.published_version_id}})
         return {"action_id": body.get("action_id", ""), "success": True, "data": proposal, "error": None}
     action = RuntimeAction(
         action_id=body["action_id"],
@@ -780,6 +780,8 @@ def _app_payload(app: ApphubApp) -> dict:
     # Snapshots are fetched via /versions, not copied into every registry card.
     raw.pop("versions")
     raw.pop("releases")
+    raw["published_version"] = next((v.get("version") for v in app.versions
+                                     if v.get("versionId") == app.published_version_id), None)
     raw["module_count"] = sum(m.app_code == app.code for m in list_modules(app.tenant_id))
     return raw
 
@@ -800,13 +802,60 @@ def _runtime_binding(ctx, page_id: str) -> dict:
     return page["definition"]["binding"]
 
 
+async def _publication_report(request: Request, app: ApphubApp, modules: list[dict]) -> dict:
+    checks = {key: {"key": key, "status": "unknown", "message": "尚未验证", "next_step": "重新检查"}
+              for key in ("bindings", "reference_versions", "access", "components", "action_policy", "runtime")}
+    def record(key, status, message, next_step=""):
+        checks[key].update(status=status, message=message, next_step=next_step)
+    allowed = request.state.ctx.has_scope("platform.read") and request.state.ctx.has_scope("platform.write")
+    record("access", "pass" if allowed else "fail", "当前租户的读取与发布权限" if allowed else "缺少 platform.read / platform.write",
+           "" if allowed else "使用具有读取和发布权限的身份重试")
+    pages = [p for m in modules for p in m.get("pages", [])]
+    runnable = any(p.get("definition", {}).get("widgets") or p.get("definition", {}).get("binding") for p in pages)
+    record("components", "pass" if runnable else "fail", "已保存可运行页面" if runnable else "没有已保存的可运行页面",
+           "" if runnable else "在页面设计器保存组件或订单绑定")
+    bindings = [p["definition"]["binding"] for p in pages if p.get("definition", {}).get("binding")]
+    if not bindings:
+        for key in ("bindings", "reference_versions", "action_policy"):
+            record(key, "pass" if runnable else "unknown", "该页面没有本体绑定或审核动作" if runnable else "需先保存页面",
+                   "" if runnable else "保存页面后重新检查")
+    else:
+        try:
+            await _validate_modules(request, modules)
+            record("bindings", "pass", f"已验证 {len(bindings)} 个订单、客户与关系绑定")
+            record("reference_versions", "pass", "模型版本及 Action / 关系指纹与已保存绑定一致")
+            record("action_policy", "pass", "注册 Action 的目标类型有效；执行仍须人工 USER 确认及写权限")
+        except HTTPException as exc:
+            key = "reference_versions" if exc.status_code == 409 else "access" if exc.status_code in {401, 403} else "bindings"
+            record(key, "unknown" if exc.status_code >= 500 else "fail", str(exc.detail), "修复绑定、权限或服务连接后重新检查")
+    if runnable and allowed and all(checks[k]["status"] == "pass" for k in ("bindings", "reference_versions", "action_policy")):
+        try:
+            for binding in bindings:
+                await _read_order_binding(request, binding, app.version)
+            ctx = load_app_runtime(app.tenant_id, app.code)
+            if not render_page(replace(ctx, modules=modules)):
+                raise HTTPException(status_code=422, detail="Runtime has no renderable pages")
+            record("runtime", "pass", "已加载保存的运行树及实际绑定数据（不执行动作）")
+        except HTTPException as exc:
+            record("runtime", "unknown" if exc.status_code >= 500 else "fail", str(exc.detail), "检查实际 ObjectSet、关系数据和服务连接后重试")
+    return {"app_id": app.id, "draft_version": app.version, "revision": app.revision,
+            "checked_at": _now_iso(), "can_publish": all(c["status"] == "pass" for c in checks.values()),
+            "checks": list(checks.values())}
+
+
+@router.get("/apps/{app_id}/publication-check", operation_id="apphubCheckPublication")
+async def check_publication(app_id: str, request: Request) -> dict:
+    app = _release_app(_tenant_id(request), app_id)
+    ctx = load_app_runtime(app.tenant_id, app.code)
+    return await _publication_report(request, app, deepcopy(ctx.modules))
+
+
 async def _capture_snapshot(request: Request, app: ApphubApp, version: str) -> dict:
     ctx = load_app_runtime(app.tenant_id, app.code)
-    pages = [p for m in ctx.modules for p in m.get("pages", [])]
-    if not pages or not any(p.get("definition", {}).get("widgets") or p.get("definition", {}).get("binding") for p in pages):
-        raise HTTPException(status_code=422, detail="No saved runnable pages; publish rejected")
     modules = deepcopy(ctx.modules)
-    await _validate_modules(request, modules)
+    report = await _publication_report(request, app, modules)
+    if not report["can_publish"]:
+        raise HTTPException(status_code=422, detail={"message": "Publication validation failed", "validation": report})
     return {"versionId": f"ver-{uuid.uuid4().hex}", "appId": app.id, "version": version,
             "status": "DRAFT", "createdAt": _now_iso(), "modules": modules}
 
@@ -1029,11 +1078,12 @@ async def publish_flow(request: Request, module_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def _release_app(tenant_id: str, app_id: str) -> ApphubApp:
-    """Resolve an AppHub app by public id or code."""
-    for app in list_apps(tenant_id):
-        if app_id in (app.id, app.code):
-            return app
-    raise HTTPException(status_code=404, detail="app not found")
+    """Resolve exact public ID before considering the tenant-local code."""
+    apps = list_apps(tenant_id)
+    app = next((a for a in apps if a.id == app_id), None) or next((a for a in apps if a.code == app_id), None)
+    if app is None:
+        raise HTTPException(status_code=404, detail="app not found")
+    return app
 
 
 def _find_release(tenant_id: str, release_id: str) -> tuple[ApphubApp, dict[str, Any]]:
@@ -1303,3 +1353,54 @@ async def preview_order_page(request: Request, page_id: str, body: PageSaveReque
     if not body.binding:
         raise HTTPException(status_code=422, detail="Order binding required for preview")
     return await _read_order_binding(request, body.binding, "DRAFT_PREVIEW")
+
+
+@router.get("/apps/{app_id}/runtime/history", operation_id="apphubGetOrderRuntimeHistory")
+async def get_order_runtime_history(request: Request, app_id: str, page_id: str,
+                                    version_id: str | None = None,
+                                    limit: int = Query(default=100, ge=1, le=1000)) -> list[dict]:
+    app = _release_app(_tenant_id(request), app_id)
+    selected = version_id or app.published_version_id
+    snapshot = next((v for v in app.versions if v.get("versionId") == selected and v.get("status") == "PUBLISHED"), None)
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Published snapshot not found")
+    page = next((p for m in snapshot.get("modules", []) for p in m.get("pages", []) if p.get("id") == page_id), None)
+    if not page or not page.get("definition", {}).get("binding"):
+        raise HTTPException(status_code=404, detail="Page does not belong to the published snapshot")
+    async with ontology_client(request) as client:
+        return await ontology_request(client, "GET", "/action-audit", params={"limit": limit,
+            "action_rid": page["definition"]["binding"]["action_rid"], "app_id": app.id,
+            "page_id": page_id, "app_version_id": snapshot["versionId"]})
+
+
+class AppProposalContextRequest(BaseModel):
+    page_id: str
+    version_id: str
+    action_rid: str
+    target_iid: str
+
+
+@router.post("/apps/{app_id}/runtime/proposal-context", operation_id="apphubValidateProposalContext")
+async def validate_proposal_context(request: Request, app_id: str, body: AppProposalContextRequest) -> dict:
+    """Read-only attribution check; never creates a proposal or executes an action."""
+    tid = _tenant_id(request, require_write=False)
+    if not request.state.ctx.has_scope("platform.read"):
+        raise HTTPException(status_code=403, detail="platform.read required")
+    app = _release_app(tid, app_id)
+    if app.id != app_id:
+        raise HTTPException(status_code=404, detail="Exact application ID required")
+    if app.status != "PUBLISHED":
+        raise HTTPException(status_code=409, detail="Application is not published")
+    snapshot = next((v for v in app.versions if v.get("versionId") == body.version_id and v.get("status") == "PUBLISHED"), None)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="Published snapshot not found")
+    page = next((p for m in snapshot.get("modules", []) for p in m.get("pages", []) if p.get("id") == body.page_id), None)
+    binding = page.get("definition", {}).get("binding") if page else None
+    if not binding or body.action_rid != binding.get("action_rid"):
+        raise HTTPException(status_code=422, detail="Action/page does not match the published binding")
+    async with ontology_client(request) as client:
+        binding = await validate_order_binding(client, tid, binding)
+        rows = await ontology_request(client, "POST", "/object-sets:evaluate", json=binding["object_set"])
+    if body.target_iid not in {row["rid"] for row in rows}:
+        raise HTTPException(status_code=422, detail="Target is outside the published ObjectSet")
+    return {"app_id": app.id, "page_id": body.page_id, "app_version_id": snapshot["versionId"], "app_version": snapshot["version"]}

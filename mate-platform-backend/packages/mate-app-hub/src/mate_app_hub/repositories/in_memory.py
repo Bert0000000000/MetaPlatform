@@ -410,16 +410,18 @@ def get_app(tenant_id: str, code: str) -> ApphubApp | None:
     if not tenant_id:
         return None
     _ensure_tenant(tenant_id)
-    return deepcopy(_APPS[tenant_id].get(code))
+    return deepcopy(next((a for a in _APPS[tenant_id].values() if code in (a.id, a.code)), None))
 
 
-def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
+def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> ApphubApp:
     """Insert or replace an app."""
-    if not tenant_id:
-        raise ValueError("tenant_id is required")
+    if not tenant_id or app.tenant_id != tenant_id:
+        raise ValueError("cross-tenant app write denied")
     _ensure_tenant(tenant_id)
     with _APP_LOCK:
         existing = _APPS[tenant_id].get(app.code)
+        if insert_only and (existing or any(a.id == app.id for a in _APPS[tenant_id].values())):
+            raise ValueError("app already registered")
         if existing and existing.revision != app.revision:
             raise AppRevisionConflict("Application changed; reload before saving")
         saved = replace(app, revision=existing.revision + 1 if existing else 0)
@@ -427,15 +429,18 @@ def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
         return deepcopy(saved)
 
 
-def delete_app(tenant_id: str, code: str) -> bool:
-    """Delete an app by code. Returns True if deleted."""
+def delete_app(tenant_id: str, code: str, *, by_id: bool = False) -> bool:
+    """Delete the exact resolved ID when requested, preserving same-valued codes."""
     if not tenant_id:
         return False
     _ensure_tenant(tenant_id)
-    if code not in _APPS[tenant_id]:
-        return False
-    del _APPS[tenant_id][code]
-    return True
+    with _APP_LOCK:
+        if by_id:
+            code = next((a.code for a in _APPS[tenant_id].values() if a.id == code), None)
+        if code not in _APPS[tenant_id]:
+            return False
+        del _APPS[tenant_id][code]
+        return True
 
 
 def get_group(tenant_id: str, code: str) -> ApphubGroup | None:

@@ -43,7 +43,7 @@ def load_app_runtime(
             if app.status != "PUBLISHED" or snapshot is None or snapshot.get("status") != "PUBLISHED":
                 raise ValueError("App has no matching published snapshot")
             return RuntimeContext(app_id=app.id, tenant_id=tenant_id, version=snapshot["version"],
-                                  modules=snapshot["modules"])
+                                  modules=snapshot["modules"], published_version_id=snapshot["versionId"])
 
         all_modules = list_modules(tenant_id)
         app_modules = [m for m in all_modules if m.app_code == app.code]

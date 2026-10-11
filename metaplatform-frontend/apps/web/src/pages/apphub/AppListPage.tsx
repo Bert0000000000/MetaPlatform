@@ -30,7 +30,7 @@ const SORT_OPTIONS = [
 const ALL_DOMAINS_KEY = '__all__';
 
 function appVersion(app: AppItem): string {
-  return app.version || '—';
+  return app.status === 'PUBLISHED' ? `运行 ${app.publishedVersion || '未知'} · 草稿 ${app.version || '未知'}` : `草稿 ${app.version || '未知'}`;
 }
 
 export default function AppListPage() {
@@ -186,7 +186,7 @@ export default function AppListPage() {
         <div className="mp-app-meta">
           {app.group ? <Tag size="small">{categoryLabel(app.group)}</Tag> : null}
           <Tag size="small" color="blue">
-            v{appVersion(app)}
+            {appVersion(app)}
           </Tag>
 
           <Dropdown

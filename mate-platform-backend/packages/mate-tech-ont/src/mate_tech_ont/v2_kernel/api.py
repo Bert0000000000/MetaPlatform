@@ -28,6 +28,8 @@ GOVERN-06 tenant 三层防线：
 from __future__ import annotations
 
 import asyncio
+import httpx
+from urllib.parse import quote
 import os
 from datetime import UTC, datetime
 from typing import Any
@@ -951,9 +953,17 @@ async def list_action_audit(
     request: Request,
     limit: int = 100,
     action_rid: str | None = None,
+    app_id: str | None = None,
+    page_id: str | None = None,
+    app_version_id: str | None = None,
 ) -> list[dict]:
-    """UI-04：Action 执行历史（actor/参数/结果/审计链，倒序）。"""
+    """UI-04：Action history; optional exact application provenance before LIMIT."""
     _ctx(request)
+    if any((app_id, page_id, app_version_id)):
+        if not all((app_id, page_id, app_version_id)):
+            raise HTTPException(status_code=422, detail="Complete application/page/version attribution required")
+        return await _call_scoped(request, "list_action_audit", limit, action_rid,
+                                  app_id=app_id, page_id=page_id, app_version_id=app_version_id)
     return await _call_scoped(request, "list_action_audit", limit, action_rid)
 
 
@@ -2949,6 +2959,9 @@ async def propose_edit_set(
         raise HTTPException(status_code=403, detail="platform.write required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
+    parameters, provenance = await _validated_app_provenance(request, rid, payload.target_iid, payload.parameters, edits=payload.edits)
+    if provenance:
+        parameters = {**parameters, "provenance": {**parameters.get("provenance", {}), **provenance}}
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError:
@@ -2969,7 +2982,7 @@ async def propose_edit_set(
             "propose_edit_set",
             rid,
             payload.target_iid or None,
-            dict(payload.parameters),
+            parameters,
             list(payload.edits),
             payload.impact_summary or f"edit-set proposal for {rid}",
         )
@@ -3006,6 +3019,9 @@ async def apply_edit_set(
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
     actor = str(ctx.user_id)
     viewer = _app_scoped_markings(request, markings) if markings else ()
+    parameters, provenance = await _validated_app_provenance(request, rid, payload.target_iid, payload.parameters, edits=payload.edits)
+    if provenance:
+        parameters = {**parameters, "provenance": {**parameters.get("provenance", {}), **provenance}}
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError:
@@ -3028,7 +3044,7 @@ async def apply_edit_set(
             "apply_edit_set_now",
             rid,
             payload.target_iid or None,
-            dict(payload.parameters),
+            parameters,
             list(payload.edits),
             actor,
             payload.impact_summary,
@@ -3641,6 +3657,52 @@ async def execute_proposal(
     return ProposalExecuteResultDTO(**out)
 
 
+async def _validated_app_provenance(request: Request, action_rid: str, target_iid: str,
+                                     parameters: dict, provenance: dict | None = None, *, edits: list | None = None) -> tuple[dict, dict]:
+    """Application attribution is verified against the actual AppHub snapshot, never caller asserted."""
+    nested = parameters.get("provenance", {})
+    if not isinstance(nested, dict):
+        raise HTTPException(status_code=422, detail="provenance must be an object")
+    outer = provenance or {}
+    keys = ("app_id", "page_id", "app_version_id", "app_version")
+    if not any(key in nested or key in outer for key in keys):
+        return parameters, outer
+    if edits:
+        raise HTTPException(status_code=422, detail="Application attribution requires the registered Action, without custom edits")
+    if any(key in nested and key in outer for key in keys):
+        raise HTTPException(status_code=422, detail="Duplicate or conflicting application attribution")
+    merged = {**nested, **outer}
+    if not all(isinstance(merged.get(key), str) and merged[key] for key in keys[:3]):
+        raise HTTPException(status_code=422, detail="Complete application/page/published-version attribution required")
+    authorization = request.headers.get("authorization", "")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=403, detail="Verified caller Bearer required")
+    try:
+        async with httpx.AsyncClient(base_url=(os.getenv("APPHUB_URL") or "http://localhost:8100").rstrip("/"),
+                                    headers={"Authorization": authorization}, timeout=20) as client:
+            response = await client.post("/api/v1/apphub/apps/" + quote(merged["app_id"], safe="") + "/runtime/proposal-context",
+                json={"page_id": merged["page_id"], "version_id": merged["app_version_id"], "action_rid": action_rid, "target_iid": target_iid})
+    except httpx.HTTPError:
+        raise HTTPException(status_code=503, detail="Application attribution validation unavailable") from None
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code if response.status_code in {401, 403, 404, 409, 422} else 503,
+                            detail="Application attribution rejected or unavailable")
+    try:
+        verified = response.json()
+        if (not isinstance(verified, dict) or any(verified.get(key) != merged[key] for key in keys[:3])
+                or not isinstance(verified.get("app_version"), str)):
+            raise ValueError("invalid attribution response")
+    except ValueError:
+        raise HTTPException(status_code=503, detail="Invalid application attribution response") from None
+    if "app_version" in merged and merged["app_version"] != verified["app_version"]:
+        raise HTTPException(status_code=422, detail="Application version attribution conflicts with snapshot")
+    trusted = {key: verified[key] for key in keys}
+    checked_parameters = dict(parameters)
+    if "provenance" in checked_parameters:
+        checked_parameters["provenance"] = {**nested, **trusted}
+    return checked_parameters, {**outer, **trusted}
+
+
 @router.post(
     "/action-types/{rid:path}/propose",
     response_model=ProposalResponse,
@@ -3658,17 +3720,18 @@ async def propose_action(
     rid_ref = ClassRef(rid)
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
+    parameters, provenance = await _validated_app_provenance(request, rid, payload.target_iid, payload.parameters, payload.provenance)
     try:
         prop = await _call_scoped(
             request,
             "propose_action",
             rid_ref,
-            payload.parameters,
+            parameters,
             payload.target_iid or None,
             payload.impact_summary,
             payload.expected_diff or None,
             "action",
-            payload.provenance or None,
+            provenance or None,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

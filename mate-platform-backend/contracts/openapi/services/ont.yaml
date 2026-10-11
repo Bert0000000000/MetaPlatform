@@ -17,6 +17,80 @@ security:
     tenantHeader: []
     oidcScopes: [platform.read]
 paths:
+  /api/v1/ont/v2/action-audit:
+    get:
+      tags:
+      - ont
+      summary: List Action Audit
+      description: Verified tenant receipt history. Optional app_id/page_id/app_version_id must be complete and filter
+        Proposal provenance before LIMIT.
+      operationId: ontListV2ActionAudit
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 100
+          title: Limit
+      - name: action_rid
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action Rid
+      - name: app_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Id
+      - name: page_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Page Id
+      - name: app_version_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Version Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Ontlistv2Actionaudit
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.read
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
   /api/v1/ont/v2/proposals/{proposal_id}/withdraw:
     post:
       tags:
@@ -225,6 +299,7 @@ paths:
       summary: Propose Action
       description: 'AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。 Verified tenant and platform.write required. '
       operationId: ontProposeV2ActionType
+      x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
       parameters:
       - name: rid
         in: path
@@ -432,6 +507,7 @@ paths:
         markings 非空 → 安全闸门（行/列策略 + G6 合取门 + X-Scope-Markings 收窄）。 Verified tenant and platform.write required. Human
         USER identity required; actor is server verified and cannot be supplied by body. '
       operationId: ontApplyV2EditSet
+      x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
       parameters:
       - name: rid
         in: path
@@ -506,6 +582,7 @@ paths:
 
         function 产物（执行时两规约解释）；三者全空才 422。 Verified tenant and platform.write required. '
       operationId: ontProposeV2EditSet
+      x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
       parameters:
       - name: rid
         in: path

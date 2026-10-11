@@ -11,6 +11,7 @@ vi.hoisted(() => { HTMLCanvasElement.prototype.getContext = (() => ({ fillRect()
 vi.mock('@/api/ont/kernel', async importOriginal => ({ ...(await importOriginal<typeof import('@/api/ont/kernel')>()),
   listObjectTypes: vi.fn(async () => []), listActionTypes: vi.fn(async () => []), listLinkTypes: vi.fn(async () => []),
   listValueTypes: vi.fn(async () => []), listInterfaces: vi.fn(async () => []), getTypeHierarchy: vi.fn(async () => []),
+  getObjectBindingUsage: vi.fn(),
   inspectObjectType: vi.fn(async()=>({actions:[]})), assessMigration: vi.fn(async()=>({counts:{instances_affected:2},changes:['说明更新'],warnings:[]})),
   precheckObjectTypes: vi.fn(async () => ({candidates:[]})), getObjectType: vi.fn(), applySchemaWip: vi.fn(), mergeObjectTypes: vi.fn(),
   listSchemaWip: vi.fn(async () => []), saveSchemaWip: vi.fn(async () => ({ status: 'staged' })),
@@ -22,7 +23,7 @@ const mount = () => render(<MemoryRouter><ObjectTypeEditorV2Drawer open mode="cr
   objectTypes={[]} linkTypes={[]} interfaces={[]} valueTypes={[]} tenant="acme" domainOptions={[{code:'crm',label:'客户'}]}
   onSubmit={onSubmit} onClose={onClose} /></MemoryRouter>);
 const originalAdapter=apiClient.defaults.adapter;
-beforeEach(() => { vi.clearAllMocks(); const storage=new Map<string,string>(); vi.stubGlobal('localStorage',{getItem:(k:string)=>storage.get(k)??null,setItem:(k:string,v:string)=>storage.set(k,v),removeItem:(k:string)=>storage.delete(k),clear:()=>storage.clear()}); apiClient.defaults.adapter=async config=>({config,status:200,statusText:'OK',headers:{},data:{}}); vi.stubGlobal('matchMedia', () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} })); vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} }); vi.mocked(kernel.listSchemaWip).mockResolvedValue([]); });
+beforeEach(() => { vi.clearAllMocks(); vi.mocked(kernel.getObjectBindingUsage).mockResolvedValue([]); const storage=new Map<string,string>(); vi.stubGlobal('localStorage',{getItem:(k:string)=>storage.get(k)??null,setItem:(k:string,v:string)=>storage.set(k,v),removeItem:(k:string)=>storage.delete(k),clear:()=>storage.clear()}); apiClient.defaults.adapter=async config=>({config,status:200,statusText:'OK',headers:{},data:{}}); vi.stubGlobal('matchMedia', () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} })); vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} }); vi.mocked(kernel.listSchemaWip).mockResolvedValue([]); });
 afterEach(() => { cleanup(); apiClient.defaults.adapter=originalAdapter; vi.unstubAllGlobals(); });
 const fill = () => { fireEvent.change(screen.getByLabelText('业务名称'), {target:{value:'客户'}}); fireEvent.change(screen.getByLabelText('业务标识'), {target:{value:'customer'}}); };
 it('shows business form with technical metadata progressively disclosed', async () => {
@@ -169,4 +170,22 @@ it.each([false, true])('keeps the compared checksum through destructive confirma
     expect(onSubmit).toHaveBeenLastCalledWith(expect.objectContaining({confirm_name:'客户',description:'保留我的修改'}),'edit','C');
   }
   await waitFor(()=>expect(onClose).toHaveBeenCalledTimes(1));
+});
+
+it('shows the actual published application reference and navigation target', async () => {
+  vi.mocked(kernel.getObjectBindingUsage).mockResolvedValueOnce([{ app_id: 'real-app', app_name: 'Order review', page_id: 'real-page', status: 'PUBLISHED', version_id: 'snapshot-1', model_version: editable.rid, model_checksum: 'baseline', action_rid: 'ont.acme.act.review.v1' }]);
+  mountEdit(); fireEvent.click(screen.getByRole('button', { name: '预检与影响' }));
+  const link = await screen.findByRole('link', { name: 'Order review' });
+  expect(link).toHaveAttribute('href', '/apps/mine?app=real-app');
+  expect(screen.getByLabelText('应用引用')).toHaveTextContent('已发布');
+  expect(kernel.getObjectBindingUsage).toHaveBeenCalledWith(editable.rid);
+});
+it('preserves edits and blocks publication when application usage is unknown', async () => {
+  vi.mocked(kernel.getObjectBindingUsage).mockRejectedValueOnce(new Error('app usage offline'));
+  mountEdit(); fireEvent.change(screen.getByLabelText('业务说明'), { target: { value: 'Keep these edits' } });
+  fireEvent.click(screen.getByRole('button', { name: '发布对象类型' }));
+  expect(await screen.findByText('应用引用未知，请重试预检')).toBeInTheDocument();
+  expect(screen.getByLabelText('业务说明')).toHaveValue('Keep these edits');
+  expect(onSubmit).not.toHaveBeenCalled();
+  expect(screen.queryByText('当前租户没有实际应用绑定引用')).not.toBeInTheDocument();
 });

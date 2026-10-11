@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getOrderRuntimeData, previewOrderPage, proposeOrderReview, type OrderRuntimeData } from '@/api/apphub/runtime';
-import { listActionAudit, type ActionAuditRow } from '@/api/ont/kernel';
+import { getOrderRuntimeData, getOrderRuntimeHistory, previewOrderPage, proposeOrderReview, type OrderRuntimeData } from '@/api/apphub/runtime';
+import { type ActionAuditRow } from '@/api/ont/kernel';
 import type { OrderBinding, PageDesignerConfig } from '@/api/apphub/pages';
 import ProposalConfirmDrawer from '@/pages/ontology/components/ProposalConfirmDrawer';
 
@@ -20,9 +20,9 @@ export default function OrderReviewRuntime({ appId, pageId, binding, previewConf
     setBusy(true); setError('');
     try {
       const actual = await (previewConfig ? previewOrderPage(pageId, previewConfig) : getOrderRuntimeData(appId, pageId));
-      const receipts = previewConfig ? [] : await listActionAudit(100, binding.action_rid);
+      const receipts = previewConfig ? [] : await getOrderRuntimeHistory(appId, pageId);
       setData(actual);
-      setAudit(receipts.filter(r => actual.orders.some(o => o.rid === r.target_iid)));
+      setAudit(receipts);
     } catch (e) { setData(null); setError(e instanceof Error ? e.message : '订单数据不可用，请重试'); }
     finally { setBusy(false); }
   }, [appId, pageId, binding.action_rid, previewConfig]);
@@ -55,7 +55,7 @@ export default function OrderReviewRuntime({ appId, pageId, binding, previewConf
         })}</tbody></table>
       {!data.orders.length && <p>当前 ObjectSet 无订单。请调整筛选或完成数据导入。</p>}
       <h3>实际执行回执</h3>
-      {audit.length ? audit.map(r => <article key={r.audit_id}><p>回执 {r.audit_id} · 提案 {r.proposal_id}</p><p>执行人 {r.actor_id} · {r.created_at}</p><pre>{JSON.stringify(r.result, null, 2)}</pre></article>) : <p>当前订单尚无执行回执</p>}
+      {audit.length ? audit.map(r => <article key={r.audit_id}><p>回执 {r.audit_id} · 提案 {r.proposal_id}</p><p>执行人 {r.actor_id} · {r.created_at}</p><pre>{JSON.stringify(r.result, null, 2)}</pre></article>) : <p>当前页面发布版本尚无执行回执</p>}
     </>}
     <ProposalConfirmDrawer open={!!proposal} proposalId={proposal} initialKind="action"
       onClosed={() => setProposal(null)} onExecuted={() => { void load(); }} />

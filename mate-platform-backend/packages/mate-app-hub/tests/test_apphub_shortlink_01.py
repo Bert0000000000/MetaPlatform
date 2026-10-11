@@ -11,6 +11,8 @@ Covers:
 
 from __future__ import annotations
 
+from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
+
 import pytest
 from fastapi.testclient import TestClient
 from mate_app_hub.main import create_app
@@ -360,15 +362,3 @@ def test_shortlink_tenant_isolation() -> None:
     entry_a = list_shortlinks(store, "tenant-a")[0]
     with pytest.raises(ValueError, match="not found"):
         resolve_shortlink(store, "tenant-b", entry_a.code)
-
-
-def _save_runtime_fixture(client, headers, code="kb", publish=True):
-    from dataclasses import replace
-    from mate_app_hub.repositories import in_memory as repo
-    module = repo.ApphubModule("fixture-" + code, "tenant-acme", "Saved", "fixture-" + code, code, "", "")
-    repo.put_module("tenant-acme", module)
-    repo.put_page("tenant-acme", replace(repo.ApphubPage("fixture-" + code, "tenant-acme", "Saved", "fixture-" + code, module.code, "grid"), definition={"widgets": [{"id": "saved", "type": "text"}]}))
-    if publish:
-        result = client.post("/api/v1/apphub/apps/" + code + "/publish", headers=headers)
-        assert result.status_code == 200, result.text
-    return repo.get_app("tenant-acme", code).id

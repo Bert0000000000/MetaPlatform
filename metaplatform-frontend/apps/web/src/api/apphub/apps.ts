@@ -42,6 +42,7 @@ interface ApphubAppRaw {
   updated_at?: string | null;
   module_count?: number;
   published_version_id?: string;
+  published_version?: string | null;
 }
 
 /** Map backend snake_case app record to the frontend AppItem shape. */
@@ -56,6 +57,7 @@ function mapApp(raw: ApphubAppRaw): AppItem {
     status: raw.status ?? 'DESIGNING',
     owner: raw.owner,
     publishedVersionId: raw.published_version_id,
+    publishedVersion: raw.published_version ?? undefined,
     version: raw.version,
     moduleCount: raw.module_count ?? 0,
     createdAt: raw.created_at ?? '',

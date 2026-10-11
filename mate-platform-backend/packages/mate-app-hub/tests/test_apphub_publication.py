@@ -126,6 +126,8 @@ def test_saved_binding_publishes_snapshot_runtime_and_tenant_usage(client, auth_
     docs = {key.replace("ont.a.", "ont.tenant-acme."): value for key, value in documents().items()}
     import json
     docs = json.loads(json.dumps(docs).replace("ont.a.", "ont.tenant-acme."))
+    docs["/api/v1/ont/v2/object-sets:evaluate"] = []
+    docs["/api/v1/ont/v2/link-instances"] = []
     bound = json.loads(json.dumps(spec()).replace("ont.a.", "ont.tenant-acme."))
     monkeypatch.setattr(api_module, "ontology_client", lambda request: httpx.AsyncClient(
         base_url="http://ontology", transport=httpx.MockTransport(lambda req: httpx.Response(200, json=docs[req.url.path]))),
@@ -363,3 +365,203 @@ def test_insert_only_page_preserves_saved_definition_on_duplicate(database,backe
     repo.put_module('insert',module,insert_only=True)
     with pytest.raises(ValueError,match='exists'):
         repo.put_module('insert',replace(module,name='overwrite'),insert_only=True)
+
+
+@pytest.mark.parametrize("store", [mem, sql])
+def test_delete_by_returned_id_removes_published_runtime(database, monkeypatch, auth_headers_acme, store):
+    from fastapi.testclient import TestClient
+    from mate_app_hub.main import create_app
+    mem.reset_store()
+    if store is sql:
+        monkeypatch.setenv("MATE_DB_URL", database)
+    else:
+        monkeypatch.delenv("MATE_DB_URL", raising=False)
+        monkeypatch.delenv("DATABASE_URL", raising=False)
+    tid = "tenant-acme"
+    store.put_group(tid, mem.ApphubGroup("fix-business", tid, "Business", "business", "", 0))
+    with TestClient(create_app()) as client:
+        created = client.post("/api/v1/apphub/apps", headers=auth_headers_acme,
+                              json={"name": "Delete me", "code": "fix-delete", "category": "business"})
+        assert created.status_code == 201, created.text
+        app_id = created.json()["id"]
+        store.put_module(tid, mem.ApphubModule("fix-module", tid, "Module", "fix-module", "fix-delete", "", ""))
+        store.put_page(tid, replace(mem.ApphubPage("fix-page", tid, "Page", "fix-page", "fix-module", "grid"),
+                                   definition={"widgets": [{"id": "text", "type": "text"}]}))
+        assert client.post(f"/api/v1/apphub/apps/{app_id}/publish", headers=auth_headers_acme).status_code == 200
+        assert client.get("/api/v1/apphub/apps/fix-delete/runtime", headers=auth_headers_acme).status_code == 200
+        assert client.delete(f"/api/v1/apphub/apps/{app_id}", headers=auth_headers_acme).status_code == 200
+        assert client.get(f"/api/v1/apphub/apps/{app_id}", headers=auth_headers_acme).status_code == 404
+        assert client.get("/api/v1/apphub/apps/fix-delete/runtime", headers=auth_headers_acme).status_code == 404
+        assert client.delete(f"/api/v1/apphub/apps/{app_id}", headers=auth_headers_acme).status_code == 404
+
+
+@pytest.mark.parametrize("store", [mem, sql])
+def test_atomic_app_creation_preserves_legacy_id_and_publication(database, store):
+    mem.reset_store()
+    original = replace(mem.ApphubApp("legacy-random-id", "fix-tenant", "Original", "orders", "business", ""),
+                       versions=[{"versionId": "preserved"}], published_version_id="preserved")
+    store.put_app("fix-tenant", original)
+    duplicate = replace(original, id="new-deterministic-id", name="Overwrite", versions=[])
+    with pytest.raises(ValueError, match="already"):
+        store.put_app("fix-tenant", duplicate, insert_only=True)
+    assert [a for a in store.list_apps("fix-tenant") if a.code == "orders"] == [original]
+    other = replace(duplicate, id="other-tenant-id", tenant_id="other-tenant")
+    assert store.put_app("other-tenant", other, insert_only=True).id == other.id
+
+
+def test_draft_version_never_labels_the_running_snapshot(client, auth_headers_acme):
+    from .publication_helpers import save_runtime_fixture
+    app_id = save_runtime_fixture(client, auth_headers_acme)
+    path = "/api/v1/apphub/apps/" + app_id
+    first = client.get(path, headers=auth_headers_acme).json()
+    patched = client.patch(path, headers=auth_headers_acme, json={"version": "2.0.0"})
+    assert patched.status_code == 200
+    assert patched.json()["version"] == "2.0.0"
+    assert patched.json()["published_version"] == first["version"]
+    assert client.get(path + "/runtime", headers=auth_headers_acme).json()["version"] == first["version"]
+    assert client.post(path + "/publish", headers=auth_headers_acme).status_code == 200
+    assert client.get(path, headers=auth_headers_acme).json()["published_version"] == "2.0.0"
+    assert client.post(path + "/versions/" + first["published_version_id"] + "/rollback", headers=auth_headers_acme).status_code == 200
+    rolled = client.get(path, headers=auth_headers_acme).json()
+    assert rolled["published_version"] == first["version"]
+    assert client.get(path + "/runtime", headers=auth_headers_acme).json()["version"] == rolled["published_version"]
+
+
+def test_publication_checkpoint_checks_actual_saved_pages_and_access(client, auth_headers_acme):
+    from .publication_helpers import save_runtime_fixture
+    path = "/api/v1/apphub/apps/kb/publication-check"
+    empty = client.get(path, headers=auth_headers_acme)
+    assert empty.status_code == 200
+    assert empty.json()["can_publish"] is False
+    assert {c["key"] for c in empty.json()["checks"]} == {"bindings", "reference_versions", "access", "components", "action_policy", "runtime"}
+    assert next(c for c in empty.json()["checks"] if c["key"] == "components")["status"] == "fail"
+    save_runtime_fixture(client, auth_headers_acme, publish=False)
+    ready = client.get(path, headers=auth_headers_acme).json()
+    assert ready["can_publish"] is True
+    assert all(c["status"] == "pass" for c in ready["checks"])
+    assert client.get('/api/v1/apphub/apps/kb', headers=auth_headers_acme).json()["published_version_id"] is None
+
+
+def test_history_authorizes_snapshot_page_and_ignores_live_objectset(client, auth_headers_acme, auth_headers_globex, monkeypatch):
+    import httpx
+    from mate_app_hub.api import app as api
+    tid = "tenant-acme"
+    snapshot = {"versionId": "v-history", "version": "1.0.0", "status": "PUBLISHED", "modules": [
+        {"pages": [{"id": "page-history", "definition": {"binding": {"action_rid": "ont.tenant-acme.act.review"}}}]}]}
+    mem.put_app(tid, replace(mem.ApphubApp("app-history", tid, "History", "history", "business", ""),
+                             status="PUBLISHED", published_version_id="v-history", versions=[snapshot]))
+    calls = []
+    def upstream(request):
+        assert request.url.path.endswith('/action-audit')
+        calls.append(dict(request.url.params))
+        return httpx.Response(200, json=[{"audit_id": "receipt", "target_iid": "order-no-longer-pending"}])
+    monkeypatch.setattr(api, 'ontology_client', lambda request: httpx.AsyncClient(base_url='http://ontology', transport=httpx.MockTransport(upstream)))
+    url = '/api/v1/apphub/apps/app-history/runtime/history'
+    result = client.get(url, headers=auth_headers_acme, params={"page_id": "page-history", "app_version_id": "forged"})
+    assert result.status_code == 200
+    assert result.json()[0]["audit_id"] == "receipt"
+    assert calls == [{"limit": "100", "action_rid": "ont.tenant-acme.act.review", "app_id": "app-history", "page_id": "page-history", "app_version_id": "v-history"}]
+    for headers, params in [(auth_headers_globex, {"page_id": "page-history"}),
+                            (auth_headers_acme, {"page_id": "other-page"}),
+                            (auth_headers_acme, {"page_id": "page-history", "version_id": "draft-or-other"})]:
+        assert client.get(url, headers=headers, params=params).status_code == 404
+    assert len(calls) == 1
+
+
+def test_publication_dependency_failure_is_unknown_and_preserves_draft(client, auth_headers_acme, monkeypatch):
+    import httpx
+    from mate_app_hub.api import app as api
+    from .test_apphub_order_binding import spec
+    import json
+    bound = json.loads(json.dumps(spec()).replace('ont.a.', 'ont.tenant-acme.'))
+    mem.put_module('tenant-acme', mem.ApphubModule('check-m', 'tenant-acme', 'Check', 'check-m', 'kb', '', ''))
+    page = replace(mem.ApphubPage('check-p', 'tenant-acme', 'Check', 'check-p', 'check-m', 'grid'), definition={'binding': bound})
+    mem.put_page('tenant-acme', page)
+    monkeypatch.setattr(api, 'ontology_client', lambda request: httpx.AsyncClient(base_url='http://ontology', transport=httpx.MockTransport(lambda _: httpx.Response(503))))
+    report = client.get('/api/v1/apphub/apps/kb/publication-check', headers=auth_headers_acme).json()
+    assert report['can_publish'] is False
+    assert next(c for c in report['checks'] if c['key'] == 'bindings')['status'] == 'unknown'
+    assert client.post('/api/v1/apphub/apps/kb/publish', headers=auth_headers_acme).status_code == 422
+    assert next(p for p in mem.list_pages('tenant-acme') if p.id == page.id).definition == page.definition
+    assert mem.get_app('tenant-acme', 'kb').published_version_id is None
+
+
+def test_proposal_attribution_keeps_loaded_snapshot_across_concurrent_publication(client, auth_headers_acme, monkeypatch):
+    import json, httpx
+    from mate_app_hub.api import app as api
+    from .test_apphub_order_binding import spec, documents
+    bound = json.loads(json.dumps(spec()).replace('ont.a.', 'ont.tenant-acme.'))
+    docs = json.loads(json.dumps(documents()).replace('ont.a.', 'ont.tenant-acme.'))
+    snapshot = {'versionId': 'loaded-v1', 'version': '1.0.0', 'status': 'PUBLISHED', 'modules': [
+        {'pages': [{'id': 'fixed-page', 'definition': {'binding': bound}}]}]}
+    app = replace(mem.ApphubApp('fixed-app', 'tenant-acme', 'Fixed', 'fixed', 'business', ''),
+                  status='PUBLISHED', published_version_id='loaded-v1', versions=[snapshot])
+    mem.put_app('tenant-acme', app)
+    original_load = api.load_app_runtime
+    def concurrent_publish(*args, **kwargs):
+        context = original_load(*args, **kwargs)
+        current = mem.get_app('tenant-acme', 'fixed')
+        newer = {**snapshot, 'versionId': 'new-v2', 'version': '2.0.0'}
+        mem.put_app('tenant-acme', replace(current, published_version_id='new-v2', versions=[newer, snapshot]))
+        return context
+    monkeypatch.setattr(api, 'load_app_runtime', concurrent_publish)
+    proposed = []
+    def upstream(request):
+        if request.url.path.endswith('object-sets:evaluate'):
+            return httpx.Response(200, json=[{'rid': 'order-in-loaded-set'}])
+        if request.url.path.endswith('/propose'):
+            proposed.append(json.loads(request.content)); return httpx.Response(200, json={'proposal_id': 'fixed-proposal'})
+        return httpx.Response(200, json=docs[request.url.path])
+    monkeypatch.setattr(api, 'ontology_client', lambda request: httpx.AsyncClient(base_url='http://ontology', transport=httpx.MockTransport(upstream)))
+    response = client.post('/api/v1/apphub/apps/fixed/runtime/execute', headers=auth_headers_acme,
+        json={'action_type': 'ontology_propose', 'page_id': 'fixed-page', 'provenance': {'app_id': 'forged'},
+              'payload': {'target_iid': 'order-in-loaded-set', 'parameters': {'amount': 5}}})
+    assert response.status_code == 200
+    assert proposed[0]['provenance'] == {'source': 'user', 'app_id': 'fixed-app', 'page_id': 'fixed-page', 'app_version': '1.0.0', 'app_version_id': 'loaded-v1'}
+    assert proposed[0]['parameters'] == {'amount': 5}
+    assert mem.get_app('tenant-acme', 'fixed').published_version_id == 'new-v2'
+
+
+@pytest.mark.parametrize("store", [mem, sql])
+def test_delete_prefers_exact_id_over_another_apps_code(database, monkeypatch, auth_headers_acme, store):
+    from fastapi.testclient import TestClient
+    from mate_app_hub.main import create_app
+    if store is sql: monkeypatch.setenv('MATE_DB_URL', database)
+    else:
+        monkeypatch.delenv('MATE_DB_URL', raising=False); monkeypatch.delenv('DATABASE_URL', raising=False)
+        mem.reset_store()
+    tid = 'tenant-acme'
+    code_owner = mem.ApphubApp('different-id', tid, 'A code owner', 'collision-key', 'business', '')
+    id_owner = mem.ApphubApp('collision-key', tid, 'Z id owner', 'different-code', 'business', '')
+    store.put_app(tid, code_owner); store.put_app(tid, id_owner)
+    with TestClient(create_app()) as client:
+        response = client.delete('/api/v1/apphub/apps/collision-key', headers=auth_headers_acme)
+        assert response.status_code == 200
+    remaining = store.list_apps(tid)
+    assert code_owner in remaining
+    assert id_owner not in remaining
+
+
+def test_proposal_context_validates_old_snapshot_readonly_and_actual_target(client, auth_headers_acme, auth_headers_globex, monkeypatch):
+    import json, httpx, jwt
+    from mate_app_hub.api import app as api
+    from .test_apphub_order_binding import spec, documents
+    bound=json.loads(json.dumps(spec()).replace('ont.a.','ont.tenant-acme.'))
+    docs=json.loads(json.dumps(documents()).replace('ont.a.','ont.tenant-acme.'))
+    old={'versionId':'old','version':'1.0.0','status':'PUBLISHED','modules':[{'pages':[{'id':'page','definition':{'binding':bound}}]}]}
+    current={**old,'versionId':'new','version':'2.0.0'}
+    mem.put_app('tenant-acme',replace(mem.ApphubApp('context-app','tenant-acme','Context','context','business',''),status='PUBLISHED',published_version_id='new',versions=[current,old]))
+    def upstream(req):
+        return httpx.Response(200,json=[{'rid':'allowed'}] if req.url.path.endswith('object-sets:evaluate') else docs[req.url.path])
+    monkeypatch.setattr(api,'ontology_client',lambda request:httpx.AsyncClient(base_url='http://ontology',transport=httpx.MockTransport(upstream)))
+    claims=jwt.decode(auth_headers_acme['Authorization'].split()[1],options={'verify_signature':False});claims['scope']='platform.read'
+    reader={'Authorization':'Bearer '+jwt.encode(claims,'fixture-attribution-long-key-for-tests',algorithm='HS256')}
+    path='/api/v1/apphub/apps/context-app/runtime/proposal-context'
+    body={'page_id':'page','version_id':'old','action_rid':bound['action_rid'],'target_iid':'allowed'}
+    result=client.post(path,headers=reader,json=body)
+    assert result.status_code==200 and result.json()['app_version']=='1.0.0'
+    assert result.json()['app_version_id']=='old'
+    for key,value,code in [('page_id','wrong',422),('version_id','wrong',404),('action_rid','wrong',422),('target_iid','outside',422)]:
+        assert client.post(path,headers=reader,json={**body,key:value}).status_code==code
+    assert client.post(path,headers=auth_headers_globex,json=body).status_code==404
+    assert mem.get_app('tenant-acme','context').published_version_id=='new'

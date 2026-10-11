@@ -17,6 +17,7 @@ class RuntimeContext:
     version: str = "latest"
     user_role: str = "viewer"
     modules: list[dict] = field(default_factory=list)
+    published_version_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -5,6 +5,7 @@ export type ModuleType = 'FORM' | 'FLOW' | 'BOARD' | 'PAGE';
 
 export interface AppItem {
   publishedVersionId?: string;
+  publishedVersion?: string;
   appId: string;
   name: string;
   code: string;

@@ -24,6 +24,240 @@ security:
     oidcScopes:
       - platform.read
 paths:
+  /api/v1/apphub/apps/{app_id}/runtime/proposal-context:
+    post:
+      tags:
+      - apphub
+      summary: Validate Proposal Context
+      description: Read-only POST. Verifies caller tenant/read access, exact app ID, historical PUBLISHED snapshot,
+        page, registered Action and actual ObjectSet target. No proposal creation or action execution. Published application
+        required; older published snapshots remain valid independently of current pointer.
+      operationId: apphubValidateProposalContext
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: App Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppProposalContextRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubVerifiedProposalContext'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '403':
+          description: Verified tenant/scope/human identity denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '404':
+          description: Artifact not found in tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '409':
+          description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '422':
+          description: Invalid request or unresolved dependency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '503':
+          description: Ontology dependency unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.read
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.read
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/apps/{app_id}/runtime/history:
+    get:
+      tags:
+      - apphub
+      summary: Get Order Runtime History
+      operationId: apphubGetOrderRuntimeHistory
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: App Id
+      - name: page_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Page Id
+      - name: version_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Version Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+          default: 100
+          title: Limit
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppHubActionReceipt'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '403':
+          description: Verified tenant/scope/human identity denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '404':
+          description: Artifact not found in tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '409':
+          description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '422':
+          description: Invalid request or unresolved dependency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '503':
+          description: Ontology dependency unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.read
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.read
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+      description: Verified tenant and actual app/page authorization. Exact published snapshot history independent
+        of live ObjectSet membership. Defaults to current published version; explicit version_id must belong to this
+        app and contain this page. Legacy receipts without complete provenance are excluded.
+  /api/v1/apphub/apps/{app_id}/publication-check:
+    get:
+      tags:
+      - apphub
+      summary: Check Publication
+      operationId: apphubCheckPublication
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: App Id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubPublicationCheck'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '403':
+          description: Verified tenant/scope/human identity denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '404':
+          description: Artifact not found in tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '409':
+          description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '422':
+          description: Invalid request or unresolved dependency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+        '503':
+          description: Ontology dependency unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppHubError'
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.read
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.read
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+      description: Verified tenant and actual app/page authorization. Real saved draft checks; unknown dependencies
+        prevent publication. Final publish revalidates.
   /api/v1/apphub/apps/{app_id}:
     get:
       tags:
@@ -2039,8 +2273,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppHubReleaseLog'
         '401':
           description: Authentication required
           content:
@@ -2108,8 +2343,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppHubReleaseTask'
         '401':
           description: Authentication required
           content:
@@ -2909,6 +3145,164 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    AppProposalContextRequest:
+      properties:
+        page_id:
+          type: string
+          title: Page Id
+        version_id:
+          type: string
+          title: Version Id
+        action_rid:
+          type: string
+          title: Action Rid
+        target_iid:
+          type: string
+          title: Target Iid
+      type: object
+      required:
+      - page_id
+      - version_id
+      - action_rid
+      - target_iid
+      title: AppProposalContextRequest
+    AppHubVerifiedProposalContext:
+      type: object
+      properties:
+        app_id:
+          type: string
+        page_id:
+          type: string
+        app_version_id:
+          type: string
+        app_version:
+          type: string
+      required:
+      - app_id
+      - page_id
+      - app_version_id
+      - app_version
+    AppHubReleaseTask:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        assignee:
+          type: string
+        status:
+          type: string
+        createTime:
+          type: string
+        comment:
+          type: string
+        completedAt:
+          type: string
+      required:
+      - id
+      - name
+      - assignee
+      - status
+      - createTime
+    AppHubReleaseLog:
+      type: object
+      properties:
+        logId:
+          type: string
+        releaseId:
+          type: string
+        action:
+          type: string
+        operator:
+          type: string
+        remark:
+          type: string
+        createdAt:
+          type: string
+      required:
+      - logId
+      - releaseId
+      - action
+      - operator
+      - remark
+      - createdAt
+    AppHubActionReceipt:
+      type: object
+      properties:
+        audit_id:
+          type: string
+        tenant_id:
+          type: string
+        proposal_id:
+          type: string
+        action_rid:
+          type: string
+        target_iid:
+          type: string
+        actor_id:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+      required:
+      - audit_id
+      - tenant_id
+      - proposal_id
+      - action_rid
+      - target_iid
+      - actor_id
+      - result
+      - created_at
+    AppHubPublicationCheck:
+      type: object
+      properties:
+        app_id:
+          type: string
+        draft_version:
+          type: string
+        revision:
+          type: integer
+        checked_at:
+          type: string
+        can_publish:
+          type: boolean
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                enum:
+                - bindings
+                - reference_versions
+                - access
+                - components
+                - action_policy
+                - runtime
+              status:
+                enum:
+                - pass
+                - fail
+                - unknown
+              message:
+                type: string
+              next_step:
+                type: string
+            required:
+            - key
+            - status
+            - message
+            - next_step
+      required:
+      - app_id
+      - draft_version
+      - revision
+      - checked_at
+      - can_publish
+      - checks
     AppHubModule:
       type: object
       properties:
@@ -3040,6 +3434,11 @@ components:
           type: integer
           readOnly: true
           description: Internal store-owned compare-and-swap revision; not accepted in mutation input.
+        published_version:
+          type:
+          - string
+          - 'null'
+          description: Version of the exact published snapshot; version is editable draft metadata.
       required:
       - id
       - tenant_id

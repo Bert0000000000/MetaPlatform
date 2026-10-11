@@ -28,6 +28,15 @@ test.describe('MP11 actual order application', () => {
     const token = process.env.MP11_UI_TOKEN!;
     const tenant = 'mp11-app-ui';
     const headers = { Authorization: 'Bearer ' + token };
+    const pendingStatus = 'pending-browser-' + Date.now();
+    const orderRid = 'ont.' + tenant + '.ind.order.' + pendingStatus;
+    const createdOrder = await request.post(api + '/ont/v2/individuals', { headers, data: {
+      rid: orderRid, class_rid: 'ont.' + tenant + '.obj.order', primary_key: pendingStatus,
+      props: { ['ont.' + tenant + '.prop.id']: { value: Date.now(), type: 'integer' },
+        ['ont.' + tenant + '.prop.total']: { value: 30, type: 'integer' },
+        ['ont.' + tenant + '.prop.status']: { value: pendingStatus, type: 'string' } },
+    } });
+    expect(createdOrder.ok()).toBeTruthy();
     await injectAuthIntoPage(page, token, { tenantId: tenant });
     await page.goto('/apps/mine');
     await page.getByLabel('订单应用名称', { exact: true }).fill('Browser Order ' + Date.now());
@@ -40,12 +49,13 @@ test.describe('MP11 actual order application', () => {
     await page.getByLabel('客户关系', { exact: true }).selectOption('ont.' + tenant + '.link.customer_orders');
     await page.getByLabel('审核动作', { exact: true }).selectOption('ont.' + tenant + '.act.review');
     await expect(page.getByText('total（integer）', { exact: true })).toBeVisible();
+    await page.getByLabel('ObjectSet 筛选表达式', { exact: true }).fill(`status == '${pendingStatus}'`);
     page.once('dialog', dialog => dialog.dismiss());
     await page.getByRole('button', { name: /返回$/ }).click();
     await expect(page.getByLabel('审核动作', { exact: true })).toHaveValue('ont.' + tenant + '.act.review');
     await page.getByRole('button', { name: /预览$/ }).click();
     await expect(page.getByRole('heading', { name: '订单审核草稿预览' })).toBeVisible();
-    await expect(page.getByText('订单 2 条 · 客户 1 条 · 关联 1 条', { exact: true })).toBeVisible();
+    await expect(page.getByText('订单 1 条 · 客户 1 条 · 关联 1 条', { exact: true })).toBeVisible();
     await page.route('**/api/v1/apphub/pages/' + pageId, async route => {
       if (route.request().method() === 'PUT') await route.fulfill({ status: 503, json: { detail: 'Injected page save unavailable' } });
       else await route.continue();
@@ -60,8 +70,17 @@ test.describe('MP11 actual order application', () => {
     expect((await saved).ok()).toBeTruthy();
     await page.goto('/apps/mine?app=' + appId);
     await expect(page.getByRole('button', { name: '编辑页面：订单审核', exact: true })).toBeVisible();
+    await page.route('**/apps/' + appId + '/publication-check', route => route.fulfill({ status: 503, json: { detail: 'Injected validation unavailable' } }));
+    await page.getByRole('button', { name: /发布检查$/ }).click();
+    const checkpoint = page.getByRole('region', { name: '应用发布检查' });
+    await expect(checkpoint.getByRole('alert')).toBeVisible();
+    await expect(checkpoint.getByRole('button', { name: '确认发布' })).toBeDisabled();
+    await page.unroute('**/apps/' + appId + '/publication-check');
+    await checkpoint.getByRole('button', { name: '重新检查' }).click();
+    await expect(checkpoint.getByRole('button', { name: '确认发布' })).toBeEnabled();
+    await expect(checkpoint.getByText(/：通过/)).toHaveCount(6);
     const published = page.waitForResponse(r => r.url().endsWith('/apps/' + appId + '/publish'));
-    await page.getByRole('button', { name: /发布$/ }).click();
+    await checkpoint.getByRole('button', { name: '确认发布' }).click();
     expect((await published).ok()).toBeTruthy();
     await page.getByRole('button', { name: /打开应用$/ }).click();
     await expect(page.getByRole('heading', { name: '订单审核', exact: true })).toBeVisible();
@@ -76,7 +95,13 @@ test.describe('MP11 actual order application', () => {
     await expect(page.getByText(/执行人 mp11-order-reviewer/).first()).toBeVisible();
     const runtime = await request.get(api + '/apphub/apps/' + appId + '/runtime/data?page_id=' + pageId, { headers });
     expect(runtime.ok()).toBeTruthy();
-    expect((await runtime.json()).orders).toHaveLength(2);
+    expect((await runtime.json()).orders).toHaveLength(0);
+    const history = await request.get(api + '/apphub/apps/' + appId + '/runtime/history?page_id=' + pageId, { headers });
+    expect(history.ok()).toBeTruthy();
+    const receipts = await history.json();
+    expect(receipts).toHaveLength(1); expect(receipts[0].target_iid).toBe(orderRid);
+    const proposal = await request.get(api + '/ont/v2/proposals/' + receipts[0].proposal_id, { headers });
+    expect((await proposal.json()).parameters.provenance).toMatchObject({ app_id: appId, page_id: pageId });
     await page.screenshot({ path: process.env.MP11_UI_SCREENSHOT, fullPage: true });
   });
   test('onboarding resumes selected real artifacts and treats query failures as unknown', async ({ page }) => {

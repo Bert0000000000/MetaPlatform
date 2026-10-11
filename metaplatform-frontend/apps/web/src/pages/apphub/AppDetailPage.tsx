@@ -33,7 +33,8 @@ import {
 import { Search } from 'lucide-react';
 import { getApp, updateApp, deleteApp } from '@/api/apphub/apps';
 import { createOrderReviewPage, OrderPageCreationError, listPages } from '@/api/apphub/pages';
-import { publishApp } from '@/api/apphub/runtime';
+import { publishApp, checkPublication, type PublicationCheck } from '@/api/apphub/runtime';
+import { ApplicationPublishValidation } from './components/PublishValidation';
 import { createShortlink } from '@/api/apphub/shortlink';
 import { listModules, createModule, updateModule, deleteModule } from '@/api/apphub/modules';
 import { QRCodeSVG } from 'qrcode.react';
@@ -80,6 +81,10 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
   const [submitting, setSubmitting] = useState(false);
   const [shortlink, setShortlink] = useState<Shortlink | null>(null);
   const [shortlinkLoading, setShortlinkLoading] = useState(false);
+  const [validationOpen, setValidationOpen] = useState(false);
+  const [validation, setValidation] = useState<PublicationCheck | null>(null);
+  const [validationError, setValidationError] = useState('');
+  const [publishing, setPublishing] = useState(false);
 
   const loadApp = async () => {
     if (!appId) return;
@@ -114,10 +119,19 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
     }
   };
 
-  const handlePublish = async () => {
+  const handleCheckPublication = async () => {
     if (!appId) return;
-    try { await publishApp(appId); Toast.success('应用已发布'); await loadApp(); }
-    catch (e) { Toast.error(e instanceof Error ? e.message : '发布失败，请修复绑定后重试'); }
+    setValidationOpen(true); setPublishing(true); setValidationError(''); setValidation(null);
+    try { setValidation(await checkPublication(appId)); }
+    catch (e) { setValidationError(e instanceof Error ? e.message : '发布检查不可用'); }
+    finally { setPublishing(false); }
+  };
+  const handlePublish = async () => {
+    if (!appId || !validation?.can_publish) return;
+    setPublishing(true); setValidationError('');
+    try { await publishApp(appId); Toast.success('应用已发布'); setValidationOpen(false); await loadApp(); }
+    catch (e) { setValidationError(e instanceof Error ? e.message : '发布失败，请修复绑定后重试'); }
+    finally { setPublishing(false); }
   };
 
   const handleOffline = async () => {
@@ -292,17 +306,18 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
             <Button icon={<EditOutlined />} onClick={() => setAppFormOpen(true)}>
               编辑
             </Button>
-            {app.status !== 'PUBLISHED' && (
-              <Button theme="solid" type="primary" icon={<SendOutlined />} onClick={handlePublish}>
-                发布
-              </Button>
-            )}
+            <Button theme="solid" type="primary" icon={<SendOutlined />} onClick={handleCheckPublication}>
+              发布检查
+            </Button>
             <Dropdown trigger="click" position="bottomRight" render={moreMenu}>
               <Button icon={<MoreOutlined />}>更多操作</Button>
             </Dropdown>
           </Space>
         }
       >
+        <p>草稿版本：{app.version || '未知'} · 运行版本：{app.status === 'PUBLISHED' ? app.publishedVersion || '未知' : '未运行'}</p>
+        {validationOpen && <ApplicationPublishValidation result={validation} error={validationError} publishing={publishing}
+          onPublish={() => void handlePublish()} onRetry={() => void handleCheckPublication()} />}
         <Tabs defaultActiveKey="modules">
           <Tabs.TabPane
             tab="模块列表"

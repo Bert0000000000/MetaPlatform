@@ -384,12 +384,26 @@ def get_template(tenant_id: str, template_id: str) -> ApphubTemplate | None:
 # ---------------------------------------------------------------------------
 # Write API — apps
 # ---------------------------------------------------------------------------
-def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
+def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> ApphubApp:
+    from sqlalchemy import text
+    from sqlalchemy.exc import IntegrityError
     if not tenant_id or app.tenant_id != tenant_id:
         raise ValueError("cross-tenant app write denied")
     s = _session()
     try:
+        if insert_only:
+            # Serialize same-code registration across processes, including legacy random IDs.
+            if s.bind.dialect.name == "postgresql":
+                s.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                          {"key": f"apphub-create:{tenant_id}:{app.code}"})
+            duplicate = s.execute(select(models.ApphubAppORM.id).where(
+                models.ApphubAppORM.tenant_id == tenant_id,
+                models.ApphubAppORM.code == app.code).limit(1)).first()
+            if duplicate:
+                raise ValueError("app already registered")
         existing = s.get(models.ApphubAppORM, app.id)
+        if insert_only and existing:
+            raise ValueError("app already registered")
         if existing and existing.tenant_id != tenant_id:
             raise ValueError("cross-tenant app write denied")
         values = asdict(app)
@@ -407,6 +421,9 @@ def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
             s.add(models.ApphubAppORM(**values))
         s.commit()
         return replace(app, revision=values["revision"])
+    except IntegrityError:
+        s.rollback()
+        raise ValueError("app already registered") from None
     finally:
         s.close()
 
@@ -768,8 +785,16 @@ def _delete_by_code(model, tenant_id: str, code: str) -> bool:
         return True
 
 
-def delete_app(tenant_id: str, code: str) -> bool:
-    return _delete_by_code(models.ApphubAppORM, tenant_id, code)
+def delete_app(tenant_id: str, code: str, *, by_id: bool = False) -> bool:
+    if not by_id:
+        return _delete_by_code(models.ApphubAppORM, tenant_id, code)
+    with _session() as session:
+        row = session.get(models.ApphubAppORM, code)
+        if row is None or row.tenant_id != tenant_id:
+            return False
+        session.delete(row)
+        session.commit()
+        return True
 
 
 def delete_group(tenant_id: str, code: str) -> bool:
