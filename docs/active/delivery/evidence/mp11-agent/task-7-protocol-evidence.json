@@ -1,0 +1,27 @@
+{
+  "identity": "fixture JWT classification; not signed issuer proof",
+  "port": 55517,
+  "database": "codex_mp11_apphub_20261011",
+  "key_database": "codex_mp11_agent_fresh_20261012",
+  "query_row_keys": [
+    "__rid__",
+    "id",
+    "status",
+    "total"
+  ],
+  "rows": 11,
+  "published_object": {
+    "app": "app-e1598b1298475cdf91c87b5bf7ecca26",
+    "page": "page-f5329031a0285d1d9d4fb07a9eae7409",
+    "object": "ont.mp11-app-ui.ind.order.alias-f321163f85f14837b5e1e859341f0066",
+    "same_query": "PASS",
+    "published_objectset_current_count": 1
+  },
+  "rate_limit": "in-process fixture only; not exercised",
+  "rest_bridge": "persisted key list matches protocol; same published object query200; insufficient scopes/HITL/unknown fallback403 PASS",
+  "writer_proposal": "prop-b3650c59",
+  "canonical": "real key create, Proposal get/confirm/preview response JSON Schema and six operationIds PASS",
+  "http_deadline": "pending preview900/null; authenticated confirm +900s; forged actor/deadline ignored; same-key confirm deadline stable; expired execute409 PASS",
+  "protocol": "initialize/list/same-published-object-query PASS",
+  "negatives": "readonly proposal, forged caller approval/execution, unknown dynamic/federation, cross tenant query/key, expired, revoked existing session, service/key human endpoints PASS"
+}

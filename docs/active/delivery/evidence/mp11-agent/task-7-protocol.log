@@ -1,0 +1,106 @@
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_list_classes tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_inspect_class tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_object_query tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_list_individuals tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_search_objects tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_validate_preflight tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_agent_metrics tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_list_interfaces tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_propose_model_type tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_propose_instance tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_merge_objects tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_preview_proposal tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_confirm_proposal tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_reject_proposal tenant=*
+2026-10-12 02:38:24 [info     ] mcp.tool.registered            name=ont_execute_proposal tenant=*
+StreamableHTTP session manager started
+2026-10-12 02:38:24 [info     ] mcp.api_key.created            key_id=key-d518dfd6d6a7eefd tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/api-keys "HTTP/1.1 201 Created"
+2026-10-12 02:38:24 [info     ] mcp.api_key.created            key_id=key-fe00ab7b5bfad425 tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/api-keys "HTTP/1.1 201 Created"
+Created new transport with session ID: 1fb310530be64cd88844332aa7c59b31
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Received session ID: 1fb310530be64cd88844332aa7c59b31
+Negotiated protocol version: 2025-11-25
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 202 Accepted"
+Processing request of type ListToolsRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: GET http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/object-query "HTTP/1.1 200 OK"
+HTTP Request: GET http://127.0.0.1:55510/api/v1/apphub/apps/app-e1598b1298475cdf91c87b5bf7ecca26/runtime/data?page_id=page-f5329031a0285d1d9d4fb07a9eae7409 "HTTP/1.1 200 OK"
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Tool 'ont_confirm_proposal' not listed, no validation will be performed
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Tool 'ont_execute_proposal' not listed, no validation will be performed
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Tool 'ont_propose_instance' not listed, no validation will be performed
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Tool 'dynamic_unknown' not listed, no validation will be performed
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Tool 'federated_unknown' not listed, no validation will be performed
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/object-query "HTTP/1.1 403 Forbidden"
+HTTP Request: GET http://127.0.0.1:55517/api/v1/mcp/tools "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/object-query "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/tools/ont_object_query "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/tools/ont_validate_preflight "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/tools/ont_propose_instance "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/tools/ont_confirm_proposal "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/tools/dynamic_unknown "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/tools/federated_unknown "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 401 Unauthorized"
+HTTP Request: DELETE http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 401 Unauthorized"
+Session termination failed: 401
+Created new transport with session ID: a411481a1e954632a7bab3617106f666
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Received session ID: a411481a1e954632a7bab3617106f666
+Negotiated protocol version: 2025-11-25
+HTTP Request: GET http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 202 Accepted"
+Processing request of type ListToolsRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Terminating session: a411481a1e954632a7bab3617106f666
+HTTP Request: DELETE http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Created new transport with session ID: dd0b6fe2638943e3a3f174c624cf4281
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Received session ID: dd0b6fe2638943e3a3f174c624cf4281
+Negotiated protocol version: 2025-11-25
+HTTP Request: GET http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 202 Accepted"
+Processing request of type ListToolsRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+SAFE QUERY ROW KEYS ['__rid__', 'id', 'status', 'total']
+2026-10-12 02:38:25 [info     ] ont.proposal.propose           actor_id=mp11-service class_rid=ont.mp11-app-ui.obj.order proposal_kind=create_instance tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/classes/ont.mp11-app-ui.obj.order/propose-instance "HTTP/1.1 200 OK"
+Terminating session: dd0b6fe2638943e3a3f174c624cf4281
+HTTP Request: DELETE http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 401 Unauthorized"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 401 Unauthorized"
+2026-10-12 02:38:25 [info     ] ont.proposal.confirm           actor_id=mp11-service proposal_id=prop-b3650c59 tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59/confirm "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59/execute "HTTP/1.1 403 Forbidden"
+2026-10-12 02:38:25 [info     ] ont.proposal.confirm           actor_id=apikey:key-fe00ab7b5bfad425 proposal_id=prop-b3650c59 tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59/confirm "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59/execute "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/api-keys "HTTP/1.1 403 Forbidden"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/api-keys "HTTP/1.1 403 Forbidden"
+HTTP Request: GET http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59/preview "HTTP/1.1 200 OK"
+2026-10-12 02:38:25 [info     ] ont.proposal.confirm           actor_id=human proposal_id=prop-b3650c59 tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59/confirm "HTTP/1.1 200 OK"
+2026-10-12 02:38:25 [info     ] ont.proposal.confirm           actor_id=human proposal_id=prop-b3650c59 tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59/confirm "HTTP/1.1 200 OK"
+HTTP Request: GET http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59 "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/proposals/prop-b3650c59/execute "HTTP/1.1 409 Conflict"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/api-keys "HTTP/1.1 403 Forbidden"
+StreamableHTTP session manager shutting down
+PASS actual HTTP FastMCP with durable scoped keys, published Order query, proposal and authorization negatives

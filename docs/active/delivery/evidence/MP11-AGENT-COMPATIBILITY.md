@@ -51,3 +51,15 @@ Deadline/state is checked under the existing action/edit-set transaction guard. 
 - Preexisting unrelated Ontology OpenAPI paths nested beneath `components` were observed; this task validates only the changed owned key/Proposal paths and does not claim global contract repair.
 
 Rate limiting was an explicit in-process fixture for the REST authorization probe and remains **NOT_EXERCISED**. A preliminary harness configuration mistakenly attempted the default Redis connection and timed out during connection/HELLO; no verified no-touch claim is made. No shared Redis cleanup was performed. Task8 must test the normal limiter with explicitly owned isolated Redis.
+
+## Accepted Task7 source and retained evidence
+
+Scoped Task7 gate accepted `664aba15..e9ef0de6` after independent review and one fix re-review: I1 addressed, new C0/I0/M0. The optional pgvector upgrade is deferred during an active Proposal lease; JSONB embedding generation/writes remain in the same mutation/receipt transaction. Ordinary vector upgrade, indexing, KNN and hybrid behavior retain actual PostgreSQL coverage.
+
+Initial backend157 belongs to `35f00e8d`; amended backend/vector28 belongs to `e9ef0de6`. Unchanged frontend9, silent command-gated `tsc --noEmit` exit0 and build are recovered original-run evidence, not rerun or combined whole-candidate counts. The focused GREEN log alone retains only one dot; the complete28-pass covering run supports both added regressions.
+
+Durable [implementation/fix report](mp11-agent/task-7-report.md), [initial review](mp11-agent/task-7-review.md), [fix re-review](mp11-agent/task-7-rereview1.md), [original UI/typecheck receipt](mp11-agent/task-7-original-ui-typecheck-receipt.md) and [archive manifest](mp11-agent/task-7-archive-manifest.json) preserve commands, source ranges and boundaries. Reports retain their historical pending-gate wording; this paragraph records the accepted current gate.
+
+Two harness incidents remain explicit: the preliminary default Redis connection timed out before a successful REST response, without verified no-touch evidence; an original RED fixture output revealed only a password prefix for the owned PostgreSQL fixture. Its durable log is sanitized and representation corrected, but original tool output remains visible. The [categorical incident receipt](mp11-agent/task-7-fix1-repr-incident.md) contains no credential fragments. No speculative shared cleanup or credential rotation was performed.
+
+M1 inherited deprecation/chunk output and the unchanged vector class-fixture warning remain Task8/final-review owned. Actual signed identities/grants, normal isolated Redis limiter, full candidate/contract/all-web checks and durable preview remain mandatory Task8 work. True external clients, public deployment,72h SLO and user trial retain the stated later boundaries.
