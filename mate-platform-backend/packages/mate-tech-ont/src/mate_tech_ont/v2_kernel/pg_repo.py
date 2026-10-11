@@ -88,6 +88,10 @@ class ModelValidationUnavailable(RuntimeError):
     """
 
 
+class LinkTypeInUseError(ValueError):
+    """Structural definition updates would invalidate existing link instances."""
+
+
 class MigrationPkMissing(RuntimeError):
     """ONT-MIGRATION-PLAN：实例缺新主键属性值 → fail-closed 拒执行（API 409）。"""
 
@@ -2827,6 +2831,21 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                self._lock_link_type(cur, row["rid"])
+                cur.execute("SELECT * FROM ont_link_type WHERE rid = %s", (row["rid"],))
+                existing = cur.fetchone()
+                if existing is not None and any(
+                    existing[field] != row[field]
+                    for field in ("src_rid", "dst_rid", "cardinality", "directionality")
+                ):
+                    cur.execute(
+                        "SELECT 1 FROM ont_link_instance WHERE link_type_rid = %s LIMIT 1",
+                        (row["rid"],),
+                    )
+                    if cur.fetchone() is not None:
+                        raise LinkTypeInUseError(
+                            "Cannot change src/dst/cardinality/directionality while link instances exist"
+                        )
                 cur.execute(
                     """
                     INSERT INTO ont_link_type
@@ -2842,6 +2861,7 @@ class PgOntologyRepository(OntologyRepository):
                         link_properties = EXCLUDED.link_properties,
                         src_display_name = EXCLUDED.src_display_name,
                         dst_display_name = EXCLUDED.dst_display_name,
+                        description = EXCLUDED.description,
                         updated_at = now()
                     """,
                     (
@@ -2859,6 +2879,9 @@ class PgOntologyRepository(OntologyRepository):
                 )
             conn.commit()
             return lt
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 
@@ -3248,6 +3271,26 @@ class PgOntologyRepository(OntologyRepository):
                 # **同一事务**。校验绝不能另开连接（TOCTOU：两个连接各数到 0 条后
                 # 都写入成功，基数约束形同虚设）。
                 self._lock_link_endpoints(cur, row["link_type_rid"], row["src"], row["dst"])
+                # Revalidate after the definition lock: API reads can precede a concurrent update.
+                cur.execute(
+                    "SELECT src_rid, dst_rid FROM ont_link_type WHERE rid = %s",
+                    (row["link_type_rid"],),
+                )
+                definition = cur.fetchone()
+                if definition is not None:
+                    cur.execute(
+                        "SELECT rid, class_rid FROM ont_individual WHERE rid IN (%s, %s)",
+                        (row["src"], row["dst"]),
+                    )
+                    endpoints = {endpoint["rid"]: endpoint["class_rid"] for endpoint in cur.fetchall()}
+                    for side in ("src", "dst"):
+                        actual = endpoints.get(row[side])
+                        # Legacy direct repo writes may reference unmaterialized endpoints;
+                        # HTTP writes always require both endpoints before entering the repo.
+                        if actual is not None and actual != definition[f"{side}_rid"]:
+                            raise ValueError(
+                                f"{side} class_rid must be {definition[f'{side}_rid']}, got {actual}"
+                            )
                 # F3：必须传 exclude_rid —— 下方 INSERT 是 ON CONFLICT (rid) DO UPDATE
                 # （upsert 语义），同一条链接重放不应被当成"第二条件边"。
                 self._check_link_cardinality(
@@ -3289,6 +3332,15 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
+    def _lock_link_type(self, cur: Any, link_type_rid: str, *, shared: bool = False) -> None:
+        """Keep definitions stable for writes while unrelated endpoints can write concurrently."""
+        sql = (
+            "SELECT pg_advisory_xact_lock_shared(hashtextextended(%s, 0))"
+            if shared
+            else "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))"
+        )
+        cur.execute(sql, (f"{link_type_rid}|definition",))
+
     def _lock_link_endpoints(self, cur: Any, link_type_rid: str, src: str, dst: str) -> None:
         """跨进程互斥：对 (link_type, src) / (link_type, dst) 取事务级 advisory lock。
 
@@ -3296,6 +3348,7 @@ class PgOntologyRepository(OntologyRepository):
         在同一事务内被串行化 —— **两个进程/连接**并发写冲突关系时只有一个能通过检查。
         按 key 排序依次加锁以避免死锁；锁随事务提交/回滚自动释放。
         """
+        self._lock_link_type(cur, link_type_rid, shared=True)
         for key in sorted({f"{link_type_rid}|{src}", f"{link_type_rid}|{dst}"}):
             cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (key,))
 

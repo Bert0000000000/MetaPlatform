@@ -64,6 +64,7 @@ from mate_platform.runtime import is_production_profile, runtime_profile
 from mate_platform.tenancy.guards import require_tenant
 
 from .pg_repo import (  # 409 翻译 + 定义指纹的行形态（版本快照与 live 同源）
+    LinkTypeInUseError,
     MigrationPkConflict,
     MigrationPkMissing,
     ModelValidationUnavailable,
@@ -4551,10 +4552,44 @@ async def upsert_link_type(
     request: Request,
 ) -> LinkTypeDTO:
     ctx = _ctx(request)
-    lt = _dto_to_link_type(payload)
-    if not lt.rid.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
-        raise HTTPException(status_code=403, detail="cross-tenant link denied")
-    saved = await _call_scoped(request, "upsert_link_type", lt)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope is required")
+    tenant = str(ctx.tenant_id)
+    for field_name, rid in (("rid", payload.rid), ("src", payload.src), ("dst", payload.dst)):
+        if not rid.startswith(f"ont.{tenant}."):
+            raise HTTPException(status_code=403, detail=f"{field_name} must be under tenant {tenant}")
+    try:
+        lt = _dto_to_link_type(payload)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    for field_name, ref in (("src", lt.src), ("dst", lt.dst)):
+        try:
+            await _call_scoped(request, "get_object_type", ref)
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail=f"{field_name} object type not found: {ref}") from e
+    try:
+        existing = await _call_scoped(request, "get_link_type", lt.rid)
+    except KeyError:
+        existing = None
+    if existing is not None and any(
+        getattr(existing, field) != getattr(lt, field)
+        for field in ("src", "dst", "cardinality", "directionality")
+    ):
+        if hasattr(_repo(request), "count_link_instances_by_type"):
+            counts = await _call_scoped(request, "count_link_instances_by_type", tenant_id=tenant)
+            has_instances = counts.get(payload.rid, 0) > 0
+        else:
+            instances = await _call_scoped(request, "list_link_instances", tenant_id=tenant)
+            has_instances = any(instance.link_type_rid == lt.rid for instance in instances)
+        if has_instances:
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot change src/dst/cardinality/directionality while link instances exist",
+            )
+    try:
+        saved = await _call_scoped(request, "upsert_link_type", lt)
+    except LinkTypeInUseError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
     return _link_type_to_dto(saved)
 
 
@@ -5193,6 +5228,8 @@ async def create_link_instance(
     request: Request,
 ) -> LinkInstanceResponse:
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope is required")
     tenant_id = ctx.tenant_id  # type: ignore[attr-defined]
     expected_prefix = f"ont.{tenant_id}.lnk."
     if not payload.rid.startswith(expected_prefix):
@@ -5200,30 +5237,47 @@ async def create_link_instance(
             status_code=403,
             detail=f"rid prefix must be {expected_prefix} for tenant {tenant_id}",
         )
-    if not payload.link_type_rid.startswith(f"ont.{tenant_id}."):
-        raise HTTPException(
-            status_code=403,
-            detail=f"link_type_rid must be under tenant {tenant_id}",
-        )
-    now = datetime.now(UTC)
-    props_tuple = tuple(
-        (ClassRef(p_rid), payload.props[p_rid].get("value")) for p_rid in payload.props
-    )
-    li = LinkInstance(
-        rid=payload.rid,
-        link_type_rid=ClassRef(payload.link_type_rid),
-        src=payload.src,
-        dst=payload.dst,
-        props=props_tuple,
-        created_at=now,
-        tenant_id=tenant_id,
-        marking=tuple(payload.marking),
-    )
+    for field_name, rid in (
+        ("link_type_rid", payload.link_type_rid), ("src", payload.src), ("dst", payload.dst)
+    ):
+        if not rid.startswith(f"ont.{tenant_id}."):
+            raise HTTPException(status_code=403, detail=f"{field_name} must be under tenant {tenant_id}")
     try:
+        lt = await _call_scoped(request, "get_link_type", ClassRef(payload.link_type_rid))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=f"Link type not found: {payload.link_type_rid}") from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    for field_name, rid, expected_class in (
+        ("src", payload.src, lt.src), ("dst", payload.dst, lt.dst)
+    ):
+        try:
+            endpoint = await _call_scoped(request, "get_individual", rid)
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail=f"{field_name} individual not found: {rid}") from e
+        if str(endpoint.tenant_id) != str(tenant_id):
+            raise HTTPException(status_code=403, detail=f"{field_name} belongs to another tenant")
+        if endpoint.class_rid != expected_class:
+            raise HTTPException(
+                status_code=422,
+                detail=f"{field_name} class_rid must be {expected_class}, got {endpoint.class_rid}",
+            )
+    try:
+        props_tuple = tuple(
+            (ClassRef(p_rid), payload.props[p_rid].get("value")) for p_rid in payload.props
+        )
+        li = LinkInstance(
+            rid=payload.rid,
+            link_type_rid=ClassRef(payload.link_type_rid),
+            src=payload.src,
+            dst=payload.dst,
+            props=props_tuple,
+            created_at=datetime.now(UTC),
+            tenant_id=tenant_id,
+            marking=tuple(payload.marking),
+        )
         saved = await _call_scoped(request, "create_link_instance", li)
     except ValueError as e:
-        # F6：值错误此前冒泡成 500。基数违规是"冲突"语义 → 409；
-        # 其余 LinkInstance 校验（如 src == dst）是"入参非法" → 422。
         msg = str(e)
         status = 409 if "cardinality" in msg else 422
         raise HTTPException(status_code=status, detail=msg) from e

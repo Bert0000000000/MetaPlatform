@@ -758,6 +758,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LinkTypeV2" }
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
+        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
         "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/link-types/{rid}:
     parameters:
@@ -1084,6 +1087,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LinkInstanceV2" }
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
+        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
         "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/link-instances/stats:
     get:
