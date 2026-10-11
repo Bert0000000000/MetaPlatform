@@ -108,3 +108,20 @@ test('static generator rejects unsafe credentials without leaking input', async 
   expect(generated.stderr).not.toContain(destination);
   expect(generated.stderr).not.toContain('public-pass');
 });
+for (const token of ['$&', '$`', "$'", '$$', '$1']) {
+  test(`generated standalone URL preserves literal replacement token ${token}`, async ({ browser, baseURL }, testInfo) => {
+    const destination = `https://platform.example.com/home?value=${token}`;
+    const output = testInfo.outputPath('literal-url.html');
+    const generated = spawnSync(process.execPath, [resolve('../../../metaplatform-website/configure-platform.mjs'), '--output', output, '--platform-url', destination], { encoding: 'utf8' });
+    expect(generated.status, generated.stderr).toBe(0);
+    const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+    const page = await context.newPage();
+    await page.route('**/literal-url.html', route => route.fulfill({ contentType: 'text/html', body: readFileSync(output, 'utf8') }));
+    await page.goto('/literal-url.html');
+    const entries = page.getByRole('link', { name: '进入平台', exact: true });
+    await expect(entries).toHaveCount(4);
+    for (const entry of await entries.all()) await expect(entry).toHaveAttribute('href', destination);
+    await expect(page.locator('meta[name="metaplatform-platform-url"]')).toHaveAttribute('content', destination);
+    await context.close();
+  });
+}

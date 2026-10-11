@@ -27,10 +27,10 @@ try {
   let entries = 0;
   html = html.replace(/(<a\s+[^>]*\bdata-platform-entry\b[^>]*>)/g, tag => {
     entries++;
-    return tag.replace(/href="[^"]*"/, `href="${escaped}"`);
+    return tag.replace(/href="[^"]*"/, () => `href="${escaped}"`);
   });
   if (entries !== 4 || !html.includes('name="metaplatform-platform-url" content=""')) throw new Error('Canonical website configuration does not match the entry contract.');
-  html = html.replace('name="metaplatform-platform-url" content=""', `name="metaplatform-platform-url" content="${escaped}"`);
+  html = html.replace('name="metaplatform-platform-url" content=""', () => `name="metaplatform-platform-url" content="${escaped}"`);
   mkdirSync(dirname(output), { recursive: true });
   // Exclusive create also refuses overwriting any existing file or symlink.
   writeFileSync(output, html, { encoding: 'utf8', flag: 'wx' });
