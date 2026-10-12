@@ -1,0 +1,30 @@
+{
+  "source_rollout": "rollout-2026-10-12T03-22-11-01a12c6a-5f53-7010-bee6-9b1a25be5bf6.jsonl",
+  "source_artifact": "Current-goal original Task8 implementer tool output",
+  "retained_record": {
+    "line": 1243,
+    "timestamp": "2026-10-11T20:19:13.407Z",
+    "call_id": "call_45800312937841ffa02237d10c70d976",
+    "call_metadata": {
+      "name": "exec",
+      "fresh_target_named": true,
+      "fresh_log_named": true,
+      "migration_phase_named": false,
+      "fresh_context_named": true
+    },
+    "alembic_upgrade_lines": [
+      "INFO  [alembic.runtime.migration] Running upgrade 0014_apphub_runtime_shortlink, 0011_copilot_user_isolation -> 0015_merge_migration_heads, Merge the two migration branches that existed before GA baseline cleanup.",
+      "INFO  [alembic.runtime.migration] Running upgrade 0015_merge_migration_heads -> 0016_wfe_plan_definitions, Add persistent, versioned Action Orchestration Plan definitions.",
+      "INFO  [alembic.runtime.migration] Running upgrade 0016_wfe_plan_definitions -> 0017_orchestrator_role_actor_roles, Add role-level invocation authorization to persisted orchestrator roles.",
+      "INFO  [alembic.runtime.migration] Running upgrade 0017_orchestrator_role_actor_roles -> 0018_mcp_api_keys, Add mcp_api_keys — long-lived API keys for external MCP clients (ADR-0062).",
+      "INFO  [alembic.runtime.migration] Running upgrade 0018_mcp_api_keys -> 0019_apphub_business_domains, apphub 业务域 —— 新增 apphub_domains 表与 apphub_apps.business_domain 列。",
+      "INFO  [alembic.runtime.migration] Running upgrade 0019_apphub_business_domains -> 0020_mcp_clients, Add mcp_clients — persistent external-client registry (1.1 task 1b).",
+      "INFO  [alembic.runtime.migration] Running upgrade 0020_mcp_clients -> 0021_apphub_publication, Persist AppHub definitions, lifecycle and immutable publication snapshots.",
+      "INFO  [alembic.runtime.migration] Running upgrade 0021_apphub_publication -> 0022_mcp_key_scopes, Persist verified MCP key grants; legacy keys intentionally have no grants."
+    ]
+  },
+  "scope": "Original displayed final eight upgrade lines from the explicitly owned fresh target/log invocation; not a reconstructed complete first-DDL log",
+  "accompanying_proof": "mp11-candidate/migration-chains.json fresh actual signed source/app/receipt/replay and0022 final revision",
+  "excluded_record": "Other unclassified invocation with0001/0002 lines is excluded from fresh proof",
+  "archive_stage": "Task8 fix round1/scoped re-review and single whole-branch review pending"
+}

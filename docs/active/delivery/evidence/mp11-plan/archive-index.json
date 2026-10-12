@@ -1,0 +1,232 @@
+{
+  "stage": "All eight task-scoped gates approved; one final whole-branch review and completion audit pending",
+  "source_head": "d1a86bc1150eae8b87ff987cae37db78e6cc3032",
+  "plan": "docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md",
+  "ruling_count": 37,
+  "files": [
+    {
+      "file": "global-constraints.md",
+      "source_sha256": "43c1ee48db8978a789bf866f770f40cfe3d47d38da10c3401028bf878157d5af",
+      "archived_sha256": "43c1ee48db8978a789bf866f770f40cfe3d47d38da10c3401028bf878157d5af",
+      "bytes": 1086,
+      "redactions": 0
+    },
+    {
+      "file": "preflight-notes.md",
+      "source_sha256": "cb69cd51cbc4f59b6de227fa91b8cb66d500c5864e20165c531cc66dd4e32ab4",
+      "archived_sha256": "3626f73ea8f8ed26a42ba4ff5fa0b9c04fac7ef835d26103c7dff01d9716ae20",
+      "bytes": 30699,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "progress.md",
+      "source_sha256": "7fc21f0745376caf3cf9bf264745694046a18b5f189066991e7af11f2b39a57e",
+      "archived_sha256": "7fc21f0745376caf3cf9bf264745694046a18b5f189066991e7af11f2b39a57e",
+      "bytes": 107337,
+      "redactions": 0
+    },
+    {
+      "file": "rulings-exhaustive.md",
+      "source_sha256": "0fa2f70796c83cf7a467e46cf41bdf5831bc9fff5400462174796995bad44c63",
+      "archived_sha256": "b8d74fa36ffaaa6c6910644b3560623210a616bfa31b9c2638241049c1f70aa0",
+      "bytes": 17594,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-1-report.md",
+      "source_sha256": "ee75723ac4c2c6e8eaa3ad11b39d18b80c03b2a2c98319ad63cc505dcf91767a",
+      "archived_sha256": "4287c57602a51d6f588ade7788af591eb30eaa962a9272d0194be6c8d912a090",
+      "bytes": 16217,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-1-rereview-1.md",
+      "source_sha256": "4916264e43ba6964a0e574c82fded58349cc3a12d4806d2c8c78e3f6df679a2e",
+      "archived_sha256": "8ef79a9c879aaed7fa3389b7854843cb883c4784d51446f625b31301a61c44b0",
+      "bytes": 4784,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-1-review.md",
+      "source_sha256": "c384510064c14187562aea3724654d54035ace0e8c5abb0202b95b1c0fad3966",
+      "archived_sha256": "61d11cfd6dc1b165df7465f52dca2dc73c1c25dd824987cf8a8e0e827193c0f9",
+      "bytes": 8992,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-2-report.md",
+      "source_sha256": "ad873dcf5e55bddd44a0688cdfcb12a994d136aad063566d479f3a2e658c01a9",
+      "archived_sha256": "8b6a62d5b639efaff827d95017567e045c163a0d4e5fadc51827cddd7264b084",
+      "bytes": 21051,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-2-rereview-1.md",
+      "source_sha256": "58c9247e3e1ab4e62af6e06f78a797ab11f8708b6e7a3e2b2a97e6c480a8acf6",
+      "archived_sha256": "9f4d90351ac2c9e961f98edee26b64f8407f68e439c04e0d2a8490ca33dc6bb2",
+      "bytes": 6620,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-2-review.md",
+      "source_sha256": "c3507dc41ea66e8aa5bfd8123e96f825b67bbc991ec860166e3ea589456419bc",
+      "archived_sha256": "6acf9d770c43a121bc72cc8feab9f41f96f469e83b747465885d5830dcb3e2eb",
+      "bytes": 9974,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-3-report.md",
+      "source_sha256": "cf7baa240799e1ed769ae2ef3f4240207738fdd337c9b5758eb06b56d5cd3bf2",
+      "archived_sha256": "4434368fba697f7c4318500459e12c830a72dc66ff4dbb7d679fd9b99d72060a",
+      "bytes": 12219,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-3-rereview-1.md",
+      "source_sha256": "22386911b866f44c6310dac018a81d10a54668041a4d07d2aabb117d146b87b0",
+      "archived_sha256": "bbb6840748468f939ea771dff7afa7ea7b242fb2f9154c03f36e06a9f43a0de6",
+      "bytes": 1971,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-3-review.md",
+      "source_sha256": "c9c6fdc3834ac959b3c378d06e224b336482ed42c596ba334f301693944ecfc1",
+      "archived_sha256": "49a2812345e104cda8a59d0cd6c75f48729935b857b65072f0d429d6bc8ae0d4",
+      "bytes": 6240,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-3-revision-report.md",
+      "source_sha256": "778e7c7816e24e0603d5afa5f56dd621d10b36cd8e8c4600f24edc9d70f4ac5f",
+      "archived_sha256": "2fe8c3bacc0c35a6c72e3e2b14d4f5c492a1c3b97a2a11b1f8315e7e7ae1c401",
+      "bytes": 9457,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-3-revision-review.md",
+      "source_sha256": "7f70a49eef61fe1058576e9ad3cbc49384ffc672fbaed7e10244e2072f8e14d7",
+      "archived_sha256": "c43e3296c2062d98a21bbf971e71946a40f2882ab553e84c949823f108da55fe",
+      "bytes": 7788,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-4-report.md",
+      "source_sha256": "6b5aad65c76dcf66cae6c404299018187641288cf38e11a09cb390332bca740b",
+      "archived_sha256": "b7096dccaab7ed6352e66ed041d524dac9985016253e55bcdfb83e6e755c0894",
+      "bytes": 18964,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-4-rereview-1.md",
+      "source_sha256": "e43ad9cde5f57eb21131d54af1368a2d744c78ffe77146d0b160bdf72352a65b",
+      "archived_sha256": "b49dc125cb89c91f33483c9dc0fe39ceb7095944224792999e01c30606d25795",
+      "bytes": 5817,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-4-review.md",
+      "source_sha256": "06e3e60c7431bd1aedf5c828ce1d65181ad83acb876f1d13933737274b331040",
+      "archived_sha256": "facb38160f33c24764e93ebfd7e6ee15e189b518dda6a13faedddb7715a036ae",
+      "bytes": 11612,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-5-report.md",
+      "source_sha256": "f5a1bf8d19f445973a881a955dda72bd90e1587d662a5dfb2f2cad0dc8eee92c",
+      "archived_sha256": "1fc890a099b93a5a45276d59f8e729623a7179680b38bf2a2ac095e7d3ed3a7c",
+      "bytes": 35541,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-5-rereview-1.md",
+      "source_sha256": "9202bbe870fb1f8aa56bb8975306c1343c92ef03e7250ce8e3a3a2de12b3fa88",
+      "archived_sha256": "f180447a95d62acada7f2e6a17f72475c68c9b56db5b07e9579772f59540d138",
+      "bytes": 6731,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-5-review.md",
+      "source_sha256": "221f124a0f50a3ec2ff4c77c1a4012da4bd9ffce93e848508655ffd486e062a2",
+      "archived_sha256": "143ca64a8d52bbf6fee7812ea5bdb5eb043ef129ea4a76797da0d42321422cef",
+      "bytes": 14685,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-8-fix-round-1.md",
+      "source_sha256": "ecf7da6db05b537064efa91cce4cde1cc81bcacf8d4556f09fe627c1a32cf3d8",
+      "archived_sha256": "4f98893249a8090e3c99fd309e5a9fc8d11f17a5f0699898eff7554faa8a02ff",
+      "bytes": 8569,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-8-report.md",
+      "source_sha256": "33f8eedf2466ae89194d81a0b0878572f9c99b27d542a3b1d866882454cf6efb",
+      "archived_sha256": "33f8eedf2466ae89194d81a0b0878572f9c99b27d542a3b1d866882454cf6efb",
+      "bytes": 37112,
+      "redactions": 0
+    },
+    {
+      "file": "task-8-rereview1.md",
+      "source_sha256": "0d1e9ce92b1f0c4b7dbf39df817373bfdb6d8048cd4e2cf5270afcbbb423d9e8",
+      "archived_sha256": "0d1e9ce92b1f0c4b7dbf39df817373bfdb6d8048cd4e2cf5270afcbbb423d9e8",
+      "bytes": 8332,
+      "redactions": 0
+    },
+    {
+      "file": "task-8-review.md",
+      "source_sha256": "bedda805d7aa2e53a2c4c9c6589d1b93ae70824fb8abb359d391c6f0d4f74ab8",
+      "archived_sha256": "e77451f944b9d8bfb92d3963cbaa199070930b13629a9ab182a8863b49b59370",
+      "bytes": 19733,
+      "redactions": 0,
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "task-8-original-fresh-migration-receipt.json",
+      "archived_sha256": "f153d9e20ba7d781198fe9504badf9657080fa92f95d8a6a0f8b3bd4c613339d",
+      "bytes": 2595,
+      "origin": "controller sanitized receipt"
+    },
+    {
+      "file": "controller-runtime-restored-20261012.json",
+      "archived_sha256": "05331c710a805477bc53cd3d85dd57ddcbf606fb62508a887b34aa834070c38c",
+      "bytes": 6776,
+      "origin": "controller sanitized receipt"
+    },
+    {
+      "file": "task-8-cross-task-resolution.md",
+      "archived_sha256": "1a599281ce0ef57a82edda75d8130271754de0b1360516596e28d003da26d5ce",
+      "bytes": 2684,
+      "origin": "controller sanitized receipt",
+      "trailing_blank_lines_normalized": true
+    },
+    {
+      "file": "controller-current-source-audit.json",
+      "archived_sha256": "0c992fb8f31f2218eb2350228ed6185e296706ef25ba8fca5adb94de0433c7f5",
+      "bytes": 16266,
+      "origin": "controller sanitized receipt"
+    }
+  ],
+  "existing_task6_archive": "docs/active/delivery/evidence/mp11-application",
+  "existing_task7_archive": "docs/active/delivery/evidence/mp11-agent",
+  "raw_private_runtime_inputs": "Excluded; retained privately outside Scratch before cleanup"
+}

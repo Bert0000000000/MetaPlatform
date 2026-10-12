@@ -1,0 +1,33 @@
+# Task 5 fix round 1 scoped re-review
+
+## Finding verdicts
+
+- **I1 — Source retargeting under the same source_id retains the old dataset's checkpoint. — ADDRESSED.** `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/backing_datasources.py:137` pins registered configuration/legacy DSN; `:151` fingerprints effective endpoint, database/user, resolved relation/OID and PK/time/mapping while excluding passwords and display names. `pg_repo.py:398` initializes nullable durable checkpoint_identity outside the 20-run history; `:5223` discards an incompatible/unknown boundary. `:5236` rechecks current identity and preserves partial counts while adding an explicit failure and clearing the cursor on source change/unavailability. `:5258` saves identity and boundary together, so an edit after the last check is detected on the next read. `:4818` acquires the same tenant/class lock as sync before mapping edits; its raw connection closes on exit. API conflicts return 409 and the canonical contract agrees. Default public listing removes the internal field at `:5098`. Regressions in `mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py:651`, `:663`, `:677`, `:693`, `:846`, `:872`, and `:917` cover older registered/legacy datasets, mapping/source edits at both read timings, name/password rotation, HTTP conflicts and legacy search-path retargeting. Modified fresh/prior-column-shape and terminated-child/new-process tests check initialization, restored identity and public omission.
+
+- **I2 — Recovery overwrites terminal run evidence from a snapshot read before acquiring the lock. — ADDRESSED.** `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py:5086` rereads current tenant/class rows FOR UPDATE after advisory-lock ownership. Only fresh still-running entries transition; the pre-lock snapshot is never written. `mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py:722` commits terminal counts/error plus a newer run between initial observation and lock acquisition, then checks exact history preservation. `:780` verifies active-owner preservation and abandoned-run recovery; the existing real terminated-child/new-process case remains included.
+
+- **I3 — Bare table acceptance can preflight one schema and import another. — ADDRESSED.** `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/backing_datasources.py:120` rejects registered PG names without the configured schema prefix and preserves the relation-name remainder as one component. Preflight requires the discovered qualified name; `:151` resolves the exact relation and `:444` uses its separate sql.Identifier components. `mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py:803` checks conflicting public/configured-schema tables, zero-write bare-name rejection and correct qualified import; `:942` exercises an actual dotted relation name. Legacy unqualified DSNs remain supported through relation resolution.
+
+- **I4 — CSV uniqueness checks raw keys, then conversion merges distinct rows. — ADDRESSED.** `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/backing_datasources.py:268` converts each selected column once, assigning the target primary property's type to the key column. `:295` checks nonblank uniqueness on the same string identity consumed by apply_cdc_changes at `:714`, before any batch writes. `mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py:822` verifies normalized 01/1 rejection at preflight and execution, zero persistent objects, valid keys and idempotent replay.
+
+- **Associated get_source session release — ADDRESSED; no new lifecycle breakage.** `mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/sql_store.py:169` scopes query and conversion inside the Session context. `:74` reads all fields and parses configuration into a materialized DataSource before close; no lazy ORM row escapes. The existing factory `mate-platform-backend/packages/mate-tech-db/src/mate_tech_db/base.py:116` returns a new Session. `mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py:969` uses actual PG, pool size 1/no overflow and retained Session references, checking release after success, missing ID, cross-tenant ID and conversion exception.
+
+## New breakage in the fix diff
+
+None. **Critical 0 / Important 0 / Minor 0.**
+
+## Out-of-scope observations
+
+No new issue identified. Existing **M1 remains open under Task 8/final verification ownership**: inherited fixture/deprecation and earlier frontend chunk warnings were not suppressed or described as pristine. Real issuer/signature/login acceptance remains Task 8; fixture-token checks do not prove live IAM.
+
+## Checks and evidence boundaries
+
+- Fixed BASE `caf0b1f2f377beabbb66bb76d15fe11a88e3a2de`, HEAD `841102f1af0085aa58474f029c7d74d29adde006`; one commit, six files. Read all 1,369 supplied diff lines once in complete nonoverlapping blocks **1–380, 381–760, 761–1090, 1091–1369** without truncation or regenerated Git diff.
+- Read scoped instructions/template, brief/global constraints, initial review and only the Fix round 1 report appendix. Checked report claims against fix hunks and regression assertions. Extra reads were limited to named Session/conversion, raw PG connection/lock release, cursor-return and target-key consumption contracts absent from the diff.
+- The report names the five related test files and reports **53 passed, 2 warnings in 56.77 seconds**. This run preceded the expanded missing-record/cross-tenant/conversion-exception Session assertions, whose separate result is **1 passed, 21 deselected, 1 warning in 0.67 seconds**. These are distinct scopes, not an aggregate repository pass. RED/GREEN commands and output summaries are supplied; execution evidence remains implementer-provided, checked against source assertions.
+- No specific unresolved doubt required another execution probe. No suite, UI/browser, build or contract check was rerun. Migration evidence covers fresh/prior backing-column shapes, not every historical release.
+- No implementation/index/HEAD/branch or live-service mutation. This scratch report is the sole review artifact. Default command/apply helper failures required scoped elevated reads and report writing; no automatic approval-policy rejection occurred.
+
+## Verdict
+
+**Fix round: All findings addressed, no new Critical/Important breakage.** I1–I4 are closed for this limited review and get_source lifecycle correction is accepted. New issue count: **0**. M1 and true IAM retain their explicit Task 8 ownership.
