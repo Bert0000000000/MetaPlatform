@@ -4605,7 +4605,14 @@ class PgOntologyRepository(OntologyRepository):
     # ───── G33：schema WIP 暂存 ─────
 
     def save_schema_wip(
-        self, rid: str, payload: dict[str, Any], author: str = "", *, create_only: bool = False, expected_checksum: str | None = None
+        self,
+        rid: str,
+        payload: dict[str, Any],
+        author: str = "",
+        *,
+        preserve_existing: bool = False,
+        create_only: bool = False,
+        expected_checksum: str | None = None,
     ) -> dict[str, Any]:
         """暂存草稿，并记下**当时的 live 定义指纹**（冲突基线）。
 
@@ -4628,8 +4635,10 @@ class PgOntologyRepository(OntologyRepository):
                        VALUES (%s, %s, %s, %s::jsonb, %s, %s)
                        ON CONFLICT (rid) DO UPDATE SET
                          payload = EXCLUDED.payload, author = EXCLUDED.author,
-                         create_only = ont_schema_wip.create_only OR EXCLUDED.create_only,
-                         created_at = now()""",
+                          create_only = ont_schema_wip.create_only OR EXCLUDED.create_only,
+                          created_at = now()
+                       WHERE NOT %s OR (ont_schema_wip.payload=EXCLUDED.payload AND ont_schema_wip.author=EXCLUDED.author)
+                       RETURNING base_checksum""",
                     (
                         rid,
                         self._current_tenant() or "tenant-default",
@@ -4637,8 +4646,12 @@ class PgOntologyRepository(OntologyRepository):
                         json.dumps(payload, default=str),
                         base,
                         create_only,
+                        preserve_existing,
                     ),
                 )
+                if cur.rowcount != 1:
+                    raise ValueError("Existing WIP changed; preserved the other editor's draft")
+                base = cur.fetchone()["base_checksum"]
             conn.commit()
             return {"rid": rid, "status": "staged", "base_checksum": base}
         finally:
@@ -4670,11 +4683,19 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def delete_schema_wip(self, rid: str) -> bool:
+    def delete_schema_wip(
+        self, rid: str, *, expected_payload: dict[str, Any] | None = None
+    ) -> bool:
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("DELETE FROM ont_schema_wip WHERE rid = %s", (rid,))
+                if expected_payload is None:
+                    cur.execute("DELETE FROM ont_schema_wip WHERE rid = %s", (rid,))
+                else:
+                    cur.execute(
+                        "DELETE FROM ont_schema_wip WHERE rid = %s AND payload = %s::jsonb",
+                        (rid, json.dumps(expected_payload)),
+                    )
                 deleted = cur.rowcount == 1
             conn.commit()
             return deleted

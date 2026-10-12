@@ -7,6 +7,18 @@
 
 ## 🚀 新成员必读
 
+候选一次处理与类级暂缓：[实施计划](superpowers/plans/2026-10-11-modeling-review-completion.md)、[本地验收](acceptance/2026-10-11-modeling-review-completion.md)（补全/不发布选择、依赖范围收敛、一次确认自动校验；未发布类不生成实例）。
+
+Excel 数据处理：[实施计划](superpowers/plans/2026-10-11-modeling-data-treatment.md)、[本地验收记录](acceptance/2026-10-11-modeling-data-treatment.md)（AI 修复提案与确认、问题记录暂缓、原生合格子集同步及对象浏览）。
+
+本轮数据同步：[实施计划](superpowers/plans/2026-10-11-modeling-data-sync.md)、[本地验收记录](acceptance/2026-10-11-modeling-data-sync.md)（复用原生接入与对象浏览，发布后的可选第五步；最新后端调整已重启加载）。
+
+候选关系修复：[实施说明](superpowers/plans/2026-10-11-relationship-readiness.md)、[本地验收记录](acceptance/2026-10-11-relationship-readiness.md)（提前提示关联缺项、显式采用字段建议、目标身份编辑和暂缓入口）。
+
+Excel 逆向建模质量：[实施计划](superpowers/plans/2026-10-11-excel-modeling-quality.md)、[本地验收记录](acceptance/2026-10-11-excel-modeling-quality.md)（租户隔离稳定基线、全量预检、受限候选修正与原生能力边界）。
+
+本轮增量：[数据逆向建模第一期 ADR-0083](active/decisions/ADR-0083-data-driven-modeling-phase1.md)、[分期实施计划](superpowers/plans/2026-10-10-data-driven-ontology-integration.md)、[本地工程验收](acceptance/2026-10-10-data-modeling-phase1.md)。工程验证和业务验收分别登记，主平台单源继续遵循 ADR-0080/0082。
+
 按顺序定位当前任务及单源文档：
 
 1. **标准接管入口**：[`AGENTS.md`](../AGENTS.md)（工作树、锁文件、安装/验证与保护现有环境的约束）；[`CLAUDE.md`](../CLAUDE.md) 保留历史上下文。

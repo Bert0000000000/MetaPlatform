@@ -17,6 +17,8 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import AsyncIterator
+from contextlib import AbstractAsyncContextManager
+from types import TracebackType
 from typing import Any
 
 import httpx
@@ -39,7 +41,7 @@ class OpenAIProvider:
         api_key: str | None = None,
         base_url: str | None = None,
         model: str | None = None,
-        timeout: float | None = None,
+        timeout: float | httpx.Timeout | None = None,
     ) -> None:
         self._api_key = api_key or os.getenv("OPENAI_API_KEY", "")
         self._base_url = (base_url or os.getenv("OPENAI_BASE_URL", DEFAULT_BASE_URL)).rstrip("/")
@@ -50,6 +52,23 @@ class OpenAIProvider:
             timeout=self._timeout,
             headers={"Authorization": f"Bearer {self._api_key}"},
         )
+
+    async def __aenter__(self) -> OpenAIProvider:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        await self.aclose()
+
+    def chat_completion_stream(
+        self, payload: dict[str, Any]
+    ) -> AbstractAsyncContextManager[httpx.Response]:
+        """Open a raw completion stream through this configured vendor adapter."""
+        return self._client.stream("POST", "/chat/completions", json=payload)
 
     async def chat(
         self,

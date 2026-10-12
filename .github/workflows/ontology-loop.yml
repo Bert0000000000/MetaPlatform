@@ -34,6 +34,7 @@ on:
       - "metaplatform-frontend/playwright.config.ts"
       - "metaplatform-frontend/playwright.migration.config.ts"
       - "metaplatform-frontend/playwright.builder.config.ts"
+      - "metaplatform-frontend/playwright.modeling.config.ts"
       - "metaplatform-frontend/builder-safe-reporter.ts"
       - "metaplatform-frontend/migration-list-reporter.ts"
       - "metaplatform-frontend/apps/web/tests/e2e/**"
@@ -44,6 +45,7 @@ on:
       - "mate-platform-backend/services/api-gateway/**"
       - "mate-platform-backend/services/auth-service/**"
       - "docker-compose.yml"
+      - "infra/keycloak/realm-mate.json"
   pull_request:
     # 不加 paths 过滤：本 job 需要能作为 Required Check 在所有 PR 上报到
     # （带 paths 会让不相关的 PR 永远 pending → 阻塞合并）。
@@ -236,6 +238,27 @@ jobs:
             metaplatform-frontend/test-results/builder-artifacts/**/*.png
           if-no-files-found: error
           retention-days: 14
+
+      - name: Execute Excel modeling publication and sync browser cases
+        if: ${{ !cancelled() }}
+        working-directory: metaplatform-frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:9200
+          E2E_GATEWAY: http://127.0.0.1:8100/api/v1
+          E2E_IAM_LOGIN_URL: http://127.0.0.1:8100/api/v1/iam/auth/login
+        run: pnpm exec playwright test --config playwright.modeling.config.ts
+
+      - name: Require all seven executed modeling browser cases with zero skips
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          cases = list(ET.parse('metaplatform-frontend/test-results/modeling.xml').getroot().iter('testcase'))
+          assert len(cases) == 7, f'Expected 7 modeling browser cases, found {len(cases)}'
+          assert all('ontology-from-data.spec.ts' in case.get('classname', '') for case in cases)
+          assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error'))
+          print('Modeling browser gate: 7 executed, 0 skipped')
+          PY
 
       - name: Dump container logs
         if: failure()

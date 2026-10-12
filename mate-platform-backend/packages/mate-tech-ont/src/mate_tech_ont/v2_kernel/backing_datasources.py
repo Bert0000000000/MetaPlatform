@@ -437,6 +437,10 @@ def _sync_one_source(
     conn = None
     try:
         conn = _connect_source(ds)
+        # Controlled Excel staging tables use FORCE RLS just like ontology tables.
+        # Carry the authenticated class tenant onto this independent source connection.
+        with conn.cursor() as tenant_cur:
+            tenant_cur.execute("SELECT set_config('app.tenant_id', %s, true)", (tenant,))
         while True:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 from psycopg2 import sql

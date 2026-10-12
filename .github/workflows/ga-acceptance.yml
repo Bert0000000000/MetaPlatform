@@ -279,7 +279,7 @@ jobs:
         run: >
           pip install pytest pytest-asyncio fastapi httpx pydantic pydantic-settings
           structlog tenacity psycopg2-binary "pyjwt[crypto]" sqlalchemy neo4j rdflib
-          pyyaml
+          pyyaml openpyxl python-multipart
       # Root pyproject [tool.pytest.ini_options] provides pythonpath +
       # --import-mode=importlib; test files also bootstrap sys.path themselves.
       - name: mate-kernel/tests + mate-tech-ont/tests
@@ -364,15 +364,25 @@ jobs:
         working-directory: mate-platform-backend
         run: |
           python -m pip install uv
-          uv sync --frozen --python 3.12 --package mate-tech-ont --no-install-workspace
+          uv sync --frozen --python 3.12 --package mate-tech-ont --package mate-app-copilot --no-install-workspace
           uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
           uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
       - name: Gate behavior regression tests
         run: mate-platform-backend/.venv/bin/python -m pytest scripts/ci/tests/test_ont_postgres_gate.py scripts/ci/tests/test_migration_browser_gate.py -q -o addopts=
       - name: Prepare isolated business-role regression database
         run: mate-platform-backend/.venv/bin/python scripts/ci/prepare_ont_postgres_test_db.py
+      - name: Copilot and user-delegation regressions
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-app-copilot/tests/test_modeling_generation.py packages/mate-clients/tests/test_forwarded_user_auth.py -q
       - name: Execute migration, sync, atomicity, link concurrency, version and query regressions
         run: mate-platform-backend/.venv/bin/python scripts/ci/verify_ont_postgres.py --junit .ci/ont-postgres.xml
+      - name: Execute data-modeling publication and sync PostgreSQL regressions
+        working-directory: mate-platform-backend
+        env:
+          MODELING_TEST_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
+        run: |
+          .venv/bin/python -m pytest packages/mate-tech-ont/tests/test_modeling_integration.py -q --junitxml=../.ci/modeling-postgres.xml
+          .venv/bin/python -c "from xml.etree import ElementTree as ET; root=ET.parse('../.ci/modeling-postgres.xml').getroot(); cases=root.findall('.//testcase'); assert cases and all(c.find('skipped') is None for c in cases), 'Modeling PostgreSQL tests must execute without skips'"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -380,6 +390,7 @@ jobs:
           path: |
             .ci/ont-postgres.xml
             .ci/ont-postgres.collection.json
+            .ci/modeling-postgres.xml
           if-no-files-found: error
           retention-days: 14
 
