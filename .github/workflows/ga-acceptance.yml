@@ -381,7 +381,7 @@ jobs:
         env:
           MODELING_TEST_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
         run: |
-          .venv/bin/python -m pytest packages/mate-tech-ont/tests/test_modeling_integration.py -q --junitxml=../.ci/modeling-postgres.xml
+          .venv/bin/python -m pytest packages/mate-tech-ont/tests/test_modeling_integration.py packages/mate-tech-ont/tests/test_modeling_merge_regressions.py -q --junitxml=../.ci/modeling-postgres.xml
           .venv/bin/python -c "from xml.etree import ElementTree as ET; root=ET.parse('../.ci/modeling-postgres.xml').getroot(); cases=root.findall('.//testcase'); assert cases and all(c.find('skipped') is None for c in cases), 'Modeling PostgreSQL tests must execute without skips'"
       - uses: actions/upload-artifact@v4
         if: always()

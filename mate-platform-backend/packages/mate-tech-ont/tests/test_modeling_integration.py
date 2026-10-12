@@ -834,6 +834,9 @@ def app(monkeypatch):
             user_id="admin",
             roles=frozenset({request.headers.get("x-test-role", "PLATFORM_ADMIN")}),
             permissions=frozenset(),
+            scopes=frozenset({"platform.read", "platform.write"})
+            if request.headers.get("x-test-role", "PLATFORM_ADMIN") == "PLATFORM_ADMIN"
+            else frozenset({"platform.read"}),
             auth_method=AuthMethod.USER,
         )
         return await call_next(request)
