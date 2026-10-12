@@ -1,0 +1,277 @@
+# Overlay the repository's docker-compose.yml explicitly; never load the local override.
+x-demo-app: &demo-app
+  image: ${DEMO_BACKEND_IMAGE:?Run infra/demo-cloud/prepare.py first}
+  build: !reset null
+  container_name: !reset null
+  ports: !reset []
+  volumes: !override []
+  init: true
+  mem_limit: 384m
+  cpus: 0.75
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-demo-env: &demo-env
+  MATE_PROFILE: development
+  KEYCLOAK_REALM: metaplatform
+  KEYCLOAK_AUDIENCE: metaplatform-backend
+  SERVICE_CLIENT_ID: metaplatform-backend
+  CORS_ALLOW_ORIGINS: ${DEMO_ORIGIN:-http://localhost:8080}
+
+services:
+  postgres:
+    container_name: !reset null
+    ports: !reset []
+    mem_limit: 1536m
+    environment:
+      ONT_APP_PASSWORD: ${ONT_APP_PASSWORD:?Run prepare.py first}
+    command: [postgres, -c, shared_buffers=256MB, -c, max_connections=200]
+    volumes:
+      - ./infra/demo-cloud/02-demo-app-role.sh:/docker-entrypoint-initdb.d/02-demo-app-role.sh:ro
+
+  redis:
+    container_name: !reset null
+    ports: !reset []
+    mem_limit: 384m
+    command:
+      [
+        redis-server,
+        --appendonly,
+        "yes",
+        --maxmemory,
+        256mb,
+        --maxmemory-policy,
+        allkeys-lru,
+      ]
+
+  minio:
+    container_name: !reset null
+    ports: !reset []
+    mem_limit: 384m
+
+  neo4j:
+    container_name: !reset null
+    ports: !reset []
+    mem_limit: 1g
+    environment:
+      NEO4J_server_memory_heap_initial__size: 128m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 128m
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  kafka:
+    container_name: !reset null
+    ports: !reset []
+    mem_limit: 1g
+    environment:
+      KAFKA_HEAP_OPTS: -Xms128m -Xmx384m
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes: !override
+      - kafkadata:/var/lib/kafka/data
+
+  keycloak:
+    container_name: !reset null
+    ports: !reset []
+    mem_limit: 1g
+    environment:
+      JAVA_OPTS_KC_HEAP: -Xms128m -Xmx512m
+    volumes: !override
+      - ./infra/demo-cloud/private/realm-mate.json:/opt/keycloak/data/import/realm-mate.json:ro
+
+  milvus:
+    container_name: !reset null
+    ports: !reset []
+    profiles: !override [vectors]
+  nacos:
+    container_name: !reset null
+    ports: !reset []
+    profiles: !override [registry]
+  rabbitmq:
+    container_name: !reset null
+    ports: !reset []
+    profiles: !override [amqp]
+
+  mate-tech-dw:
+    <<: *demo-app
+    command: [uvicorn, mate_tech_dw.main:app, --host, 0.0.0.0, --port, "8021"]
+    environment:
+      <<: *demo-env
+      DW_STORE: sql
+      MATE_DB_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/metaplatform
+
+  mate-tech-rag:
+    <<: *demo-app
+    mem_limit: 512m
+    command:
+      [uvicorn, mate_tech_rag.api.app:app, --host, 0.0.0.0, --port, "8001"]
+    environment:
+      <<: *demo-env
+      RAG_MODE: pg
+      EMBEDDER_PROVIDER: ${EMBEDDER_PROVIDER:-local}
+      LLMGW_URL: http://mate-tech-llmgw:8008
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+
+  mate-tech-agent:
+    <<: *demo-app
+    mem_limit: 512m
+    command:
+      [uvicorn, mate_tech_agent.api.app:app, --host, 0.0.0.0, --port, "8002"]
+    environment:
+      <<: *demo-env
+
+  mate-app-kb:
+    <<: *demo-app
+    command: [uvicorn, mate_app_kb.api.app:app, --host, 0.0.0.0, --port, "8003"]
+    environment:
+      <<: *demo-env
+      KB_STORE: sql
+      MATE_DB_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/metaplatform_kb
+
+  mate-tech-llmgw:
+    <<: *demo-app
+    mem_limit: 512m
+    command:
+      [uvicorn, mate_tech_llmgw.main:app, --host, 0.0.0.0, --port, "8008"]
+    environment:
+      <<: *demo-env
+
+  mate-app-copilot:
+    <<: *demo-app
+    command:
+      [uvicorn, mate_app_copilot.main:app, --host, 0.0.0.0, --port, "8601"]
+    environment:
+      <<: *demo-env
+  mate-app-arch:
+    <<: *demo-app
+    command: [uvicorn, mate_app_arch.main:app, --host, 0.0.0.0, --port, "8321"]
+    environment:
+      <<: *demo-env
+  mate-app-hub:
+    <<: *demo-app
+    command: [uvicorn, mate_app_hub.main:app, --host, 0.0.0.0, --port, "8301"]
+    environment:
+      <<: *demo-env
+  mate-tech-data:
+    <<: *demo-app
+    mem_limit: 512m
+    command: [uvicorn, mate_tech_data.main:app, --host, 0.0.0.0, --port, "8701"]
+    environment:
+      <<: *demo-env
+  mate-app-a2a:
+    <<: *demo-app
+    command: [uvicorn, mate_app_a2a.main:app, --host, 0.0.0.0, --port, "8502"]
+    environment:
+      <<: *demo-env
+  mate-tech-orchestrator:
+    <<: *demo-app
+    command:
+      [
+        uvicorn,
+        mate_tech_orchestrator.main:app,
+        --host,
+        0.0.0.0,
+        --port,
+        "8505",
+      ]
+    environment:
+      <<: *demo-env
+  mate-tech-agent-team:
+    <<: *demo-app
+    mem_limit: 1g
+    command:
+      [uvicorn, mate_tech_agent_team.main:app, --host, 0.0.0.0, --port, "8013"]
+    environment:
+      <<: *demo-env
+      MATE_AGENT_TEAM_DSN: postgresql://mate_app:${ONT_APP_PASSWORD}@postgres:5432/metaplatform
+      MATE_AGENT_TEAM_RUNTIME_CLIENT_ID: ${AGENT_TEAM_RUNTIME_CLIENT_ID:-agent-team-runtime}
+  mate-tech-ont:
+    <<: *demo-app
+    mem_limit: 768m
+    command: [uvicorn, mate_tech_ont.main:app, --host, 0.0.0.0, --port, "8007"]
+    environment:
+      <<: *demo-env
+      KERNEL_BACKEND: pg
+      KERNEL_PG_DSN: postgresql://mate_app:${ONT_APP_PASSWORD}@postgres:5432/metaplatform_ont
+      ONT_SOURCE_DSN: postgresql://mate_app:${ONT_APP_PASSWORD}@postgres:5432/metaplatform_ont
+      ONT_EMBEDDER: ${ONT_EMBEDDER:-llmgw}
+      # Seed once through bootstrap.py with an explicit tenant before enabling RLS.
+      ONT_SEED_DEMO: "0"
+  mate-tech-msg:
+    <<: *demo-app
+    command: [uvicorn, mate_tech_msg.main:app, --host, 0.0.0.0, --port, "8082"]
+    environment:
+      <<: *demo-env
+  mate-tech-mcp:
+    <<: *demo-app
+    mem_limit: 512m
+    command: [uvicorn, mate_tech_mcp.main:app, --host, 0.0.0.0, --port, "8081"]
+    environment:
+      <<: *demo-env
+  mate-tech-etl:
+    <<: *demo-app
+    command: [uvicorn, mate_tech_etl.main:app, --host, 0.0.0.0, --port, "8022"]
+    environment:
+      <<: *demo-env
+  mate-tech-scheduler:
+    <<: *demo-app
+    command:
+      [uvicorn, mate_tech_scheduler.main:app, --host, 0.0.0.0, --port, "8023"]
+    environment:
+      <<: *demo-env
+  mate-tech-metrics:
+    <<: *demo-app
+    command:
+      [uvicorn, mate_tech_metrics.main:app, --host, 0.0.0.0, --port, "8024"]
+    environment:
+      <<: *demo-env
+
+  mate-api-gateway:
+    <<: *demo-app
+    build: !override
+      context: .
+      dockerfile: infra/demo-cloud/runtime.Dockerfile
+    command:
+      [uvicorn, mate_api_gateway.main:app, --host, 0.0.0.0, --port, "8100"]
+    environment:
+      <<: *demo-env
+      GATEWAY_MAX_BODY_BYTES: "20971520"
+
+  mate-auth-service:
+    <<: *demo-app
+    command:
+      [uvicorn, mate_auth_service.main:app, --host, 0.0.0.0, --port, "8101"]
+    volumes: !override
+      - iam_data:/data
+    environment:
+      <<: *demo-env
+
+  demo-web:
+    image: ${DEMO_FRONTEND_IMAGE:?Run prepare.py first}
+    build:
+      context: .
+      dockerfile: infra/demo-cloud/frontend.Dockerfile
+    restart: unless-stopped
+    mem_limit: 128m
+    ports:
+      - "${DEMO_BIND_ADDRESS:-127.0.0.1}:${DEMO_HTTP_PORT:-8080}:80"
+    depends_on:
+      mate-api-gateway:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: [CMD-SHELL, "wget -qO- http://127.0.0.1/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5

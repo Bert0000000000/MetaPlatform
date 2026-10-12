@@ -1,0 +1,15 @@
+**
+!metaplatform-frontend/
+!metaplatform-frontend/**
+!infra/
+!infra/demo-cloud/
+!infra/demo-cloud/nginx.conf
+**/.git
+**/.env*
+**/.venv
+**/node_modules
+**/dist
+**/playwright-report
+**/test-results
+**/.artifacts
+**/screenshots
