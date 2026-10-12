@@ -1,6 +1,7 @@
 """PostgreSQL regressions for modeling identity, mapping drift, and publication races."""
 
 from copy import deepcopy
+from dataclasses import replace
 from io import BytesIO
 
 import httpx
@@ -190,6 +191,50 @@ async def test_partial_publication_reopen_revalidates_and_resumes_completed_type
         with app.state.kernel_repo.tenant_scope(app.state.test_tenant):
             for item in result["plan"]["types"]:
                 assert app.state.kernel_repo.get_object_type(ClassRef(item["rid"])) is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fail_type_index", [0, 1])
+async def test_partial_publication_native_drift_retains_plan_until_exact_restore(
+    app, monkeypatch, fail_type_index
+):
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = await _partial_publication(client, monkeypatch, True, fail_type_index)
+        prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
+        reviewed = deepcopy(source["plan"])
+        item = reviewed["types"][fail_type_index]
+        with app.state.kernel_repo.tenant_scope(app.state.test_tenant):
+            original = app.state.kernel_repo.get_object_type(ClassRef(item["rid"]))
+            app.state.kernel_repo.upsert_object_type(
+                replace(original, description="Temporary external definition drift")
+            )
+        blocked_response = await client.post(
+            prefix + "/validate",
+            json={"revision": source["revision"], "preparePublication": True},
+        )
+        assert blocked_response.status_code == 200, blocked_response.text
+        blocked = blocked_response.json()
+        assert not blocked["validation"]["canPublish"]
+        assert blocked["plan"] == reviewed
+        assert blocked["publication"] == source["publication"]
+        payload = {
+            "revision": blocked["revision"],
+            "configHash": reviewed["configHash"],
+            "acknowledgeWarnings": True,
+        }
+        assert (await client.post(prefix + "/publish", json=payload)).status_code == 422
+        with app.state.kernel_repo.tenant_scope(app.state.test_tenant):
+            app.state.kernel_repo.upsert_object_type(original)
+        checked = await _validate(client, blocked)
+        assert checked["plan"] == reviewed
+        resumed = await client.post(prefix + "/publish", json=payload)
+        assert resumed.status_code == 200, resumed.text
+        result = resumed.json()
+        assert result["publication"]["status"] == "succeeded", resumed.text
+        assert len(result["publication"]["completed"]) == 2
+        assert len({entry["rid"] for entry in result["publication"]["results"]}) == 2
 
 
 @pytest.mark.asyncio

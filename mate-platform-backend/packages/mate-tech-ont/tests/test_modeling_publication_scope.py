@@ -2,7 +2,13 @@ from copy import deepcopy
 
 import pytest
 
-from mate_tech_ont.modeling.core import validate_draft, validate_ontology
+from mate_tech_ont.modeling.core import (
+    Draft,
+    digest,
+    profile_rows,
+    validate_draft,
+    validate_ontology,
+)
 
 ROWS = [{"sheet": "业务表", "row": 2, "values": {"编码": "P1", "名称": "产品"}}]
 
@@ -49,6 +55,49 @@ def test_structure_publication_is_independent_of_missing_identity_and_mapping_ap
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("started", ["intent", "completed", "none"])
+@pytest.mark.parametrize("matching", [True, False])
+async def test_blocked_precheck_preserves_only_matching_started_publication_plan(
+    monkeypatch, started, matching
+):
+    from mate_tech_ont.modeling import api
+
+    source = {
+        "draft": Draft.model_validate(draft()).model_dump(),
+        "profile": profile_rows(ROWS),
+        "context": "",
+        "questions": [],
+        "resolutions": {},
+    }
+    input_hash = digest(
+        {key: source[key] for key in ("draft", "context", "questions", "resolutions")}
+    )
+    reviewed = {
+        "inputHash": input_hash,
+        "configHash": "reviewed-plan",
+        "types": [{"rid": "native-type"}],
+    }
+    source["plan"] = reviewed
+    source["publication"] = {
+        "inputHash": input_hash if matching else "stale-input",
+        "configHash": reviewed["configHash"],
+        "completed": ["native-type"] if started == "completed" else [],
+        "inFlight": "native-type" if started == "intent" else None,
+    }
+
+    async def changed_native(*args):
+        return [{"severity": "error", "item": "native", "message": "Native definition changed"}]
+
+    monkeypatch.setattr(api.publication, "new_type_conflicts", changed_native)
+    result = await api.validation_result(None, source, ROWS, prepare_publication=True)
+    assert not result["validation"]["canPublish"]
+    assert any(
+        issue["message"] == "Native definition changed" for issue in result["validation"]["issues"]
+    )
+    assert result["plan"] == (reviewed if matching and started != "none" else None)
+
+
+@pytest.mark.asyncio
 async def test_similar_customer_requires_explicit_new_decision(monkeypatch):
     from types import SimpleNamespace
 
@@ -68,6 +117,9 @@ async def test_similar_customer_requires_explicit_new_decision(monkeypatch):
     async def valid(*args):
         return {"valid": True}
 
+    async def no_sources(*args):
+        return []
+
     async def similar(*args):
         return SimpleNamespace(
             model_dump=lambda: {
@@ -84,6 +136,7 @@ async def test_similar_customer_requires_explicit_new_decision(monkeypatch):
     monkeypatch.setattr(publication, "current_type", missing)
     monkeypatch.setattr(publication.native, "validate_model_endpoint", valid)
     monkeypatch.setattr(publication.native, "precheck_object_type", similar)
+    monkeypatch.setattr(publication.native, "list_backing_datasources", no_sources)
     with pytest.raises(ValueError, match="显式选择"):
         await publication.prepare(None, source)
     source["resolutions"] = {"customer": {"mode": "new", "propertyMap": {}}}

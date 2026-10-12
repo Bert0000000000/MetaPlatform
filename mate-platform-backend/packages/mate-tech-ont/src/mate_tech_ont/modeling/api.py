@@ -534,6 +534,18 @@ async def validation_result(request, source, rows, *, prepare_publication=False)
         )
     preview = {"nodes": [], "edges": [], "totalNodes": 0, "totalEdges": 0, "limit": 100}
     plan = None
+    previous, reviewed = source.get("publication") or {}, source.get("plan") or {}
+    if (
+        prepare_publication
+        and (previous.get("completed") or previous.get("inFlight"))
+        and reviewed
+        and previous.get("configHash") == reviewed.get("configHash")
+        and previous.get("inputHash") == reviewed.get("inputHash")
+        and reviewed.get("inputHash")
+        == digest({k: source.get(k) for k in ("draft", "context", "questions", "resolutions")})
+    ):
+        # A failed native check blocks publishing without discarding recovery metadata.
+        plan = reviewed
     if not data_report["errors"]:
         nodes, edges = compile_graph(source["draft"], rows, require_review=False)
         selected = {n["key"] for n in nodes[:100]}
