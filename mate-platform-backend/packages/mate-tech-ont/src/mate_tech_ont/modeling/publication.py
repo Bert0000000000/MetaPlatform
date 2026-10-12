@@ -39,6 +39,19 @@ async def current_link(request, rid):
         return None
 
 
+def link_structure_matches(live, expected):
+    """Compare fields that affect native link creation and data synchronization."""
+    structural_fields = (
+        "rid",
+        "src",
+        "dst",
+        "cardinality",
+        "directionality",
+        "link_properties",
+    )
+    return bool(live) and all(live.get(field) == expected.get(field) for field in structural_fields)
+
+
 def hierarchy_order(classes):
     """Validate explicit candidate inheritance and return parents before descendants."""
     by_id = {cls["id"]: cls for cls in classes}

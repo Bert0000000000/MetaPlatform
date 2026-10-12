@@ -122,6 +122,8 @@ beforeEach(() => {
       cardinality: 'N:1',
       directionality: 'directed',
       link_properties: [],
+      src_display_name: '归属于',
+      dst_display_name: '包含',
     },
   ]);
   vi.mocked(api.listActionTypes).mockResolvedValue([]);
@@ -184,6 +186,9 @@ it('shows parent and child concepts as a hierarchy and keeps filtered children v
     .toHaveAttribute('data-depth', '1');
   expect(screen.getByRole('button', { name: '选择资源 客户' }))
     .toHaveStyle({ paddingInlineStart: '24px' });
+  expect(screen.getByRole('button', { name: '选择资源 客户' }))
+    .toHaveTextContent('客户v1');
+  expect(screen.queryByText('是一种')).toBeNull();
 
   await router.navigate('/ontology/model/graph?q=客户');
   await waitFor(() => expect(screen.getByRole('button', { name: '选择资源 客户' }))
@@ -201,6 +206,22 @@ it('selects real card DTO, preserves RID when opening complete editor detail', a
   expect(router.state.location.pathname).toContain(
     encodeURIComponent(customer.rid),
   );
+});
+it('clears the selected model when the blank canvas is clicked', async () => {
+  const router = mount(`/ontology/model/graph?typeRef=${encodeURIComponent(customer.rid)}`);
+  const canvas = await screen.findByRole('img', { name: '本体类与关系结构图' });
+  expect(screen.getByRole('button', { name: '查看本体类 客户' })).toHaveClass('is-selected');
+  fireEvent.pointerDown(canvas, { button: 0, pointerId: 1, isPrimary: true, clientX: 20, clientY: 20 });
+  fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
+  await waitFor(() => expect(router.state.location.search).not.toContain('typeRef='));
+  expect(screen.getByRole('complementary', { name: '资源属性' })).toHaveTextContent('选择模型查看属性与关系');
+});
+it('shows the business relationship name together with its cardinality', async () => {
+  mount();
+  await screen.findByRole('button', { name: '查看本体类 客户' });
+  fireEvent.click(screen.getByRole('checkbox', { name: '关系名称与基数' }));
+  expect(screen.getByRole('button', { name: '查看关系 归属于 · N:1' })).toBeVisible();
+  expect(screen.queryByText(/customer-party/)).toBeNull();
 });
 it('edits complete metadata, stages true WIP and keeps failed input', async () => {
   mount(

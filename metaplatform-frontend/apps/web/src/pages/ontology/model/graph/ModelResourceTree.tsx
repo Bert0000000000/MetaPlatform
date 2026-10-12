@@ -30,7 +30,7 @@ export default function ModelResourceTree({ types, selectedRid, query, incomplet
           onOpen(type.rid);
         }
       }}>
-      <span>{type.display_name || type.rid}{depth > 0 && <small className="mw-tree-kind">是一种</small>}</span>
+      <span>{type.display_name || type.rid}</span>
       <small>{type.rid.match(/\.v\d+$/)?.[0].slice(1) || '版本未提供'}</small>
     </button>
   );

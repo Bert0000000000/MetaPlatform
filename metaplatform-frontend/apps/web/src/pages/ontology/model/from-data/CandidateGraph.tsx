@@ -10,7 +10,8 @@ export default function CandidateGraph({ draft, layoutKey }: { draft: ModelingDr
     const classes = draft.classes.filter(cls => cls.included !== false);
     const ids = new Set(classes.map(cls => cls.id));
     const relationships = draft.relationships.filter(rel => rel.included !== false && ids.has(rel.source) && ids.has(rel.target)).map(rel => ({
-      ...rel, name: `${rel.name} · ${rel.cardinalityStatus === 'unresolved' || !rel.cardinality ? '基数待确定' : rel.cardinality}`,
+      ...rel,
+      cardinality: rel.cardinalityStatus === 'unresolved' || !rel.cardinality ? '基数待确定' : rel.cardinality,
     }));
     const inheritance = classes.filter(cls => cls.parentClassId && ids.has(cls.parentClassId)).map(cls => ({
       id: `inheritance:${cls.id}`, name: '继承', source: cls.id, target: cls.parentClassId!,

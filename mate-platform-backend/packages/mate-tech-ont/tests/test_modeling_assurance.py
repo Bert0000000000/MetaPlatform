@@ -1,6 +1,24 @@
 import pytest
 
 from mate_tech_ont.modeling.core import validate_draft, validate_ontology
+from mate_tech_ont.modeling.publication import link_structure_matches
+
+
+def test_link_structure_comparison_ignores_copy_but_rejects_operational_changes():
+    expected = {
+        "rid": "ont.tenant-default.link.data-order-customer.v1",
+        "src": "ont.tenant-default.obj.data.order.v1",
+        "dst": "ont.tenant-default.obj.data.customer.v1",
+        "cardinality": "N:1",
+        "directionality": "directed",
+        "link_properties": [],
+        "src_display_name": "订单客户",
+        "dst_display_name": "客户订单",
+        "description": "订单中的客户编码引用客户。",
+    }
+    live = {**expected, "src_display_name": "所属客户", "description": "更新后的说明。"}
+    assert link_structure_matches(live, expected)
+    assert not link_structure_matches({**live, "cardinality": "N:N"}, expected)
 
 
 def candidate():

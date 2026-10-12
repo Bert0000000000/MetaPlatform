@@ -112,7 +112,6 @@
 }
 .mw-tree button.mw-tree-child { position: relative; }
 .mw-tree button.mw-tree-child::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 50%; width: 7px; border-left: 1px solid var(--semi-color-border); border-bottom: 1px solid var(--semi-color-border); }
-.mw-tree .mw-tree-kind { display: block; margin-top: 2px; color: var(--semi-color-text-3); font-size: 9px; font-weight: 400; }
 .mw-view-heading {
   display: flex;
   align-items: center;

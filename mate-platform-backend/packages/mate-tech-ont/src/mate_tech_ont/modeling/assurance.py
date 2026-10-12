@@ -44,7 +44,7 @@ def compare_type(cls, target, resolution):
 
 
 async def verify_plan(request, source):
-    from .publication import current_link, current_type
+    from .publication import current_link, current_type, link_structure_matches
 
     plan = source.get("plan") or {}
     published = (source.get("publication") or {}).get("status") in {"succeeded", "completed"}
@@ -77,7 +77,7 @@ async def verify_plan(request, source):
                 "status": "missing"
                 if not live
                 else "matched"
-                if live == item["payload"]
+                if link_structure_matches(live, item["payload"])
                 else "changed",
                 "expectedCardinality": item["payload"]["cardinality"],
                 "actualCardinality": (live or {}).get("cardinality", ""),
