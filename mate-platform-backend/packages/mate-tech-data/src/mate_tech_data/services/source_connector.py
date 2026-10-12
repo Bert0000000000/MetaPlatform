@@ -194,7 +194,13 @@ def discover(source: Any) -> dict:
                             "name": name,
                             "schema": schema,
                             "columns": [
-                                dict(zip(("name", "type", "nullable", "primary_key"), row, strict=True))
+                                dict(
+                                    zip(
+                                        ("name", "type", "nullable", "primary_key"),
+                                        row,
+                                        strict=True,
+                                    )
+                                )
                                 for row in cur.fetchall()
                             ],
                         }

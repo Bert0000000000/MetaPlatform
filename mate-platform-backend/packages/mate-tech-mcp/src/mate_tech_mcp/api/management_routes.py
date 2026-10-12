@@ -810,7 +810,9 @@ def _api_key_tenant(request: Request) -> str:
     """
     ctx = getattr(request.state, "ctx", None)
     if getattr(ctx, "auth_method", None) != AuthMethod.USER:
-        raise HTTPException(status_code=403, detail="only authenticated human users can manage api keys")
+        raise HTTPException(
+            status_code=403, detail="only authenticated human users can manage api keys"
+        )
     return _tid(request)
 
 
@@ -848,7 +850,12 @@ async def list_api_keys(request: Request) -> list[dict[str, Any]]:
     return [_api_key_payload(record) for record in store.list_keys(tenant_id)]
 
 
-@router.post("/api-keys", status_code=201, response_model=McpApiKeyCreatedResponse, operation_id="mcpPostMcpApiKeys")
+@router.post(
+    "/api-keys",
+    status_code=201,
+    response_model=McpApiKeyCreatedResponse,
+    operation_id="mcpPostMcpApiKeys",
+)
 async def create_api_key(request: Request, body: CreateMcpApiKeyRequest) -> dict[str, Any]:
     tenant_id = _api_key_tenant(request)
     store = _api_key_store_or_503()
@@ -860,8 +867,14 @@ async def create_api_key(request: Request, body: CreateMcpApiKeyRequest) -> dict
     if not isinstance(requested, list) or not all(isinstance(s, str) for s in requested):
         raise HTTPException(status_code=422, detail="scopes must be a list")
     grants = frozenset(requested)
-    if not grants or not grants <= {"platform.read", "platform.write", "ont.read", "ont.write"} or not grants <= request.state.ctx.scopes:
-        raise HTTPException(status_code=403, detail="requested grants exceed verified issuer authority")
+    if (
+        not grants
+        or not grants <= {"platform.read", "platform.write", "ont.read", "ont.write"}
+        or not grants <= request.state.ctx.scopes
+    ):
+        raise HTTPException(
+            status_code=403, detail="requested grants exceed verified issuer authority"
+        )
     record, plaintext = store.create(
         scopes=grants,
         tenant_id=tenant_id,

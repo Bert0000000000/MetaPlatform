@@ -334,12 +334,14 @@ def get_source(tenant_id: str, source_id: str) -> DataSource | None:
 
 def get_source_schema(tenant_id: str, source_id: str):
     from ..services.source_connector import discover
+
     source = get_source(tenant_id, source_id)
     return discover(source) if source is not None else None
 
 
 def test_source_connection(tenant_id: str, source_id: str):
     from ..services.source_connector import probe
+
     source = get_source(tenant_id, source_id)
     return probe(source) if source is not None else None
 
@@ -463,6 +465,7 @@ def update_source(
         source.type = type
     if connection_config is not None:
         from ..services.source_connector import merge_config
+
         source.connection_config = merge_config(source.connection_config, connection_config)
     source.updated_at = _now()
     return source
@@ -639,6 +642,7 @@ def task_to_dict(task: CdcTask) -> dict[str, Any]:
 def source_to_dict(source: DataSource) -> dict[str, Any]:
     """Serialize public source metadata without server-only credentials."""
     from ..services.source_connector import public_config
+
     return {
         "id": source.id,
         "tenant_id": source.tenant_id,
@@ -863,6 +867,7 @@ def _quality_check(rule: QualityRule, schema: dict[str, Any] | None) -> QualityR
 
 def _quality_check_source(rule: QualityRule, source: DataSource | None) -> QualityResult:
     from ..services.source_connector import SourceError, discover
+
     try:
         return _quality_check(rule, discover(source) if source else None)
     except SourceError as exc:

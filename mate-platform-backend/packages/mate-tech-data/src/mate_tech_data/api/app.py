@@ -476,6 +476,7 @@ async def source_schema_endpoint(
     """Discover schema for a data source (FR-DATA-DATAGETDATASOURCESIDSCHEMA)."""
     tid = _tid(request)
     from ..services.source_connector import SourceError
+
     try:
         schema = get_source_schema(tid, source_id)
     except SourceError as exc:

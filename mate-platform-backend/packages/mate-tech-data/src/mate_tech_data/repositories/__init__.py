@@ -134,11 +134,13 @@ from . import sql_store
 
 def get_source_schema(tenant_id: str, source_id: str):
     from ..services.source_connector import discover
+
     source = get_source(tenant_id, source_id)
     return discover(source) if source is not None else None
 
 
 def test_source_connection(tenant_id: str, source_id: str):
     from ..services.source_connector import probe
+
     source = get_source(tenant_id, source_id)
     return probe(source) if source is not None else None

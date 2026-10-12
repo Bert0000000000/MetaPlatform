@@ -283,19 +283,22 @@ def test_mounted_surface_resolves_tenant_from_auth_middleware() -> None:
     cfg = uvicorn.Config(app, host="127.0.0.1", port=55517, log_level="error")
     server = uvicorn.Server(cfg)
     import socket
+
     listener = socket.socket()
     listener.bind(("127.0.0.1", 55517))  # checked-free owned loopback test listener
     thread = threading.Thread(target=lambda: server.run(sockets=[listener]), daemon=True)
     thread.start()
     for _ in range(100):
-        if server.started: break
-        time.sleep(.02)
+        if server.started:
+            break
+        time.sleep(0.02)
 
     from mcp.client.session import ClientSession
     from mcp.client.streamable_http import streamable_http_client
 
     async def _names(tenant: str) -> set[str]:
         import httpx
+
         async with (
             httpx.AsyncClient(headers={"x-test-tenant": tenant}) as http_client,
             streamable_http_client(

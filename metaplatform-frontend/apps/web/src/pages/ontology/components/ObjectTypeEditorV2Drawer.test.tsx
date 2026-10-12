@@ -7,6 +7,9 @@ import ObjectTypesPage from '../model/object-types/ObjectTypesPage';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import ObjectTypeEditorV2Drawer from './ObjectTypeEditorV2Drawer';
 import * as kernel from '@/api/ont/kernel';
+import { setEditorSessionIdentity } from '../hooks/editorSession';
+vi.mock('@mate/shared', () => ({ useAuth: () => ({ user: { id: 'editor-user', tenantId: 'acme' } }) }));
+vi.mock('@/utils/auth', async original => ({ ...(await original<typeof import('@/utils/auth')>()), getTenantId: () => 'acme' }));
 vi.hoisted(() => { HTMLCanvasElement.prototype.getContext = (() => ({ fillRect() {}, measureText: () => ({ width: 0 }) })) as unknown as typeof HTMLCanvasElement.prototype.getContext; });
 vi.mock('@/api/ont/kernel', async importOriginal => ({ ...(await importOriginal<typeof import('@/api/ont/kernel')>()),
   listObjectTypes: vi.fn(async () => []), listActionTypes: vi.fn(async () => []), listLinkTypes: vi.fn(async () => []),
@@ -23,7 +26,7 @@ const mount = () => render(<MemoryRouter><ObjectTypeEditorV2Drawer open mode="cr
   objectTypes={[]} linkTypes={[]} interfaces={[]} valueTypes={[]} tenant="acme" domainOptions={[{code:'crm',label:'客户'}]}
   onSubmit={onSubmit} onClose={onClose} /></MemoryRouter>);
 const originalAdapter=apiClient.defaults.adapter;
-beforeEach(() => { vi.clearAllMocks(); vi.mocked(kernel.getObjectBindingUsage).mockResolvedValue([]); const storage=new Map<string,string>(); vi.stubGlobal('localStorage',{getItem:(k:string)=>storage.get(k)??null,setItem:(k:string,v:string)=>storage.set(k,v),removeItem:(k:string)=>storage.delete(k),clear:()=>storage.clear()}); apiClient.defaults.adapter=async config=>({config,status:200,statusText:'OK',headers:{},data:{}}); vi.stubGlobal('matchMedia', () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} })); vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} }); vi.mocked(kernel.listSchemaWip).mockResolvedValue([]); });
+beforeEach(() => { setEditorSessionIdentity(''); vi.clearAllMocks(); vi.mocked(kernel.getObjectBindingUsage).mockResolvedValue([]); const storage=new Map<string,string>(); vi.stubGlobal('localStorage',{getItem:(k:string)=>storage.get(k)??null,setItem:(k:string,v:string)=>storage.set(k,v),removeItem:(k:string)=>storage.delete(k),clear:()=>storage.clear()}); apiClient.defaults.adapter=async config=>({config,status:200,statusText:'OK',headers:{},data:{}}); vi.stubGlobal('matchMedia', () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} })); vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} }); vi.mocked(kernel.listSchemaWip).mockResolvedValue([]); });
 afterEach(() => { cleanup(); apiClient.defaults.adapter=originalAdapter; vi.unstubAllGlobals(); });
 const fill = () => { fireEvent.change(screen.getByLabelText('业务名称'), {target:{value:'客户'}}); fireEvent.change(screen.getByLabelText('业务标识'), {target:{value:'customer'}}); };
 it('shows business form with technical metadata progressively disclosed', async () => {
@@ -63,11 +66,12 @@ it('retains input on failed draft save and allows retry', async () => {
   await screen.findByText('草稿已保存，刷新后可恢复；尚未发布。');
 });
 it('warns on unsaved close and undo restores the initial form', async () => {
-  const confirm=vi.spyOn(window,'confirm').mockReturnValue(false);
+
   mount(); fill(); fireEvent.click(screen.getByRole('button',{name:'关闭'}));
-  expect(confirm).toHaveBeenCalled(); expect(onClose).not.toHaveBeenCalled();
+  expect(screen.getByRole('dialog', {name:'未保存的修改'})).toBeVisible(); expect(onClose).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:'继续编辑'}));
   fireEvent.click(screen.getByRole('button',{name:'撤销更改'}));
-  expect(screen.getByLabelText('业务名称')).toHaveValue(''); confirm.mockRestore();
+  expect(screen.getByLabelText('业务名称')).toHaveValue('');
 });
 it('prechecks before publication and shows blocking validation', async () => {
   vi.mocked(kernel.validateObjectTypeModel).mockResolvedValueOnce({valid:false,errors:['属性格式不匹配'],warnings:[],destructive:[],references:{resolved:[],unresolved:[],dependencies:[]},rid:''});

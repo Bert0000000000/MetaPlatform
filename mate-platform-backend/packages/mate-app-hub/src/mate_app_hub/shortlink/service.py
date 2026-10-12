@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 
 from ..telemetry import get_tracer
 from .generator import generate_code
-from .repository import InMemoryShortlinkStore, SQLShortlinkStore, ShortlinkEntry
+from .repository import InMemoryShortlinkStore, ShortlinkEntry, SQLShortlinkStore
 from .resolver import resolve
 
 _MAX_COLLISION_RETRIES = 3
@@ -91,4 +91,5 @@ _default_store = InMemoryShortlinkStore()
 
 def get_default_store() -> InMemoryShortlinkStore | SQLShortlinkStore:
     from ..repositories import uses_sql
+
     return SQLShortlinkStore() if uses_sql() else _default_store

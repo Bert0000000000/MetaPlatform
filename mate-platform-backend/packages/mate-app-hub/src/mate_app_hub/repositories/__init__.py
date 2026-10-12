@@ -73,6 +73,7 @@ __all__ = [
 # Select at call time so application factories and test hosts share one explicit
 # DB configuration. No default dev database silently becomes production storage.
 import os
+
 from . import in_memory
 
 
@@ -84,15 +85,32 @@ def _dispatch(name):
     def operation(*args, **kwargs):
         store = sql_store if uses_sql() else in_memory
         return getattr(store, name)(*args, **kwargs)
+
     operation.__name__ = name
     return operation
 
 
 for _name in (
-    "list_apps", "get_app", "put_app", "delete_app",
-    "list_groups", "get_group", "put_group", "insert_group", "delete_group",
-    "list_domains", "get_domain", "put_domain", "delete_domain",
-    "list_modules", "get_module", "put_module", "list_pages", "put_page",
-    "list_templates", "get_template", "put_template",
+    "list_apps",
+    "get_app",
+    "put_app",
+    "delete_app",
+    "list_groups",
+    "get_group",
+    "put_group",
+    "insert_group",
+    "delete_group",
+    "list_domains",
+    "get_domain",
+    "put_domain",
+    "delete_domain",
+    "list_modules",
+    "get_module",
+    "put_module",
+    "list_pages",
+    "put_page",
+    "list_templates",
+    "get_template",
+    "put_template",
 ):
     globals()[_name] = _dispatch(_name)

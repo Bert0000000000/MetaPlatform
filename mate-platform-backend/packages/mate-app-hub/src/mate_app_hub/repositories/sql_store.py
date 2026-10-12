@@ -11,25 +11,26 @@ Dict fields (``content``) are JSON-serialised to TEXT.
 from __future__ import annotations
 
 import json
+from dataclasses import asdict, replace
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select, or_, update
-from dataclasses import asdict, replace
-from sqlalchemy.orm import Session
+from sqlalchemy import or_, select, update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from mate_tech_db.base import get_session
 
 from ..shortlink.repository import ShortlinkEntry
 from . import sql_models as models
 from .in_memory import (
-    ApphubApp, AppRevisionConflict,
+    ApphubApp,
     ApphubDomain,
     ApphubGroup,
     ApphubModule,
     ApphubPage,
     ApphubTemplate,
+    AppRevisionConflict,
 )
 
 
@@ -293,7 +294,9 @@ def get_module(tenant_id: str, module_id: str) -> ApphubModule | None:
         row = s.execute(
             select(models.ApphubModuleORM).where(
                 models.ApphubModuleORM.tenant_id == tenant_id,
-                or_(models.ApphubModuleORM.id == module_id, models.ApphubModuleORM.code == module_id),
+                or_(
+                    models.ApphubModuleORM.id == module_id, models.ApphubModuleORM.code == module_id
+                ),
             )
         ).scalar_one_or_none()
         return _orm_to_module(row) if row else None
@@ -372,7 +375,10 @@ def get_template(tenant_id: str, template_id: str) -> ApphubTemplate | None:
         row = s.execute(
             select(models.ApphubTemplateORM).where(
                 models.ApphubTemplateORM.tenant_id == tenant_id,
-                or_(models.ApphubTemplateORM.id == template_id, models.ApphubTemplateORM.code == template_id),
+                or_(
+                    models.ApphubTemplateORM.id == template_id,
+                    models.ApphubTemplateORM.code == template_id,
+                ),
             )
         ).scalar_one_or_none()
         return _orm_to_template(row) if row else None
@@ -386,6 +392,7 @@ def get_template(tenant_id: str, template_id: str) -> ApphubTemplate | None:
 def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> ApphubApp:
     from sqlalchemy import text
     from sqlalchemy.exc import IntegrityError
+
     if not tenant_id or app.tenant_id != tenant_id:
         raise ValueError("cross-tenant app write denied")
     s = _session()
@@ -393,11 +400,17 @@ def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> App
         if insert_only:
             # Serialize same-code registration across processes, including legacy random IDs.
             if s.bind.dialect.name == "postgresql":
-                s.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
-                          {"key": f"apphub-create:{tenant_id}:{app.code}"})
-            duplicate = s.execute(select(models.ApphubAppORM.id).where(
-                models.ApphubAppORM.tenant_id == tenant_id,
-                models.ApphubAppORM.code == app.code).limit(1)).first()
+                s.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                    {"key": f"apphub-create:{tenant_id}:{app.code}"},
+                )
+            duplicate = s.execute(
+                select(models.ApphubAppORM.id)
+                .where(
+                    models.ApphubAppORM.tenant_id == tenant_id, models.ApphubAppORM.code == app.code
+                )
+                .limit(1)
+            ).first()
             if duplicate:
                 raise ValueError("app already registered")
         existing = s.get(models.ApphubAppORM, app.id)
@@ -406,12 +419,22 @@ def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> App
         if existing and existing.tenant_id != tenant_id:
             raise ValueError("cross-tenant app write denied")
         values = asdict(app)
-        values.update(tags=_join_lines(app.tags), versions=json.dumps(app.versions), releases=json.dumps(app.releases))
+        values.update(
+            tags=_join_lines(app.tags),
+            versions=json.dumps(app.versions),
+            releases=json.dumps(app.releases),
+        )
         if existing:
             values["revision"] = app.revision + 1
-            changed = s.execute(update(models.ApphubAppORM).where(
-                models.ApphubAppORM.id == app.id, models.ApphubAppORM.tenant_id == tenant_id,
-                models.ApphubAppORM.revision == app.revision).values(**values))
+            changed = s.execute(
+                update(models.ApphubAppORM)
+                .where(
+                    models.ApphubAppORM.id == app.id,
+                    models.ApphubAppORM.tenant_id == tenant_id,
+                    models.ApphubAppORM.revision == app.revision,
+                )
+                .values(**values)
+            )
             if changed.rowcount != 1:
                 s.rollback()
                 raise AppRevisionConflict("Application changed; reload before saving")
@@ -432,6 +455,7 @@ def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> App
 # ---------------------------------------------------------------------------
 def insert_group(tenant_id: str, group: ApphubGroup) -> ApphubGroup:
     from sqlalchemy.exc import IntegrityError
+
     if not tenant_id or group.tenant_id != tenant_id:
         raise ValueError("cross-tenant group creation denied")
     s = _session()
@@ -515,9 +539,15 @@ def put_module(tenant_id: str, module: ApphubModule, *, insert_only: bool = Fals
         existing = s.get(models.ApphubModuleORM, module.id)
         if module.tenant_id != tenant_id or (existing and existing.tenant_id != tenant_id):
             raise ValueError("cross-tenant module write denied")
-        if insert_only and (existing or s.execute(select(models.ApphubModuleORM.id).where(
-            models.ApphubModuleORM.tenant_id == tenant_id, models.ApphubModuleORM.code == module.code
-        )).first()):
+        if insert_only and (
+            existing
+            or s.execute(
+                select(models.ApphubModuleORM.id).where(
+                    models.ApphubModuleORM.tenant_id == tenant_id,
+                    models.ApphubModuleORM.code == module.code,
+                )
+            ).first()
+        ):
             raise ValueError("module already exists")
         if existing:
             existing.name = module.name
@@ -558,9 +588,15 @@ def put_page(tenant_id: str, page: ApphubPage, *, insert_only: bool = False) -> 
         existing = s.get(models.ApphubPageORM, page.id)
         if page.tenant_id != tenant_id or (existing and existing.tenant_id != tenant_id):
             raise ValueError("cross-tenant page write denied")
-        if insert_only and (existing or s.execute(select(models.ApphubPageORM.id).where(
-            models.ApphubPageORM.tenant_id == tenant_id, models.ApphubPageORM.code == page.code
-        )).first()):
+        if insert_only and (
+            existing
+            or s.execute(
+                select(models.ApphubPageORM.id).where(
+                    models.ApphubPageORM.tenant_id == tenant_id,
+                    models.ApphubPageORM.code == page.code,
+                )
+            ).first()
+        ):
             raise ValueError("page already exists")
         if existing:
             existing.name = page.name
@@ -672,7 +708,9 @@ def put_shortlink(tenant_id: str, entry: ShortlinkEntry) -> object:
             existing.app_id = entry.app_id
             existing.code = entry.code
             existing.role = entry.role
-            existing.expires_at = datetime.fromisoformat(entry.expires_at) if entry.expires_at else None
+            existing.expires_at = (
+                datetime.fromisoformat(entry.expires_at) if entry.expires_at else None
+            )
         else:
             s.add(
                 models.ApphubShortlinkORM(
@@ -681,7 +719,9 @@ def put_shortlink(tenant_id: str, entry: ShortlinkEntry) -> object:
                     app_id=entry.app_id,
                     code=entry.code,
                     role=entry.role,
-                    expires_at=(datetime.fromisoformat(entry.expires_at) if entry.expires_at else None),
+                    expires_at=(
+                        datetime.fromisoformat(entry.expires_at) if entry.expires_at else None
+                    ),
                 )
             )
         s.commit()
@@ -774,9 +814,12 @@ def reset_shortlinks() -> None:
     finally:
         s.close()
 
+
 def _delete_by_code(model, tenant_id: str, code: str) -> bool:
     with _session() as session:
-        row = session.execute(select(model).where(model.tenant_id == tenant_id, model.code == code)).scalar_one_or_none()
+        row = session.execute(
+            select(model).where(model.tenant_id == tenant_id, model.code == code)
+        ).scalar_one_or_none()
         if row is None:
             return False
         session.delete(row)

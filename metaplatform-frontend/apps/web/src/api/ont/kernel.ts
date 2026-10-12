@@ -1164,7 +1164,6 @@ export interface KernelBackingDatasource {
   kind: string;
   dsn_env: string;
   source_id?: string;
-  last_synced_pk?: string | null;
   run_history?: BackingSyncResult[];
   table_name: string;
   pk_column: string;

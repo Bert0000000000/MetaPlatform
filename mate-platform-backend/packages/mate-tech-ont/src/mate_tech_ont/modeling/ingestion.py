@@ -11,12 +11,12 @@ from psycopg2 import sql
 from mate_kernel.ontology.identity import ClassRef
 
 from ..v2_kernel import api as native
-from .core import digest
-from .publication import current_link, current_type
+from .core import convert, digest
+from .publication import current_link, current_type, datasource_baseline
 from .store import now
 
 
-def entity_pk(cls, payload, source):
+def entity_pk(cls, payload, source, record_key):
     if len(cls["identity"]) == 1:
         # Native pg_table indexing and migration derive single keys with str(value).
         return str(payload["properties"][cls["identity"][0]])
@@ -26,7 +26,9 @@ def entity_pk(cls, payload, source):
             ensure_ascii=False,
             separators=(",", ":"),
         )
-    return "record_" + digest([source["id"], payload.get("sources"), payload.get("identity")])[:40]
+    # A compiler record key includes the mapping and row/manual discriminator.
+    # Values may change; a label correction must keep the same technical identity.
+    return "record_" + digest([source["id"], record_key])[:40]
 
 
 def stage(store, source, nodes):
@@ -50,13 +52,17 @@ def stage(store, source, nodes):
         native_slug = parts[4] if len(parts) >= 6 else parts[3]
         existing_identity = {}
         if cls["identity"]:
+            property_types = {p["id"]: p["dataType"] for p in cls["properties"]}
             with store.repo.tenant_scope(store.tenant):
                 for instance in store.repo.list_individuals(ClassRef(rid), tenant_id=store.tenant):
                     if instance.class_rid.rid != rid:
                         continue
                     key = digest(
                         [
-                            instance.get(ClassRef(item["propertyMap"][pid]))
+                            convert(
+                                instance.get(ClassRef(item["propertyMap"][pid])),
+                                property_types[pid],
+                            )
                             for pid in cls["identity"]
                         ]
                     )
@@ -118,7 +124,7 @@ def stage(store, source, nodes):
                 if node["objectType"] != item["classId"]:
                     continue
                 payload = json.loads(node["payload"])
-                pk = entity_pk(cls, payload, source)
+                pk = entity_pk(cls, payload, source, node["key"])
                 if cls["identity"]:
                     pk = existing_identity.get(
                         digest([payload["properties"][pid] for pid in cls["identity"]]), pk
@@ -193,6 +199,10 @@ async def verify_baseline(request, source):
             p: "p_" + digest(p)[:16]
             for p in set(item["propertyMap"].values()) | set(item["payload"]["primary_key"])
         }
+        recorded_sources = (source.get("sync") or {}).get("sourceMappings", {})
+        baseline = recorded_sources.get(item["rid"], item.get("baselineSources", []))
+        if await datasource_baseline(request, item["rid"]) != baseline:
+            raise ValueError("原生来源映射已被修改，请重新审核；本次同步不会覆盖该配置")
         for declaration in await native.list_backing_datasources(item["rid"], request):
             if declaration["name"] != "excel-modeling":
                 raise ValueError(
@@ -242,6 +252,7 @@ async def _sync(request, source, rows, store, allow_partial=False, check_hash=No
         "sourceRevision": source["revision"],
         "startedAt": now(),
         "stage": "preparing",
+        "sourceMappings": dict((source.get("sync") or {}).get("sourceMappings", {})),
     }
     revision = source["revision"]
     store.update(source["id"], revision, {"sync": state}, increment=False)
@@ -291,6 +302,8 @@ async def _sync(request, source, rows, store, allow_partial=False, check_hash=No
                 ),
                 request,
             )
+            state["sourceMappings"][item["rid"]] = await datasource_baseline(request, item["rid"])
+            store.update(source["id"], revision, {"sync": state}, increment=False)
             report = await native.sync_backing_datasources(item["rid"], request, incremental=False)
             state["types"].append(
                 {

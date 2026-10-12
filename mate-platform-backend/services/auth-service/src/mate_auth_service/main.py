@@ -372,6 +372,7 @@ async def iam_login(req: IamLoginRequest) -> IamAuthResponse:
     # The issuer token is the identity authority, not the caller tenant hint
     # or best-effort userinfo. Reuse the normal configured signature verifier.
     from mate_platform.auth.verifier import TokenError
+
     try:
         verified = app.state.token_verifier.verify(access_token)
         if not verified.sub or not verified.tenant_id:
@@ -440,6 +441,7 @@ async def iam_refresh(req: IamRefreshRequest) -> IamAuthResponse:
         raise HTTPException(status_code=r.status_code, detail=detail)
     td = r.json()
     from mate_platform.auth.verifier import TokenError
+
     try:
         verified = app.state.token_verifier.verify(td.get("access_token", ""))
         if not verified.sub or not verified.tenant_id:
@@ -462,13 +464,16 @@ class IamLogoutRequest(BaseModel):
 
 
 @app.post("/api/v1/iam/auth/logout")
-async def iam_logout(body: IamLogoutRequest | None = None, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+async def iam_logout(
+    body: IamLogoutRequest | None = None, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     """Revoke a verified access JTI and, when supplied, its provider session."""
     from mate_platform.auth.verifier import TokenError
+
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
     try:
-        verified = app.state.token_verifier.verify(authorization[len("Bearer "):])
+        verified = app.state.token_verifier.verify(authorization[len("Bearer ") :])
         if not verified.sub or not verified.tenant_id or not verified.jti:
             raise TokenError("missing verified logout identity")
     except TokenError:
@@ -476,7 +481,11 @@ async def iam_logout(body: IamLogoutRequest | None = None, authorization: str | 
     blacklisted = False
     if app.state.redis:
         try:
-            await app.state.redis.set(f"{TOKEN_BLACKLIST_KEY_PREFIX}{verified.jti}", "1", ex=max(verified.expires_at-int(time.time()),1))
+            await app.state.redis.set(
+                f"{TOKEN_BLACKLIST_KEY_PREFIX}{verified.jti}",
+                "1",
+                ex=max(verified.expires_at - int(time.time()), 1),
+            )
             blacklisted = True
         except Exception:
             logger.warning("iam_logout.blacklist_unavailable")
@@ -485,14 +494,21 @@ async def iam_logout(body: IamLogoutRequest | None = None, authorization: str | 
         try:
             response = await app.state.client.post(
                 f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/logout",
-                data={"client_id":KEYCLOAK_CLIENT_ID,"client_secret":KEYCLOAK_CLIENT_SECRET,"refresh_token":body.refreshToken},
+                data={
+                    "client_id": KEYCLOAK_CLIENT_ID,
+                    "client_secret": KEYCLOAK_CLIENT_SECRET,
+                    "refresh_token": body.refreshToken,
+                },
                 timeout=10,
             )
-            provider_logged_out = response.status_code in (200,204)
+            provider_logged_out = response.status_code in (200, 204)
         except httpx.HTTPError:
             logger.warning("iam_logout.provider_unavailable")
-    return {"loggedOut":blacklisted and provider_logged_out,"blacklisted":blacklisted,"providerLoggedOut":provider_logged_out}
-
+    return {
+        "loggedOut": blacklisted and provider_logged_out,
+        "blacklisted": blacklisted,
+        "providerLoggedOut": provider_logged_out,
+    }
 
 
 # ---- Dashboard login override (real Keycloak JWT, not mock mb_at_ token) ----

@@ -28,7 +28,11 @@ from uuid import uuid4
 from mate_kernel.objectset.compiler import CompiledFilter, FilterCompiler, individual_to_row
 from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp, QueryResult
 from mate_kernel.objectset.sql_compiler import SQLCompiler
-from mate_kernel.ontology.api import ObjectTypeAlreadyExistsError, LinkTypeAlreadyExistsError, OntologyRepository
+from mate_kernel.ontology.api import (
+    LinkTypeAlreadyExistsError,
+    ObjectTypeAlreadyExistsError,
+    OntologyRepository,
+)
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import (
     ClassRef,
@@ -1361,7 +1365,11 @@ class PgOntologyRepository(OntologyRepository):
 
         borrowed = _LEGACY_PROPOSAL_TX.get()
         if borrowed is not None and borrowed.owner is self:
-            if not borrowed.active or borrowed.connection.closed or borrowed.tenant != self._current_tenant():
+            if (
+                not borrowed.active
+                or borrowed.connection.closed
+                or borrowed.tenant != self._current_tenant()
+            ):
                 raise RuntimeError("Proposal transaction lease context mismatch")
             return borrowed, psycopg2.extras.RealDictCursor
         conn = psycopg2.connect(self._dsn)
@@ -1737,30 +1745,49 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 # Definition creation cannot slip into a supersede scan. Runtime links
                 # retain their existing definition -> endpoint lock order.
-                self._lock_schema_definitions(cur, row["tenant_id"], shared=not bool(supersede_rids))
-                cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                            (f"{row['rid']}|object-definition",))
-                cur.execute("SELECT * FROM ont_object_type WHERE rid = %s FOR UPDATE", (row["rid"],))
+                self._lock_schema_definitions(
+                    cur, row["tenant_id"], shared=not bool(supersede_rids)
+                )
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                    (f"{row['rid']}|object-definition",),
+                )
+                cur.execute(
+                    "SELECT * FROM ont_object_type WHERE rid = %s FOR UPDATE", (row["rid"],)
+                )
                 current = cur.fetchone()
                 if create_only and current is not None:
                     raise ObjectTypeAlreadyExistsError(f"ObjectType already exists: {row['rid']}")
                 if expected_checksum is not None:
                     actual = definition_checksum(_ot_to_row(_row_to_ot(current))) if current else ""
                     if actual != expected_checksum:
-                        raise VersionConflict("Model changed since the draft was saved; compare and retry")
+                        raise VersionConflict(
+                            "Model changed since the draft was saved; compare and retry"
+                        )
                 if supersede_rids:
-                    cur.execute("SELECT rid FROM ont_link_type WHERE tenant_id = %s "
-                                "AND (src_rid = ANY(%s) OR dst_rid = ANY(%s)) ORDER BY rid",
-                                (row["tenant_id"], list(supersede_rids), list(supersede_rids)))
+                    cur.execute(
+                        "SELECT rid FROM ont_link_type WHERE tenant_id = %s "
+                        "AND (src_rid = ANY(%s) OR dst_rid = ANY(%s)) ORDER BY rid",
+                        (row["tenant_id"], list(supersede_rids), list(supersede_rids)),
+                    )
                     for link in cur.fetchall():
                         self._lock_link_type(cur, link["rid"])
-                    cur.execute("UPDATE ont_link_type SET "
-                                "src_rid = CASE WHEN src_rid = ANY(%s) THEN %s ELSE src_rid END, "
-                                "dst_rid = CASE WHEN dst_rid = ANY(%s) THEN %s ELSE dst_rid END, "
-                                "updated_at = now() WHERE tenant_id = %s "
-                                "AND (src_rid = ANY(%s) OR dst_rid = ANY(%s))",
-                                (list(supersede_rids), row["rid"], list(supersede_rids), row["rid"],
-                                 row["tenant_id"], list(supersede_rids), list(supersede_rids)))
+                    cur.execute(
+                        "UPDATE ont_link_type SET "
+                        "src_rid = CASE WHEN src_rid = ANY(%s) THEN %s ELSE src_rid END, "
+                        "dst_rid = CASE WHEN dst_rid = ANY(%s) THEN %s ELSE dst_rid END, "
+                        "updated_at = now() WHERE tenant_id = %s "
+                        "AND (src_rid = ANY(%s) OR dst_rid = ANY(%s))",
+                        (
+                            list(supersede_rids),
+                            row["rid"],
+                            list(supersede_rids),
+                            row["rid"],
+                            row["tenant_id"],
+                            list(supersede_rids),
+                            list(supersede_rids),
+                        ),
+                    )
             # 发布同族新版本：先下线旧 rid（同一事务）。archived 行被 UNIQUE INDEX
             # 排除 → 同 slug 立刻可再次使用；旧版定义已由下方快照逻辑保留。
             if supersede_rids:
@@ -3069,7 +3096,9 @@ class PgOntologyRepository(OntologyRepository):
             kind="merge_suggestion",
         )
 
-    def upsert_link_type(self, lt: LinkType, *, create_only: bool = False, require_endpoints: bool = False) -> LinkType:
+    def upsert_link_type(
+        self, lt: LinkType, *, create_only: bool = False, require_endpoints: bool = False
+    ) -> LinkType:
         self._ensure_schema()
         row = _lt_to_row(lt)
         conn, _ = self._connect()
@@ -3077,12 +3106,16 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 self._lock_schema_definitions(cur, row["tenant_id"], shared=True)
                 # Re-read after the schema lock: API reads may precede publication.
-                cur.execute("SELECT rid, archived FROM ont_object_type WHERE rid IN (%s, %s) ORDER BY rid FOR SHARE",
-                            (row["src_rid"], row["dst_rid"]))
+                cur.execute(
+                    "SELECT rid, archived FROM ont_object_type WHERE rid IN (%s, %s) ORDER BY rid FOR SHARE",
+                    (row["src_rid"], row["dst_rid"]),
+                )
                 endpoints = {endpoint["rid"]: endpoint for endpoint in cur.fetchall()}
                 for ref in (row["src_rid"], row["dst_rid"]):
                     if ref in endpoints and endpoints[ref]["archived"]:
-                        raise ValueError(f"Object type version is archived: {ref}; select the active version")
+                        raise ValueError(
+                            f"Object type version is archived: {ref}; select the active version"
+                        )
                     if require_endpoints and ref not in endpoints:
                         raise KeyError(f"active object type not found: {ref}")
                 self._lock_link_type(cur, row["rid"])
@@ -3102,7 +3135,10 @@ class PgOntologyRepository(OntologyRepository):
                         raise LinkTypeInUseError(
                             "Cannot change src/dst/cardinality/directionality while link instances exist"
                         )
-                conflict = "DO NOTHING" if create_only else """
+                conflict = (
+                    "DO NOTHING"
+                    if create_only
+                    else """
                     DO UPDATE SET
                         src_rid = EXCLUDED.src_rid,
                         dst_rid = EXCLUDED.dst_rid,
@@ -3114,6 +3150,7 @@ class PgOntologyRepository(OntologyRepository):
                         description = EXCLUDED.description,
                         updated_at = now()
                 """
+                )
                 cur.execute(
                     f"""
                     INSERT INTO ont_link_type
@@ -3529,7 +3566,9 @@ class PgOntologyRepository(OntologyRepository):
         parts.append("rid")  # 稳定决胜键：同键值集的分页顺序唯一
         return " ORDER BY " + ", ".join(parts)
 
-    def create_link_instance(self, li: LinkInstance, *, require_endpoints: bool = False) -> LinkInstance:
+    def create_link_instance(
+        self, li: LinkInstance, *, require_endpoints: bool = False
+    ) -> LinkInstance:
         self._ensure_schema()
         row = _li_to_row(li)
         conn, _ = self._connect()
@@ -3555,7 +3594,9 @@ class PgOntologyRepository(OntologyRepository):
                         "WHERE rid IN (%s, %s) ORDER BY rid FOR SHARE",
                         (row["src"], row["dst"]),
                     )
-                    endpoints = {endpoint["rid"]: endpoint["class_rid"] for endpoint in cur.fetchall()}
+                    endpoints = {
+                        endpoint["rid"]: endpoint["class_rid"] for endpoint in cur.fetchall()
+                    }
                     for side in ("src", "dst"):
                         actual = endpoints.get(row[side])
                         # Explicit opt-in keeps direct legacy callers compatible; HTTP
@@ -3609,7 +3650,9 @@ class PgOntologyRepository(OntologyRepository):
 
     def _lock_schema_definitions(self, cur: Any, tenant: str, *, shared: bool) -> None:
         function = "pg_advisory_xact_lock_shared" if shared else "pg_advisory_xact_lock"
-        cur.execute(f"SELECT {function}(hashtextextended(%s, 0))", (f"{tenant}|schema-definitions",))
+        cur.execute(
+            f"SELECT {function}(hashtextextended(%s, 0))", (f"{tenant}|schema-definitions",)
+        )
 
     def _lock_link_type(self, cur: Any, link_type_rid: str, *, shared: bool = False) -> None:
         """Keep definitions stable for writes while unrelated endpoints can write concurrently."""
@@ -4791,11 +4834,16 @@ class PgOntologyRepository(OntologyRepository):
                 tenant = self._current_tenant()
                 if tenant is None:
                     # Explicit unscoped maintenance consumers retain global access.
-                    cur.execute("SELECT * FROM ont_outbox_event ORDER BY created_at DESC LIMIT %s", (limit,))
+                    cur.execute(
+                        "SELECT * FROM ont_outbox_event ORDER BY created_at DESC LIMIT %s", (limit,)
+                    )
                 else:
                     # RLS can be bypassed by the database owner/superuser. Scope
                     # before LIMIT so neighboring traffic cannot hide own events.
-                    cur.execute("SELECT * FROM ont_outbox_event WHERE tenant_id=%s ORDER BY created_at DESC LIMIT %s", (tenant, limit))
+                    cur.execute(
+                        "SELECT * FROM ont_outbox_event WHERE tenant_id=%s ORDER BY created_at DESC LIMIT %s",
+                        (tenant, limit),
+                    )
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
@@ -4803,8 +4851,13 @@ class PgOntologyRepository(OntologyRepository):
     # ───── GOV-16~19：治理四件套 ─────
 
     def list_action_audit(
-        self, limit: int = 100, action_rid: str | None = None, *,
-        app_id: str | None = None, page_id: str | None = None, app_version_id: str | None = None,
+        self,
+        limit: int = 100,
+        action_rid: str | None = None,
+        *,
+        app_id: str | None = None,
+        page_id: str | None = None,
+        app_version_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """Filter persisted application attribution before limiting the receipt history."""
         self._ensure_schema()
@@ -4823,17 +4876,25 @@ class PgOntologyRepository(OntologyRepository):
             # The edit-set aliases wrap business parameters; ordinary actions
             # persist them directly. Select by kind, never coalesce competing
             # attribution from a different parameter shape.
-            provenance = ("(CASE WHEN p.kind = 'edit_set' THEN p.parameters->'parameters'->'provenance' "
-                          "WHEN p.kind = 'action' THEN p.parameters->'provenance' ELSE NULL END)")
-            for key, value in (("app_id", app_id), ("page_id", page_id), ("app_version_id", app_version_id)):
+            provenance = (
+                "(CASE WHEN p.kind = 'edit_set' THEN p.parameters->'parameters'->'provenance' "
+                "WHEN p.kind = 'action' THEN p.parameters->'provenance' ELSE NULL END)"
+            )
+            for key, value in (
+                ("app_id", app_id),
+                ("page_id", page_id),
+                ("app_version_id", app_version_id),
+            ):
                 clauses.append(provenance + "->>%s = %s")
                 params.extend((key, value))
         conds = " WHERE " + " AND ".join(clauses) if clauses else ""
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("SELECT a.* FROM " + source + conds + " ORDER BY a.created_at DESC LIMIT %s",
-                            (*params, limit))
+                cur.execute(
+                    "SELECT a.* FROM " + source + conds + " ORDER BY a.created_at DESC LIMIT %s",
+                    (*params, limit),
+                )
                 return [dict(r) for r in cur.fetchall()]
         finally:
             conn.close()
@@ -5059,13 +5120,16 @@ class PgOntologyRepository(OntologyRepository):
             f"{decl['class_rid'].split('.')[-2]}-{decl['name']}"
         )
         from .backing_datasources import BackingSyncBusyError
+
         tenant = decl.get("tenant_id") or self._current_tenant() or "tenant-default"
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
                 # Same session lock as sync; fail immediately rather than race its checkpoint.
-                cur.execute("SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired",
-                            ("sync:" + tenant + ":" + decl["class_rid"],))
+                cur.execute(
+                    "SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired",
+                    ("sync:" + tenant + ":" + decl["class_rid"],),
+                )
                 if not cur.fetchone()["acquired"]:
                     raise BackingSyncBusyError("A sync is already running for this object type")
                 cur.execute(
@@ -5110,7 +5174,9 @@ class PgOntologyRepository(OntologyRepository):
                         decl["pk_column"],
                         json.dumps(decl.get("field_mapping") or {}),
                         int(decl.get("priority", 100)),
-                        (decl.get("ts_column") or "") if decl.get("source_id") else (decl.get("ts_column") or "updated_at"),
+                        (decl.get("ts_column") or "")
+                        if decl.get("source_id")
+                        else (decl.get("ts_column") or "updated_at"),
                         decl.get("last_synced_at"),
                         decl.get("last_synced_pk"),
                     ),
@@ -5308,7 +5374,9 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def list_backing_datasources(self, class_rid: str | None = None, *, internal: bool = False) -> list[dict[str, Any]]:
+    def list_backing_datasources(
+        self, class_rid: str | None = None, *, internal: bool = False
+    ) -> list[dict[str, Any]]:
         self._ensure_schema()
         conn, _ = self._connect()
         try:
@@ -5322,22 +5390,43 @@ class PgOntologyRepository(OntologyRepository):
                 else:
                     cur.execute("SELECT * FROM ont_backing_datasource ORDER BY priority, name")
                 rows = [dict(r) for r in cur.fetchall()]
-                if class_rid and any(run.get('status') == 'running' for row in rows for run in row.get('run_history') or []):
-                    tenant = self._current_tenant() or class_rid.split('.')[1]
-                    key = 'sync:' + tenant + ':' + class_rid
+                if class_rid and any(
+                    run.get("status") == "running"
+                    for row in rows
+                    for run in row.get("run_history") or []
+                ):
+                    tenant = self._current_tenant() or class_rid.split(".")[1]
+                    key = "sync:" + tenant + ":" + class_rid
                     cur.execute("SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired", (key,))
-                    if cur.fetchone()['acquired']:
+                    if cur.fetchone()["acquired"]:
                         try:
                             from datetime import UTC, datetime
+
                             # Completion can commit between the first SELECT and lock acquisition.
                             # Only transition fresh rows, never write the pre-lock history snapshot.
-                            cur.execute("SELECT * FROM ont_backing_datasource WHERE class_rid=%s AND tenant_id=%s ORDER BY priority, name FOR UPDATE", (class_rid, tenant))
+                            cur.execute(
+                                "SELECT * FROM ont_backing_datasource WHERE class_rid=%s AND tenant_id=%s ORDER BY priority, name FOR UPDATE",
+                                (class_rid, tenant),
+                            )
                             rows = [dict(r) for r in cur.fetchall()]
                             for row in rows:
-                                for run in row.get('run_history') or []:
-                                    if run.get('status') == 'running':
-                                        run.update(status='interrupted', ended_at=datetime.now(UTC).isoformat(), error={'message':'Previous sync process ended; retry is idempotent'})
-                                cur.execute("UPDATE ont_backing_datasource SET run_history=%s::jsonb WHERE rid=%s AND tenant_id=%s", (json.dumps(row.get('run_history') or [], default=str), row['rid'], tenant))
+                                for run in row.get("run_history") or []:
+                                    if run.get("status") == "running":
+                                        run.update(
+                                            status="interrupted",
+                                            ended_at=datetime.now(UTC).isoformat(),
+                                            error={
+                                                "message": "Previous sync process ended; retry is idempotent"
+                                            },
+                                        )
+                                cur.execute(
+                                    "UPDATE ont_backing_datasource SET run_history=%s::jsonb WHERE rid=%s AND tenant_id=%s",
+                                    (
+                                        json.dumps(row.get("run_history") or [], default=str),
+                                        row["rid"],
+                                        tenant,
+                                    ),
+                                )
                             conn.commit()
                         finally:
                             cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (key,))
@@ -5348,57 +5437,100 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def sync_backing_datasources(self, class_rid: str, incremental: bool = False, *, batch_limit: int = 5000, delete_missing: bool = False) -> dict[str, Any]:
+    def sync_backing_datasources(
+        self,
+        class_rid: str,
+        incremental: bool = False,
+        *,
+        batch_limit: int = 5000,
+        delete_missing: bool = False,
+    ) -> dict[str, Any]:
         """Keep a bounded durable history; interrupted runs are visible on retry."""
         import uuid
         from datetime import UTC, datetime
+
         from mate_tech_data.services.source_connector import SourceError, safe_error
+
         run_id = uuid.uuid4().hex
-        tenant = self._current_tenant() or class_rid.split('.')[1]
+        tenant = self._current_tenant() or class_rid.split(".")[1]
         lock, _ = self._connect()
         with self._cursor(lock) as cur:
-            cur.execute("SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired", ('sync:' + tenant + ':' + class_rid,))
+            cur.execute(
+                "SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired",
+                ("sync:" + tenant + ":" + class_rid,),
+            )
             acquired = cur.fetchone()
-        if not (acquired.get('acquired') if isinstance(acquired, dict) else acquired[0]):
+        if not (acquired.get("acquired") if isinstance(acquired, dict) else acquired[0]):
             lock.close()
             from .backing_datasources import BackingSyncBusyError
-            raise BackingSyncBusyError('A sync is already running for this object type')
-        run = {'run_id': run_id, 'trace_id': uuid.uuid4().hex, 'status': 'running',
-               'started_at': datetime.now(UTC).isoformat(), 'ended_at': None, 'incremental': incremental}
+
+            raise BackingSyncBusyError("A sync is already running for this object type")
+        run = {
+            "run_id": run_id,
+            "trace_id": uuid.uuid4().hex,
+            "status": "running",
+            "started_at": datetime.now(UTC).isoformat(),
+            "ended_at": None,
+            "incremental": incremental,
+        }
         try:
             self._record_backing_run(class_rid, tenant, run, begin=True)
             try:
-                result = self._sync_backing_datasources_once(class_rid, incremental, batch_limit=batch_limit, delete_missing=delete_missing)
+                result = self._sync_backing_datasources_once(
+                    class_rid, incremental, batch_limit=batch_limit, delete_missing=delete_missing
+                )
                 run.update(result)
-                run['status'] = 'succeeded' if result['ok'] else 'failed'
+                run["status"] = "succeeded" if result["ok"] else "failed"
             except Exception as exc:
                 error = exc if isinstance(exc, SourceError) else safe_error(exc)
-                run.update(ok=False, status='failed', error=error.detail(), total_synced=0, total_failed=0, total_deleted=0, sources={})
-            run['ended_at'] = datetime.now(UTC).isoformat()
+                run.update(
+                    ok=False,
+                    status="failed",
+                    error=error.detail(),
+                    total_synced=0,
+                    total_failed=0,
+                    total_deleted=0,
+                    sources={},
+                )
+            run["ended_at"] = datetime.now(UTC).isoformat()
             self._record_backing_run(class_rid, tenant, run)
             return run
         finally:
             with self._cursor(lock) as cur:
-                cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", ('sync:' + tenant + ':' + class_rid,))
+                cur.execute(
+                    "SELECT pg_advisory_unlock(hashtext(%s))", ("sync:" + tenant + ":" + class_rid,)
+                )
             lock.close()
 
     def _record_backing_run(self, class_rid, tenant, run, *, begin=False):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("SELECT rid, run_history FROM ont_backing_datasource WHERE class_rid=%s AND tenant_id=%s FOR UPDATE", (class_rid, tenant))
+                cur.execute(
+                    "SELECT rid, run_history FROM ont_backing_datasource WHERE class_rid=%s AND tenant_id=%s FOR UPDATE",
+                    (class_rid, tenant),
+                )
                 declarations = cur.fetchall()
                 if not declarations:
-                    raise KeyError('No backing datasource declared')
+                    raise KeyError("No backing datasource declared")
                 for declaration in declarations:
-                    history = list(declaration['run_history'] or [])
+                    history = list(declaration["run_history"] or [])
                     if begin:
                         for previous in history:
-                            if previous.get('status') == 'running':
-                                previous.update(status='interrupted', ended_at=run['started_at'], error={'message': 'Previous process ended before completing sync; retry is idempotent'})
-                    history = [entry for entry in history if entry.get('run_id') != run['run_id']]
+                            if previous.get("status") == "running":
+                                previous.update(
+                                    status="interrupted",
+                                    ended_at=run["started_at"],
+                                    error={
+                                        "message": "Previous process ended before completing sync; retry is idempotent"
+                                    },
+                                )
+                    history = [entry for entry in history if entry.get("run_id") != run["run_id"]]
                     history.append(run)
-                    cur.execute("UPDATE ont_backing_datasource SET run_history=%s::jsonb WHERE rid=%s AND tenant_id=%s", (json.dumps(history[-20:], default=str), declaration['rid'], tenant))
+                    cur.execute(
+                        "UPDATE ont_backing_datasource SET run_history=%s::jsonb WHERE rid=%s AND tenant_id=%s",
+                        (json.dumps(history[-20:], default=str), declaration["rid"], tenant),
+                    )
             conn.commit()
         finally:
             conn.close()
@@ -5421,8 +5553,12 @@ class PgOntologyRepository(OntologyRepository):
         返回 ``{ok, total_synced, total_failed, total_deleted, sources:{name:{...}}}``；
         ``ok=False`` = 存在失败行，调用方**不得**据此报整体成功。
         """
-        from .backing_datasources import (BackingDatasource, sync_backing_datasource,
-            prepare_checkpoint_source, current_checkpoint_identity)
+        from .backing_datasources import (
+            BackingDatasource,
+            current_checkpoint_identity,
+            prepare_checkpoint_source,
+            sync_backing_datasource,
+        )
 
         decls = self.list_backing_datasources(class_rid, internal=True)
         if incremental:
@@ -5451,7 +5587,10 @@ class PgOntologyRepository(OntologyRepository):
         ]
 
         time_columns = {d["name"]: d.get("ts_column") for d in decls}
-        prepared = [prepare_checkpoint_source(source, time_column=time_columns[source.name]) for source in sources]
+        prepared = [
+            prepare_checkpoint_source(source, time_column=time_columns[source.name])
+            for source in sources
+        ]
         sources = [source for source, _ in prepared]
         identities = {source.name: identity for source, identity in prepared}
 
@@ -5481,15 +5620,20 @@ class PgOntologyRepository(OntologyRepository):
         # result is retained, but its boundary cannot be attached to the new dataset.
         for source in sources:
             try:
-                unchanged = current_checkpoint_identity(source, time_column=time_columns[source.name]) == identities[source.name]
+                unchanged = (
+                    current_checkpoint_identity(source, time_column=time_columns[source.name])
+                    == identities[source.name]
+                )
             except Exception:
                 unchanged = False
             if not unchanged:
                 result[source.name]["failed"] += 1
-                result[source.name]["failures"].append({
-                    "stage": "source_changed",
-                    "error": "Source changed during sync; checkpoint cleared, retry rescans the current dataset",
-                })
+                result[source.name]["failures"].append(
+                    {
+                        "stage": "source_changed",
+                        "error": "Source changed during sync; checkpoint cleared, retry rescans the current dataset",
+                    }
+                )
                 result[source.name]["cursor"] = {"ts": None, "pk": None}
                 identities[source.name] = None
         conn, _ = self._connect()
@@ -5506,7 +5650,16 @@ class PgOntologyRepository(OntologyRepository):
                         "last_synced_at = %s, last_synced_pk = %s, checkpoint_identity = %s, "
                         "last_error = %s, last_failed = %s "
                         "WHERE class_rid = %s AND name = %s AND tenant_id = %s",
-                        (cur_ts, cur_pk, identities[d["name"]], last_err, int(r.get("failed", 0)), class_rid, d["name"], tenant),
+                        (
+                            cur_ts,
+                            cur_pk,
+                            identities[d["name"]],
+                            last_err,
+                            int(r.get("failed", 0)),
+                            class_rid,
+                            d["name"],
+                            tenant,
+                        ),
                     )
             conn.commit()
         finally:
@@ -6684,6 +6837,7 @@ class PgOntologyRepository(OntologyRepository):
                     )
 
                 from mate_kernel.action.engine import require_current_approval
+
                 require_current_approval(row["approval_expires_at"])
                 outcome = self._action_service.apply(
                     action_rid=action_type.rid.rid,
@@ -7026,10 +7180,10 @@ class PgOntologyRepository(OntologyRepository):
         from datetime import datetime as _dt
 
         from mate_kernel.action.edit_set import EditSetError, invert_edits
+        from mate_kernel.action.engine import ProposalNotConfirmed
         from mate_kernel.action.unified import assemble_unified_edits
         from mate_kernel.ontology.security_policies import check_edit_permissions
 
-        from mate_kernel.action.engine import ProposalNotConfirmed
         tenant_id = self._current_tenant() or "tenant-default"
         conn, _ = self._connect()
         try:
@@ -7041,30 +7195,46 @@ class PgOntologyRepository(OntologyRepository):
                 # Preserve schema -> proposal -> object/link lock order. A command
                 # key is serialized before assembly, including function invocation.
                 if idempotency_key:
-                    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                                ("ont:execute:" + tenant_id + ":" + idempotency_key,))
-                    cur.execute("SELECT proposal_id, request_fingerprint FROM ont_proposal_idempotency "
-                                "WHERE tenant_id=%s AND operation='execute' AND idempotency_key=%s",
-                                (tenant_id, idempotency_key))
+                    cur.execute(
+                        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                        ("ont:execute:" + tenant_id + ":" + idempotency_key,),
+                    )
+                    cur.execute(
+                        "SELECT proposal_id, request_fingerprint FROM ont_proposal_idempotency "
+                        "WHERE tenant_id=%s AND operation='execute' AND idempotency_key=%s",
+                        (tenant_id, idempotency_key),
+                    )
                     previous = cur.fetchone()
                     if previous is not None:
-                        if previous["proposal_id"] != p.proposal_id or previous["request_fingerprint"] != request_fingerprint:
-                            raise ValueError("idempotency key conflicts with a different proposal command")
-                        cur.execute("SELECT result FROM ont_proposal_execution WHERE proposal_id=%s AND tenant_id=%s",
-                                    (p.proposal_id, tenant_id))
+                        if (
+                            previous["proposal_id"] != p.proposal_id
+                            or previous["request_fingerprint"] != request_fingerprint
+                        ):
+                            raise ValueError(
+                                "idempotency key conflicts with a different proposal command"
+                            )
+                        cur.execute(
+                            "SELECT result FROM ont_proposal_execution WHERE proposal_id=%s AND tenant_id=%s",
+                            (p.proposal_id, tenant_id),
+                        )
                         stored = cur.fetchone()
                         if stored is None:
                             raise ValueError("idempotent execution receipt unavailable")
                         value = stored["result"]
                         return dict(value if isinstance(value, dict) else json.loads(value))
-                cur.execute("SELECT status, approval_expires_at FROM ont_proposal WHERE proposal_id=%s AND tenant_id=%s FOR UPDATE",
-                            (p.proposal_id, tenant_id))
+                cur.execute(
+                    "SELECT status, approval_expires_at FROM ont_proposal WHERE proposal_id=%s AND tenant_id=%s FOR UPDATE",
+                    (p.proposal_id, tenant_id),
+                )
                 current = cur.fetchone()
                 if current is None:
                     raise KeyError(f"proposal not found: {p.proposal_id}")
                 if current["status"] != "confirmed":
-                    raise ProposalNotConfirmed(f"proposal {p.proposal_id} is {current['status']}; execute requires a confirmed proposal")
+                    raise ProposalNotConfirmed(
+                        f"proposal {p.proposal_id} is {current['status']}; execute requires a confirmed proposal"
+                    )
                 from mate_kernel.action.engine import require_current_approval
+
                 require_current_approval(current["approval_expires_at"])
                 # 统一装配：ActionType（ad-hoc 编辑可为 None）→ 声明式模板 + function
                 # 两规约产物 → 合并 EditOp 序列。
@@ -7087,7 +7257,9 @@ class PgOntologyRepository(OntologyRepository):
                     else:
                         crit_params = {k: v for k, v in raw_crit.items() if k != "provenance"}
                     for expr in at.submission_criteria:
-                        if not self._action_service.evaluator.evaluate(expr, crit_params, target_props):
+                        if not self._action_service.evaluator.evaluate(
+                            expr, crit_params, target_props
+                        ):
                             raise ValueError(
                                 f"submission criteria not met: {expr!r} for action={at.rid.rid}"
                             )
@@ -7311,13 +7483,21 @@ class PgOntologyRepository(OntologyRepository):
                          audit_id = EXCLUDED.audit_id""",
                     (p.proposal_id, tenant_id, json.dumps(result, default=str), audit_id),
                 )
-                self._append_proposal_event(cur, proposal_id=p.proposal_id, tenant_id=tenant_id,
-                                            from_status="confirmed", to_status="executed", actor_id=actor_id or None)
+                self._append_proposal_event(
+                    cur,
+                    proposal_id=p.proposal_id,
+                    tenant_id=tenant_id,
+                    from_status="confirmed",
+                    to_status="executed",
+                    actor_id=actor_id or None,
+                )
                 if idempotency_key:
-                    cur.execute("INSERT INTO ont_proposal_idempotency "
-                                "(tenant_id,operation,idempotency_key,proposal_id,request_fingerprint) "
-                                "VALUES (%s,'execute',%s,%s,%s)",
-                                (tenant_id,idempotency_key,p.proposal_id,request_fingerprint))
+                    cur.execute(
+                        "INSERT INTO ont_proposal_idempotency "
+                        "(tenant_id,operation,idempotency_key,proposal_id,request_fingerprint) "
+                        "VALUES (%s,'execute',%s,%s,%s)",
+                        (tenant_id, idempotency_key, p.proposal_id, request_fingerprint),
+                    )
             conn.commit()
         except Exception:
             conn.rollback()
@@ -7338,8 +7518,9 @@ class PgOntologyRepository(OntologyRepository):
         viewer_markings: tuple[str, ...] | list[str] = (),
     ) -> dict[str, Any]:
         p = self.get_proposal(proposal_id)
-        kwargs = dict(actor_id=actor_id, idempotency_key=idempotency_key,
-                      viewer_markings=viewer_markings)
+        kwargs = dict(
+            actor_id=actor_id, idempotency_key=idempotency_key, viewer_markings=viewer_markings
+        )
         if p.kind not in {"create_instance", "model_type", "merge_suggestion"}:
             return self._execute_proposal_command(proposal_id, **kwargs)
         tenant = self._proposal_tenant_id(p.action_rid)
@@ -7351,11 +7532,15 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 self._lock_schema_definitions(cur, tenant, shared=p.kind == "create_instance")
                 if key:
-                    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                                ("ont:execute:" + tenant + ":" + key,))
-                cur.execute("SELECT proposal_id FROM ont_proposal "
-                            "WHERE proposal_id=%s AND tenant_id=%s FOR UPDATE",
-                            (proposal_id, tenant))
+                    cur.execute(
+                        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                        ("ont:execute:" + tenant + ":" + key,),
+                    )
+                cur.execute(
+                    "SELECT proposal_id FROM ont_proposal "
+                    "WHERE proposal_id=%s AND tenant_id=%s FOR UPDATE",
+                    (proposal_id, tenant),
+                )
                 if cur.fetchone() is None:
                     raise KeyError(f"proposal not found: {proposal_id}")
             token = _LEGACY_PROPOSAL_TX.set(lease)
@@ -7417,6 +7602,7 @@ class PgOntologyRepository(OntologyRepository):
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
             )
         from mate_kernel.action.engine import require_current_approval
+
         require_current_approval(p.approval_expires_at)
         if p.kind == "action":
             # ADR-0064 S3：按 ActionType 声明分派 —— 声明式/混合式走统一执行器

@@ -5,6 +5,12 @@ import { listBigDataSources, discoverBigDataSchema, testBigDataSourceConnection,
 import { discardEditorInput, readEditorInput, retainEditorInput } from '../../hooks/editorSession';
 import './backing-datasource.css';
 type RegisteredInput = { sourceId: string; table: string; pkColumn: string; tsColumn: string; mapping: Record<string, string> };
+function registeredInputKey(identity: string, typeRid: string) {
+  return JSON.stringify([identity, 'registered-source-mapping', typeRid]);
+}
+export function registeredMappingIsDirty(identity: string, typeRid: string) {
+  return !!readEditorInput<RegisteredInput>(identity, registeredInputKey(identity, typeRid));
+}
 
 function errorMessage(error: unknown) {
   const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -17,7 +23,7 @@ export default function RegisteredSourceMappingWizard({ type, identity, external
   onSaved: (name: string) => Promise<void>;
 }) {
   const [params] = useSearchParams();
-  const key = JSON.stringify([identity, 'registered-source-mapping', type.rid]);
+  const key = registeredInputKey(identity, type.rid);
   const initialInput = useRef(readEditorInput<RegisteredInput>(identity, key));
   const [dirty, setDirty] = useState(!!initialInput.current);
   const alive = useRef(true);

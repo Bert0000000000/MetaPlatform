@@ -35,7 +35,7 @@ vi.mock('@/api/ont/kernel', async (original) => ({
   listInterfaces: vi.fn(),
   getTypeHierarchy: vi.fn(),
   precheckObjectTypes: vi.fn(),
-  createObjectType: vi.fn(),
+  createObjectType: vi.fn(), saveSchemaWip: vi.fn(), applySchemaWip: vi.fn(), listSchemaWip: vi.fn(), validateObjectTypeModel: vi.fn(),
 }));
 vi.mock('@mate/shared', () => ({ useAuth: () => ({ user: auth.user }) }));
 vi.mock('@/utils/auth', () => ({ getTenantId: () => 'tenant' }));
@@ -62,6 +62,10 @@ beforeEach(() => {
   auth.user = { id: 'real-user', tenantId: 'tenant' };
   setEditorSessionIdentity('');
   vi.clearAllMocks();
+  vi.mocked(api.saveSchemaWip).mockResolvedValue({ rid: type.rid, status: 'staged', base_checksum: '' });
+  vi.mocked(api.applySchemaWip).mockResolvedValue({} as never);
+  vi.mocked(api.listSchemaWip).mockResolvedValue([]);
+  vi.mocked(api.validateObjectTypeModel).mockResolvedValue({ valid: true, errors: [], warnings: [], destructive: [], references: { resolved: [], unresolved: [], dependencies: [] } } as never);
   HTMLElement.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal(
     'ResizeObserver',
@@ -117,7 +121,7 @@ it.each(['', '   '])('warns about identity-unavailable page restoration and reta
   const drawer = await screen.findByRole('dialog', { name: '模型编辑器' });
   expect(await within(drawer).findByRole('alert')).toHaveTextContent(/身份不可用.*跨页.*无法恢复/);
   expect(within(drawer).getByRole('link', { name: '重新登录' })).toHaveAttribute('href', '/login');
-  expect(within(drawer).getByRole('button', { name: '保存（整体 upsert）' })).toBeEnabled();
+  expect(within(drawer).getByRole('button', { name: '发布对象类型' })).toBeEnabled();
   fireEvent.change(screen.getByPlaceholderText('例如：客户'), { target: { value: 'unknown personal input' } });
   expect(screen.queryByText(/未保存输入已保留在当前会话/)).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '关闭' }));
@@ -137,14 +141,16 @@ async function candidate() {
   fireEvent.change(screen.getByPlaceholderText('例如：customer'), {
     target: { value: 'new_customer' },
   });
-  fireEvent.click(screen.getByRole('button', { name: '保存（整体 upsert）' }));
-  await screen.findByText('检测到相似概念');
-  fireEvent.click(screen.getByRole('button', { name: '仍要新建' }));
-  await waitFor(() => expect(api.createObjectType).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole('button', { name: '发布对象类型' }));
+  await screen.findByRole('button', { name: '继续创建' });
+  fireEvent.click(screen.getByRole('button', { name: '继续创建' }));
+  expect(api.applySchemaWip).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '发布对象类型' }));
+  await waitFor(() => expect(api.applySchemaWip).toHaveBeenCalledTimes(1));
 }
 it('locks the actual retained editor throughout deferred similarity continuation and retains failed input', async () => {
   let reject: (reason: unknown) => void = () => {};
-  vi.mocked(api.createObjectType).mockImplementation(
+  vi.mocked(api.applySchemaWip).mockImplementation(
     () =>
       new Promise((_resolve, no) => {
         reject = no;
@@ -172,7 +178,7 @@ it('locks the actual retained editor throughout deferred similarity continuation
 });
 it('cannot clear or close a newer restored draft when an old continuation succeeds after navigation', async () => {
   let finish: (result: api.KernelObjectType) => void = () => {};
-  vi.mocked(api.createObjectType).mockImplementation(
+  vi.mocked(api.applySchemaWip).mockImplementation(
     () =>
       new Promise((ok) => {
         finish = ok;
@@ -196,7 +202,7 @@ it('cannot clear or close a newer restored draft when an old continuation succee
   expect(screen.getByPlaceholderText('例如：客户')).toHaveValue(
     '更新的未提交草稿',
   );
-  expect(api.createObjectType).toHaveBeenCalledTimes(1);
+  expect(api.applySchemaWip).toHaveBeenCalledTimes(1);
   await act(async () => {
     await router.navigate('/other');
     await router.navigate(-1);
@@ -237,6 +243,7 @@ it('shows rejected value/interface reads inside the actual editor entry and retr
     within(drawer).getByRole('button', { name: '重试编辑辅助信息' }),
   );
   await waitFor(() => expect(api.listInterfaces).toHaveBeenCalledTimes(2));
+  fireEvent.click(within(drawer).getByRole('button', { name: '高级设置' }));
   expect(
     await within(drawer).findByRole('option', { name: /named/ }),
   ).toBeVisible();
@@ -272,7 +279,7 @@ it('fits a tall canvas in both viewport dimensions and resets its scroll origin'
 });
 it('ignores an old continuation after an identity change on the same mounted page', async () => {
   let finish: (result: api.KernelObjectType) => void = () => {};
-  vi.mocked(api.createObjectType).mockImplementation(
+  vi.mocked(api.applySchemaWip).mockImplementation(
     () =>
       new Promise((ok) => {
         finish = ok;
@@ -289,7 +296,7 @@ it('ignores an old continuation after an identity change on the same mounted pag
   await waitFor(() =>
     expect(screen.queryByRole('dialog', { name: '模型编辑器' })).toBeNull(),
   );
-  fireEvent.click(screen.getByRole('button', { name: '新建本体' }));
+  fireEvent.click(screen.getByRole('button', { name: '新建对象类型' }));
   await screen.findByRole('dialog', { name: '模型编辑器' });
   await waitFor(() =>
     expect(screen.getByPlaceholderText('例如：客户')).toBeEnabled(),
@@ -328,6 +335,7 @@ it('keeps prior reference values on failure and ignores older retry responses', 
   ]);
   render(<RouterProvider router={router} />);
   const drawer = await screen.findByRole('dialog', { name: '模型编辑器' });
+  fireEvent.click(within(drawer).getByRole('button', { name: '高级设置' }));
   await within(drawer).findByRole('option', { name: /named/ });
   fireEvent.change(within(drawer).getByRole('listbox'), {
     target: { value: named.rid },
@@ -361,10 +369,10 @@ it('keeps prior reference values on failure and ignores older retry responses', 
 });
 it('clears only the successfully submitted continuation and allows a clean new draft', async () => {
   let finish: () => void = () => {};
-  vi.mocked(api.createObjectType).mockImplementationOnce(
+  vi.mocked(api.applySchemaWip).mockImplementationOnce(
     (payload) =>
       new Promise((resolve) => {
-        finish = () => resolve({ ...type, ...payload });
+        finish = () => resolve({} as never);
       }),
   );
   mount();
@@ -374,7 +382,7 @@ it('clears only the successfully submitted continuation and allows a clean new d
   await waitFor(() =>
     expect(screen.queryByRole('dialog', { name: '模型编辑器' })).toBeNull(),
   );
-  fireEvent.click(screen.getByRole('button', { name: '新建本体' }));
+  fireEvent.click(screen.getByRole('button', { name: '新建对象类型' }));
   await screen.findByRole('dialog', { name: '模型编辑器' });
   expect(screen.getByPlaceholderText('例如：客户')).toHaveValue('');
   expect(

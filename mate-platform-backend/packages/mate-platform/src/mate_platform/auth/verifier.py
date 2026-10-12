@@ -82,8 +82,10 @@ class TokenVerifier:
             not_before=_coerce_int(claims.get("nbf")),
             jti=_coerce_str(claims.get("jti")) or "",
             preferred_username=_identity_string(claims.get("preferred_username")),
-            session_id=_identity_string(claims.get("sid")) or _identity_string(claims.get("session_state")),
-            service_account_client_id=_identity_string(claims.get("client_id")) or _identity_string(claims.get("clientId")),
+            session_id=_identity_string(claims.get("sid"))
+            or _identity_string(claims.get("session_state")),
+            service_account_client_id=_identity_string(claims.get("client_id"))
+            or _identity_string(claims.get("clientId")),
         )
 
     def _verify_with_cache(self, token: str) -> dict[str, Any]:

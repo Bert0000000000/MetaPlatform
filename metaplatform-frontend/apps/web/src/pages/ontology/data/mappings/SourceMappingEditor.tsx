@@ -108,8 +108,8 @@ export default function SourceMappingEditor({
   const currentSource = JSON.stringify(source);
   const previousSource = useRef(currentSource);
   const customWatermark =
-    !!source?.ts_column && source.ts_column !== 'updated_at';
-  const unsupportedKind = form.kind !== 'pg_table';
+    !source?.source_id && !!source?.ts_column && source.ts_column !== 'updated_at';
+  const unsupportedKind = form.kind !== 'pg_table' && !(source?.source_id && form.kind === 'csv');
   const registeredSource = !!source?.source_id;
   useEffect(() => {
     alive.current = true;
@@ -168,7 +168,7 @@ export default function SourceMappingEditor({
     (rid) => !type.properties.some((p) => p.rid === rid),
   );
   const submit = async () => {
-    if (locked || !identity || customWatermark || unsupportedKind || registeredSource || !canSave)
+    if (locked || !identity || customWatermark || unsupportedKind || !canSave)
       return;
     const seen = new Set<string>();
     for (const property of type.properties) {
@@ -190,7 +190,7 @@ export default function SourceMappingEditor({
       setError('源名已存在，请选择已有来源或填写独立的新源名');
       return;
     }
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(form.dsnEnv.trim())) {
+    if (!registeredSource && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(form.dsnEnv.trim())) {
       setError('连接环境键只能填写服务端环境变量名称');
       return;
     }
@@ -225,8 +225,10 @@ export default function SourceMappingEditor({
       await upsertBackingDatasource(type.rid, {
         class_rid: type.rid,
         name: form.name.trim(),
-        kind: 'pg_table',
-        dsn_env: form.dsnEnv.trim(),
+        kind: form.kind,
+        ...(registeredSource
+          ? { source_id: source?.source_id, ts_column: source?.ts_column }
+          : { dsn_env: form.dsnEnv.trim() }),
         table: form.table.trim(),
         pk_column: form.pkColumn.trim(),
         priority: form.priority,
@@ -349,7 +351,7 @@ export default function SourceMappingEditor({
               当前声明接口仅支持 pg_table；此来源类型不可编辑保存。
             </p>
           )}
-          {registeredSource && <p role="status">此绑定使用注册数据源 {source?.source_id}，请在注册源向导中验证实际字段并编辑映射。</p>}
+          {registeredSource && <p role="status">此绑定使用注册数据源 {source?.source_id}；保存映射时保留来源身份与水位列。</p>}
         </section>
         {sourceFooter}
       </aside>
@@ -482,7 +484,6 @@ export default function SourceMappingEditor({
                 !identity ||
                 customWatermark ||
                 unsupportedKind ||
-                registeredSource ||
                 locked ||
                 !canSave
               }

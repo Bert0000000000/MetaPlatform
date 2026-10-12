@@ -13,8 +13,6 @@ Covers:
 
 from __future__ import annotations
 
-from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
-
 import asyncio
 
 import pytest
@@ -36,6 +34,8 @@ from mate_app_hub.runtime import (
 )
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
+
+from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
 
 
 # ---------------------------------------------------------------------------

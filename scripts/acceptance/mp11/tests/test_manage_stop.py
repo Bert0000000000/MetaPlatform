@@ -2,9 +2,11 @@
 import base64
 import importlib.util
 import json
-from pathlib import Path
 import subprocess
+from pathlib import Path
+
 import pytest
+
 spec = importlib.util.spec_from_file_location('mp11_manage', Path(__file__).parents[1] / 'manage.py')
 manage = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(manage)

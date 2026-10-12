@@ -11,7 +11,9 @@ from mate_kernel.ontology.identity import ClassRef
 from mate_tech_ont.v2_kernel import api as native
 
 from .test_modeling_integration import DSN, candidate, draft, validate_publish
-from .test_modeling_integration import app as app
+from .test_modeling_integration import app as _modeling_app
+
+app = _modeling_app
 
 pytestmark = pytest.mark.skipif(not DSN, reason="MODELING_TEST_DSN requires isolated PostgreSQL")
 
@@ -116,9 +118,7 @@ async def test_source_record_mappings_keep_distinct_stable_native_ids(app):
                 assert ids == initial_ids
 
         # A reviewed label correction changes a value, not the source-record identity.
-        value["instanceEdits"] = [
-            {"key": "entity:task:row:first:2", "values": {"label": "Saw"}}
-        ]
+        value["instanceEdits"] = [{"key": "entity:task:row:first:2", "values": {"label": "Saw"}}]
         source["resolutions"] = {
             "task": {
                 "mode": "reuse",

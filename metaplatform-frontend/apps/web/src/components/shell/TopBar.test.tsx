@@ -5,7 +5,7 @@ const mocks=vi.hoisted(()=>({server:vi.fn(),local:vi.fn(),alert:vi.fn()}));
 vi.mock('@mate/shared',()=>({useAuth:()=>({user:{username:'writer'},logout:mocks.local}),Api:{logout:mocks.server},getRefreshToken:()=> 'fixture-refresh'}));
 vi.mock('react-router-dom',()=>({useLocation:()=>({pathname:'/home'}),useNavigate:()=>vi.fn()}));
 vi.mock('./ShellContext',()=>({useShell:()=>({setCommandOpen:vi.fn(),navMode:'side',toggleNavMode:vi.fn()})}));
-vi.mock('./domains',()=>({DOMAINS:[],resolveDomain:()=>null,resolveDomainTab:()=>null,resolveSubTab:()=>null}));
+vi.mock('./domains',()=>({DOMAINS:[],resolveDomain:()=>null,navigationBreadcrumb:()=>[],primaryDomains:()=>[]}));
 vi.mock('@douyinfe/semi-ui',()=>{const Item=()=>null;return {Avatar:Item,Badge:Item,Breadcrumb:Item,Button:Item,Input:Item,Tabs:Item,Tag:Item,Dropdown:Object.assign(Item,{Menu:Item,Item,Divider:Item})};});
 function findLogout(node:any):any {
  if(!React.isValidElement(node))return undefined;

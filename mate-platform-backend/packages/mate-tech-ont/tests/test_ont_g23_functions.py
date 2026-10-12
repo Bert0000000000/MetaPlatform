@@ -98,6 +98,7 @@ def _setup_g25(r, OBJ2, P2, ACT2, T2):
     from mate_kernel.ontology.types.action_type import ActionType
     from mate_kernel.ontology.types.object_type import ObjectType
     from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+
     r.upsert_object_type(
         ObjectType(
             rid=ClassRef(OBJ2),
@@ -130,36 +131,50 @@ def _setup_g25(r, OBJ2, P2, ACT2, T2):
 
 class TestWebSocketSubscription:
     def test_memory_edit_set_preserves_task_closed_side_effect(self):
-        r=InMemoryOntologyRepository()
-        tenant='g25-memory';obj=f'ont.{tenant}.obj.task';prop=f'ont.{tenant}.prop.id';action=f'ont.{tenant}.act.close'
-        _setup_g25(r,obj,prop,action,tenant)
-        r.set_outbox_writer(lambda *args:'evt-task-closed')
-        r.apply_edit_set_now(action,None,{},[{'op':'create_object','class_rid':obj,'primary_key':'t1','props':{prop:'t1'}}],actor='ops-1')
-        events=r.list_outbox_events('0',20)
-        assert any(e['event_type']=='task.closed' for e in events)
-
+        r = InMemoryOntologyRepository()
+        tenant = "g25-memory"
+        obj = f"ont.{tenant}.obj.task"
+        prop = f"ont.{tenant}.prop.id"
+        action = f"ont.{tenant}.act.close"
+        _setup_g25(r, obj, prop, action, tenant)
+        r.set_outbox_writer(lambda *args: "evt-task-closed")
+        r.apply_edit_set_now(
+            action,
+            None,
+            {},
+            [{"op": "create_object", "class_rid": obj, "primary_key": "t1", "props": {prop: "t1"}}],
+            actor="ops-1",
+        )
+        events = r.list_outbox_events("0", 20)
+        assert any(e["event_type"] == "task.closed" for e in events)
 
     """G25：WS 订阅 —— edit-set 触发 outbox 事件推送到连接客户端。"""
 
     def test_ws_receives_outbox_event(self) -> None:
+        import os
+        import uuid
+        from urllib.parse import urlparse
+
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
 
-        from mate_kernel.ontology.types.action_type import ActionType
-        from mate_kernel.ontology.types.object_type import ObjectType
-        from mate_kernel.ontology.types.property_ import Property, PropertyFormat
-
-        import os,uuid
-        from urllib.parse import urlparse
         from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
-        dsn=os.environ.get('MP11_WS_PG_DSN','')
-        if not dsn and os.environ.get('MP11_WS_PG_REQUIRED')!='1':
+
+        dsn = os.environ.get("MP11_WS_PG_DSN", "")
+        if not dsn and os.environ.get("MP11_WS_PG_REQUIRED") != "1":
             import pytest
-            pytest.skip('Explicit PG integration profile not configured; candidate requires MP11_WS_PG_REQUIRED=1')
-        target=urlparse(dsn)
-        if target.hostname!='127.0.0.1' or target.port!=55497 or not target.path.startswith('/codex_mp11_'):
-            raise RuntimeError('G23 requires explicit owned MP11_WS_PG_DSN on127.0.0.1:55497')
-        T2 = 'g25-'+uuid.uuid4().hex[:8]
+
+            pytest.skip(
+                "Explicit PG integration profile not configured; candidate requires MP11_WS_PG_REQUIRED=1"
+            )
+        target = urlparse(dsn)
+        if (
+            target.hostname != "127.0.0.1"
+            or target.port != 55497
+            or not target.path.startswith("/codex_mp11_")
+        ):
+            raise RuntimeError("G23 requires explicit owned MP11_WS_PG_DSN on127.0.0.1:55497")
+        T2 = "g25-" + uuid.uuid4().hex[:8]
         OBJ2 = f"ont.{T2}.obj.ops.task.v1"
         P2 = f"ont.{T2}.prop.tid.v1"
         ACT2 = f"ont.{T2}.act.ops.close-task.v1"
@@ -171,22 +186,61 @@ class TestWebSocketSubscription:
         app.state.kernel_repo = r
         app.include_router(__import__("mate_tech_ont.v2_kernel.api", fromlist=["router"]).router)
         client = TestClient(app)
-        import json,time,jwt
+        import json
+        import time
+
+        import jwt
         from cryptography.hazmat.primitives.asymmetric import rsa
+
         from mate_platform.auth.config import AuthConfig
         from mate_platform.auth.middleware import install_auth
+
         class SignedFixture:
-            def __repr__(self):return '<LocalRSAWebSocketFixture>'
-            def __init__(self):self.key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
+            def __repr__(self):
+                return "<LocalRSAWebSocketFixture>"
+
+            def __init__(self):
+                self.key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
             def headers(self):
-                now=int(time.time())
-                claims={'sub':'reader','azp':'web','sid':'fixture','preferred_username':'reader','tenant_id':T2,'iss':config.issuer,'aud':config.audience,'iat':now,'exp':now+60,'scope':'platform.read ont.read'}
-                return {'Authorization':'Bearer '+jwt.encode(claims,self.key,algorithm='RS256',headers={'kid':'fixture'})}
-        fixture=SignedFixture()
-        config=AuthConfig('https://issuer.invalid','mp11','backend','backend','fixture-only',300,5,0,False,False)
-        verifier=install_auth(app,config=config)
-        verifier._cache._by_kid={'fixture':json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(fixture.key.public_key()))}
-        with client.websocket_connect('/api/v1/ont/v2/ws/object-changes',headers=fixture.headers()) as ws:
+                now = int(time.time())
+                claims = {
+                    "sub": "reader",
+                    "azp": "web",
+                    "sid": "fixture",
+                    "preferred_username": "reader",
+                    "tenant_id": T2,
+                    "iss": config.issuer,
+                    "aud": config.audience,
+                    "iat": now,
+                    "exp": now + 60,
+                    "scope": "platform.read ont.read",
+                }
+                return {
+                    "Authorization": "Bearer "
+                    + jwt.encode(claims, self.key, algorithm="RS256", headers={"kid": "fixture"})
+                }
+
+        fixture = SignedFixture()
+        config = AuthConfig(
+            "https://issuer.invalid",
+            "mp11",
+            "backend",
+            "backend",
+            "fixture-only",
+            300,
+            5,
+            0,
+            False,
+            False,
+        )
+        verifier = install_auth(app, config=config)
+        verifier._cache._by_kid = {
+            "fixture": json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(fixture.key.public_key()))
+        }
+        with client.websocket_connect(
+            "/api/v1/ont/v2/ws/object-changes", headers=fixture.headers()
+        ) as ws:
             hello = ws.receive_json()
             assert hello["type"] == "subscribed"
             # Real PG producer commits edit-set, audit and outbox under the signed tenant.
@@ -207,20 +261,33 @@ class TestWebSocketSubscription:
                     impact_summary="",
                 )
             # Bound receive independently of the 60-second JWT lifetime.
-            import queue,threading
-            received=queue.Queue()
+            import queue
+            import threading
+
+            received = queue.Queue()
+
             def receive():
-                try:received.put(ws.receive_json())
-                except Exception:received.put(None)
-            threading.Thread(target=receive,daemon=True).start()
-            try:got=received.get(timeout=6)
+                try:
+                    received.put(ws.receive_json())
+                except Exception:
+                    received.put(None)
+
+            threading.Thread(target=receive, daemon=True).start()
+            try:
+                got = received.get(timeout=6)
             finally:
-                hub=getattr(app.state,'notify_hub',None)
-                if hub:hub.stop()
+                hub = getattr(app.state, "notify_hub", None)
+                if hub:
+                    hub.stop()
             assert got is not None
-            assert got['event_type']=='edit_set.applied'
-            assert got['payload']['action_rid']==ACT2
-            assert got['payload']['applied_count']==1
+            assert got["event_type"] == "edit_set.applied"
+            assert got["payload"]["action_rid"] == ACT2
+            assert got["payload"]["applied_count"] == 1
             with r.tenant_scope(T2):
-                events=r.list_outbox_events('0',20)
-            assert any(e['event_id']==got['event_id'] and e['event_type']=='edit_set.applied' and e['payload']==got['payload'] for e in events)
+                events = r.list_outbox_events("0", 20)
+            assert any(
+                e["event_id"] == got["event_id"]
+                and e["event_type"] == "edit_set.applied"
+                and e["payload"] == got["payload"]
+                for e in events
+            )

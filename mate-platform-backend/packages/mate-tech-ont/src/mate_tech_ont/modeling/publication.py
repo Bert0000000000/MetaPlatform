@@ -39,6 +39,28 @@ async def current_link(request, rid):
         return None
 
 
+async def datasource_baseline(request, rid):
+    """Snapshot mapping configuration without mutable sync progress fields."""
+    fields = (
+        "rid",
+        "class_rid",
+        "name",
+        "kind",
+        "dsn_env",
+        "table_name",
+        "pk_column",
+        "ts_column",
+        "field_mapping",
+        "priority",
+        "source_id",
+    )
+    declarations = await native.list_backing_datasources(rid, request)
+    return sorted(
+        [{field: declaration.get(field) for field in fields} for declaration in declarations],
+        key=lambda declaration: declaration["rid"],
+    )
+
+
 def hierarchy_order(classes):
     """Validate explicit candidate inheritance and return parents before descendants."""
     by_id = {cls["id"]: cls for cls in classes}
@@ -252,6 +274,7 @@ async def prepare(request, source):
                 "mode": mode,
                 "propertyMap": prop_map,
                 "baselineChecksum": (existing or {}).get("checksum", ""),
+                "baselineSources": await datasource_baseline(request, rid),
                 "payload": body,
                 "expectedChecksum": native.definition_checksum(
                     native._ot_to_row(native._dto_to_ot(native.ObjectTypeDTO(**body)))
@@ -417,6 +440,8 @@ async def _publish_locked(request, source, store):
                     ),
                     request,
                     preserve_existing=True,
+                    create_only=item["mode"] == "new",
+                    expected_checksum=item["baselineChecksum"],
                 )
                 await native.apply_schema_wip(
                     item["rid"],
@@ -440,7 +465,12 @@ async def _publish_locked(request, source, store):
             if item["rid"] not in state["completed"]:
                 if live_link != item["baseline"] and live_link != item["payload"]:
                     raise ValueError("原生关系已变化，请重新预检")
-                await native.upsert_link_type(native.LinkTypeDTO(**item["payload"]), request)
+                if live_link != item["payload"]:
+                    await native.upsert_link_type(
+                        native.LinkTypeDTO(**item["payload"]),
+                        request,
+                        create_only=item["baseline"] is None,
+                    )
                 state["completed"].append(item["rid"])
                 state["results"].append({"rid": item["rid"], "status": "succeeded"})
                 store.update(source["id"], revision, {"publication": state}, increment=False)

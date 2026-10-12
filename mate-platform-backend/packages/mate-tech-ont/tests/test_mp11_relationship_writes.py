@@ -588,6 +588,7 @@ def test_in_memory_strict_write_requires_materialized_endpoints(repo):
         repo.create_link_instance(link, require_endpoints=True)
     assert repo.list_link_instances() == []
 
+
 def test_create_only_duplicate_definition_is_conflict_and_keeps_original(client, repo):
     first = client.post(f"{BASE}/link-types?create_only=true", json=_definition())
     assert first.status_code == 200, first.text
@@ -598,23 +599,37 @@ def test_create_only_duplicate_definition_is_conflict_and_keeps_original(client,
     assert response.status_code == 409, response.text
     assert repo.get_link_type(ClassRef(LINK)).description == "Customer owns orders"
     assert client.get(f"{BASE}/link-types/{LINK}").json() == first.json()
-    assert client.post(f"{BASE}/link-types", json=_definition(description="Explicit edit")).status_code == 200
+    assert (
+        client.post(f"{BASE}/link-types", json=_definition(description="Explicit edit")).status_code
+        == 200
+    )
     assert repo.get_link_type(ClassRef(LINK)).description == "Explicit edit"
 
 
 def test_memory_create_only_is_atomic_for_competing_creators(repo):
     from uuid import uuid4
+
     link = ClassRef(f"ont.{T}.link.create_only.{uuid4().hex}")
-    candidates = [LinkType(rid=link, src=ClassRef(CUSTOMER), dst=ClassRef(ORDER),
-        cardinality=Cardinality.ONE_TO_MANY, directionality=Directionality.DIRECTED,
-        description=name) for name in ("First", "Second")]
+    candidates = [
+        LinkType(
+            rid=link,
+            src=ClassRef(CUSTOMER),
+            dst=ClassRef(ORDER),
+            cardinality=Cardinality.ONE_TO_MANY,
+            directionality=Directionality.DIRECTED,
+            description=name,
+        )
+        for name in ("First", "Second")
+    ]
     start = threading.Barrier(2)
+
     def create(definition):
         start.wait(5)
         try:
             return repo.upsert_link_type(definition, create_only=True).description
         except LinkTypeAlreadyExistsError:
             return "conflict"
+
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(create, candidates))
     assert results.count("conflict") == 1
@@ -624,20 +639,30 @@ def test_memory_create_only_is_atomic_for_competing_creators(repo):
 
 def test_pg_create_only_concurrent_writes_have_one_winner(pg_http_pair):
     from uuid import uuid4
+
     writer, competitor, client, _ = pg_http_pair
     link = ClassRef(f"ont.{T}.link.create_only.{uuid4().hex}")
     start = threading.Barrier(2)
+
     def create(pair):
         repository, description = pair
         start.wait(5)
         with repository.tenant_scope(T):
             try:
-                return repository.upsert_link_type(LinkType(rid=link, src=ClassRef(CUSTOMER),
-                    dst=ClassRef(ORDER), cardinality=Cardinality.ONE_TO_MANY,
-                    directionality=Directionality.DIRECTED, description=description),
-                    create_only=True).description
+                return repository.upsert_link_type(
+                    LinkType(
+                        rid=link,
+                        src=ClassRef(CUSTOMER),
+                        dst=ClassRef(ORDER),
+                        cardinality=Cardinality.ONE_TO_MANY,
+                        directionality=Directionality.DIRECTED,
+                        description=description,
+                    ),
+                    create_only=True,
+                ).description
             except LinkTypeAlreadyExistsError:
                 return "conflict"
+
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(create, [(writer, "First"), (competitor, "Second")]))
     assert results.count("conflict") == 1
@@ -647,22 +672,35 @@ def test_pg_create_only_concurrent_writes_have_one_winner(pg_http_pair):
 
 def test_pg_http_create_only_refuses_rid_claimed_after_catalog_read(pg_http_pair):
     from uuid import uuid4
+
     writer, competitor, client, _ = pg_http_pair
     rid = f"ont.{T}.link.catalog_race.{uuid4().hex}"
     catalog = client.get(f"{BASE}/link-types").json()
     assert rid not in {row["rid"] for row in catalog}
-    original = LinkType(rid=ClassRef(rid), src=ClassRef(CUSTOMER), dst=ClassRef(ORDER),
-        cardinality=Cardinality.ONE_TO_MANY, directionality=Directionality.DIRECTED,
-        description="Other session won")
+    original = LinkType(
+        rid=ClassRef(rid),
+        src=ClassRef(CUSTOMER),
+        dst=ClassRef(ORDER),
+        cardinality=Cardinality.ONE_TO_MANY,
+        directionality=Directionality.DIRECTED,
+        description="Other session won",
+    )
     with competitor.tenant_scope(T):
         competitor.upsert_link_type(original, create_only=True)
     snapshot = client.get(f"{BASE}/link-types/{rid}").json()
-    response = client.post(f"{BASE}/link-types?create_only=true",
-        json=_definition(rid=rid, description="Stale create must not overwrite"))
+    response = client.post(
+        f"{BASE}/link-types?create_only=true",
+        json=_definition(rid=rid, description="Stale create must not overwrite"),
+    )
     assert response.status_code == 409, response.text
     assert client.get(f"{BASE}/link-types/{rid}").json() == snapshot
     with writer.tenant_scope(T):
         assert writer.get_link_type(ClassRef(rid)).description == "Other session won"
-    assert client.post(f"{BASE}/link-types", json=_definition(rid=rid, description="Explicit edit")).status_code == 200
+    assert (
+        client.post(
+            f"{BASE}/link-types", json=_definition(rid=rid, description="Explicit edit")
+        ).status_code
+        == 200
+    )
     with writer.tenant_scope(T):
         assert writer.get_link_type(ClassRef(rid)).description == "Explicit edit"

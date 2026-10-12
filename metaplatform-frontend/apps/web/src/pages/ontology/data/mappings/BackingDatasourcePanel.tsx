@@ -14,7 +14,7 @@ import { editorIdentity } from '../../hooks/editorSession';
 import { resourceUrl, safeReturnTo } from '../../hooks/resourceContext';
 import { resourceError } from '../../hooks/resourceErrors';
 import { ridTail } from '../../rid';
-import RegisteredSourceMappingWizard from './RegisteredSourceMappingWizard';
+import RegisteredSourceMappingWizard, { registeredMappingIsDirty } from './RegisteredSourceMappingWizard';
 import SourceMappingEditor, { mappingIsDirty } from './SourceMappingEditor';
 import MaterializationSamples, {
   useMaterializationSamples,
@@ -204,9 +204,10 @@ function SourceWorkspace({
         : rows[0];
   const sourceKey = source?.rid || 'new';
   const unknownSource = !!sourceRef && sourceRef !== 'new' && !source;
-  const otherDirty =
+  const legacyDirty =
     rows.some((row) => mappingIsDirty(identity, type.rid, row.rid)) ||
     mappingIsDirty(identity, type.rid, 'new');
+  const otherDirty = legacyDirty || registeredMappingIsDirty(identity, type.rid);
   const dirty = editorDirty || otherDirty || registeredDirty;
   const busy = editorBusy || syncing || registeredBusy;
   const load = useCallback(async (): Promise<KernelBackingDatasource[]> => {
@@ -415,11 +416,11 @@ function SourceWorkspace({
           增量同步全部来源
         </Button>
       </div>
-      <Button disabled={busy || editorDirty || otherDirty} onClick={() => setRegisteredOpen(value => !value)}>
+      <Button disabled={busy || editorDirty || legacyDirty} onClick={() => setRegisteredOpen(value => !value)}>
         {registeredOpen ? '收起注册源向导' : '接入注册数据源'}
       </Button>
       {registeredOpen && <RegisteredSourceMappingWizard type={type} identity={identity}
-        externalBusy={editorBusy || syncing || editorDirty || otherDirty}
+        externalBusy={editorBusy || syncing || editorDirty || legacyDirty}
         onState={registeredState}
         onSaved={async name => { const declaration = await saved(name); complete(declaration); }} />}
       <p className="mp-mapping-muted">

@@ -49,9 +49,16 @@ def _build_server() -> object:
 
 def _surface(server):
     from types import SimpleNamespace
+
     surf = MateStreamableHttpServer(server)
-    surf._request_object = lambda: SimpleNamespace(state=SimpleNamespace(ctx=SimpleNamespace(
-        tenant_id="default", scopes=frozenset({"platform.read"}), auth_method="api_key")), headers={})
+    surf._request_object = lambda: SimpleNamespace(
+        state=SimpleNamespace(
+            ctx=SimpleNamespace(
+                tenant_id="default", scopes=frozenset({"platform.read"}), auth_method="api_key"
+            )
+        ),
+        headers={},
+    )
     return surf
 
 
@@ -138,13 +145,15 @@ def test_streamable_http_roundtrip() -> None:
     cfg = uvicorn.Config(app, host="127.0.0.1", port=55517, log_level="error")
     u = uvicorn.Server(cfg)
     import socket
+
     listener = socket.socket()
     listener.bind(("127.0.0.1", 55517))  # checked-free owned loopback test listener
     thread = threading.Thread(target=lambda: u.run(sockets=[listener]), daemon=True)
     thread.start()
     for _ in range(100):
-        if u.started: break
-        time.sleep(.02)
+        if u.started:
+            break
+        time.sleep(0.02)
 
     from mcp.client.session import ClientSession
     from mcp.client.streamable_http import streamable_http_client

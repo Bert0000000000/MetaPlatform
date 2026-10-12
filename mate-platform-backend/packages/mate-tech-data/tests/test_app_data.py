@@ -264,7 +264,15 @@ def test_delete_source(
 
 
 def test_source_schema(client, auth_headers_acme) -> None:
-    source = client.post("/api/v1/data/sources", headers=auth_headers_acme, json={"name": "Actual CSV", "type": "csv", "connection_config": {"table": "orders", "csv_content": "id,amount\n1,12.5\n"}})
+    source = client.post(
+        "/api/v1/data/sources",
+        headers=auth_headers_acme,
+        json={
+            "name": "Actual CSV",
+            "type": "csv",
+            "connection_config": {"table": "orders", "csv_content": "id,amount\n1,12.5\n"},
+        },
+    )
     assert source.status_code == 200
     source_id = source.json()["id"]
 
@@ -289,7 +297,15 @@ def test_test_source_connection(
     auth_headers_acme,
     outbox: InMemoryOutboxWriter,
 ) -> None:
-    source = client.post("/api/v1/data/sources", headers=auth_headers_acme, json={"name": "Actual CSV", "type": "csv", "connection_config": {"table": "orders", "csv_content": "id,amount\n1,12.5\n"}})
+    source = client.post(
+        "/api/v1/data/sources",
+        headers=auth_headers_acme,
+        json={
+            "name": "Actual CSV",
+            "type": "csv",
+            "connection_config": {"table": "orders", "csv_content": "id,amount\n1,12.5\n"},
+        },
+    )
     assert source.status_code == 200
     source_id = source.json()["id"]
 

@@ -11,8 +11,6 @@ Covers:
 
 from __future__ import annotations
 
-from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
-
 import pytest
 from fastapi.testclient import TestClient
 from mate_app_hub.main import create_app
@@ -31,6 +29,8 @@ from mate_app_hub.shortlink import (
 )
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
+
+from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
 
 
 # ---------------------------------------------------------------------------

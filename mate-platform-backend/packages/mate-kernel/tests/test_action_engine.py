@@ -120,9 +120,12 @@ class TestActionService:
         assert len(audit) == 2
         # Each audit has a full UUID, independent of service/process counters.
         import uuid
+
         for record in audit:
-            assert record.audit_id.startswith('audit-')
-            assert uuid.UUID(hex=record.audit_id.removeprefix('audit-')).hex == record.audit_id.removeprefix('audit-')
+            assert record.audit_id.startswith("audit-")
+            assert uuid.UUID(
+                hex=record.audit_id.removeprefix("audit-")
+            ).hex == record.audit_id.removeprefix("audit-")
         assert audit[0].audit_id != audit[1].audit_id
 
     def test_rollback_on_failure(self) -> None:

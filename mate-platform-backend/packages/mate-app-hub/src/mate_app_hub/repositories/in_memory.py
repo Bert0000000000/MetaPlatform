@@ -23,8 +23,8 @@ Seed data:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
 from copy import deepcopy
+from dataclasses import dataclass, field, replace
 from threading import RLock
 from typing import Any
 
@@ -526,7 +526,10 @@ def put_module(tenant_id: str, module: ApphubModule, *, insert_only: bool = Fals
         raise ValueError("cross-tenant module write denied")
     with _APP_LOCK:
         _ensure_tenant(tenant_id)
-        if insert_only and (module.code in _MODULES[tenant_id] or any(row.id == module.id for row in _MODULES[tenant_id].values())):
+        if insert_only and (
+            module.code in _MODULES[tenant_id]
+            or any(row.id == module.id for row in _MODULES[tenant_id].values())
+        ):
             raise ValueError("module already exists")
         _MODULES[tenant_id][module.code] = deepcopy(module)
         return deepcopy(module)
@@ -537,7 +540,10 @@ def put_page(tenant_id: str, page: ApphubPage, *, insert_only: bool = False) -> 
         raise ValueError("cross-tenant page write denied")
     with _APP_LOCK:
         _ensure_tenant(tenant_id)
-        if insert_only and (page.code in _PAGES[tenant_id] or any(row.id == page.id for row in _PAGES[tenant_id].values())):
+        if insert_only and (
+            page.code in _PAGES[tenant_id]
+            or any(row.id == page.id for row in _PAGES[tenant_id].values())
+        ):
             raise ValueError("page already exists")
         _PAGES[tenant_id][page.code] = deepcopy(page)
         return deepcopy(page)

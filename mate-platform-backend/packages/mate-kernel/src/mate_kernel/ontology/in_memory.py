@@ -6,7 +6,11 @@ from datetime import UTC, datetime
 from threading import RLock
 from typing import TYPE_CHECKING, Any
 
-from mate_kernel.ontology.api import LinkTypeAlreadyExistsError, ObjectTypeAlreadyExistsError, OntologyRepository
+from mate_kernel.ontology.api import (
+    LinkTypeAlreadyExistsError,
+    ObjectTypeAlreadyExistsError,
+    OntologyRepository,
+)
 from mate_kernel.ontology.identity import ClassRef, Version, VersionConflict, definition_checksum
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
@@ -114,20 +118,45 @@ class InMemoryOntologyRepository(OntologyRepository):
     @staticmethod
     def _definition_of(ot: ObjectType) -> dict[str, Any]:
         """Canonical full definition, matching the PostgreSQL/API checksum shape."""
+
         def prop(p: Property) -> dict[str, Any]:
-            return {"rid": p.rid.rid, "type_id": p.type_id, "nullable": p.nullable,
-                    "primary_key": p.primary_key, "title": p.title, "format": p.format.value,
-                    "description": p.description, "struct_fields": [prop(f) for f in p.struct_fields],
-                    "array": p.array, "reducer": p.reducer, "shared": p.shared,
-                    "derived": {"fn": p.derived.fn, "over_link": p.derived.over_link,
-                                "field": p.derived.field} if p.derived else None}
+            return {
+                "rid": p.rid.rid,
+                "type_id": p.type_id,
+                "nullable": p.nullable,
+                "primary_key": p.primary_key,
+                "title": p.title,
+                "format": p.format.value,
+                "description": p.description,
+                "struct_fields": [prop(f) for f in p.struct_fields],
+                "array": p.array,
+                "reducer": p.reducer,
+                "shared": p.shared,
+                "derived": {
+                    "fn": p.derived.fn,
+                    "over_link": p.derived.over_link,
+                    "field": p.derived.field,
+                }
+                if p.derived
+                else None,
+            }
+
         parts = ot.rid.rid.split(".")
-        return {"rid": ot.rid.rid, "tenant_id": parts[1], "slug": parts[4] if len(parts) >= 6 else "",
-                "primary_key": [pk.rid for pk in ot.primary_key], "properties": [prop(p) for p in ot.properties],
-                "interfaces": [i.rid for i in ot.interfaces], "display_name": ot.display_name,
-                "marking": list(ot.marking), "parent_class": ot.parent_class.rid if ot.parent_class else "",
-                "description": ot.description, "status": ot.status, "type_group": ot.type_group,
-                "render_hints": [list(kv) for kv in ot.render_hints]}
+        return {
+            "rid": ot.rid.rid,
+            "tenant_id": parts[1],
+            "slug": parts[4] if len(parts) >= 6 else "",
+            "primary_key": [pk.rid for pk in ot.primary_key],
+            "properties": [prop(p) for p in ot.properties],
+            "interfaces": [i.rid for i in ot.interfaces],
+            "display_name": ot.display_name,
+            "marking": list(ot.marking),
+            "parent_class": ot.parent_class.rid if ot.parent_class else "",
+            "description": ot.description,
+            "status": ot.status,
+            "type_group": ot.type_group,
+            "render_hints": [list(kv) for kv in ot.render_hints],
+        }
 
     @staticmethod
     def _dependencies_of(definition: dict[str, Any]) -> tuple[str, ...]:
@@ -207,7 +236,9 @@ class InMemoryOntologyRepository(OntologyRepository):
             if expected_checksum is not None:
                 actual = definition_checksum(self._definition_of(current)) if current else ""
                 if actual != expected_checksum:
-                    raise VersionConflict("Model changed since the draft was saved; compare and retry")
+                    raise VersionConflict(
+                        "Model changed since the draft was saved; compare and retry"
+                    )
             return self._write_object_type(ot)
 
     def _write_object_type(self, ot: ObjectType) -> ObjectType:
@@ -331,7 +362,9 @@ class InMemoryOntologyRepository(OntologyRepository):
 
         return [_node(r) for r in roots]
 
-    def upsert_link_type(self, lt: LinkType, *, create_only: bool = False, require_endpoints: bool = False) -> LinkType:
+    def upsert_link_type(
+        self, lt: LinkType, *, create_only: bool = False, require_endpoints: bool = False
+    ) -> LinkType:
         with self._object_type_lock, self._link_type_lock:
             if require_endpoints:
                 for ref in (lt.src, lt.dst):
@@ -461,7 +494,13 @@ class InMemoryOntologyRepository(OntologyRepository):
     # ───── G33：schema WIP 暂存（InMemory 同语义）─────
 
     def save_schema_wip(
-        self, rid: str, payload: dict[str, Any], author: str = "", *, create_only: bool = False, expected_checksum: str | None = None
+        self,
+        rid: str,
+        payload: dict[str, Any],
+        author: str = "",
+        *,
+        create_only: bool = False,
+        expected_checksum: str | None = None,
     ) -> dict[str, Any]:
         with self._object_type_lock:
             current = self._object_types.get(ClassRef(rid))
@@ -473,9 +512,19 @@ class InMemoryOntologyRepository(OntologyRepository):
             if previous:
                 base = previous.get("base_checksum", base)
                 create_only = create_only or previous.get("create_only", False)
-            self._schema_wip[rid] = {"rid": rid, "author": author, "payload": payload,
-                                     "base_checksum": base, "create_only": create_only}
-            return {"rid": rid, "status": "staged", "base_checksum": base, "create_only": create_only}
+            self._schema_wip[rid] = {
+                "rid": rid,
+                "author": author,
+                "payload": payload,
+                "base_checksum": base,
+                "create_only": create_only,
+            }
+            return {
+                "rid": rid,
+                "status": "staged",
+                "base_checksum": base,
+                "create_only": create_only,
+            }
 
     def list_schema_wip(self) -> list[dict[str, Any]]:
         return list(self._schema_wip.values())
@@ -786,7 +835,9 @@ class InMemoryOntologyRepository(OntologyRepository):
             items = [i for i in items if i.class_rid.rid in allowed]
         return list(items)
 
-    def create_link_instance(self, li: LinkInstance, *, require_endpoints: bool = False) -> LinkInstance:
+    def create_link_instance(
+        self, li: LinkInstance, *, require_endpoints: bool = False
+    ) -> LinkInstance:
         # EXP-03：注册 LinkType 的基数约束（未注册类型 legacy 宽松）
         from .types.link_type import check_cardinality
 
@@ -799,7 +850,9 @@ class InMemoryOntologyRepository(OntologyRepository):
                 if endpoint is None:
                     raise KeyError(f"{side} individual not found: {rid}")
                 if endpoint.class_rid != expected:
-                    raise ValueError(f"{side} class_rid must be {expected}, got {endpoint.class_rid}")
+                    raise ValueError(
+                        f"{side} class_rid must be {expected}, got {endpoint.class_rid}"
+                    )
         if lt is not None:
             # 同 rid 的既有行不算（upsert 语义：重建同一条链接不违反基数）
             src_out = sum(
@@ -1245,6 +1298,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
             )
         from mate_kernel.action.engine import require_current_approval
+
         require_current_approval(p.approval_expires_at)
         if p.kind == "action":
             # ADR-0064 S3：声明式/混合式 ActionType 走统一执行器（edits 是本体）；

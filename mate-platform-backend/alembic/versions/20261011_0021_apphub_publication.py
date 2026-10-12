@@ -1,6 +1,8 @@
 """Persist AppHub definitions, lifecycle and immutable publication snapshots."""
-from alembic import op
+
 import sqlalchemy as sa
+
+from alembic import op
 
 revision = "0021_apphub_publication"
 down_revision = "0020_mcp_clients"
@@ -30,5 +32,13 @@ def upgrade():
 
 def downgrade():
     op.drop_column("apphub_pages", "definition")
-    for column in ("revision", "releases", "versions", "published_version_id", "updated_at", "created_at", "status"):
+    for column in (
+        "revision",
+        "releases",
+        "versions",
+        "published_version_id",
+        "updated_at",
+        "created_at",
+        "status",
+    ):
         op.drop_column("apphub_apps", column)

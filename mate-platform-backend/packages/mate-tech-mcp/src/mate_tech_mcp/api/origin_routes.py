@@ -148,9 +148,12 @@ async def list_tools_endpoint(request: Request) -> dict[str, list]:
     tenant = str(getattr(ctx, "tenant_id", "") or "")
     if not tenant:
         raise HTTPException(status_code=401, detail="verified caller required")
-    with bind_caller(tenant_id=tenant, bearer_token=_bearer_token(request),
-                     scopes=frozenset(getattr(ctx, "scopes", ())),
-                     auth_method=getattr(ctx, "auth_method", "")):
+    with bind_caller(
+        tenant_id=tenant,
+        bearer_token=_bearer_token(request),
+        scopes=frozenset(getattr(ctx, "scopes", ())),
+        auth_method=getattr(ctx, "auth_method", ""),
+    ):
         return {"tools": await server.list_tools(tenant)}
 
 
@@ -322,11 +325,16 @@ async def call_tool_endpoint(
         raise HTTPException(status_code=401, detail="verified caller required")
     arguments = dict(arguments)
     arguments.pop("__caller__", None)
-    with bind_caller(tenant_id=tenant_id, bearer_token=_bearer_token(request),
-                     scopes=frozenset(getattr(ctx, "scopes", ())),
-                     auth_method=getattr(ctx, "auth_method", "")):
+    with bind_caller(
+        tenant_id=tenant_id,
+        bearer_token=_bearer_token(request),
+        scopes=frozenset(getattr(ctx, "scopes", ())),
+        auth_method=getattr(ctx, "auth_method", ""),
+    ):
         try:
             result = await server.call_tool(name, arguments, tenant_id=tenant_id)
             return {"tool": name, "result": result, "source": "local"}
         except (KeyError, PermissionError) as exc:
-            raise HTTPException(status_code=403, detail="tool is outside verified external agent grants") from exc
+            raise HTTPException(
+                status_code=403, detail="tool is outside verified external agent grants"
+            ) from exc

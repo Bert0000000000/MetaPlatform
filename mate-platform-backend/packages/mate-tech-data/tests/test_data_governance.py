@@ -32,10 +32,13 @@ def test_lineage_tenant_isolation():
 
 def test_quality_rule_required_pass():
     _reset()
-    source = repo.create_source("tenant-default", "Actual Orders", "csv", {"table": "orders", "csv_content": "id,amount\n1,12.5\n"})
-    repo.create_quality_rule(
-        "tenant-default", source.id, "amount", "required", {"table": "orders"}
+    source = repo.create_source(
+        "tenant-default",
+        "Actual Orders",
+        "csv",
+        {"table": "orders", "csv_content": "id,amount\n1,12.5\n"},
     )
+    repo.create_quality_rule("tenant-default", source.id, "amount", "required", {"table": "orders"})
     summary = repo.run_quality_rules("tenant-default")
     assert summary["rules_executed"] == 1
     assert summary["passed"] == 1 and summary["failed"] == 0
@@ -45,7 +48,12 @@ def test_quality_rule_required_pass():
 
 def test_quality_rule_type_mismatch_fails():
     _reset()
-    source = repo.create_source("tenant-default", "Actual Orders", "csv", {"table": "orders", "csv_content": "id,amount\n1,12.5\n"})
+    source = repo.create_source(
+        "tenant-default",
+        "Actual Orders",
+        "csv",
+        {"table": "orders", "csv_content": "id,amount\n1,12.5\n"},
+    )
     repo.create_quality_rule(
         "tenant-default",
         source.id,
@@ -62,7 +70,12 @@ def test_quality_rule_type_mismatch_fails():
 
 def test_quality_missing_column_fails():
     _reset()
-    source = repo.create_source("tenant-default", "Actual Orders", "csv", {"table": "orders", "csv_content": "id,amount\n1,12.5\n"})
+    source = repo.create_source(
+        "tenant-default",
+        "Actual Orders",
+        "csv",
+        {"table": "orders", "csv_content": "id,amount\n1,12.5\n"},
+    )
     repo.create_quality_rule(
         "tenant-default", source.id, "ghost_col", "required", {"table": "orders"}
     )
@@ -73,10 +86,13 @@ def test_quality_missing_column_fails():
 
 def test_quality_results_persist_across_runs():
     _reset()
-    source = repo.create_source("tenant-default", "Actual Orders", "csv", {"table": "orders", "csv_content": "id,amount\n1,12.5\n"})
-    repo.create_quality_rule(
-        "tenant-default", source.id, "amount", "required", {"table": "orders"}
+    source = repo.create_source(
+        "tenant-default",
+        "Actual Orders",
+        "csv",
+        {"table": "orders", "csv_content": "id,amount\n1,12.5\n"},
     )
+    repo.create_quality_rule("tenant-default", source.id, "amount", "required", {"table": "orders"})
     repo.run_quality_rules("tenant-default")
     repo.run_quality_rules("tenant-default")
     assert len(repo.list_quality_results("tenant-default")) == 2
@@ -97,7 +113,7 @@ def test_catalog_search_no_match_returns_empty():
 def test_quality_discovery_failure_is_recorded_as_failure():
     _reset()
     source = repo.create_source("tenant-default", "Unsupported source", "mysql", {})
-    repo.create_quality_rule("tenant-default", source.id, "amount", "required", {"table":"orders"})
+    repo.create_quality_rule("tenant-default", source.id, "amount", "required", {"table": "orders"})
     result = repo.run_quality_rules("tenant-default")
     assert result["failed"] == 1 and result["passed"] == 0
     assert "UNSUPPORTED" in result["results"][0].detail

@@ -17,8 +17,6 @@ guard does not reject the calls.
 
 from __future__ import annotations
 
-from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
-
 from collections.abc import Iterator
 
 import pytest
@@ -29,6 +27,8 @@ from mate_app_hub.telemetry import install_in_memory_exporter
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
 )
+
+from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
 
 
 @pytest.fixture

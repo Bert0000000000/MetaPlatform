@@ -9,6 +9,7 @@ import os
 from typing import Any
 
 import structlog
+
 from .caller_context import current_caller
 
 logger = structlog.get_logger(__name__)

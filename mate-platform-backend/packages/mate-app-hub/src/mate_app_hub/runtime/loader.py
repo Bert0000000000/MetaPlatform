@@ -19,7 +19,8 @@ def load_app_runtime(
     tenant_id: str,
     app_id: str,
     version: str = "latest",
-    *, published_only: bool = False,
+    *,
+    published_only: bool = False,
 ) -> RuntimeContext:
     """Load the full runtime context for an app.
 
@@ -38,12 +39,28 @@ def load_app_runtime(
             raise ValueError(f"app '{app_id}' not found in tenant '{tenant_id}'")
 
         if published_only:
-            snapshot = next((v for v in app.versions if v.get("versionId") == app.published_version_id
-                             and (version == "latest" or v.get("version") == version)), None)
-            if app.status != "PUBLISHED" or snapshot is None or snapshot.get("status") != "PUBLISHED":
+            snapshot = next(
+                (
+                    v
+                    for v in app.versions
+                    if v.get("versionId") == app.published_version_id
+                    and (version == "latest" or v.get("version") == version)
+                ),
+                None,
+            )
+            if (
+                app.status != "PUBLISHED"
+                or snapshot is None
+                or snapshot.get("status") != "PUBLISHED"
+            ):
                 raise ValueError("App has no matching published snapshot")
-            return RuntimeContext(app_id=app.id, tenant_id=tenant_id, version=snapshot["version"],
-                                  modules=snapshot["modules"], published_version_id=snapshot["versionId"])
+            return RuntimeContext(
+                app_id=app.id,
+                tenant_id=tenant_id,
+                version=snapshot["version"],
+                modules=snapshot["modules"],
+                published_version_id=snapshot["versionId"],
+            )
 
         all_modules = list_modules(tenant_id)
         app_modules = [m for m in all_modules if m.app_code == app.code]

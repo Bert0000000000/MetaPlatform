@@ -51,9 +51,7 @@ def no_external_redis() -> None:
 # ---------------------------------------------------------------------------
 # Case 1 — P0: 工具未授权调用
 # ---------------------------------------------------------------------------
-def test_case1_unregistered_tool_denied(
-    client: TestClient, auth_headers: dict[str, str]
-) -> None:
+def test_case1_unregistered_tool_denied(client: TestClient, auth_headers: dict[str, str]) -> None:
     """POST /api/v1/mcp/tools/{name} 调用未注册工具 → 404 + ToolNotFound."""
     resp = client.post(
         "/api/v1/mcp/tools/no_such_tool_xyz",

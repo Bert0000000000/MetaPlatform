@@ -128,12 +128,21 @@ class MateStreamableHttpServer(FastMCP):
         tenant = await self._resolve_tenant()
         request = self._request_object()
         ctx = getattr(getattr(request, "state", None), "ctx", None)
-        with bind_caller(tenant_id=tenant, bearer_token=self._request_bearer(),
-                         scopes=frozenset(getattr(ctx, "scopes", ())),
-                         auth_method=getattr(ctx, "auth_method", "")):
+        with bind_caller(
+            tenant_id=tenant,
+            bearer_token=self._request_bearer(),
+            scopes=frozenset(getattr(ctx, "scopes", ())),
+            auth_method=getattr(ctx, "auth_method", ""),
+        ):
             static = await self._mcp.list_tools(tenant)
-        tools = [Tool(name=t["name"], description=t.get("description", ""),
-                      inputSchema=t.get("inputSchema") or {"type": "object"}) for t in static]
+        tools = [
+            Tool(
+                name=t["name"],
+                description=t.get("description", ""),
+                inputSchema=t.get("inputSchema") or {"type": "object"},
+            )
+            for t in static
+        ]
         # Dynamic/federated registrations have no verified capability/agent allowlist.
         # Do not advertise or invoke them on an external credential until they do.
         return tools
@@ -147,9 +156,22 @@ class MateStreamableHttpServer(FastMCP):
         # （ont_confirm/reject/execute_proposal）在此面必然 PermissionError。
         args.pop("__caller__", None)
         # 1.1 task 1c: downstream proxies (ontology) must go out as the caller.
-        with bind_caller(tenant_id=tenant, bearer_token=self._request_bearer(),
-                         scopes=frozenset(getattr(getattr(getattr(self._request_object(), "state", None), "ctx", None), "scopes", ())),
-                         auth_method=getattr(getattr(getattr(self._request_object(), "state", None), "ctx", None), "auth_method", "")):
+        with bind_caller(
+            tenant_id=tenant,
+            bearer_token=self._request_bearer(),
+            scopes=frozenset(
+                getattr(
+                    getattr(getattr(self._request_object(), "state", None), "ctx", None),
+                    "scopes",
+                    (),
+                )
+            ),
+            auth_method=getattr(
+                getattr(getattr(self._request_object(), "state", None), "ctx", None),
+                "auth_method",
+                "",
+            ),
+        ):
             return await self._dispatch(name, args, tenant)
 
     async def _dispatch(self, name: str, args: dict[str, Any], tenant: str) -> Any:

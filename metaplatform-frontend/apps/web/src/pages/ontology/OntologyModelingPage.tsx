@@ -498,7 +498,7 @@ export default function OntologyModelingPage({
       // G33：409 且 detail 是对象 {error:"destructive_confirm_required",...} → 交给抽屉二段确认
       const dc = extractDestructiveConfirm(e);
       if (dc) return dc;
-      return errDetailText(e, '保存概念失败');
+      return resourceError(e);
     }
   };
 

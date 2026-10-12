@@ -28,7 +28,7 @@ import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 import respx
@@ -57,10 +57,15 @@ class TestMcpHttpEndpointsWired:
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
         from mate_platform.auth import install_auth
-        from mate_tech_mcp.server import create_server
+
         from mate_tech_mcp.api.origin_routes import router
-        app=FastAPI();app.state.mcp_server=create_server('http-wiring-test')
-        app.state.rate_limiter=AsyncMock();app.include_router(router);install_auth(app)
+        from mate_tech_mcp.server import create_server
+
+        app = FastAPI()
+        app.state.mcp_server = create_server("http-wiring-test")
+        app.state.rate_limiter = AsyncMock()
+        app.include_router(router)
+        install_auth(app)
         yield TestClient(app)
 
     @pytest.mark.parametrize(
@@ -75,6 +80,7 @@ class TestMcpHttpEndpointsWired:
         self, app_with_mocked_auth: TestClient, method: str, path: str
     ) -> None:
         from helpers import auth_header
+
         r = app_with_mocked_auth.request(method, path, headers=auth_header())
         # List endpoints must not 404 (the regression we're guarding
         # against) and must not 500.
@@ -119,9 +125,8 @@ class TestMcpMainIsImportable:
             for route in main_mod.app.routes
             if getattr(route, "path", None) == "/api/v1/mcp/protocol"
         )
-        assert any(
-            getattr(route, "path", None) == "/mcp" for route in protocol_mount.app.routes
-        )
+        assert any(getattr(route, "path", None) == "/mcp" for route in protocol_mount.app.routes)
+
 
 # ---------------------------------------------------------------------------
 # P3-W10 Fix-1: 5 origin endpoint router e2e tests
@@ -138,15 +143,21 @@ class TestMcpOriginRoutes:
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
         from mate_platform.auth import install_auth
-        from mate_tech_mcp.server import create_server
+
         from mate_tech_mcp.api.origin_routes import router
-        app=FastAPI();app.state.mcp_server=create_server('origin-wiring-test')
-        app.state.rate_limiter=AsyncMock();app.include_router(router);install_auth(app)
+        from mate_tech_mcp.server import create_server
+
+        app = FastAPI()
+        app.state.mcp_server = create_server("origin-wiring-test")
+        app.state.rate_limiter = AsyncMock()
+        app.include_router(router)
+        install_auth(app)
         yield TestClient(app)
 
     @staticmethod
     def _bearer() -> dict[str, str]:
         from helpers import auth_header
+
         return auth_header()
 
     def test_origin_list_tools_returns_200(self, origin_client) -> None:

@@ -17,15 +17,16 @@ GOVERN-05 扩展：
 
 from __future__ import annotations
 
+import os
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
-import os
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from ..sandbox.k8s import FunctionExecutor
+
 
 class SubmissionCriteriaFailed(RuntimeError):
     """提交前规则评估未通过。"""
@@ -64,7 +65,9 @@ def approval_ttl_seconds() -> int:
 
 def require_current_approval(deadline: datetime | None) -> None:
     if deadline is None or deadline <= datetime.now(UTC):
-        raise ProposalNotConfirmed("approval expired or undated; create and approve a fresh proposal")
+        raise ProposalNotConfirmed(
+            "approval expired or undated; create and approve a fresh proposal"
+        )
 
 
 class ProposalStatus(StrEnum):
@@ -317,11 +320,10 @@ class ActionService:
             p,
             status=to_status,
             approval_expires_at=(now + timedelta(seconds=approval_ttl_seconds()))
-            if to_status is ProposalStatus.CONFIRMED else p.approval_expires_at,
-            confirmed_by=by,
-            confirmed_at=now
             if to_status is ProposalStatus.CONFIRMED
-            else p.confirmed_at,
+            else p.approval_expires_at,
+            confirmed_by=by,
+            confirmed_at=now if to_status is ProposalStatus.CONFIRMED else p.confirmed_at,
         )
         self._proposals[proposal_id] = updated
         return updated

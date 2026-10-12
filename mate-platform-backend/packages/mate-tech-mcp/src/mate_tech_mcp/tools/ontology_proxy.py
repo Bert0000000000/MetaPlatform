@@ -154,13 +154,20 @@ class OntologyProxyTool:
         # Concrete upstream operations, not UI/category labels. The preflight
         # composite also calls ontValidateV2Shacl, whose contract requires write.
         if self.operation_id in {
-            "ontListV2ObjectTypes", "ontInspectV2Class", "ontExecuteV2ObjectQuery",
-            "ontPreviewV2Proposal", "ontListV2Individuals", "ontSearchV2Objects",
-            "ontAgentMetricsSummary", "ontListV2Interfaces",
+            "ontListV2ObjectTypes",
+            "ontInspectV2Class",
+            "ontExecuteV2ObjectQuery",
+            "ontPreviewV2Proposal",
+            "ontListV2Individuals",
+            "ontSearchV2Objects",
+            "ontAgentMetricsSummary",
+            "ontListV2Interfaces",
         }:
             return ("ont.read", "platform.read")
         if self.operation_id in {
-            "ontProposeV2ObjectType", "ontProposeV2Instance", "ontProposeV2ObjectTypeMerge",
+            "ontProposeV2ObjectType",
+            "ontProposeV2Instance",
+            "ontProposeV2ObjectTypeMerge",
         }:
             return ("ont.write", "platform.write")
         if self.operation_id == "ontValidateV2Data":
@@ -184,7 +191,11 @@ class OntologyProxyTool:
         """
         caller = current_caller()
         if caller is not None:
-            if caller.scopes is not None and (not self.agent_invokable or not self.required_scopes or not set(self.required_scopes) <= caller.scopes):
+            if caller.scopes is not None and (
+                not self.agent_invokable
+                or not self.required_scopes
+                or not set(self.required_scopes) <= caller.scopes
+            ):
                 raise PermissionError("ontology tool is outside verified caller grants")
             headers = {"X-Tenant-Id": caller.tenant_id}
             if caller.bearer_token:

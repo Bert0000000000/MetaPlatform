@@ -34,6 +34,7 @@ def client() -> TestClient:
     app.state.outbox_writer = InMemoryOutboxWriter()
     app.include_router(origin_router)
     from mate_platform.auth import install_auth
+
     install_auth(app)
     reset_store()
     yield TestClient(app)
@@ -90,13 +91,23 @@ def test_register_tool_then_invoke_forwards(client: TestClient) -> None:
     # The trusted internal forwarding adapter remains independently usable;
     # no external RequestContext is forged to bypass the capability boundary.
     import asyncio
+
     from mate_tech_mcp.tools.forwarding import DynamicToolInvoker
-    transport=AsyncMock();transport.call_tool.return_value={'ok':True,'answer':42}
-    result=asyncio.run(DynamicToolInvoker(transport).invoke(tenant_id='tenant-acme',name='hr_tool',endpoint='http://hr-worker:9000',arguments={'q':'hire'}))
-    assert result=={'ok':True,'answer':42}
-    server,name,arguments=transport.call_tool.call_args.args
-    assert server.tenant_id=='tenant-acme' and server.transport_url=='http://hr-worker:9000'
-    assert name=='hr_tool' and arguments=={'q':'hire'}
+
+    transport = AsyncMock()
+    transport.call_tool.return_value = {"ok": True, "answer": 42}
+    result = asyncio.run(
+        DynamicToolInvoker(transport).invoke(
+            tenant_id="tenant-acme",
+            name="hr_tool",
+            endpoint="http://hr-worker:9000",
+            arguments={"q": "hire"},
+        )
+    )
+    assert result == {"ok": True, "answer": 42}
+    server, name, arguments = transport.call_tool.call_args.args
+    assert server.tenant_id == "tenant-acme" and server.transport_url == "http://hr-worker:9000"
+    assert name == "hr_tool" and arguments == {"q": "hire"}
 
 
 def test_update_and_delete_tool(client: TestClient) -> None:
@@ -147,9 +158,20 @@ def test_register_emits_outbox_event(client: TestClient, monkeypatch) -> None:
 
 def test_known_authorized_local_tool_list_and_invoke(client):
     from types import SimpleNamespace
-    client.app.state.mcp_server.register_tool(SimpleNamespace(name='fixture_read',required_scope='platform.read',agent_invokable=True,input_schema={},handler=lambda: {'answer':42}))
-    listed=client.get('/api/v1/mcp/tools',headers=_bearer())
-    assert listed.status_code==200
-    assert 'fixture_read' in {t['name'] for t in listed.json()['tools']}
-    invoked=client.post('/api/v1/mcp/tools/fixture_read',headers=_bearer(),json={'arguments':{}})
-    assert invoked.status_code==200 and invoked.json()['result']=={'answer':42}
+
+    client.app.state.mcp_server.register_tool(
+        SimpleNamespace(
+            name="fixture_read",
+            required_scope="platform.read",
+            agent_invokable=True,
+            input_schema={},
+            handler=lambda: {"answer": 42},
+        )
+    )
+    listed = client.get("/api/v1/mcp/tools", headers=_bearer())
+    assert listed.status_code == 200
+    assert "fixture_read" in {t["name"] for t in listed.json()["tools"]}
+    invoked = client.post(
+        "/api/v1/mcp/tools/fixture_read", headers=_bearer(), json={"arguments": {}}
+    )
+    assert invoked.status_code == 200 and invoked.json()["result"] == {"answer": 42}

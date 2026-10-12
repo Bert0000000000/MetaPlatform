@@ -410,9 +410,24 @@ class TestLinkTypeInterfaceE2E:
             "directionality": "directed",
             "link_properties": [],
         }
-        for rid in (lt['src'],lt['dst']):
-            response=c.post('/api/v1/ont/v2/object-types',json={'rid':rid,'primary_key':['ont.acme.prop.id'],'properties':[{'rid':'ont.acme.prop.id','type_id':'string','format':'string','primary_key':True,'nullable':False}]})
-            assert response.status_code==200
+        for rid in (lt["src"], lt["dst"]):
+            response = c.post(
+                "/api/v1/ont/v2/object-types",
+                json={
+                    "rid": rid,
+                    "primary_key": ["ont.acme.prop.id"],
+                    "properties": [
+                        {
+                            "rid": "ont.acme.prop.id",
+                            "type_id": "string",
+                            "format": "string",
+                            "primary_key": True,
+                            "nullable": False,
+                        }
+                    ],
+                },
+            )
+            assert response.status_code == 200
         r = c.post("/api/v1/ont/v2/link-types", json=lt)
         assert r.status_code == 200, r.text
         assert r.json()["cardinality"] == "1:N"

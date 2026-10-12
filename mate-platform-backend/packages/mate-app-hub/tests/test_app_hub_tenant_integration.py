@@ -29,19 +29,19 @@ JWT_SECRET = "test-secret"
 def _token(*, tenant_id: str, scopes: str = "platform.read platform.write") -> str:
     now = int(time.time())
     claims = {
-            "sub": "u-1",
-            "iss": "http://localhost:8080/realms/metaplatform",
-            "aud": "metaplatform-backend",
-            "azp": "metaplatform-backend",
-            "preferred_username": "u-1",
-            "realm_access": {"roles": ["PLATFORM_SUPER_ADMIN"]},
-            "scope": scopes,
-            "attributes": {"tenant_id": [tenant_id]},
-            "tenant_id": tenant_id,
-            "roles": ["PLATFORM_SUPER_ADMIN"],
-            "iat": now,
-            "exp": now + 3600,
-        }
+        "sub": "u-1",
+        "iss": "http://localhost:8080/realms/metaplatform",
+        "aud": "metaplatform-backend",
+        "azp": "metaplatform-backend",
+        "preferred_username": "u-1",
+        "realm_access": {"roles": ["PLATFORM_SUPER_ADMIN"]},
+        "scope": scopes,
+        "attributes": {"tenant_id": [tenant_id]},
+        "tenant_id": tenant_id,
+        "roles": ["PLATFORM_SUPER_ADMIN"],
+        "iat": now,
+        "exp": now + 3600,
+    }
     if not tenant_id:
         # Missing tenant reaches require_tenant. A present-empty signed tenant
         # is malformed and is separately rejected by TokenVerifier with401.

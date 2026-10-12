@@ -527,6 +527,7 @@ def update_source(
         source.type = type
     if connection_config is not None:
         from ..services.source_connector import merge_config
+
         source.connection_config = merge_config(source.connection_config, connection_config)
     source.updated_at = _now()
     return put_source(tenant_id, source)
