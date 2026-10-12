@@ -21,7 +21,7 @@ process.env.E2E_TENANT=session.writer.tenant;
 process.env.E2E_IAM_LOGIN_URL='http://127.0.0.1:55523/api/v1/iam/auth/login';
 process.env.E2E_USERNAME='writer';process.env.E2E_PASSWORD=credentials.writer_password;
 export default defineConfig({
- projects:[{name:'web',testDir:path.join(root,'metaplatform-frontend/apps/web/tests/e2e'),testMatch:/(?:^|[\\/])(ontology-(relationship-flow|object-creation-flow|ia-v2-data-flow|migration-plan)|mp11-order-app-flow|website-entry)\.spec\.ts$/},{name:'core',testDir:path.join(root,'metaplatform-frontend/tests/e2e/ontology-loop'),testMatch:'ontology-core.spec.ts'}],
+ projects:[{name:'web',testDir:path.join(root,'metaplatform-frontend/apps/web/tests/e2e'),testMatch:/(?:^|[\\/])(ontology-(relationship-flow|object-creation-flow|ia-v2-data-flow|migration-plan)|mp11-(order-app-flow|catalog-pagination)|website-entry)\.spec\.ts$/},{name:'core',testDir:path.join(root,'metaplatform-frontend/tests/e2e/ontology-loop'),testMatch:'ontology-core.spec.ts'}],
  timeout:120000,workers:1,retries:0,fullyParallel:false,
  reporter:[['list']],outputDir:path.join(privateDir,'playwright-results'),
  use:{...devices['Desktop Chrome'],baseURL:'http://127.0.0.1:9368',trace:'off',video:'off',screenshot:'off',actionTimeout:15000},

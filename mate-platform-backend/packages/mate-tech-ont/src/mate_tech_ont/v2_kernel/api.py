@@ -3486,6 +3486,8 @@ async def propose_instance(
 ) -> ProposalResponse:
     """MP-SAL-04b：AI 从文本抽取的字段 → 新建实例提议（kind=create_instance，不落库）。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     if not class_rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
     _logger.info(
@@ -3521,6 +3523,8 @@ async def propose_object_type(
 ) -> ProposalResponse:
     """MP-SAL-04b：AI 辅助建模提议（kind=model_type；确认后经 execute 落库）。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     type_def = payload.type_def.model_dump()
     if not type_def["rid"].startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
@@ -3924,6 +3928,8 @@ async def propose_object_type_merge(
     user confirm → 自动调 ``execute_proposal`` → 触发 merge_object_types。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not payload.source_rid.startswith(f"ont.{tenant_id}."):
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")

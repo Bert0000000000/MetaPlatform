@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { listApps, getApp } from '@/api/apphub/apps';
 import { getAppRuntime } from '@/api/apphub/runtime';
 import { listBigDataSources, type BigDataSource } from '@/api/ontology-bigdata';
-import { listObjectTypes, listLinkTypes, listBackingDatasources, listIndividuals, listLinkInstances,
+import { listAllObjectTypes, listLinkTypes, listBackingDatasources, listIndividuals, listLinkInstances,
   type KernelObjectType, type KernelLinkType, type KernelBackingDatasource } from '@/api/ont/kernel';
 import type { AppItem } from '@/api/apphub/types';
 import type { OrderBinding } from '@/api/apphub/pages';
@@ -59,7 +59,7 @@ function OnboardingFlow({ storageKey }: { storageKey: string }) {
     if (!selection.flow) return;
     setLoading(true); setError(''); setEvidence(null);
     try {
-      const [s, m, l, a] = await Promise.all([listBigDataSources(), listObjectTypes(), listLinkTypes(), listApps()]);
+      const [s, m, l, a] = await Promise.all([listBigDataSources(), listAllObjectTypes(), listLinkTypes(), listApps()]);
       setSources(s); setModels(m); setLinks(l); setApps(a.items);
       const selectedModel = m.find(x => x.rid === selection.modelRid);
       const mapped = selection.modelRid ? await listBackingDatasources(selection.modelRid) : [];

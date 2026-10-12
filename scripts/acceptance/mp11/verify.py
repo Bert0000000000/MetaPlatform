@@ -264,7 +264,7 @@ class Acceptance:
         self.login()
         relation_tenant='mp11-rel-'+run
         issued={};accounts={}
-        for name,tenant,role in [('rel-'+run,relation_tenant,'writer'),('rel-read-'+run,relation_tenant,'reader'),('empty-'+run,'mp11-empty-'+run,'writer')]:
+        for name,tenant,role in [('rel-'+run,relation_tenant,'writer'),('rel-read-'+run,relation_tenant,'reader'),('empty-'+run,'mp11-empty-'+run,'writer'),('catalog-'+run,'mp11-catalog-'+run,'writer')]:
             password=secrets.token_urlsafe(36)
             accounts[name]={'password':password,'tenant':tenant,'role':role}
             manage.save(manage.PRIVATE/'browser-accounts.json',accounts)
@@ -278,7 +278,7 @@ class Acceptance:
             if mapped.status_code!=204:raise RuntimeError('owned issuer role map failed')
             login=httpx.post('http://127.0.0.1:55523/api/v1/iam/auth/login',json={'username':name,'password':password},trust_env=False)
             if login.status_code!=200:raise RuntimeError('browser fixture signed login failed HTTP'+str(login.status_code)+' category='+str(login.json().get('detail',''))[:120])
-            issued[role if name.startswith('rel-') else 'empty']={'token':login.json()['accessToken'],'tenant':tenant,'subject':login.json()['userId']}
+            issued[role if name.startswith('rel-') else 'catalog' if name.startswith('catalog-') else 'empty']={'token':login.json()['accessToken'],'tenant':tenant,'subject':login.json()['userId']}
         actor='relationship';self.sessions[actor]=Session(actor,issued['writer']['token'])
         pref='ont.'+relation_tenant
         def obj(name):return pref+'.obj.'+name
@@ -293,16 +293,54 @@ class Acceptance:
                 self.request('POST','/ont/v2/individuals',actor=actor,json={'rid':pref+f'.ind.{letter}{index:03}','class_rid':obj(kind),'primary_key':f'{letter.upper()}{index:03}','props':{prop('id'):{'type':'string','value':f'{letter.upper()}{index:03}'}}})
             self.request('POST','/ont/v2/link-instances',actor=actor,json={'rid':pref+f'.lnk.paged.{index:03}','link_type_rid':paged,'src':pref+'.ind.c001','dst':pref+f'.ind.o{index:03}','props':{}})
         relation={**issued['writer'],'readToken':issued['reader']['token'],'customer':obj('customer'),'order':obj('order'),'lateSource':obj('type103')}
+        # Independent additive tenant: old relationship fixture remains exactly104 types.
+        catalog = self.prepare_catalog_fixture(run, issued['catalog'])
         from mate_platform.auth.config import load_auth_config
         from mate_platform.auth.verifier import TokenVerifier
         subject=TokenVerifier(load_auth_config()).verify(self.sessions['writer']._token).sub
         # Credential-bearing browser inputs remain ACL-protected and ignored.
-        session={'run_id':run,'writer':{'token':self.sessions['writer']._token,'tenant':'mp11-candidate','subject':subject},'relation':relation,'empty':issued['empty'],'api':'http://127.0.0.1:55522/api/v1'}
+        session={'run_id':run,'writer':{'token':self.sessions['writer']._token,'tenant':'mp11-candidate','subject':subject},'relation':relation,'empty':issued['empty'],'catalog':catalog,'api':'http://127.0.0.1:55522/api/v1'}
         manage.save(manage.PRIVATE/'ui-session.json',session)
         manage.save(run_dir/'ui-session.json',session)
         fixture={'run_id':run,'relationship_tenant':relation_tenant,'empty_tenant':issued['empty']['tenant'],'object_types':104,'customers':201,'orders':201,'paged_links':201,'signed_grants':True,'prior_inputs_retained':True}
         self.evidence['checks']['browser_fixtures']=fixture
         manage.save(OUT/('browser-fixtures-'+run+'.json'),fixture)
+
+    def prepare_catalog_fixture(self, run, grant):
+        """Fresh actual-PG late-page models for the three downstream consumers."""
+        from psycopg2.extensions import parse_dsn
+        actor='catalog';self.sessions[actor]=Session(actor,grant['token'])
+        pref='ont.'+grant['tenant'];prop=lambda name:pref+'.prop.'+name
+        for index in range(101):
+            self.request('POST','/ont/v2/object-types?create_only=true',actor=actor,json={
+                'rid':pref+f'.obj.filler{index:03}','display_name':f'Catalog filler {index:03}',
+                'primary_key':[prop('id')],'properties':[{'rid':prop('id'),'type_id':'integer','format':'integer','primary_key':True,'nullable':False,'title':'id'}]})
+        models={}
+        for kind,fields in [('customer',[('id','integer'),('name','string')]),('order',[('id','integer'),('total','integer'),('status','string')])]:
+            rid=pref+'.obj.z'+kind
+            models[kind]=self.request('POST','/ont/v2/object-types?create_only=true',actor=actor,json={
+                'rid':rid,'display_name':'Late '+kind.title(),'primary_key':[prop('id')],
+                'properties':[{'rid':prop(name),'type_id':typ,'format':typ,'primary_key':name=='id','nullable':False,'title':name} for name,typ in fields]})
+        first=self.request('GET','/ont/v2/object-types?limit=100&offset=0',actor=actor)
+        later=self.request('GET','/ont/v2/object-types?limit=100&offset=100',actor=actor)
+        assert len(first)==100 and len(later)==3
+        assert all(models[k]['rid'] not in {x['rid'] for x in first} for k in models)
+        assert all(models[k]['rid'] in {x['rid'] for x in later} for k in models)
+        cfg=parse_dsn(manage.pg_dsn(manage.active_database()))
+        source=self.request('POST','/data/sources',actor=actor,json={'name':'Late catalog PostgreSQL '+run,'type':'postgres',
+            'connection_config':{'host':cfg['host'],'port':int(cfg['port']),'database':cfg['dbname'],'username':cfg['user'],'password':cfg['password'],'schema':'mp11_ui_source'}})
+        link=pref+'.link.customer_orders'
+        self.request('POST','/ont/v2/link-types',actor=actor,json={'rid':link,'src':models['customer']['rid'],'dst':models['order']['rid'],'cardinality':'1:N','directionality':'directed'})
+        original=self.request('GET','/ont/v2/action-types/ont.mp11-candidate.act.review')
+        action=json.loads(json.dumps(original).replace('mp11-candidate',grant['tenant']))
+        action['on']=[models['order']['rid']]
+        self.request('POST','/ont/v2/action-types',actor=actor,json=action)
+        safe={'run_id':run,'tenant':grant['tenant'],'object_types':103,'first_page_count':100,'late_page_count':3,
+              'order':models['order']['rid'],'customer':models['customer']['rid'],'source_id':source['id'],
+              'link':link,'action':action['rid'],'signed_grant':True,'separate_from_relationship_fixture':True}
+        final_out=manage.ROOT/'docs/active/delivery/evidence/mp11-final-fix'
+        final_out.mkdir(exist_ok=True);manage.save(final_out/('catalog-fixture-'+run+'.json'),safe)
+        return {**grant,**safe}
 
     def refresh_browser(self):
         path=manage.PRIVATE/'ui-session.json';sessions=json.loads(path.read_text())
@@ -316,7 +354,10 @@ class Acceptance:
             if response.status_code!=200:raise RuntimeError('browser session refresh failed')
             token=response.json()['accessToken'];claims=verifier.verify(token)
             if claims.expires_at-time.time()<1800:raise RuntimeError('browser session lifetime insufficient')
-            if username.startswith('empty-'):sessions['empty']['token']=token
+            if username.startswith('catalog-'):
+                if claims.tenant_id!=sessions['catalog']['tenant']:raise RuntimeError('catalog session tenant mismatch')
+                sessions['catalog']['token']=token
+            elif username.startswith('empty-'):sessions['empty']['token']=token
             else:
                 if claims.tenant_id!=sessions['relation']['tenant']:raise RuntimeError('browser session tenant mismatch')
                 sessions['relation']['readToken' if account['role']=='reader' else 'token']=token

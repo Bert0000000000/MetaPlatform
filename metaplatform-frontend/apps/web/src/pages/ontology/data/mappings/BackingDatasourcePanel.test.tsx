@@ -2,7 +2,7 @@ vi.mock('@douyinfe/semi-ui', () => ({ Button: (p: any) => <button>{p.children}</
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
-const api = vi.hoisted(() => ({ listObjectTypes: vi.fn(), listBackingDatasources: vi.fn(), upsertBackingDatasource: vi.fn(), syncBackingDatasources: vi.fn() }));
+const api = vi.hoisted(() => ({ listAllObjectTypes: vi.fn(), listBackingDatasources: vi.fn(), upsertBackingDatasource: vi.fn(), syncBackingDatasources: vi.fn() }));
 const data = vi.hoisted(() => ({ listBigDataSources: vi.fn(), discoverBigDataSchema: vi.fn(), testBigDataSourceConnection: vi.fn() }));
 vi.mock('lottie-web', () => ({ default: { loadAnimation: vi.fn() } }));
 vi.mock('@/api/ont/kernel', () => api);
@@ -11,7 +11,7 @@ vi.mock('@/api/ontology-bigdata', () => data);
 import BackingDatasourcePanel from './BackingDatasourcePanel';
 
 it('confirms discovered mapping and persists selected registered source and time column', async () => {
-  api.listObjectTypes.mockResolvedValue([{ rid: 'ont.t.obj.order', display_name: 'Order', primary_key: ['ont.t.prop.id'], properties: [{ rid: 'ont.t.prop.id', title: 'id', primary_key: true, nullable: false, type_id: 'integer' }] }]);
+  api.listAllObjectTypes.mockResolvedValue([{ rid: 'ont.t.obj.order', display_name: 'Order', primary_key: ['ont.t.prop.id'], properties: [{ rid: 'ont.t.prop.id', title: 'id', primary_key: true, nullable: false, type_id: 'integer' }] }]);
   api.listBackingDatasources.mockResolvedValue([]);
   data.listBigDataSources.mockResolvedValue([{ sourceId: 's', name: 'Orders PG', sourceType: 'POSTGRES' }]);
   data.testBigDataSourceConnection.mockResolvedValue({ success: true, trace_id: 'probe' });

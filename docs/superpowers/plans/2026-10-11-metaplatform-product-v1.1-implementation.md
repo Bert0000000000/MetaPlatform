@@ -39,9 +39,12 @@
 
 ## 统一验收样例
 
-- 类型 Customer / Order，属性 id、name / id、customer_id、amount、status。
-- 关系 customer_orders：Customer → Order，1:N；客户侧名称“订单”、订单侧名称“客户”。
-- 实例 C001 / O001、O002；C001 可关联两个订单，第二个客户不能占用同一订单。
+候选版固定验收样例按控制器的 M2 等价样例裁定，以实际列与同一对象链为准：
+- 类型 Customer / Order，实际属性 id、name / id、total、status；主键为数值，客户 1、订单 1 / 2。
+- 关系 customer_orders：Customer → Order，1:N；通过显式 LinkInstance 建立客户与订单的业务关联。关系定义不会自动创建实例。
+- 保留的 PostgreSQL / fresh / upgrade 回执使用上述实际列与数值标识；基数拒绝、端点类型和双向查询由独立关系场景证明，不能把它们改称为固定链的每项字面输入。
+
+原业务说明插图继续保留：Customer(id,name) / Order(id,customer_id,amount,status)，实例 C001 / O001、O002；C001 可关联两个订单，第二个客户不能占用同一订单。customer_id 仅是普通属性，仍须显式创建关系实例。该插图与独立 Browser 关系夹具的标识不等于历史固定数据/应用回执的实际字段与 ID，历史回执不重命名。
 - 数据来自独立测试 PostgreSQL 和固定 CSV；订单审核应用查询同一对象集合。
 - 通过人工确认的动作将订单状态变为 approved，记录 proposal、执行回执、幂等键与审计。
 - 重复请求最多一次副作用；错误租户、错误端点类型、缺失对象、无权身份、错列、断连分别有明确结果。

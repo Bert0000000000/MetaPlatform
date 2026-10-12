@@ -7,7 +7,7 @@ These tests exercise the auth + tenancy contract end-to-end:
   - test_missing_scope_403: token with no scopes reaches the handler
     (current behaviour; pinned because step 4 ACL wiring is out of
     scope for PR#12).
-  - test_no_tenant_400: token with empty tenant_id is rejected by
+  - test_no_tenant_400: token without a signed tenant is rejected by
     require_tenant (TenantAccessError -> non-200).
   - test_tenant_isolation_ok: two tenants querying the same
     endpoint see disjoint catalogs.
@@ -28,8 +28,7 @@ JWT_SECRET = "test-secret"
 
 def _token(*, tenant_id: str, scopes: str = "platform.read platform.write") -> str:
     now = int(time.time())
-    return pyjwt.encode(
-        {
+    claims = {
             "sub": "u-1",
             "iss": "http://localhost:8080/realms/metaplatform",
             "aud": "metaplatform-backend",
@@ -42,10 +41,13 @@ def _token(*, tenant_id: str, scopes: str = "platform.read platform.write") -> s
             "roles": ["PLATFORM_SUPER_ADMIN"],
             "iat": now,
             "exp": now + 3600,
-        },
-        JWT_SECRET,
-        algorithm="HS256",
-    )
+        }
+    if not tenant_id:
+        # Missing tenant reaches require_tenant. A present-empty signed tenant
+        # is malformed and is separately rejected by TokenVerifier with401.
+        claims.pop("tenant_id")
+        claims.pop("attributes")
+    return pyjwt.encode(claims, JWT_SECRET, algorithm="HS256")
 
 
 @pytest.fixture

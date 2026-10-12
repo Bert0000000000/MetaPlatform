@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { listBackingDatasources, listObjectTypes, syncBackingDatasources, upsertBackingDatasource, type KernelBackingDatasource, type KernelObjectType, type BackingSyncResult } from '@/api/ont/kernel';
+import { listBackingDatasources, listAllObjectTypes, syncBackingDatasources, upsertBackingDatasource, type KernelBackingDatasource, type KernelObjectType, type BackingSyncResult } from '@/api/ont/kernel';
 import { listBigDataSources, discoverBigDataSchema, testBigDataSourceConnection, type BigDataSource, type SourceSchema } from '@/api/ontology-bigdata';
 import './backing-datasource.css';
 
@@ -23,6 +23,7 @@ export default function BackingDatasourcePanel() {
   const [confirmed, setConfirmed] = useState(false);
   const [rows, setRows] = useState<KernelBackingDatasource[]>([]);
   const [busy, setBusy] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [run, setRun] = useState<BackingSyncResult | null>(null);
@@ -30,9 +31,9 @@ export default function BackingDatasourcePanel() {
   const objectType = types.find(t => t.rid === classRid);
   const selected = schema?.tables.find(t => (t.schema ? `${t.schema}.${t.name}` : t.name) === table);
   const csv = source?.sourceType === 'CSV';
-  useEffect(() => { let active = true; void Promise.all([listObjectTypes(), listBigDataSources()]).then(([t, s]) => {
+  useEffect(() => { let active = true; void Promise.all([listAllObjectTypes(), listBigDataSources()]).then(([t, s]) => {
     if (!active) return; setTypes(t); setSources(s); setClassRid(t[0]?.rid ?? ''); setSourceId(current => current || s[0]?.sourceId || '');
-  }).catch(e => active && setError(errorMessage(e))); return () => { active = false; }; }, []);
+  }).catch(e => active && setError(errorMessage(e))).finally(() => { if (active) setCatalogLoading(false); }); return () => { active = false; }; }, []);
   useEffect(() => { let active = true; setRows([]); setRun(null); if (classRid) void listBackingDatasources(classRid).then(r => { if (active) setRows(r); }).catch(e => active && setError(errorMessage(e))); return () => { active = false; }; }, [classRid]);
   async function action(work: () => Promise<void>) {
     setBusy(true); setError(''); setNotice('');
@@ -72,8 +73,9 @@ export default function BackingDatasourcePanel() {
   return <section style={{ display: 'grid', gap: 14 }}>
     <p>1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步</p>
     <Link to="/gov/data/sources">管理全局数据源</Link>
+    {catalogLoading && <p role="status">加载目录…</p>}
     {error && <div role="alert">{error}</div>}{notice && <p role="status">{notice}</p>}
-    <label>对象类型 <select className="mp-onto-input" aria-label="对象类型" value={classRid} disabled={busy} onChange={e => { setClassRid(e.target.value); setConfirmed(false); setMapping({}); }}><option value="">请选择</option>{types.map(t => <option key={t.rid} value={t.rid}>{t.display_name || t.rid}</option>)}</select></label>
+    <label>对象类型 <select className="mp-onto-input" aria-label="对象类型" value={classRid} disabled={busy || catalogLoading} onChange={e => { setClassRid(e.target.value); setConfirmed(false); setMapping({}); }}><option value="">请选择</option>{types.map(t => <option key={t.rid} value={t.rid}>{t.display_name || t.rid}</option>)}</select></label>
     <label>注册数据源 <select className="mp-onto-input" aria-label="注册数据源" value={sourceId} disabled={busy} onChange={e => { setSourceId(e.target.value); setSchema(null); setTable(''); setConfirmed(false); }}><option value="">请选择</option>{sources.filter(s => ['POSTGRES', 'CSV'].includes(s.sourceType)).map(s => <option key={s.sourceId} value={s.sourceId}>{s.name}</option>)}</select></label>
     <button className="mp-onto-btn" disabled={busy || !sourceId} onClick={() => void action(async () => { setSchema(null); setTable(''); setConfirmed(false); const probe = await testBigDataSourceConnection(sourceId); if (!probe.success) throw new Error(`${probe.error_code}: ${probe.message} · trace ${probe.trace_id}`); setSchema(await discoverBigDataSchema(sourceId)); })}>验证连接并发现字段</button>
     {schema && <>

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import OrderReviewBinding from './OrderReviewBinding';
 const api = vi.hoisted(() => ({ models: vi.fn(), links: vi.fn(), actions: vi.fn() }));
 vi.mock('@/api/ont/kernel', () => ({
-  listObjectTypes: api.models, listLinkTypes: api.links, listActionTypes: api.actions,
+  listAllObjectTypes: api.models, listLinkTypes: api.links, listActionTypes: api.actions,
 }));
 afterEach(cleanup);
 it('uses selected published model fields rather than fixed sample fields', async () => {

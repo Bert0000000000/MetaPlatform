@@ -406,11 +406,14 @@ def list_templates(tenant_id: str) -> list[ApphubTemplate]:
 # Public write API (BUSINESS-SLICES deep implementation)
 # ---------------------------------------------------------------------------
 def get_app(tenant_id: str, code: str) -> ApphubApp | None:
-    """Return a single app by code, or None."""
+    """Resolve an exact ID before the tenant-local legacy code."""
     if not tenant_id:
         return None
     _ensure_tenant(tenant_id)
-    return deepcopy(next((a for a in _APPS[tenant_id].values() if code in (a.id, a.code)), None))
+    apps = _APPS[tenant_id]
+    with _APP_LOCK:
+        app = next((a for a in apps.values() if a.id == code), None) or apps.get(code)
+        return deepcopy(app)
 
 
 def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> ApphubApp:

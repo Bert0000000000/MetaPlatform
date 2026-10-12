@@ -529,3 +529,49 @@ def test_build_factory_returns_all_tools() -> None:
     }
     assert names == expected
     assert len(tools) == 15
+
+# Final I2 consumer: the tenant in the model RID must match the outbound caller.
+@respx.mock
+def test_model_proposal_rid_matches_each_bound_caller_and_context_reset(monkeypatch):
+    from mate_tech_mcp.caller_context import bind_caller, current_caller
+    monkeypatch.setenv('TECH_ONT_TENANT', 'trusted-local')
+    route = respx.post(f"{ONT_BASE}/api/v1/ont/v2/object-types/propose").mock(
+        return_value=httpx.Response(200, json={'proposal_id': 'prop-tenant', 'kind': 'model_type'}))
+    async def run():
+        tool = OntProposeModelTypeTool(base_url=ONT_BASE)
+        async def service_bearer(**kwargs): return 'fixture-service-bearer'
+        monkeypatch.setattr(tool, '_ensure_bearer', service_bearer)
+        try:
+            for tenant in ('tenant-one', 'tenant-two'):
+                with bind_caller(tenant_id=tenant, bearer_token='fixture-caller-bearer',
+                                 scopes=frozenset({'platform.write', 'ont.write'})):
+                    await tool(name='New', slug='obj.new', impact_summary='New model')
+                assert current_caller() is None
+            await tool(name='New', slug='obj.new', impact_summary='Trusted local model')
+        finally:
+            await tool.aclose()
+    asyncio.run(run())
+    observed = [(json.loads(call.request.content)['type_def']['rid'], call.request.headers['X-Tenant-Id'])
+                for call in route.calls]
+    assert observed == [('ont.tenant-one.obj.new.v1', 'tenant-one'),
+                        ('ont.tenant-two.obj.new.v1', 'tenant-two'),
+                        ('ont.trusted-local.obj.new.v1', 'trusted-local')]
+
+@respx.mock
+def test_model_proposal_bound_empty_tenant_never_uses_service_fallback(monkeypatch):
+    from mate_tech_mcp.caller_context import bind_caller
+    monkeypatch.setenv('TECH_ONT_TENANT', 'trusted-local')
+    route = respx.post(f"{ONT_BASE}/api/v1/ont/v2/object-types/propose").mock(
+        return_value=httpx.Response(403, json={'detail': 'cross-tenant propose denied'}))
+    async def run():
+        tool = OntProposeModelTypeTool(base_url=ONT_BASE)
+        try:
+            with bind_caller(tenant_id='', bearer_token='fixture-caller-bearer',
+                             scopes=frozenset({'platform.write', 'ont.write'})):
+                with pytest.raises(httpx.HTTPStatusError):
+                    await tool(name='New', slug='obj.new', impact_summary='Denied model')
+        finally:
+            await tool.aclose()
+    asyncio.run(run())
+    assert json.loads(route.calls.last.request.content)['type_def']['rid'] == 'ont..obj.new.v1'
+    assert route.calls.last.request.headers['X-Tenant-Id'] == ''

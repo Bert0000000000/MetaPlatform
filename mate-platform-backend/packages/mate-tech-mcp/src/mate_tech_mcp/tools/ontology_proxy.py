@@ -394,11 +394,13 @@ class OntProposeModelTypeTool(OntologyProxyTool):
         primary_key: list[str] | None = None,
         client_provenance: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        # 组装完整 ObjectTypeDTO 透传给 tech-ont。rid 由调用方在 type_def 里
-        # 显式给出（cross-tenant 校验在 tech-ont 侧做）；这里只负责构造
-        # 客户端 → server 的 payload shape。
+        # The RID and outbound headers use the same verified caller tenant.
+        # Trusted local invocation keeps its existing configured tenant only
+        # when no caller is bound; an empty bound tenant never falls back.
+        caller = current_caller()
+        tenant_id = caller.tenant_id if caller is not None else self._tenant
         type_def: dict[str, Any] = {
-            "rid": f"ont.__TENANT__.{slug}.v1",  # 占位，由 tech-ont 注入 tenant
+            "rid": f"ont.{tenant_id}.{slug}.v1",
             "primary_key": tuple(primary_key or ["id"]),
             "properties": list(properties or []),
             "display_name": name,

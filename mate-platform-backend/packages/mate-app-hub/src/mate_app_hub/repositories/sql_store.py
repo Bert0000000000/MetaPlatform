@@ -176,12 +176,11 @@ def get_app(tenant_id: str, app_id: str) -> ApphubApp | None:
         return None
     s = _session()
     try:
-        row = s.execute(
-            select(models.ApphubAppORM).where(
-                models.ApphubAppORM.tenant_id == tenant_id,
-                or_(models.ApphubAppORM.id == app_id, models.ApphubAppORM.code == app_id),
-            )
-        ).scalar_one_or_none()
+        # Exact IDs have precedence over tenant-local legacy codes.
+        query = select(models.ApphubAppORM).where(models.ApphubAppORM.tenant_id == tenant_id)
+        row = s.execute(query.where(models.ApphubAppORM.id == app_id)).scalar_one_or_none()
+        if row is None:
+            row = s.execute(query.where(models.ApphubAppORM.code == app_id)).scalar_one_or_none()
         return _orm_to_app(row) if row else None
     finally:
         s.close()

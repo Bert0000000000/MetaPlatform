@@ -104,6 +104,23 @@ export async function listObjectTypes(params?: { limit?: number; offset?: number
   return resp.data as KernelObjectType[];
 }
 
+/** Read the complete authorized catalog; later-page failure never becomes partial success. */
+export async function listAllObjectTypes(): Promise<KernelObjectType[]> {
+  const items: KernelObjectType[] = [];
+  const seen = new Set<string>();
+  const limit = 100;
+  for (let offset = 0; ; ) {
+    const page = await listObjectTypes({ limit, offset });
+    for (const item of page) {
+      if (seen.has(item.rid)) throw new Error('对象类型分页未取得进展，请重新加载');
+      seen.add(item.rid);
+      items.push(item);
+    }
+    if (page.length < limit) return items;
+    offset += page.length;
+  }
+}
+
 export async function getObjectType(rid: string): Promise<KernelObjectType> {
   return getOne<KernelObjectType>(`/object-types/${encodeURIComponent(rid)}`);
 }

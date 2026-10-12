@@ -1,7 +1,7 @@
 vi.mock('@/api/apphub/apps', () => ({ listApps: vi.fn(), getApp: vi.fn() }));
 vi.mock('@/api/apphub/runtime', () => ({ getAppRuntime: vi.fn() }));
 vi.mock('@/api/ontology-bigdata', () => ({ listBigDataSources: vi.fn() }));
-vi.mock('@/api/ont/kernel', () => ({ listObjectTypes: vi.fn(), listLinkTypes: vi.fn(), listBackingDatasources: vi.fn(), listIndividuals: vi.fn(), listLinkInstances: vi.fn() }));
+vi.mock('@/api/ont/kernel', () => ({ listAllObjectTypes: vi.fn(), listLinkTypes: vi.fn(), listBackingDatasources: vi.fn(), listIndividuals: vi.fn(), listLinkInstances: vi.fn() }));
 import { describe, expect, it, vi } from 'vitest';
 const auth = vi.hoisted(() => ({ user: { id: 'one', tenantId: 'a' } }));
 vi.mock('@mate/shared', () => ({ useAuth: () => ({ user: auth.user }) }));
@@ -39,14 +39,14 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { listApps } from '@/api/apphub/apps';
 import { listBigDataSources } from '@/api/ontology-bigdata';
-import { listObjectTypes, listLinkTypes } from '@/api/ont/kernel';
+import { listAllObjectTypes, listLinkTypes } from '@/api/ont/kernel';
 it('renders each user and tenant resume state independently', async () => {
   const saved = new Map<string, string>();
   vi.stubGlobal('localStorage', { clear: () => saved.clear(), getItem: (key: string) => saved.get(key) ?? null, setItem: (key: string, value: string) => saved.set(key, value) });
   localStorage.clear();
   vi.mocked(listApps).mockResolvedValue({ items: [], total: 0 } as any);
   vi.mocked(listBigDataSources).mockResolvedValue([]);
-  vi.mocked(listObjectTypes).mockResolvedValue([]);
+  vi.mocked(listAllObjectTypes).mockResolvedValue([]);
   vi.mocked(listLinkTypes).mockResolvedValue([]);
   auth.user = { id: 'one', tenantId: 'a' };
   const view = render(<MemoryRouter><ProductOnboarding /></MemoryRouter>);

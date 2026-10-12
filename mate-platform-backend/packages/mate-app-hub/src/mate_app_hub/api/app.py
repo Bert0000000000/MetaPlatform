@@ -187,12 +187,7 @@ async def list_app_domains(request: Request) -> dict:
 async def get_app_detail(request: Request, app_id: str) -> dict:
     """Get a single application detail by id or code."""
     tid = _tenant_id(request)
-    # 优先按 id 匹配；fallback 按 code 匹配（get_app 以 code 为 key）
-    app = None
-    for a in list_apps(tid):
-        if app_id in (a.id, a.code):
-            app = a
-            break
+    app = get_app(tid, app_id)
     if app is None:
         raise HTTPException(status_code=404, detail="app not found")
     return _app_payload(app)
@@ -340,7 +335,7 @@ async def update_app(
     from the current one.
     """
     tid = _tenant_id(request)
-    app = next((a for a in list_apps(tid) if code in (a.id, a.code)), None)
+    app = get_app(tid, code)
     if app is None:
         raise HTTPException(status_code=404, detail="app not found")
     new_version = body.version if body.version is not None else app.version
@@ -385,8 +380,7 @@ async def update_app(
 async def delete_app_endpoint(request: Request, code: str) -> dict:
     """Delete an application by code."""
     tid = _tenant_id(request)
-    apps = list_apps(tid)
-    app = next((a for a in apps if a.id == code), None) or next((a for a in apps if a.code == code), None)
+    app = get_app(tid, code)
     if app is None:
         raise HTTPException(status_code=404, detail="app not found")
     if not delete_app(tid, app.id, by_id=True):
@@ -832,7 +826,7 @@ async def _publication_report(request: Request, app: ApphubApp, modules: list[di
         try:
             for binding in bindings:
                 await _read_order_binding(request, binding, app.version)
-            ctx = load_app_runtime(app.tenant_id, app.code)
+            ctx = load_app_runtime(app.tenant_id, app.id)
             if not render_page(replace(ctx, modules=modules)):
                 raise HTTPException(status_code=422, detail="Runtime has no renderable pages")
             record("runtime", "pass", "已加载保存的运行树及实际绑定数据（不执行动作）")
@@ -846,12 +840,12 @@ async def _publication_report(request: Request, app: ApphubApp, modules: list[di
 @router.get("/apps/{app_id}/publication-check", operation_id="apphubCheckPublication")
 async def check_publication(app_id: str, request: Request) -> dict:
     app = _release_app(_tenant_id(request), app_id)
-    ctx = load_app_runtime(app.tenant_id, app.code)
+    ctx = load_app_runtime(app.tenant_id, app.id)
     return await _publication_report(request, app, deepcopy(ctx.modules))
 
 
 async def _capture_snapshot(request: Request, app: ApphubApp, version: str) -> dict:
-    ctx = load_app_runtime(app.tenant_id, app.code)
+    ctx = load_app_runtime(app.tenant_id, app.id)
     modules = deepcopy(ctx.modules)
     report = await _publication_report(request, app, modules)
     if not report["can_publish"]:
@@ -897,7 +891,7 @@ async def create_shortlink_endpoint(request: Request) -> dict:
     app = _release_app(tenant_id, body.get("app_id", ""))
     if app.status != "PUBLISHED" or not app.published_version_id:
         raise HTTPException(status_code=409, detail="App must be published before creating a shortlink")
-    runtime = load_app_runtime(tenant_id, app.code, published_only=True)
+    runtime = load_app_runtime(tenant_id, app.id, published_only=True)
     await _validate_modules(request, runtime.modules)
     expires_at_raw = body.get("expires_at")
     expires_at_dt: datetime | None = None
@@ -1079,8 +1073,7 @@ async def publish_flow(request: Request, module_id: str) -> dict:
 
 def _release_app(tenant_id: str, app_id: str) -> ApphubApp:
     """Resolve exact public ID before considering the tenant-local code."""
-    apps = list_apps(tenant_id)
-    app = next((a for a in apps if a.id == app_id), None) or next((a for a in apps if a.code == app_id), None)
+    app = get_app(tenant_id, app_id)
     if app is None:
         raise HTTPException(status_code=404, detail="app not found")
     return app

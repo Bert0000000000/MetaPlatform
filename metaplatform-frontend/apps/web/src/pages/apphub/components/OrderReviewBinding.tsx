@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listObjectTypes, listLinkTypes, listActionTypes, type KernelObjectType, type KernelLinkType, type KernelActionType } from '@/api/ont/kernel';
+import { listAllObjectTypes, listLinkTypes, listActionTypes, type KernelObjectType, type KernelLinkType, type KernelActionType } from '@/api/ont/kernel';
 import type { OrderBinding } from '@/api/apphub/pages';
 
 const empty: OrderBinding = { object_type: '', model_checksum: '', customer_type: '', customer_checksum: '', fields: [], link_type: '', action_rid: '', object_set: { filter_expr: '', paging_limit: 100 } };
@@ -14,7 +14,7 @@ export default function OrderReviewBinding({ value, onChange }: { value?: OrderB
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [m, l, a] = await Promise.all([listObjectTypes(), listLinkTypes(), listActionTypes()]);
+      const [m, l, a] = await Promise.all([listAllObjectTypes(), listLinkTypes(), listActionTypes()]);
       setModels(m.filter(x => x.status === 'active' && x.checksum)); setLinks(l); setActions(a);
     } catch (e) { setError(e instanceof Error ? e.message : '元数据加载失败'); }
     finally { setLoading(false); }
