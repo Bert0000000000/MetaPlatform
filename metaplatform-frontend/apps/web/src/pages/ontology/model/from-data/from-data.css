@@ -8,8 +8,9 @@
 .fd-page p { font-size: 13px; line-height: 1.7; margin: 6px 0 14px; }
 .fd-page a { color: var(--semi-color-primary); }
 .fd-page code { font-family: var(--mp-font-mono); font-size: 12px; overflow-wrap: anywhere; }
-.fd-page label:not(.semi-checkbox) { display: flex; flex-direction: column; gap: 7px; font-size: 12px; color: var(--semi-color-text-1); min-width: 0; }
-.fd-page input:not([type=checkbox]):not([type=radio]):not([type=file]), .fd-page select, .fd-page textarea { box-sizing: border-box; width: 100%; min-height: 32px; padding: 6px 10px; color: var(--semi-color-text-0); background: var(--semi-color-fill-0); border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-small); font: inherit; font-size: 13px; }
+/* The shared graph owns its controls; candidate form styles must not override them. */
+.fd-page label:not(.semi-checkbox):not(:where(.mp-schema-graph *)) { display: flex; flex-direction: column; gap: 7px; font-size: 12px; color: var(--semi-color-text-1); min-width: 0; }
+.fd-page input:not([type=checkbox]):not([type=radio]):not([type=file]):not(:where(.mp-schema-graph *)), .fd-page select, .fd-page textarea { box-sizing: border-box; width: 100%; min-height: 32px; padding: 6px 10px; color: var(--semi-color-text-0); background: var(--semi-color-fill-0); border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-small); font: inherit; font-size: 13px; }
 .fd-page textarea { resize: vertical; }
 .fd-page input:focus-visible, .fd-page select:focus-visible, .fd-page textarea:focus-visible, .fd-steps button:focus-visible { outline: 2px solid var(--semi-color-primary); outline-offset: 2px; }
 .fd-page input:disabled, .fd-page select:disabled, .fd-page textarea:disabled { opacity: .6; }
@@ -157,3 +158,7 @@ dl.fd-findings > div { display: grid; grid-template-columns: 110px minmax(0, 1fr
 .fd-sync-details { max-width: 500px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
 .fd-relationship-repair { padding: 16px; margin: 16px 0; border: 1px solid var(--semi-color-border); border-radius: 8px; background: var(--semi-color-fill-0); }
 .fd-relationship-repair p { margin: 8px 0; line-height: 1.65; overflow-wrap: anywhere; }
+
+.fd-publication-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; }
+.fd-publication-feedback { flex: 1 1 320px; min-width: 0; max-height: 96px; overflow: auto; overflow-wrap: anywhere; font-size: 13px; line-height: 1.6; color: var(--semi-color-text-1); }
+.fd-publication-footer .fd-inline { flex-shrink: 0; margin-left: auto; }

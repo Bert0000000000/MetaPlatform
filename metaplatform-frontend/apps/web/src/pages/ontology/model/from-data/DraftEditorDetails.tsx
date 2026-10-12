@@ -7,7 +7,6 @@ import IdentityReview from './IdentityReview';
 import ParentIdentityRepair from './ParentIdentityRepair';
 import RelationshipReview from './RelationshipReview';
 import RelationshipRepair from './RelationshipRepairPanel';
-import ReuseComparison from './ReuseComparison';
 import { renameConcept } from './renameConcept';
 import { applyParent, canSelectParent, hierarchyRows } from './hierarchy';
 import ReviewBatch from './ReviewBatch';
@@ -104,8 +103,6 @@ export default function DraftEditor({ draft, profile, types, resolutions, onChan
     </>}
     {draft.classes.map((cls, i) => {
       if (selection && (selection.kind !== "classes" || selection.id !== cls.id)) return null;
-      const resolution = resolutions[cls.id] ?? { mode: 'new', propertyMap: {} };
-      const nativeType = types.find(t => t.rid === resolution.targetRid);
       return <section className="fd-card" id={`fd-class-${cls.id}`} tabIndex={-1} onFocus={() => setCollapsed(current => { if (!current.has(cls.id)) return current; const next = new Set(current); next.delete(cls.id); return next; })} key={cls.id} aria-label={`对象类型 ${cls.name}`}>
         <div className="fd-section-head"><div className="fd-inline"><Tag>{cls.id}</Tag><strong>{cls.name}</strong><Button size="small" theme="borderless" disabled={identityLocked} title={identityLocked ? '已有发布结果，请另建候选；正式身份变更需走平台迁移。' : '为不同业务概念选择不同的稳定标识'} onClick={() => { setRenaming({ from: cls.id, value: cls.id }); setRenameError(''); }}>修改稳定标识</Button></div>
           <div className="fd-inline">{!selection && <Button size="small" theme="borderless" aria-expanded={!collapsed.has(cls.id)} aria-label={`${collapsed.has(cls.id) ? "展开" : "收起"}${cls.name}详情`} onClick={() => setCollapsed(current => { const next = new Set(current); if (next.has(cls.id)) next.delete(cls.id); else next.add(cls.id); return next; })}>{collapsed.has(cls.id) ? "展开详情" : "收起详情"}</Button>}<Button size="small" theme="borderless" disabled={identityLocked} onClick={() => changeScope('classes', cls.id)}>{included(cls) ? '本次暂不发布' : '恢复本次发布'}</Button><Checkbox disabled={!included(cls) || Boolean(classReviewProblem(cls, draft))} checked={classReviewed(cls)} onChange={e => e.target.checked ? onChange(confirmCandidates(draft, 'classes', [cls.id])) : update(next => { next.classes[i].accepted = false; })}>已确认对象定义</Checkbox>
@@ -120,20 +117,17 @@ export default function DraftEditor({ draft, profile, types, resolutions, onChan
           <label>业务定义与粒度<input value={cls.description} placeholder="例如：一个工厂中的一个库存批次" onChange={e => update(next => { next.classes[i].description = e.target.value; next.classes[i].accepted = false; })} /></label>
           <label>父类（可选）<select aria-label={`${cls.name} 父类`} disabled={identityLocked} value={cls.parentClassId ?? ''} onChange={e => update(next => applyParent(next, cls.id, e.target.value || null))}><option value="">独立类（不推断继承）</option>{draft.classes.filter(parent => canSelectParent(draft.classes, cls.id, parent.id)).map(parent => <option key={parent.id} value={parent.id}>{parent.name}</option>)}</select></label>
           {cls.parentClassId && <label>继承依据<input aria-label={`${cls.name} 继承依据`} required maxLength={1000} value={cls.inheritanceReason ?? ''} placeholder="说明为什么它是一种父类，并引用业务或数据依据" onChange={e => update(next => { next.classes[i].inheritanceReason = e.target.value; next.classes[i].accepted = false; })} /></label>}
-          <label>平台接入方式<select value={resolution.mode} onChange={e => onResolve(cls.id, { mode: e.target.value as ModelingResolution['mode'], propertyMap: {} })}><option value="new">新建对象类型</option><option value="reuse">复用已有类型</option><option value="extend">扩展已有类型</option></select></label>
-          {resolution.mode !== 'new' && <label>目标对象类型<select value={resolution.targetRid ?? ''} onChange={e => onResolve(cls.id, { ...resolution, targetRid: e.target.value, propertyMap: {} })}><option value="">请选择平台对象类型</option>{types.map(t => <option key={t.rid} value={t.rid}>{t.display_name || t.rid}</option>)}</select></label>}
         </div>
-        <ReuseComparison cls={cls} resolution={resolution} types={types} parentRid={resolutions[cls.parentClassId ?? '']?.targetRid} />
+        <p className="mp-onto-muted">此处只审核候选定义；新建、复用或增加属性在发布前选择。</p>
         <ParentIdentityRepair cls={cls} draft={draft} profile={profile} locked={identityLocked} onChange={value => update(next => Object.assign(next, value))} />
         <IdentityReview cls={cls} profile={profile} locked={identityLocked} onChange={patch => update(next => { Object.assign(next.classes[i], patch, { accepted: false }); })} />
         {cls.parentClassId && <p className="mp-onto-muted">子类继承父类的属性与身份。选择父类会补齐缺失属性、沿用父类身份并取消相关审核，请核对数据映射；已有同名标识的类型冲突由校验指出。</p>}
         {selection && <h3>属性定义</h3>}
-        <div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>属性</th><th>数据类型</th><th>业务身份</th><th>显示标签</th>{resolution.mode !== 'new' && <th>对应平台属性</th>}<th>操作</th></tr></thead><tbody>
+        <div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>属性</th><th>数据类型</th><th>业务身份</th><th>显示标签</th><th>操作</th></tr></thead><tbody>
           {cls.properties.map((prop, p) => <tr key={prop.id}><td><input aria-label={`${cls.name} 属性 ${prop.id}`} value={prop.name} onChange={e => update(next => { next.classes[i].properties[p].name = e.target.value; next.classes[i].accepted = false; })} /><small>{prop.id}</small></td>
             <td><select disabled={identityLocked && cls.identity.includes(prop.id)} aria-label={`${prop.name} 数据类型`} value={prop.dataType} onChange={e => update(next => { next.classes[i].properties[p].dataType = e.target.value as typeof prop.dataType; next.classes[i].accepted = false; })}><option value="text">文本</option><option value="number">数值</option><option value="date">日期</option></select></td>
             <td><Checkbox aria-label={`${cls.name} ${prop.name} 作为身份`} disabled={identityLocked || cls.identityStatus === 'unresolved' || cls.identityStatus === 'source-record'} checked={cls.identity.includes(prop.id)} onChange={e => update(next => { next.classes[i].identityStatus = 'proposed'; next.classes[i].identity = e.target.checked ? [...cls.identity, prop.id] : cls.identity.filter(id => id !== prop.id); next.classes[i].accepted = false; })} /></td>
             <td><input type="radio" aria-label={`${cls.name} ${prop.name} 作为标签`} name={`label-${cls.id}`} checked={cls.labelProperty === prop.id} onChange={() => update(next => { next.classes[i].labelProperty = prop.id; next.classes[i].accepted = false; })} /></td>
-            {resolution.mode !== 'new' && <td><select aria-label={`${cls.name} ${prop.name} 平台属性`} value={resolution.propertyMap[prop.id] ?? ''} onChange={e => onResolve(cls.id, { ...resolution, propertyMap: { ...resolution.propertyMap, [prop.id]: e.target.value } })}><option value="">{resolution.mode === 'extend' ? '新增属性' : '选择属性'}</option>{nativeType?.properties.map(np => <option key={np.rid} value={np.rid}>{np.title || np.rid}</option>)}</select></td>}
             <td><Button aria-label={`删除属性 ${cls.name} ${prop.name}`} disabled={identityLocked || cls.properties.length <= 1} theme="borderless" icon={<Trash2 size={14} />} onClick={() => update(next => { const c = next.classes[i]; c.properties.splice(p, 1); c.identity = c.identity.filter(id => id !== prop.id); c.identityStatus = 'proposed'; if (c.labelProperty === prop.id) c.labelProperty = c.properties[0].id; c.accepted = false; for (const m of next.mappings.filter(m => m.classId === cls.id)) { delete m.bindings[prop.id]; m.accepted = false; } })} /></td>
           </tr>)}</tbody></table></div>
         <Button theme="borderless" icon={<Plus size={14} />} onClick={() => update(next => { next.classes[i].properties.push({ id: uniqueId('property', cls.properties.map(p => p.id)), name: '新属性', dataType: 'text' }); next.classes[i].accepted = false; })}>添加属性</Button>

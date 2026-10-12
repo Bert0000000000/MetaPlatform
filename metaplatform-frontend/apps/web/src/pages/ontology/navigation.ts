@@ -27,7 +27,7 @@ export const ONTOLOGY_NAV: OntologyNavItem[] = [
   { key: 'model', label: '业务模型', icon: Shapes, status: 'active', children: [
     { key: 'graph', label: '模型工作台', path: '/ontology/model/graph', status: 'active', keywords: 'graph 图谱 可视化 模型图 模型工作台' },
     { key: 'object-types', label: '对象类型', path: '/ontology/model/object-types', status: 'active', keywords: 'object type 对象类型 建模 objectType' },
-    { key: 'from-data', label: '从数据建模', path: '/ontology/model/from-data', status: 'active', keywords: 'Excel 数据 逆向 建模 AI 推荐 导入' },
+    { key: 'from-data', label: '逆向发现本体', path: '/ontology/model/from-data', status: 'active', keywords: 'Excel 数据 逆向 建模 AI 推荐 导入' },
     { key: 'link-types', label: '关系类型', path: '/ontology/model/link-types', status: 'active', keywords: 'link 关系类型 linkType 关系' },
     { key: 'interfaces', label: '接口定义', path: '/ontology/model/interfaces', status: 'active', advanced: true, keywords: 'interface 接口' },
     { key: 'axioms', label: '公理与约束', path: '/ontology/model/axioms', status: 'active', advanced: true, keywords: 'axiom 公理 约束' },

@@ -25,6 +25,7 @@ function fixture(): ModelingSource {
   };
 }
 beforeEach(() => {
+  sessionStorage.clear();
   vi.clearAllMocks();
   vi.mocked(getModelingSource).mockResolvedValue(fixture());
   vi.mocked(listModelingSources).mockResolvedValue([fixture()]);
@@ -38,32 +39,70 @@ const open = (path = '/ontology/model/from-data?source=source-one') => render(<M
 const openObject = async (name = '物料') => { fireEvent.click(await screen.findByRole('button', { name: `审核${name}` })); };
 const showMappings = () => fireEvent.click(screen.getByRole('tab', { name: /数据映射/ }));
 
-describe('从数据建模独立辅助入口', () => {
-  it('发布中的状态、请求失败和成功结果都显示在发布按钮旁，生成历史不隐藏发布错误', async () => {
+describe('逆向发现本体独立辅助入口', () => {
+  it('离开后从默认入口返回，恢复当前来源、资料步骤及未保存业务背景', async () => {
+    const first = open();
+    await screen.findByRole('button', { name: '已保存' });
+    fireEvent.click(screen.getByRole('button', { name: /1.*资料与业务范围/ }));
+    fireEvent.change(screen.getByRole('textbox', { name: '业务背景' }), { target: { value: '尚未保存的客户业务说明' } });
+    first.unmount();
+    open('/ontology/model/from-data');
+    expect(await screen.findByRole('textbox', { name: '业务背景' })).toHaveValue('尚未保存的客户业务说明');
+    expect(screen.getByRole('button', { name: /1.*资料与业务范围/ })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('combobox', { name: '选择历史导入' })).toHaveValue('source-one');
+    expect(screen.getByRole('button', { name: '保存修改' })).toBeEnabled();
+  });
+
+  it('恢复时服务端修订变化，保留未保存编辑及旧修订并提示冲突', async () => {
+    const first = open();
+    await openObject();
+    fireEvent.change(screen.getByRole('textbox', { name: '业务名称' }), { target: { value: '我的客户定义' } });
+    first.unmount();
+    vi.mocked(getModelingSource).mockResolvedValue({ ...fixture(), revision: 4 });
+    open('/ontology/model/from-data');
+    await screen.findByText(/服务端修订已变化/);
+    await openObject('我的客户定义');
+    expect(screen.getByRole('textbox', { name: '业务名称' })).toHaveValue('我的客户定义');
+    expect(screen.getByText('修订 3 · 未保存')).toBeVisible();
+  });
+
+  it('候选页隐藏质量预检与语义审查，资料页隐藏业务问题但保存时保留历史问题', async () => {
     const source = fixture();
-    source.job = { id: 'job-old', kind: 'generate', status: 'succeeded' };
+    source.review = { summary: '旧语义报告' };
+    source.generation = { fingerprint: 'test', policyVersion: 'test', origin: 'generated', rounds: 1, structureErrors: 0, dataErrors: 0, findings: [], changes: [], notices: [], capabilities: {} };
     vi.mocked(getModelingSource).mockResolvedValue(source);
-    let rejectPublish!: (reason: unknown) => void;
-    vi.mocked(runModelingOperation).mockImplementationOnce(() => new Promise((_, reject) => { rejectPublish = reject; }));
     open();
     await screen.findByRole('button', { name: '已保存' });
-    fireEvent.click(screen.getByRole('button', { name: /本体发布与验收/ }));
-    const confirm = () => {
-      fireEvent.click(screen.getByRole('checkbox', { name: '我已核对校验警告，理解分步发布可能保留部分已完成结果' }));
-      fireEvent.click(screen.getByRole('checkbox', { name: '我确认业务定义和身份规则，发布到平台原生本体' }));
-    };
-    confirm();
-    fireEvent.click(screen.getByRole('button', { name: '确认发布原生模型' }));
-    const feedback = screen.getByLabelText('发布操作反馈');
-    expect(within(feedback).getByRole('status')).toHaveTextContent('正在发布原生模型');
-    expect(screen.getByRole('button', { name: '正在发布…' })).toBeDisabled();
-    rejectPublish(new Error('发布连接失败，请重试'));
-    await waitFor(() => expect(within(feedback).getByRole('alert')).toHaveTextContent('发布连接失败，请重试'));
-    expect(screen.getAllByText('发布连接失败，请重试')).toHaveLength(1);
-    vi.mocked(runModelingOperation).mockResolvedValueOnce({ ...source, publication: { status: 'succeeded', configHash: 'hash3', completed: ['ont.test.obj.material.v1'], results: [] } });
-    fireEvent.click(screen.getByRole('button', { name: '确认发布原生模型' }));
-    await waitFor(() => expect(within(feedback).getByText('本次所选本体已发布')).toBeVisible());
-    expect(within(feedback).queryByText('发布连接失败，请重试')).not.toBeInTheDocument();
+    expect(screen.queryByText(/生成质量预检|AI 语义审查|旧语义报告/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /1.*资料与业务范围/ }));
+    expect(screen.queryByRole('button', { name: '添加业务问题' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /业务问题/ })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: '业务背景' }), { target: { value: '新的业务说明' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存修改' }));
+    await waitFor(() => expect(saveModelingSource).toHaveBeenCalled());
+    expect(vi.mocked(saveModelingSource).mock.calls[0][0].questions).toEqual(source.questions);
+  });
+
+  it('候选定义审核不显示发布选择，进入发布窗口才提供操作', async () => {
+    open();
+    await openObject();
+    expect(screen.queryByLabelText('物料 候选处理方式')).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: '已确认对象定义' })).toBeChecked();
+    fireEvent.click(screen.getByRole('button', {name: /本体发布与验收/}));
+    expect(screen.queryByRole('combobox', {name: '物料 发布操作'})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: '发布本体'}));
+    expect(await screen.findByRole('combobox', {name: '物料 发布操作'})).toHaveValue('new');
+    expect(runModelingOperation).not.toHaveBeenCalled();
+  });
+  it('结构校验无发布方案也能进入发布步骤，不提前要求复用配置', async () => {
+    const source = {...fixture(), plan: null};
+    vi.mocked(getModelingSource).mockResolvedValue(source);
+    open();
+    await screen.findByRole('button', {name: '已保存'});
+    fireEvent.click(screen.getByRole('button', {name: /变更草稿与校验/}));
+    expect(screen.getByRole('button', {name: '查看发布方案'})).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', {name: '查看发布方案'}));
+    expect(screen.getByRole('button', {name: '发布本体'})).toBeEnabled();
   });
 
   it('发布后的独立数据检查不重建发布方案，显式确认后才提交后台同步', async () => {
@@ -117,7 +156,7 @@ describe('从数据建模独立辅助入口', () => {
     vi.mocked(getModelingSource).mockResolvedValue({ ...fixture(), draft: null, job: null });
     vi.mocked(runModelingOperation).mockImplementation(() => new Promise(() => {}));
     open();
-    fireEvent.click(await screen.findByRole('button', { name: '生成模型建议' }));
+    fireEvent.click(await screen.findByRole('button', { name: '发现本体候选' }));
     expect(await screen.findByRole('button', { name: '正在生成建议…' })).toBeDisabled();
     expect(screen.getByLabelText('建议生成进度')).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByText('正在生成模型建议')).toBeVisible();
@@ -133,7 +172,7 @@ describe('从数据建模独立辅助入口', () => {
     vi.mocked(getModelingSource).mockResolvedValue(source);
     open();
     await screen.findByRole('button', { name: '已保存' });
-    fireEvent.click(screen.getByRole('button', { name: /本体校验与接入预览/ }));
+    fireEvent.click(screen.getByRole('button', { name: /变更草稿与校验/ }));
     const blockers = screen.getByRole('region', { name: '发布阻断原因' });
     expect(blockers).toHaveTextContent('物料的稳定标识已存在');
     expect(screen.getByRole('button', { name: '查看发布方案' })).toBeDisabled();
@@ -174,7 +213,7 @@ describe('从数据建模独立辅助入口', () => {
     expect(screen.getByRole('checkbox', { name: '确认对象 物料' })).not.toBeChecked();
     fireEvent.click(await screen.findByRole('button', { name: '确认所选 1 项' }));
     expect(screen.getByRole('checkbox', { name: '确认对象 物料' })).toBeChecked();
-    expect(screen.getByText(/已有审查与校验结果已过期/)).toBeVisible();
+    expect(screen.getByText(/已有校验结果已过期/)).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '取消确认对象' }));
     expect(screen.getByRole('checkbox', { name: '确认对象 物料' })).not.toBeChecked();
     showMappings();
@@ -195,12 +234,12 @@ describe('从数据建模独立辅助入口', () => {
     expect(screen.getByRole('checkbox', { name: '确认对象 物料' })).toBeChecked();
     await openObject();
     expect(screen.getByRole('textbox', { name: '业务名称' })).toHaveValue('物料');
-    expect(screen.queryByText(/已有审查与校验结果已过期/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/已有校验结果已过期/)).not.toBeInTheDocument();
   });
   it('没有来源时引导真实文件导入，不伪造候选模型', async () => {
     open('/ontology/model/from-data');
     expect(await screen.findByRole('button', { name: '选择 Excel 文件' })).toBeVisible();
-    expect(screen.queryByRole('button', { name: '生成模型建议' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '发现本体候选' })).not.toBeInTheDocument();
     expect(runModelingOperation).not.toHaveBeenCalled();
   });
 
@@ -219,7 +258,7 @@ describe('从数据建模独立辅助入口', () => {
     open(); await openObject();
     fireEvent.change(await screen.findByRole('textbox', { name: '业务名称' }), { target: { value: '库存物料' } });
     expect(screen.getByRole('checkbox', { name: '已确认对象定义' })).not.toBeChecked();
-    expect(screen.getByText(/已有审查与校验结果已过期/)).toBeVisible();
+    expect(screen.getByText(/已有校验结果已过期/)).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '保存修改' }));
     await waitFor(() => expect(saveModelingSource).toHaveBeenCalled());
     const saved = vi.mocked(saveModelingSource).mock.calls[0][0];
@@ -232,22 +271,25 @@ describe('从数据建模独立辅助入口', () => {
     open(); await openObject();
     fireEvent.change(await screen.findByRole('textbox', { name: '业务名称' }), { target: { value: '修改后的物料' } });
     fireEvent.click(screen.getByRole('button', { name: /4.*本体发布与验收/ }));
-    expect(screen.getByText('发布方案不存在或已经过期，请先重新校验。')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', {name: '发布本体'}));
+    await screen.findByRole('dialog');
+    await waitFor(() => expect(screen.getByRole('button', {name: '确认发布本体'})).toBeEnabled());
     expect(screen.queryByRole('button', { name: '确认发布原生模型' })).not.toBeInTheDocument();
     expect(runModelingOperation).not.toHaveBeenCalled();
   });
 
-  it('发布同时需要人工确认与警告确认，并携带当前方案指纹', async () => {
-    open(); await openObject(); await screen.findByRole('textbox', { name: '业务名称' });
-    fireEvent.click(screen.getByRole('button', { name: /4.*本体发布与验收/ }));
-    const publish = screen.getByRole('button', { name: '确认发布原生模型' });
-    expect(publish).toBeDisabled();
-    fireEvent.click(screen.getByRole('checkbox', { name: '我确认业务定义和身份规则，发布到平台原生本体' }));
-    expect(publish).toBeDisabled();
-    fireEvent.click(screen.getByRole('checkbox', { name: '我已核对校验警告，理解分步发布可能保留部分已完成结果' }));
+  it('发布窗口显式确认后携带当前方案指纹', async () => {
+    open(); await openObject();
+    fireEvent.click(screen.getByRole('button', {name: /4.*本体发布与验收/}));
+    fireEvent.click(screen.getByRole('button', {name: '发布本体'}));
+    const publish = await screen.findByRole('button', {name: '确认发布本体'});
     expect(publish).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', {name: '校验发布方案'}));
+    await screen.findByText('发布方案校验通过，请核对操作及属性对应后确认发布。');
+    expect(publish).toBeEnabled();
+    expect(runModelingOperation).toHaveBeenCalledWith(expect.objectContaining({revision: 4}), 'validate', {preparePublication: true});
     fireEvent.click(publish);
-    await waitFor(() => expect(runModelingOperation).toHaveBeenCalledWith(expect.objectContaining({ revision: 3 }), 'publish', { configHash: 'hash3', acknowledgeWarnings: true }));
+    await waitFor(() => expect(runModelingOperation).toHaveBeenCalledWith(expect.objectContaining({revision: 3}), 'publish', {configHash: 'hash3', acknowledgeWarnings: true}));
   });
 
   it('并发保存冲突保留用户输入，提示刷新而非静默覆盖', async () => {
@@ -262,9 +304,9 @@ describe('从数据建模独立辅助入口', () => {
 
   it('业务背景改变后要求重新人工确认已有模型与映射', async () => {
     open(); await openObject(); await screen.findByRole('textbox', { name: '业务名称' });
-    fireEvent.click(screen.getByRole('button', { name: /1.*数据与建模范围/ }));
+    fireEvent.click(screen.getByRole('button', { name: /1.*资料与业务范围/ }));
     fireEvent.change(screen.getByRole('textbox', { name: '业务背景' }), { target: { value: '库存改为按批次区分' } });
-    fireEvent.click(screen.getByRole('button', { name: /2.*候选本体审核/ }));
+    fireEvent.click(screen.getByRole('button', { name: /2.*候选匹配与合并确认/ }));
     expect(screen.getByRole('checkbox', { name: '确认对象 物料' })).not.toBeChecked();
     showMappings();
     expect(screen.getByRole('checkbox', { name: /确认映射 库存 →/ })).not.toBeChecked();
@@ -309,7 +351,7 @@ describe('从数据建模独立辅助入口', () => {
     source.publication = { status: 'succeeded', configHash: 'hash3', completed: ['ont.test.obj.material.v1'], results: [] };
     vi.mocked(getModelingSource).mockResolvedValue(source);
     open(); await screen.findByText('本次所选本体已发布');
-    fireEvent.click(screen.getByRole('button', { name: /2.*候选本体审核/ }));
+    fireEvent.click(screen.getByRole('button', { name: /2.*候选匹配与合并确认/ }));
     await openObject();
     await screen.findByRole('textbox', { name: '业务名称' });
     expect(screen.getByRole('button', { name: '修改稳定标识' })).toBeDisabled();

@@ -9,7 +9,7 @@ import {
   type KernelLinkType,
   type ModelPreflight,
 } from '@/api/ont/kernel';
-import ModelGraphCanvas from './graph/ModelGraphCanvas';
+import ModelGraphCanvas from './graph/SchemaGraphCanvas';
 import ModelInspector from './graph/ModelInspector';
 import ModelResourceTree from './graph/ModelResourceTree';
 import { resourceUrl } from '../hooks/resourceContext';

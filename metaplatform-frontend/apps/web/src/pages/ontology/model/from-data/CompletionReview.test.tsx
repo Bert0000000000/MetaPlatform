@@ -1,13 +1,13 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { confirmModelingCompletion, prepareModelingCompletion, type ModelingCompletionPlan, type ModelingSource } from '@/api/ont/modeling';
+import { confirmModelingCompletion, prepareModelingCompletion, saveModelingSource, type ModelingCompletionPlan, type ModelingSource } from '@/api/ont/modeling';
 import CompletionReview from './CompletionReview';
 
 vi.hoisted(() => {
   HTMLCanvasElement.prototype.getContext = (() => ({fillRect() {},clearRect() {},getImageData:() => ({data:new Uint8ClampedArray(4)})})) as unknown as typeof HTMLCanvasElement.prototype.getContext;
 });
-vi.mock('@/api/ont/modeling', () => ({confirmModelingCompletion:vi.fn(),prepareModelingCompletion:vi.fn()}));
+vi.mock('@/api/ont/modeling', () => ({confirmModelingCompletion:vi.fn(),prepareModelingCompletion:vi.fn(),saveModelingSource:vi.fn()}));
 const source={id:'source',revision:2,publication:null} as ModelingSource;
 const plan:ModelingCompletionPlan={hash:'a'.repeat(64),canApply:true,
   candidates:[{id:'line',name:'费用明细',identity:['单号','明细号'],reason:'单据内唯一',included:true,originallyIncluded:true,parent:null,problem:''}],
@@ -69,4 +69,13 @@ it('无法自动补全时可直接定位补充信息，离开方案不修改审�
   fireEvent.click(screen.getByRole('button',{name:'一次处理并确认'}));
   fireEvent.click(await screen.findByRole('button',{name:'补充费用明细信息'}));
   expect(edit).toHaveBeenCalledWith('line');expect(confirmModelingCompletion).not.toHaveBeenCalled();
+});
+
+
+it('批量审批弹窗不要求选择新建或复用', async () => {
+  render(<CompletionReview source={source} disabled={false} onPrepare={async () => source} onApplied={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', {name: '一次处理并确认'}));
+  await waitFor(() => expect(screen.getByRole('button', {name: '确认方案并重新校验'})).toBeEnabled());
+  expect(screen.queryByRole('region', {name: '本体候选发布处理'})).not.toBeInTheDocument();
+  expect(saveModelingSource).not.toHaveBeenCalled();
 });

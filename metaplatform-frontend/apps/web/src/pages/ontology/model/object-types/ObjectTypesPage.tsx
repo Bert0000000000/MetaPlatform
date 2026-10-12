@@ -26,7 +26,7 @@ export default function ObjectTypesPage() {
         desc="对象类型的完整建模工作台：领域树、概念表、属性与关系、相似概念合并"
         actions={
           <>
-          <Button onClick={() => navigate('/ontology/model/from-data')}>从数据建模</Button>
+          <Button onClick={() => navigate('/ontology/model/from-data')}>逆向发现本体</Button>
           <Button
             theme="solid"
             type="primary"
