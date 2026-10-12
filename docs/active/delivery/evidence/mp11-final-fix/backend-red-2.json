@@ -1,0 +1,22 @@
+{
+  "label": "backend-red-2",
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "-m",
+    "pytest",
+    "-c",
+    "pyproject.toml",
+    "packages/mate-app-hub/tests/test_mp11_app_identity.py",
+    "packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py",
+    "../scripts/acceptance/mp11/tests/test_manage_stop.py",
+    "-q",
+    "--tb=short",
+    "-p",
+    "no:cacheprovider",
+    "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\final-fix-pytest-8f6e9379"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+  "exit_code": 1,
+  "elapsed_seconds": 18.67,
+  "head": "38ff11900b9d72560afe20db4715d344c1370a23"
+}

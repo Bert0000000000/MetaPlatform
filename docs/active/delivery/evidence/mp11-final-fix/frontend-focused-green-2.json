@@ -1,0 +1,17 @@
+{
+  "label": "frontend-focused-green-2",
+  "command": [
+    "pnpm.cmd",
+    "exec",
+    "vitest",
+    "run",
+    "src/api/ont/catalog-consumers.test.tsx",
+    "src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx",
+    "src/pages/apphub/components/OrderReviewBinding.test.tsx",
+    "src/pages/dashboard/components/ProductOnboarding.test.tsx"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+  "exit_code": 0,
+  "elapsed_seconds": 2.87,
+  "head": "38ff11900b9d72560afe20db4715d344c1370a23"
+}

@@ -1,0 +1,10 @@
+{
+  "file": "docs\\active\\delivery\\evidence\\mp11-final-fix\\actual-browser-fd816e17f27b.log",
+  "count": 1,
+  "classification": "fixed synthetic unsafe credential-URL test label; no actual private/provider input",
+  "public_redaction": "categorical label only; result/count/exit unchanged",
+  "raw_private_path": ".tmp\\codex-mp11-candidate\\final-fix-raw-receipts\\actual-browser-fd816e17f27b.log",
+  "raw_sha256": "29295effc6b8475b6ed55d6f6967f52625ad062570dc15178161820ae9f59c76",
+  "public_sha256": "54a0a758276273f05ff9a86a49dc7f9b65d67c588699a832b52d1d8255a849c5",
+  "actual_secret_scan": "controller scanned12privateJSON inputs14actual-value variants and63public evidence files; zero actual value/JWT/private-key matches"
+}

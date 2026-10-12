@@ -1,0 +1,68 @@
+{
+  "run_id": "da9c5eef585a",
+  "direct": {
+    "instance": {
+      "readonly_http": 403,
+      "stored_count_before": 56,
+      "stored_count_after_denial": 56,
+      "scoped_allowed": {
+        "writer": "prop-3a8d86f5",
+        "service": "prop-2292ae4e"
+      },
+      "service_human_confirm_denied": 403
+    },
+    "model": {
+      "readonly_http": 403,
+      "stored_count_before": 58,
+      "stored_count_after_denial": 58,
+      "scoped_allowed": {
+        "writer": "prop-c41153a3",
+        "service": "prop-b7b76534"
+      },
+      "service_human_confirm_denied": 403
+    },
+    "merge": {
+      "readonly_http": 403,
+      "stored_count_before": 60,
+      "stored_count_after_denial": 60,
+      "scoped_allowed": {
+        "writer": "prop-11eea5a3",
+        "service": "prop-c8dfd464"
+      },
+      "service_human_confirm_denied": 403
+    }
+  },
+  "mcp": {
+    "ont_propose_instance": {
+      "readonly_http": 403,
+      "denial_stored_count_unchanged": true,
+      "actual_forwarded_proposals": {
+        "writer": "prop-267ddc58",
+        "service": "prop-04988160",
+        "delegated": "prop-9460a7f4"
+      }
+    },
+    "ont_propose_model_type": {
+      "readonly_http": 403,
+      "denial_stored_count_unchanged": true,
+      "actual_forwarded_proposals": {
+        "writer": "prop-e2ae7f7e",
+        "service": "prop-a157a470",
+        "delegated": "prop-042d8418"
+      }
+    },
+    "ont_merge_objects": {
+      "readonly_http": 403,
+      "denial_stored_count_unchanged": true,
+      "actual_forwarded_proposals": {
+        "writer": "prop-8920329c",
+        "service": "prop-532541d6",
+        "delegated": "prop-ef5ecc08"
+      }
+    }
+  },
+  "normal_issuer_signature_required": true,
+  "delegated_key_revoked": true,
+  "signed_subject": "56093853-128e-4771-8742-4af5c0f788f8",
+  "tenant": "mp11-candidate"
+}

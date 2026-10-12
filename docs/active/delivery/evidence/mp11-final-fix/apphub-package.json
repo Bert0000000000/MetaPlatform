@@ -1,0 +1,20 @@
+{
+  "label": "apphub-package",
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "-m",
+    "pytest",
+    "-c",
+    "pyproject.toml",
+    "packages/mate-app-hub/tests",
+    "-q",
+    "--tb=short",
+    "-p",
+    "no:cacheprovider",
+    "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\final-fix-pytest-3db27133"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+  "exit_code": 1,
+  "elapsed_seconds": 149.63,
+  "head": "38ff11900b9d72560afe20db4715d344c1370a23"
+}

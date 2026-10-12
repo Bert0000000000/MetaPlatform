@@ -1,0 +1,9 @@
+{
+  "run_id": "fd816e17f27b",
+  "tenant": "mp11-catalog-fd816e17f27b",
+  "order": "ont.mp11-catalog-fd816e17f27b.obj.zorder",
+  "customer": "ont.mp11-catalog-fd816e17f27b.obj.zcustomer",
+  "mapping_id": "ont.mp11-catalog-fd816e17f27b.bds.obj-src-68813eb7:mp11_ui_source.orders",
+  "persisted": true,
+  "actual_pg_rows": 2
+}
