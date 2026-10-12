@@ -232,6 +232,19 @@ class Acceptance:
 
     def prepare_browser(self):
         import secrets
+        # Fresh consumed fixtures are additive. Preserve prior private inputs and
+        # their retained issuer accounts/data, including the pre-run legacy set.
+        manage.inspect_dependency('keycloak')
+        history=manage.PRIVATE/'browser-runs'
+        history.mkdir(exist_ok=True)
+        previous=history/('retained-'+uuid.uuid4().hex)
+        previous.mkdir()
+        for name in ('browser-accounts.json','ui-session.json'):
+            path=manage.PRIVATE/name
+            if path.exists():(previous/name).write_bytes(path.read_bytes())
+        run=uuid.uuid4().hex[:12]
+        run_dir=history/run
+        run_dir.mkdir()
         # Only the owned issuer is mutated; no provider values enter diagnostics.
         admin=httpx.post('http://127.0.0.1:55520/realms/master/protocol/openid-connect/token',data={'grant_type':'password','client_id':'admin-cli','username':'mp11-admin','password':self.inputs.get('admin_password')},trust_env=False,timeout=20)
         if admin.status_code!=200:raise RuntimeError('owned issuer administration unavailable')
@@ -249,12 +262,13 @@ class Acceptance:
         changed=httpx.put(endpoint,headers=ah,json=realm_config,trust_env=False)
         if changed.status_code!=204:raise RuntimeError('owned issuer lifetime config failed')
         self.login()
-        run=uuid.uuid4().hex[:8];relation_tenant='mp11-rel-'+run
+        relation_tenant='mp11-rel-'+run
         issued={};accounts={}
         for name,tenant,role in [('rel-'+run,relation_tenant,'writer'),('rel-read-'+run,relation_tenant,'reader'),('empty-'+run,'mp11-empty-'+run,'writer')]:
             password=secrets.token_urlsafe(36)
             accounts[name]={'password':password,'tenant':tenant,'role':role}
             manage.save(manage.PRIVATE/'browser-accounts.json',accounts)
+            manage.save(run_dir/'browser-accounts.json',accounts)
             response=httpx.post(endpoint+'/users',headers=ah,json={'username':name,'enabled':True,'emailVerified':True,'firstName':name,'lastName':'Candidate','email':name+'@example.invalid','attributes':{'tenant_id':[tenant]},'credentials':[{'type':'password','value':password,'temporary':False}]},trust_env=False)
             if response.status_code!=201:raise RuntimeError('owned browser identity create failed')
             user_id=response.headers['location'].rsplit('/',1)[-1]
@@ -283,8 +297,12 @@ class Acceptance:
         from mate_platform.auth.verifier import TokenVerifier
         subject=TokenVerifier(load_auth_config()).verify(self.sessions['writer']._token).sub
         # Credential-bearing browser inputs remain ACL-protected and ignored.
-        manage.save(manage.PRIVATE/'ui-session.json',{'writer':{'token':self.sessions['writer']._token,'tenant':'mp11-candidate','subject':subject},'relation':relation,'empty':issued['empty'],'api':'http://127.0.0.1:55522/api/v1'})
-        self.evidence['checks']['browser_fixtures']={'relationship_tenant':relation_tenant,'object_types':104,'customers':201,'orders':201,'paged_links':201,'signed_grants':True}
+        session={'run_id':run,'writer':{'token':self.sessions['writer']._token,'tenant':'mp11-candidate','subject':subject},'relation':relation,'empty':issued['empty'],'api':'http://127.0.0.1:55522/api/v1'}
+        manage.save(manage.PRIVATE/'ui-session.json',session)
+        manage.save(run_dir/'ui-session.json',session)
+        fixture={'run_id':run,'relationship_tenant':relation_tenant,'empty_tenant':issued['empty']['tenant'],'object_types':104,'customers':201,'orders':201,'paged_links':201,'signed_grants':True,'prior_inputs_retained':True}
+        self.evidence['checks']['browser_fixtures']=fixture
+        manage.save(OUT/('browser-fixtures-'+run+'.json'),fixture)
 
     def refresh_browser(self):
         path=manage.PRIVATE/'ui-session.json';sessions=json.loads(path.read_text())
@@ -688,7 +706,17 @@ def run_checks(group):
         cfg=parse_dsn(manage.pg_dsn(manage.DB))
         env.update(MP11_CANDIDATE='1',PGHOST=cfg['host'],PGPORT=cfg['port'],PGDATABASE=cfg['dbname'],PGUSER=cfg['user'],PGPASSWORD=cfg['password'])
         cwd=manage.ROOT/'metaplatform-frontend/apps/web'
-        commands=[('actual-browser-impact' if impact_only else 'actual-browser-object' if object_only else 'actual-browser',['pnpm.cmd','exec','playwright','test','--config',str(manage.ROOT/'scripts/acceptance/mp11/playwright.config.ts'),*(['--project=web','--grep','appear together in model impact'] if impact_only else ['--project=web','ontology-object-creation-flow.spec.ts'] if object_only else [])],cwd)]
+        browser_run=None
+        if not object_only and not impact_only:
+            session=json.loads((manage.PRIVATE/'ui-session.json').read_text())
+            browser_run=session.get('run_id')
+            if not isinstance(browser_run,str) or not re.fullmatch(r'[0-9a-f]{12}',browser_run):
+                raise RuntimeError('full Browser requires fresh owned fixture preparation')
+            fixture_path=OUT/('browser-fixtures-'+browser_run+'.json')
+            if not fixture_path.exists():raise RuntimeError('Browser fixture provenance missing')
+            if (OUT/('browser-checks-'+browser_run+'.json')).exists():
+                raise RuntimeError('Browser fixtures already consumed; run advertised Browser phase for fresh preparation')
+        commands=[('actual-browser-impact' if impact_only else 'actual-browser-object' if object_only else 'actual-browser-'+browser_run,['pnpm.cmd','exec','playwright','test','--config',str(manage.ROOT/'scripts/acceptance/mp11/playwright.config.ts'),*(['--project=web','--grep','appear together in model impact'] if impact_only else ['--project=web','ontology-object-creation-flow.spec.ts'] if object_only else [])],cwd)]
     elif group=='backend':
         for name in list(env):
             if name.startswith(('KEYCLOAK_','SERVICE_CLIENT_','TECH_ONT_')) or name in ('INSECURE_SKIP_SIGNATURE','LEGACY_LOGIN_COMPAT','APPHUB_URL','ONTOLOGY_URL','ONT_APPROVAL_TTL_SECONDS'):env.pop(name,None)
@@ -723,7 +751,7 @@ def run_checks(group):
         if ws_only:commands=[c for c in commands if c[0]=='ont-ws-cover']
         manage.save(OUT/'backend-targets.json',{'database':'codex_mp11_candidate_tests_20261012','host':'127.0.0.1','port':55497,'overridden_env_names':sorted(names),'ws_database':'codex_mp11_ws_20261012','removed_ambient':['MATE_DB_URL','DATABASE_URL']})
     else:raise RuntimeError('unknown checks group')
-    result_path=OUT/(group+'-checks.json')
+    result_path=OUT/(('browser-checks-'+browser_run if group=='browser' and not object_only and not impact_only else group+'-checks')+'.json')
     results=json.loads(result_path.read_text()) if resume and result_path.exists() else []
     results=[r for r in results if r['name'] not in {c[0] for c in commands}]
     for name,args,cwd in commands:
@@ -732,7 +760,8 @@ def run_checks(group):
         output=clean(run.stdout+'\n'+run.stderr)
         (OUT/(name+'.log')).write_text(output,encoding='utf-8')
         result={'name':name,'command':args,'cwd':str(cwd),'exit_code':run.returncode,'elapsed_seconds':round(time.time()-started,2),'source_head':manage.command(['git','rev-parse','HEAD'])}
-        results.append(result);manage.save(OUT/(group+'-checks.json'),results)
+        if group=='browser' and not object_only and not impact_only:result['fixture_run_id']=browser_run
+        results.append(result);manage.save(result_path,results)
         print(name,'exit',run.returncode,'seconds',result['elapsed_seconds'],flush=True)
         print('\n'.join(output.strip().splitlines()[-12:]),flush=True)
     return int(any(x['exit_code'] for x in results if x['name'] in {c[0] for c in commands}))

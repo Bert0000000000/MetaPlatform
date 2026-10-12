@@ -33,7 +33,10 @@ def login_client(monkeypatch):
             now=int(time.time());claims={'iss':'https://issuer.invalid/realms/mp11','aud':'backend','sub':'verified-user',
                 'azp':'web','tenant_id':'verified-tenant','iat':now,'exp':now+60,'preferred_username':'writer','sid':'human','jti':'fixture-jti'}
             claims.update(metadata)
-            token=jwt.encode(claims,key,algorithm='RS256',headers={'kid':'test'})
+            if 'tenant_id' not in metadata and ('attributes' in metadata or 'tenant' in metadata):
+                claims.pop('tenant_id')
+            signing_key = rsa.generate_private_key(public_exponent=65537, key_size=2048) if metadata.get('forged_signature') else key
+            token=jwt.encode(claims,signing_key,algorithm='RS256',headers={'kid':'test'})
             async def run():
                 def upstream(request):
                     if request.url.path.endswith('/logout'):
@@ -88,3 +91,50 @@ def test_logout_partial_provider_failure_is_visible(login_client):
     assert response.status_code==200
     assert response.json().get('providerLoggedOut') is False
     assert response.json().get('blacklisted') is True
+
+@pytest.mark.parametrize('value',[None,{},[],[None],[{}],'   ',[''],['   '],['valid',None],42])
+@pytest.mark.parametrize('location',['top','attributes','fallback'])
+@pytest.mark.parametrize('flow',['login','refresh'])
+def test_malformed_signed_tenant_fails_closed(login_client,flow,location,value):
+    metadata=({'tenant_id':value,'attributes':{'tenant_id':'safe-fallback'},'tenant':'safe-fallback'} if location=='top'
+              else {'attributes':{'tenant_id':value},'tenant':'safe-fallback'} if location=='attributes'
+              else {'tenant':value})
+    response=login_client.call(flow,metadata)
+    assert response.status_code==401
+    assert 'accessToken' not in response.json()
+    assert 'refreshToken' not in response.json()
+
+@pytest.mark.parametrize('metadata',[
+    {'tenant_id':'verified-tenant'}, {'tenant_id':['verified-tenant','second-tenant']},
+    {'attributes':{'tenant_id':'verified-tenant'}}, {'attributes':{'tenant_id':['verified-tenant','second-tenant']}},
+    {'tenant':'verified-tenant'}, {'attributes':{},'tenant':'verified-tenant'},
+])
+@pytest.mark.parametrize('flow',['login','refresh'])
+def test_supported_signed_tenant_shapes(login_client,flow,metadata):
+    response=login_client.call(flow,metadata)
+    assert response.status_code==200
+    assert response.json()['tenantId']=='verified-tenant'
+    assert response.json()['userId']=='verified-user'
+
+@pytest.mark.parametrize('metadata',[
+    {'attributes':None,'tenant':'safe-fallback'},
+    {'attributes':[],'tenant':'safe-fallback'},
+    {'attributes':'invalid','tenant':'safe-fallback'},
+    {'attributes':42,'tenant':'safe-fallback'},
+    {'aud':'wrong-audience'},
+    {'forged_signature':True},
+])
+@pytest.mark.parametrize('flow',['login','refresh'])
+def test_signed_tenant_identity_guards(login_client,flow,metadata):
+    response=login_client.call(flow,metadata)
+    assert response.status_code==401
+
+@pytest.mark.parametrize('metadata',[
+    {'tenant_id':'verified-tenant','attributes':{'tenant_id':None},'tenant':'wrong'},
+    {'attributes':{'tenant_id':'verified-tenant'},'tenant':None},
+])
+@pytest.mark.parametrize('flow',['login','refresh'])
+def test_valid_authoritative_signed_tenant_precedence(login_client,flow,metadata):
+    response=login_client.call(flow,metadata)
+    assert response.status_code==200
+    assert response.json()['tenantId']=='verified-tenant'

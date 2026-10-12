@@ -32,7 +32,10 @@ def signed_client():
                       'azp': 'web', 'tenant_id': 'tenant-a', 'iat': now,
                       'exp': now + 60, 'scope': 'platform.read ont.read'}
             claims.update(extra)
-            token = jwt.encode(claims, key, algorithm='RS256', headers={'kid': 'mp11-test'})
+            if 'tenant_id' not in extra and ('attributes' in extra or 'tenant' in extra):
+                claims.pop('tenant_id')
+            signing_key = rsa.generate_private_key(public_exponent=65537, key_size=2048) if extra.get('forged_signature') else key
+            token = jwt.encode(claims, signing_key, algorithm='RS256', headers={'kid': 'mp11-test'})
             with TestClient(app) as client:
                 return client.get('/identity', headers={'Authorization': 'Bearer ' + token,
                                                          **(headers or {})})
@@ -62,3 +65,43 @@ def test_headers_cannot_supply_human_identity_or_tenant(signed_client):
 
 def test_expired_signed_identity_is_rejected(signed_client):
     assert signed_client.get({'exp': int(time.time()) - 1}).status_code == 401
+
+@pytest.mark.parametrize('value',[None,{},[],[None],[{}],'   ',[''],['   '],['valid',None],42])
+@pytest.mark.parametrize('location',['top','attributes','fallback'])
+def test_malformed_signed_tenant_fails_closed(signed_client,location,value):
+    metadata=({'tenant_id':value,'attributes':{'tenant_id':'safe-fallback'},'tenant':'safe-fallback'} if location=='top'
+              else {'attributes':{'tenant_id':value},'tenant':'safe-fallback'} if location=='attributes'
+              else {'tenant':value})
+    response=signed_client.get(metadata)
+    assert response.status_code==401
+
+@pytest.mark.parametrize('metadata',[
+    {'tenant_id':'tenant-a'}, {'tenant_id':['tenant-a','second-tenant']},
+    {'attributes':{'tenant_id':'tenant-a'}}, {'attributes':{'tenant_id':['tenant-a','second-tenant']}},
+    {'tenant':'tenant-a'}, {'attributes':{},'tenant':'tenant-a'},
+])
+def test_supported_signed_tenant_shapes(signed_client,metadata):
+    response=signed_client.get(metadata)
+    assert response.status_code==200
+    assert response.json()['tenant']=='tenant-a'
+
+@pytest.mark.parametrize('metadata',[
+    {'attributes':None,'tenant':'safe-fallback'},
+    {'attributes':[],'tenant':'safe-fallback'},
+    {'attributes':'invalid','tenant':'safe-fallback'},
+    {'attributes':42,'tenant':'safe-fallback'},
+    {'aud':'wrong-audience'},
+    {'forged_signature':True},
+])
+def test_signed_tenant_identity_guards(signed_client,metadata):
+    response=signed_client.get(metadata)
+    assert response.status_code==401
+
+@pytest.mark.parametrize('metadata',[
+    {'tenant_id':'tenant-a','attributes':{'tenant_id':None},'tenant':'wrong'},
+    {'attributes':{'tenant_id':'tenant-a'},'tenant':None},
+])
+def test_valid_authoritative_signed_tenant_precedence(signed_client,metadata):
+    response=signed_client.get(metadata)
+    assert response.status_code==200
+    assert response.json()['tenant']=='tenant-a'

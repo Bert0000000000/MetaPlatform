@@ -2,9 +2,10 @@
 param(
   [ValidateSet('Status','Start','Stop','PrepareBrowser','Browser','Frontend','Backend','Security','Recovery','Migrations','Verify')]
   [string]$Phase='Status',
-  [string]$ConfigPath=(Join-Path $PSScriptRoot 'mp11/config.example.json')
+  [string]$ConfigPath=''
 )
 $ErrorActionPreference='Stop'
+if(!$ConfigPath){$ConfigPath=Join-Path $PSScriptRoot 'mp11/config.example.json'}
 $root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $python=Join-Path $root 'mate-platform-backend/.venv/Scripts/python.exe'
 $manage=Join-Path $PSScriptRoot 'mp11/manage.py'
@@ -25,7 +26,7 @@ switch($Phase){
   }
   'Stop' {foreach($role in @('web','auth','api','keycloak','redis')){Invoke-Owned @($manage,'stop',$role)}}
   'PrepareBrowser' {Invoke-Owned @($verify,'prepare-browser')}
-  'Browser' {Invoke-Owned @($verify,'refresh-browser');Invoke-Owned @($verify,'browser')}
+  'Browser' {Invoke-Owned @($verify,'prepare-browser');Invoke-Owned @($verify,'refresh-browser');Invoke-Owned @($verify,'browser')}
   'Frontend' {Invoke-Owned @($verify,'frontend')}
   'Backend' {Invoke-Owned @($verify,'backend')}
   'Security' {Invoke-Owned @($verify,'security')}
