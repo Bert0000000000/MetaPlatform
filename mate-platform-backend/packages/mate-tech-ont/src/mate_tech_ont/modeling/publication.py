@@ -466,7 +466,21 @@ async def _publish_locked(request, source, store):
         for item in plan["relationships"]:
             live_link = await current_link(request, item["rid"])
             if item["rid"] in state["completed"] and live_link != item["payload"]:
-                raise ValueError("已发布关系被修改，请重新预检")
+                # Older repository versions did not update relationship descriptions on
+                # conflict. Repair that exact metadata-only drift without overwriting
+                # any structural or naming change made after publication.
+                repairable = live_link is not None and {
+                    key: value for key, value in live_link.items() if key != "description"
+                } == {
+                    key: value for key, value in item["payload"].items() if key != "description"
+                }
+                if not repairable:
+                    raise ValueError("已发布关系被修改，请重新预检")
+                await native.upsert_link_type(native.LinkTypeDTO(**item["payload"]), request)
+                state["results"] = [
+                    result for result in state["results"] if result["rid"] != item["rid"]
+                ] + [{"rid": item["rid"], "status": "repaired"}]
+                store.update(source["id"], revision, {"publication": state}, increment=False)
             if item["rid"] not in state["completed"]:
                 if live_link != item["baseline"] and live_link != item["payload"]:
                     raise ValueError("原生关系已变化，请重新预检")
@@ -479,7 +493,19 @@ async def _publish_locked(request, source, store):
         state["status"] = "succeeded"
         state["acceptance"] = await verify_plan(request, {**source, "publication": state})
         if state["acceptance"]["status"] != "passed":
-            raise ValueError("发布后原生定义与审核方案不一致，请查看核验结果")
+            mismatches = [
+                f"对象 {item['name']}（{'缺失' if item['status'] == 'missing' else '已变化'}）"
+                for item in state["acceptance"]["types"]
+                if item["status"] != "matched"
+            ] + [
+                f"关系 {item['rid']}（{'缺失' if item['status'] == 'missing' else '已变化'}）"
+                for item in state["acceptance"]["relationships"]
+                if item["status"] != "matched"
+            ]
+            detail = "、".join(mismatches[:8])
+            if len(mismatches) > 8:
+                detail += f"等 {len(mismatches)} 项"
+            raise ValueError(f"发布后核验未通过：{detail or '原生定义与审核方案不一致'}")
     except Exception as exc:
         state.update(status="failed", error=str(getattr(exc, "detail", exc)))
     return store.update(source["id"], revision, {"publication": state}, increment=False)

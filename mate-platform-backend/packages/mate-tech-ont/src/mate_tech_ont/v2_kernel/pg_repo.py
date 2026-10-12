@@ -3005,6 +3005,7 @@ class PgOntologyRepository(OntologyRepository):
                         link_properties = EXCLUDED.link_properties,
                         src_display_name = EXCLUDED.src_display_name,
                         dst_display_name = EXCLUDED.dst_display_name,
+                        description = EXCLUDED.description,
                         updated_at = now()
                     """,
                     (

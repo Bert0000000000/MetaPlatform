@@ -168,9 +168,31 @@ function mount(path = '/ontology/model/graph') {
   render(<RouterProvider router={router} />);
   return router;
 }
+it('shows parent and child concepts as a hierarchy and keeps filtered children visible', async () => {
+  const party: api.KernelObjectType = {
+    ...customer,
+    rid: customer.parent_class!,
+    display_name: '业务主体',
+    parent_class: undefined,
+  };
+  vi.mocked(api.listObjectTypes).mockResolvedValue([customer, party]);
+  const router = mount();
+
+  expect(await screen.findByRole('button', { name: '选择资源 业务主体' }))
+    .toHaveAttribute('data-depth', '0');
+  expect(screen.getByRole('button', { name: '选择资源 客户' }))
+    .toHaveAttribute('data-depth', '1');
+  expect(screen.getByRole('button', { name: '选择资源 客户' }))
+    .toHaveStyle({ paddingInlineStart: '24px' });
+
+  await router.navigate('/ontology/model/graph?q=客户');
+  await waitFor(() => expect(screen.getByRole('button', { name: '选择资源 客户' }))
+    .toHaveAttribute('data-depth', '0'));
+  expect(screen.queryByRole('button', { name: '选择资源 业务主体' })).toBeNull();
+});
 it('selects real card DTO, preserves RID when opening complete editor detail', async () => {
   const router = mount();
-  fireEvent.click(await screen.findByRole('button', { name: '选择模型 客户' }));
+  fireEvent.click(await screen.findByRole('button', { name: '查看本体类 客户' }));
   expect(
     screen.getByRole('complementary', { name: '资源属性' }),
   ).toHaveTextContent('客户编号');
@@ -269,7 +291,7 @@ it('keeps filter counts and selected URL, model checks never turn failed reads i
   fireEvent.click(screen.getByRole('button', { name: '图谱视图' }));
   expect(router.state.location.search).toContain('typeRef=');
   expect(
-    await screen.findByRole('button', { name: '选择模型 客户' }),
+    await screen.findByRole('button', { name: '查看本体类 客户' }),
   ).toBeVisible();
 });
 it('ignores stale object and auxiliary responses after switching resources', async () => {
@@ -359,7 +381,7 @@ it('restores FULL unsaved input after navigation away and back without any mutat
   const invalid = screen.getByPlaceholderText('例如 dept_name');
   fireEvent.change(invalid, { target: { value: 'invalid property !' } });
   await router.navigate('/ontology/model/graph');
-  await screen.findByRole('button', { name: '选择模型 客户' });
+  await screen.findByRole('button', { name: '查看本体类 客户' });
   vi.mocked(api.getObjectType).mockResolvedValueOnce({
     ...customer,
     checksum: 'changed-live',
@@ -492,7 +514,7 @@ it('does not advertise partial reads as complete counts or a current-family chec
 it('offers mobile resource access before the canvas and opens the same resource with Shift+Enter', async () => {
   vi.stubGlobal('matchMedia', () => ({ matches: true }));
   const router = mount(`/ontology/model/graph?typeRef=${customer.rid}&q=客户`);
-  await screen.findByRole('button', { name: '选择模型 客户' });
+  await screen.findByRole('button', { name: '查看本体类 客户' });
   expect(screen.getByRole('button', { name: '资源树' })).toHaveAttribute('aria-expanded', 'false');
   expect(screen.getByRole('button', { name: '属性检查器' })).toHaveAttribute('aria-expanded', 'false');
   expect(screen.queryByRole('complementary', { name: '资源属性' })).toBeNull();
