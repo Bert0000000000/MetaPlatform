@@ -28,11 +28,7 @@
     }
   ],
   "expected": {
-    "hierarchy": [
-      "equipment",
-      "machine_tool",
-      "cnc_machine_tool"
-    ],
+    "hierarchy": ["equipment", "machine_tool", "cnc_machine_tool"],
     "leaf_instances": 2,
     "ancestor_direct_instances": 0
   }

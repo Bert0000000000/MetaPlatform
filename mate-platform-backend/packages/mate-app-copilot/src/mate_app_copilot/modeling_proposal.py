@@ -12,6 +12,8 @@ from copy import deepcopy
 import httpx
 from fastapi import HTTPException
 
+from .llm.openai_provider import OpenAIProvider
+
 logger = logging.getLogger(__name__)
 
 SHAPE_MESSAGES = {
@@ -150,7 +152,12 @@ async def complete(cfg, system, payload):
     batch = payload.get("batchIndex")
     logger.info("modeling provider request started: stage=%s batch=%s", stage, batch)
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(180, connect=15)) as http:
+        async with OpenAIProvider(
+            api_key=cfg.get("api_key") or "local",
+            base_url=cfg["base_url"],
+            model=cfg["default_model"],
+            timeout=httpx.Timeout(180, connect=15),
+        ) as provider:
             request_body = {
                 "model": cfg["default_model"],
                 "temperature": 0,
@@ -174,12 +181,7 @@ async def complete(cfg, system, payload):
                 request_body["max_tokens"] = 32768
             for attempt in range(3):
                 try:
-                    async with http.stream(
-                        "POST",
-                        cfg["base_url"].rstrip("/") + "/chat/completions",
-                        headers={"Authorization": "Bearer " + (cfg.get("api_key") or "local")},
-                        json=request_body,
-                    ) as response:
+                    async with provider.chat_completion_stream(request_body) as response:
                         response.raise_for_status()
                         if "text/event-stream" in response.headers.get("content-type", ""):
                             fragments = []

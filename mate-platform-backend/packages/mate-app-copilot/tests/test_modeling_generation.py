@@ -7,6 +7,35 @@ from mate_app_copilot import modeling_proposal as proposal
 
 
 @pytest.mark.asyncio
+async def test_external_provider_stream_preserves_vendor_auth_and_closes_on_error(monkeypatch):
+    from mate_app_copilot.llm.openai_provider import OpenAIProvider
+
+    clients = []
+    original = httpx.AsyncClient
+
+    def handle(request):
+        assert str(request.url) == "https://provider.example/v1/chat/completions"
+        assert request.headers["Authorization"] == "Bearer vendor-credential"
+        assert "X-Tenant-Id" not in request.headers
+        return httpx.Response(200, json={"choices": []})
+
+    def client(**kwargs):
+        value = original(transport=httpx.MockTransport(handle), **kwargs)
+        clients.append(value)
+        return value
+
+    monkeypatch.setattr(httpx, "AsyncClient", client)
+    with pytest.raises(RuntimeError, match="consumer stopped"):
+        async with OpenAIProvider(
+            api_key="vendor-credential", base_url="https://provider.example/v1"
+        ) as provider:
+            async with provider.chat_completion_stream({"stream": True}) as response:
+                assert response.status_code == 200
+                raise RuntimeError("consumer stopped")
+    assert clients[0].is_closed
+
+
+@pytest.mark.asyncio
 async def test_data_repair_uses_authenticated_bounded_route_and_observed_value_contract(
     monkeypatch,
 ):

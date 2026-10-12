@@ -11,6 +11,8 @@ import httpx
 from fastapi import HTTPException
 from pydantic import ValidationError
 
+from mate_clients.security.outgoing import user_async_client
+
 from .core import Draft
 from .quality import validate_review
 
@@ -37,7 +39,11 @@ async def _post(operation, payload, authorization, tenant):
         sheet_count = len(payload.get("profile", {}).get("sheets", []))
         batches = (min(sheet_count, 40) + 2) // 3 if operation == "generate" else 1
         read_timeout = 600 + 180 * max(0, batches - 1)
-        async with httpx.AsyncClient(timeout=httpx.Timeout(read_timeout, connect=15)) as client:
+        async with user_async_client(
+            headers["Authorization"],
+            tenant_id=tenant,
+            timeout=httpx.Timeout(read_timeout, connect=15),
+        ) as client:
             callback = generation_progress.get() if operation == "generate" else None
             url = base.rstrip("/") + "/api/v1/copilot/modeling/" + operation
             if callback:

@@ -100,7 +100,7 @@ test.describe('Ontology IA v2 · 工作区导航', () => {
     await page.keyboard.press('Enter');
     const nav = page.getByRole('navigation', { name: '本体工作区导航' });
     await expect(nav.getByRole('link', { name: '模型工作台', exact: true })).toBeFocused();
-    for (const name of ['对象类型', '关系类型']) {
+    for (const name of ['对象类型', '从数据建模', '关系类型']) {
       await page.keyboard.press('Tab');
       await expect(nav.getByRole('link', { name, exact: true })).toBeFocused();
     }
