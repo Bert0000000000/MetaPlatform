@@ -18,34 +18,7 @@ name: ontology-loop
 on:
   push:
     branches: [main, codex/**]
-    paths:
-      - ".github/workflows/ontology-loop.yml"
-      - "scripts/ci/ontology-core-e2e.sh"
-      - "metaplatform-frontend/tests/e2e/ontology-loop/**"
-      - "metaplatform-frontend/tests/e2e/helpers/**"
-      - "metaplatform-frontend/apps/web/**"
-      - "metaplatform-frontend/packages/shared/**"
-      - "scripts/acceptance/**"
-      - "mate-platform-backend/contracts/**"
-      - "mate-platform-backend/packages/mate-platform/**"
-      - "mate-platform-backend/packages/mate-app-hub/**"
-      - "mate-platform-backend/packages/mate-tech-data/**"
-      - "mate-platform-backend/packages/mate-tech-mcp/**"
-      - "metaplatform-frontend/playwright.config.ts"
-      - "metaplatform-frontend/playwright.migration.config.ts"
-      - "metaplatform-frontend/playwright.builder.config.ts"
-      - "metaplatform-frontend/playwright.modeling.config.ts"
-      - "metaplatform-frontend/builder-safe-reporter.ts"
-      - "metaplatform-frontend/migration-list-reporter.ts"
-      - "metaplatform-frontend/apps/web/tests/e2e/**"
-      - "scripts/ci/verify_migration_browser.py"
-      - "scripts/ci/verify_builder_browser.py"
-      - "metaplatform-frontend/package.json"
-      - "mate-platform-backend/packages/mate-tech-ont/**"
-      - "mate-platform-backend/services/api-gateway/**"
-      - "mate-platform-backend/services/auth-service/**"
-      - "docker-compose.yml"
-      - "infra/keycloak/realm-mate.json"
+    # Every main release must execute the actual browser acceptance before CD.
   pull_request:
     # 不加 paths 过滤：本 job 需要能作为 Required Check 在所有 PR 上报到
     # （带 paths 会让不相关的 PR 永远 pending → 阻塞合并）。

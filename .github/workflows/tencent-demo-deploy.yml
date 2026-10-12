@@ -1,0 +1,99 @@
+name: Tencent Demo Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Deploy current verified main, or restore previous application
+        type: choice
+        default: deploy
+        options: [deploy, rollback]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: tencent-demo-release
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    outputs:
+      revision: ${{ steps.revision.outputs.sha }}
+      deploy: ${{ steps.gate.outputs.deploy }}
+    steps:
+      - name: Select the trusted main revision
+        id: revision
+        env:
+          REVISION: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
+          printf 'sha=%s\n' "$REVISION" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ steps.revision.outputs.sha }}
+          persist-credentials: false
+      - name: Wait for all CI on this exact revision
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVISION: ${{ steps.revision.outputs.sha }}
+          OPERATION: ${{ inputs.operation || 'deploy' }}
+        run: |
+          if [[ "$OPERATION" == rollback ]]; then
+            printf 'deploy=true\n' >> "$GITHUB_OUTPUT"
+          else
+            python infra/demo-cloud/ci_gate.py --revision "$REVISION"
+          fi
+
+  deploy:
+    needs: gate
+    if: needs.gate.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    environment:
+      name: tencent-demo
+      url: http://${{ vars.TENCENT_DEMO_HOST }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.gate.outputs.revision }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf # v3
+        with:
+          version: "0.12.0"
+      - name: Export locked runtime and build the source bundle
+        if: (inputs.operation || 'deploy') == 'deploy'
+        run: |
+          python infra/demo-cloud/prepare.py --export-only
+          python infra/demo-cloud/bundle.py
+      - name: Release and verify the demo
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEMO_SSH_HOST: ${{ vars.TENCENT_DEMO_HOST }}
+          DEMO_SSH_USER: ${{ vars.TENCENT_DEMO_USER }}
+          DEMO_SSH_PORT: ${{ vars.TENCENT_DEMO_SSH_PORT }}
+          DEMO_SSH_KNOWN_HOSTS: ${{ vars.TENCENT_DEMO_KNOWN_HOSTS }}
+          DEMO_SSH_KEY: ${{ secrets.TENCENT_DEMO_SSH_KEY }}
+          OPERATION: ${{ inputs.operation || 'deploy' }}
+        run: python infra/demo-cloud/ci_client.py --operation "$OPERATION"
+      - name: Upload credential-free deployment result
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tencent-demo-deploy-result
+          path: infra/demo-cloud/artifacts/deploy-result.json
+          if-no-files-found: ignore
+          retention-days: 30
