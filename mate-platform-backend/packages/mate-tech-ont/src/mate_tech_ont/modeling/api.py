@@ -43,6 +43,10 @@ class Revision(Strict):
     revision: int = Field(ge=1)
 
 
+class ValidationRequest(Revision):
+    preparePublication: bool = False
+
+
 class SyncRequest(Revision):
     background: bool = False
     allowPartial: bool = False
@@ -63,7 +67,10 @@ class CompletionConfirmation(CompletionRequest):
 
 
 class Resolution(Strict):
-    mode: Literal["new", "reuse", "extend"] = "new"
+    mode: Literal["new", "reuse", "extend"] = Field(
+        default="new",
+        description="候选处理决策；高相似候选新增前须显式保存 new，复用/扩展需人工核对目标和属性映射。",
+    )
     targetRid: str = ""
     propertyMap: dict[str, str] = Field(default_factory=dict)
 
@@ -430,27 +437,9 @@ async def review(ident: str, payload: Revision, request: Request):
 
 async def completion_result(request, source, rows, defer_classes):
     plan = await asyncio.to_thread(review_completion.propose, source, rows, defer_classes)
-    trial = {**source, "draft": plan["draft"], "revision": source["revision"] + 1}
-    checked = await validation_result(request, trial, rows)
-    plan["remaining"] = [i for i in checked["validation"]["issues"] if i["severity"] == "error"]
-    plan["canApply"] = checked["validation"]["canPublish"] and bool(checked["plan"])
-    native_plan = checked["plan"] or {}
-    baseline = [
-        {k: t.get(k) for k in ("classId", "rid", "mode", "baselineChecksum", "expectedChecksum")}
-        for t in native_plan.get("types", [])
-    ]
-    relations = [
-        {k: r.get(k) for k in ("relationId", "rid", "payload", "baseline")}
-        for r in native_plan.get("relationships", [])
-    ]
-    plan["hash"] = digest(
-        {
-            "candidate": plan["hash"],
-            "types": sorted(baseline, key=lambda t: t["classId"]),
-            "relations": sorted(relations, key=lambda r: r["relationId"]),
-            "remaining": plan["remaining"],
-        }
-    )
+    trial = {**source, 'draft': plan['draft'], 'revision': source['revision'] + 1}
+    # Approval is about candidate definitions, never native publication routing.
+    checked = await validation_result(request, trial, rows, prepare_publication=False)
     return plan, checked
 
 
@@ -510,7 +499,7 @@ async def completion_confirm(ident: str, payload: CompletionConfirmation, reques
             failure(exc)
 
 
-async def validation_result(request, source, rows):
+async def validation_result(request, source, rows, *, prepare_publication=False):
     report = validate_ontology(source["draft"])
     from .rules import validate_evidence
 
@@ -541,13 +530,13 @@ async def validation_result(request, source, rows):
             totalNodes=len(nodes),
             totalEdges=len(edges),
         )
-    if not report["errors"]:
+    if prepare_publication and not report["errors"]:
         conflicts = await publication.new_type_conflicts(request, source)
         if conflicts:
             report["errors"] += len(conflicts)
             report["canPublish"] = False
             report["issues"].extend(conflicts)
-    if not report["errors"]:
+    if prepare_publication and not report["errors"]:
         try:
             plan = await publication.prepare(request, source)
         except ValueError as exc:
@@ -558,7 +547,7 @@ async def validation_result(request, source, rows):
 
 
 @router.post("/sources/{ident}/validate", operation_id="ontValidateModelingCandidate")
-async def validate(ident: str, payload: Revision, request: Request):
+async def validate(ident: str, payload: ValidationRequest, request: Request):
     store = store_for(request, True)
     with source_lock(store, ident):
         source, rows = read(store, ident, payload.revision, private=True)
@@ -566,7 +555,7 @@ async def validate(ident: str, payload: Revision, request: Request):
         if not source.get("draft"):
             raise HTTPException(422, "请先生成或保存候选")
         try:
-            changes = await validation_result(request, source, rows)
+            changes = await validation_result(request, source, rows, prepare_publication=payload.preparePublication)
             return store.update(ident, source["revision"], changes, increment=False)
         except ValueError as exc:
             failure(exc)

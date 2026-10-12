@@ -81,18 +81,32 @@ async def new_type_conflicts(request, source):
         {k: source.get(k) for k in ("draft", "context", "questions", "resolutions")}
     )
     issues = []
+    native_types = None
     for cls in publication_scope(source["draft"])["classes"]:
         if (source.get("resolutions", {}).get(cls["id"]) or {}).get("mode", "new") != "new":
             continue
         rid = f"ont.{tenant}.obj.data.{slug(cls['id'])}.v1"
         if rid in previous.get("completed", []) and previous.get("inputHash") == input_hash:
             continue
-        if await current_type(request, rid):
+        existing = await current_type(request, rid)
+        if not existing:
+            if native_types is None:
+                native_types = []
+                offset = 0
+                while True:
+                    batch = await native.list_object_types(request, limit=100, offset=offset)
+                    native_types.extend(item.model_dump() for item in batch)
+                    if len(batch) < 100:
+                        break
+                    offset += 100
+            existing = next((item for item in native_types if item["rid"].split(".")[-2] == slug(cls["id"])), None)
+        if existing:
+            occupied_rid = existing["rid"]
             issues.append(
                 {
                     "severity": "error",
                     "item": cls["id"],
-                    "message": f"{cls['name']} 的稳定标识已存在（{rid}），请核对业务含义后选择复用/扩展，或为不同概念修改稳定标识。",
+                    "message": f"{cls['name']} 的稳定标识已存在（{occupied_rid}），请在本行选择复用或增加属性；不同业务概念须修改稳定标识后新建。",
                 }
             )
     return issues
@@ -242,6 +256,16 @@ async def prepare(request, source):
                 native.ObjectTypePrecheckDTO(name=cls["name"], slug=class_slug), request
             )
         ).model_dump()
+        if mode == "new" and not own_completed and cid not in resolutions:
+            strong_matches = [
+                item for item in similar.get("candidates", [])
+                if item.get("similarity", 0) >= 0.9 and item.get("rid") != rid
+            ]
+            if strong_matches:
+                names = "、".join(item.get("display_name") or item["rid"] for item in strong_matches)
+                raise ValueError(
+                    f"{cls['name']} 与已有本体 {names} 高度相似，请在候选详情核对后显式选择复用、扩展属性或新增，不能默认新增。"
+                )
         if not precheck.get("valid", not precheck.get("errors")) or precheck.get("destructive"):
             raise ValueError(f"{cls['name']} 原生预检未通过：{precheck}")
         types.append(

@@ -12808,7 +12808,7 @@ paths:
       tags:
         - data-modeling
       operationId: ontConfirmModelingCompletion
-      summary: Confirm all reviewed decisions once and automatically run native publication preparation
+      summary: Confirm candidate definitions and deferred scope independently of native publication
       parameters:
         - name: ident
           in: path
@@ -12823,7 +12823,7 @@ paths:
               $ref: '#/components/schemas/DataModelingCompletionConfirmation'
       responses:
         '200':
-          description: Candidate and confirmation audit saved with fresh native validation; no native publication or instance writes
+          description: Candidate and confirmation audit saved with candidate structure validation; no native plan, publication or instance writes
           content:
             application/json:
               schema:
@@ -13264,7 +13264,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DataModelingRevision'
+              $ref: '#/components/schemas/DataModelingValidationRequest'
       responses:
         '200':
           description: Persisted source and candidate; 202 includes running job
@@ -21008,6 +21008,7 @@ components:
     DataModelingResolution:
       properties:
         mode:
+          description: 候选处理决策；高相似候选新增前须显式保存 new，复用/扩展需人工核对目标和属性映射。
           type: string
           enum:
             - new
@@ -21644,6 +21645,20 @@ components:
               type: integer
             canSync:
               type: boolean
+    DataModelingValidationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - revision
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        preparePublication:
+          type: boolean
+          default: false
+          description: Only the publication dialog opts in to native collision/mapping
+            checks and plan preparation; candidate review remains independent.
     DataModelingRevision:
       properties:
         revision:

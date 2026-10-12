@@ -21,29 +21,54 @@ pytestmark = pytest.mark.skipif(not DSN, reason="MODELING_TEST_DSN requires isol
 
 
 @pytest.mark.asyncio
-async def test_completion_native_collision_is_visible_before_confirmation_and_invalidates_old_plan(
-    app,
-):
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        source = await candidate(client)
+async def test_cross_domain_slug_collision_is_row_issue_and_can_be_resolved_by_reuse(app):
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        source = await candidate(client, resolutions={"item": {"mode": "new", "propertyMap": {}}})
         prefix = "/api/v1/ont/v2/modeling/sources/" + source["id"]
-        body = {"revision": source["revision"]}
-        planned = await client.post(prefix + "/completion-plan", json=body)
-        assert planned.status_code == 200, planned.text
-        plan = planned.json()
-        assert plan["canApply"]
+        checked = (await client.post(prefix + "/validate", json={"revision": source["revision"], "preparePublication": True})).json()
+        native_type = checked["plan"]["types"][0]
+        body = {**native_type["payload"], "rid": native_type["rid"].replace(".obj.data.", ".obj.scm.")}
+        created = await client.post("/api/v1/ont/v2/object-types", json=body)
+        assert created.status_code in (200, 201), created.text
+        blocked = (await client.post(prefix + "/validate", json={"revision": source["revision"], "preparePublication": True})).json()
+        assert not blocked["validation"]["canPublish"] and blocked["plan"] is None
+        assert any(i["item"] == "item" and body["rid"] in i["message"] for i in blocked["validation"]["issues"])
+        source = (await client.put(prefix, json={"revision": source["revision"], "draft": source["draft"], "resolutions": {
+            "item": {"mode": "reuse", "targetRid": body["rid"], "propertyMap": native_type["propertyMap"]}
+        }})).json()
+        preview = (await client.post(prefix + "/completion-plan", json={"revision": source["revision"]})).json()
+        assert preview["canApply"], preview
+        confirmed = await client.post(prefix + "/completion-confirm", json={"revision": source["revision"], "planHash": preview["hash"]})
+        assert confirmed.status_code == 200, confirmed.text
+        confirmed_source = confirmed.json()
+        prepared = (await client.post(prefix + "/validate", json={"revision": confirmed_source["revision"], "preparePublication": True})).json()
+        assert prepared["plan"]["types"][0]["mode"] == "reuse"
+        assert prepared["plan"]["types"][0]["rid"] == body["rid"]
+        assert confirmed.json()["publication"] is None
+
+
+@pytest.mark.asyncio
+async def test_completion_native_collision_does_not_block_candidate_review(app):
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+        source = await candidate(client)
+        prefix = '/api/v1/ont/v2/modeling/sources/' + source['id']
+        body = {'revision': source['revision']}
+        plan = (await client.post(prefix + '/completion-plan', json=body)).json()
+        assert plan['canApply']
         other = await candidate(client)
         await validate_publish(client, other)
-        stale = await client.post(
-            prefix + "/completion-confirm", json={**body, "planHash": plan["hash"]}
-        )
-        assert stale.status_code == 409, stale.text
-        unchanged = (await client.get(prefix)).json()
-        assert unchanged["revision"] == source["revision"] and unchanged["draft"] == source["draft"]
-        updated = (await client.post(prefix + "/completion-plan", json=body)).json()
-        assert not updated["canApply"] and updated["remaining"]
+        updated = (await client.post(prefix + '/completion-plan', json=body)).json()
+        assert updated['canApply'] and updated['hash'] == plan['hash']
+        confirmed = await client.post(prefix + '/completion-confirm', json={**body, 'planHash': plan['hash']})
+        assert confirmed.status_code == 200, confirmed.text
+        result = confirmed.json()
+        assert result['draft']['classes'][0]['accepted']
+        assert result['validation']['canPublish'] and result['plan'] is None
+        assert result['publication'] is None
+        checked = (await client.post(prefix + '/validate', json={'revision': result['revision']})).json()
+        assert checked['validation']['canPublish'] and checked['plan'] is None
+        blocked = (await client.post(prefix + '/validate', json={'revision': result['revision'], 'preparePublication': True})).json()
+        assert not blocked['validation']['canPublish'] and blocked['plan'] is None
 
 
 @pytest.mark.asyncio
@@ -51,75 +76,35 @@ async def test_completion_plan_is_inert_hash_gated_and_deferred_class_never_sync
     from .test_modeling_generation_quality import related_fixture
 
     value, _ = related_fixture()
-    book = Workbook()
-    sheet = book.active
-    sheet.title = "费用"
-    sheet.append(["单号", "明细号", "金额"])
-    sheet.append(["A", "10", 100])
-    sheet.append(["B", "10", 200])
-    payment = book.create_sheet("付款")
-    payment.append(["付款号", "单号", "明细号"])
-    payment.append(["P1", "A", "10"])
-    output = BytesIO()
-    book.save(output)
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        source = (
-            await client.post(
-                "/api/v1/ont/v2/modeling/sources",
-                files={"file": ("completion.xlsx", output.getvalue())},
-            )
-        ).json()
-        prefix = "/api/v1/ont/v2/modeling/sources/" + source["id"]
-        source = (
-            await client.put(prefix, json={"revision": source["revision"], "draft": value})
-        ).json()
-        body = {"revision": source["revision"], "deferClasses": ["line"]}
-        plan = (await client.post(prefix + "/completion-plan", json=body)).json()
-        assert (
-            plan["canApply"]
-            and plan["counts"]["classes"] == 1
-            and plan["counts"]["relationships"] == 0
-        )
-        unchanged = (await client.get(prefix)).json()
-        assert unchanged["draft"] == source["draft"] and unchanged["revision"] == source["revision"]
-        assert "draft" not in plan
-        assert (
-            await client.post(prefix + "/completion-confirm", json={**body, "planHash": "0" * 64})
-        ).status_code == 409
-        assert (
-            await client.post(
-                prefix + "/completion-confirm",
-                json={**body, "planHash": plan["hash"], "deferClasses": []},
-            )
-        ).status_code == 409
-        result = await client.post(
-            prefix + "/completion-confirm", json={**body, "planHash": plan["hash"]}
-        )
-        assert result.status_code == 200, result.text
-        confirmed = result.json()
-        assert (
-            confirmed["revision"] == source["revision"] + 1
-            and confirmed["validation"]["canPublish"]
-            and confirmed["plan"]
-        )
-        assert len(confirmed["completionAudit"]) == 1 and confirmed["completionAudit"][0]["actor"]
-        assert not confirmed["publication"] and not confirmed["sync"]
-        assert (
-            await client.post(
-                prefix + "/completion-confirm", json={**body, "planHash": plan["hash"]}
-            )
-        ).status_code == 409
-        published = await validate_publish(client, confirmed)
-        synced = await client.post(prefix + "/sync", json={"revision": published["revision"]})
-        assert synced.status_code == 200, synced.text
-        assert synced.json()["sync"]["links"] == 0
-        assert (
-            len(published["plan"]["types"]) == 1
-            and published["plan"]["types"][0]["classId"] == "payment"
-        )
-        repo = app.state.kernel_repo
+    book=Workbook();sheet=book.active;sheet.title='费用';sheet.append(['单号','明细号','金额'])
+    sheet.append(['A','10',100]);sheet.append(['B','10',200])
+    payment=book.create_sheet('付款');payment.append(['付款号','单号','明细号']);payment.append(['P1','A','10'])
+    output=BytesIO();book.save(output)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
+        source=(await client.post('/api/v1/ont/v2/modeling/sources',files={'file':('completion.xlsx',output.getvalue())})).json()
+        prefix='/api/v1/ont/v2/modeling/sources/'+source['id']
+        source=(await client.put(prefix,json={'revision':source['revision'],'draft':value})).json()
+        body={'revision':source['revision'],'deferClasses':['line']}
+        plan=(await client.post(prefix+'/completion-plan',json=body)).json()
+        assert plan['canApply'] and plan['counts']['classes']==1 and plan['counts']['relationships']==0
+        unchanged=(await client.get(prefix)).json()
+        assert unchanged['draft']==source['draft'] and unchanged['revision']==source['revision']
+        assert 'draft' not in plan
+        assert (await client.post(prefix+'/completion-confirm',json={**body,'planHash':'0'*64})).status_code==409
+        assert (await client.post(prefix+'/completion-confirm',json={**body,'planHash':plan['hash'],'deferClasses':[]})).status_code==409
+        result=await client.post(prefix+'/completion-confirm',json={**body,'planHash':plan['hash']})
+        assert result.status_code==200,result.text
+        confirmed=result.json()
+        assert confirmed['revision']==source['revision']+1 and confirmed['validation']['canPublish'] and confirmed['plan'] is None
+        assert len(confirmed['completionAudit'])==1 and confirmed['completionAudit'][0]['actor']
+        assert not confirmed['publication'] and not confirmed['sync']
+        assert (await client.post(prefix+'/completion-confirm',json={**body,'planHash':plan['hash']})).status_code==409
+        published=await validate_publish(client,confirmed)
+        synced=await client.post(prefix+'/sync',json={'revision':published['revision']})
+        assert synced.status_code==200,synced.text
+        assert synced.json()['sync']['links']==0
+        assert len(published['plan']['types'])==1 and published['plan']['types'][0]['classId']=='payment'
+        repo=app.state.kernel_repo
         with repo.tenant_scope(app.state.test_tenant):
             instances = repo.list_individuals(ClassRef(published["plan"]["types"][0]["rid"]))
             assert len(instances) == 1
@@ -554,22 +539,15 @@ async def test_pending_relation_saves_reloads_and_defers_without_publishing(app)
         saved = await client.put(prefix, json={"revision": source["revision"], "draft": value})
         assert saved.status_code == 200, saved.text
         restored = (await client.get(prefix)).json()
-        assert restored["draft"]["relationships"][0]["joins"] == []
-        checked = (
-            await client.post(prefix + "/validate", json={"revision": restored["revision"]})
-        ).json()
-        assert not checked["validation"]["canPublish"]
-        assert any("关联字段映射" in issue["message"] for issue in checked["validation"]["issues"])
-        value = restored["draft"]
-        value["relationships"][0]["included"] = False
-        deferred = (
-            await client.put(prefix, json={"revision": restored["revision"], "draft": value})
-        ).json()
-        checked = (
-            await client.post(prefix + "/validate", json={"revision": deferred["revision"]})
-        ).json()
-        assert checked["validation"]["canPublish"]
-        assert checked["publication"] is None and checked["sync"] is None
+        assert restored['draft']['relationships'][0]['joins'] == []
+        checked = (await client.post(prefix + '/validate', json={'revision': restored['revision'], "preparePublication": True})).json()
+        assert not checked['validation']['canPublish']
+        assert any('关联字段映射' in issue['message'] for issue in checked['validation']['issues'])
+        value = restored['draft']; value['relationships'][0]['included'] = False
+        deferred = (await client.put(prefix, json={'revision': restored['revision'], 'draft': value})).json()
+        checked = (await client.post(prefix + '/validate', json={'revision': deferred['revision'], "preparePublication": True})).json()
+        assert checked['validation']['canPublish']
+        assert checked['publication'] is None and checked['sync'] is None
 
 
 @pytest.mark.asyncio
@@ -859,7 +837,7 @@ async def candidate(client, content=None, resolutions=None):
 
 async def validate_publish(client, source):
     prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
-    r = await client.post(prefix + "/validate", json={"revision": source["revision"]})
+    r = await client.post(prefix + "/validate", json={"revision": source["revision"], "preparePublication": True})
     assert r.status_code == 200, r.text
     source = r.json()
     assert source["validation"]["canPublish"], source
@@ -1034,7 +1012,7 @@ async def test_modeling_revision_auth_and_tenant_isolation(app):
         source = await candidate(client)
         prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
         assert (await client.get(prefix, headers={"x-test-tenant": "other"})).status_code == 404
-        assert (await client.post(prefix + "/validate", json={"revision": 1})).status_code == 409
+        assert (await client.post(prefix + "/validate", json={"revision": 1, "preparePublication": True})).status_code == 409
         assert (
             await client.put(
                 prefix,
@@ -1057,7 +1035,7 @@ async def test_modeling_collision_requires_explicit_reuse_and_stale_baseline_rej
         collision = await candidate(client)
         r = await client.post(
             f"/api/v1/ont/v2/modeling/sources/{collision['id']}/validate",
-            json={"revision": collision["revision"]},
+            json={"revision": collision["revision"], "preparePublication": True},
         )
         assert r.status_code == 200 and not r.json()["validation"]["canPublish"]
         assert r.json()["plan"] is None and "复用" in r.text
@@ -1074,7 +1052,7 @@ async def test_modeling_collision_requires_explicit_reuse_and_stale_baseline_rej
         )
         prefix = f"/api/v1/ont/v2/modeling/sources/{reused['id']}"
         reused = (
-            await client.post(prefix + "/validate", json={"revision": reused["revision"]})
+            await client.post(prefix + "/validate", json={"revision": reused["revision"], "preparePublication": True})
         ).json()
         repo = app.state.kernel_repo
         from dataclasses import replace
@@ -1258,7 +1236,7 @@ async def test_modeling_publication_preserves_existing_native_editor_wip(app):
         )
         prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
         source = (
-            await client.post(prefix + "/validate", json={"revision": source["revision"]})
+            await client.post(prefix + "/validate", json={"revision": source["revision"], "preparePublication": True})
         ).json()
         r = await client.post(
             prefix + "/publish",
@@ -1392,7 +1370,7 @@ async def test_modeling_native_wip_concurrent_editor_is_preserved(app, monkeypat
         )
         prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
         source = (
-            await client.post(prefix + "/validate", json={"revision": source["revision"]})
+            await client.post(prefix + "/validate", json={"revision": source["revision"], "preparePublication": True})
         ).json()
         human = {**item["payload"], "description": "Concurrent native edit"}
 
@@ -1571,7 +1549,7 @@ async def test_modeling_invalid_hierarchy_cannot_prepare_publication(app, invali
         r = await client.put(prefix, json={"revision": source["revision"], "draft": value})
         assert r.status_code == 200, r.text
         source = r.json()
-        r = await client.post(prefix + "/validate", json={"revision": source["revision"]})
+        r = await client.post(prefix + "/validate", json={"revision": source["revision"], "preparePublication": True})
         assert r.status_code == 422 or (
             r.status_code == 200 and r.json()["validation"]["errors"] > 0
         ), r.text

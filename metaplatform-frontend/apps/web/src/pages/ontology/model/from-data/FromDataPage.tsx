@@ -5,19 +5,19 @@ import { ArrowRight, Check, FileSpreadsheet, RefreshCw, Save, Sparkles, Upload }
 import { EmptyState, PageHeader } from '@/components/skeleton';
 import { listObjectTypes, type KernelObjectType } from '@/api/ont/kernel';
 import { exportModelingQuarantine, getModelingSource, listModelingSources, runModelingOperation, saveModelingSource, uploadModelingSource, type ModelingSource } from '@/api/ont/modeling';
-import { uniqueId } from './DraftEditor';
 import DataReadiness from './DataReadiness';
 import PublicationAcceptance from './PublicationAcceptance';
 import CandidateGraph from './CandidateGraph';
 import GenerationProgress from './GenerationProgress';
-import GenerationQuality from './GenerationQuality';
 import ReviewWorkspace from './ReviewWorkspace';
 import SyncWorkspace from './SyncWorkspace';
 import CompletionReview from './CompletionReview';
+import PublicationReview from './PublicationReview';
 import { included, selectedDraft } from './review';
+import { clearProgress, readProgress, rememberProgress } from './workspaceProgress';
 import './from-data.css';
 
-const steps = ['数据与建模范围', '候选本体审核', '本体校验与接入预览', '本体发布与验收', '数据同步（可选）'];
+const steps = ['资料与业务范围', '候选匹配与合并确认', '变更草稿与校验', '本体发布与验收', '数据同步（可选）'];
 const message = (error: unknown) => {
   const value = error as { response?: { status?: number; data?: { detail?: unknown } }; message?: string };
   if (value.response?.status === 409) return '当前修订已过期或发布基线发生变化。请先刷新来源，再重新审核和校验。';
@@ -37,7 +37,8 @@ function Findings({ value }: { value: unknown }) {
 
 export default function FromDataPage() {
   const [params, setParams] = useSearchParams();
-  const sourceId = params.get('source');
+  const [resume, setResume] = useState(readProgress);
+  const sourceId = params.get('source') || resume?.sourceId || null;
   const [sources, setSources] = useState<ModelingSource[]>([]);
   const [source, setSource] = useState<ModelingSource | null>(null);
   const [types, setTypes] = useState<KernelObjectType[]>([]);
@@ -64,7 +65,7 @@ export default function FromDataPage() {
   const generating = busy === '生成候选模型' || (running && source?.job?.kind === 'generate');
   const confirmGenerate = () => {
     if (locked) return;
-    if (source?.draft) Modal.confirm({ title: '重新生成候选模型？', content: '相同数据、业务说明、问题和平台定义将沿用同一生成基线，并替换当前人工修改及审核状态。输入变化时重新生成并执行全量预检；失败时保留原草稿。已有发布结果请另建来源候选。', okText: '重新生成', onOk: () => operate('generate') });
+    if (source?.draft) Modal.confirm({ title: '重新生成候选模型？', content: '相同数据、业务说明和平台定义将沿用同一生成基线，并替换当前人工修改及审核状态。输入变化时重新生成并执行全量预检；失败时保留原草稿。已有发布结果请另建来源候选。', okText: '重新生成', onOk: () => operate('generate') });
     else void operate('generate');
   };
 
@@ -86,10 +87,28 @@ export default function FromDataPage() {
   useEffect(() => {
     if (!sourceId) { setSource(null); return; }
     let active = true; setBusy('读取来源'); setError(''); setPublishError(''); setCompletionFeedback('');
-    void getModelingSource(sourceId).then(value => { if (active) { accept(value); setStep(value.sync || params.get('step') === 'sync' ? 4 : value.publication?.status === 'succeeded' ? 3 : value.draft ? 1 : 0); if (value.job?.status === 'failed' || value.job?.status === 'interrupted') setError(value.job.error || '任务已中断，可重新发起。'); } })
+    void getModelingSource(sourceId).then(value => {
+      if (!active) return;
+      const saved = readProgress();
+      const progress = saved?.sourceId === sourceId ? saved : null;
+      const defaultStep = value.sync ? 4 : value.publication?.status === 'succeeded' ? 3 : value.draft ? 1 : 0;
+      const restoredStep = params.get('step') === 'sync' ? 4 : progress?.generating && value.job?.status === 'succeeded' ? 1 : progress?.step ?? defaultStep;
+      accept(value);
+      setStep(!value.draft && restoredStep > 0 ? 0 : restoredStep);
+      if (progress?.edits) {
+        setSource({ ...value, ...progress.edits, revision: progress.revision });
+        setDirty(true);
+        if (value.revision !== progress.revision) setError('服务端修订已变化，已保留上次未保存的修改。请核对后刷新来源；旧修订不能覆盖最新内容。');
+      }
+      if (value.job?.status === 'failed' || value.job?.status === 'interrupted') setError(value.job.error || '任务已中断，可重新发起。');
+    })
       .catch(err => { if (active) setError(message(err)); }).finally(() => { if (active) setBusy(''); });
     return () => { active = false; };
   }, [sourceId, accept]);
+
+  useEffect(() => {
+    if (source && source.id === sourceId) rememberProgress(source, step, dirty);
+  }, [source, sourceId, step, dirty]);
 
   useEffect(() => {
     if (!running || !sourceId) return;
@@ -171,7 +190,7 @@ export default function FromDataPage() {
     } finally { setBusy(''); }
   };
   const selectSource = (id: string) => {
-    const go = () => { setDirty(false); setError(''); setParams(id ? { source: id } : {}); };
+    const go = () => { if (!id) { clearProgress(); setResume(null); } setDirty(false); setError(''); setParams(id ? { source: id } : {}); };
     if (dirty) Modal.confirm({ title: '放弃未保存的修改？', content: '切换来源后，当前未保存的候选修改将丢失。', okText: '放弃并切换', cancelText: '继续编辑', onOk: go }); else go();
   };
   const upload = async (file?: File) => {
@@ -181,30 +200,20 @@ export default function FromDataPage() {
     try { const value = await uploadModelingSource(file); accept(value); setParams({ source: value.id }); setStep(0); }
     catch (err) { setError(message(err)); } finally { setBusy(''); if (uploadInput.current) uploadInput.current.value = ''; }
   };
-  const sampleName = source?.name === 'manufacturing.xlsx' ? 'manufacturing' : source?.name === 'sales.xlsx' ? 'sales' : source?.name === 'equipment.xlsx' ? 'equipment' : null;
-  const applySample = async () => {
-    if (!sampleName) return;
-    try {
-      const response = await fetch(`/modeling-samples/${sampleName}.json`);
-      if (!response.ok) throw new Error('示例说明读取失败');
-      const sample = await response.json();
-      edit(next => { next.context = sample.context; next.questions = sample.questions; });
-    } catch (err) { setError(message(err)); }
-  };
   const parentLabel = (classId: unknown) => {
     const parentId = source?.draft?.classes.find(cls => cls.id === classId)?.parentClassId;
     return parentId ? source?.draft?.classes.find(cls => cls.id === parentId)?.name ?? parentId : '独立类';
   };
-  const ready = Boolean(source?.validation?.scope === 'ontology' && source.validation.canPublish && source.plan && !dirty);
+  const ready = Boolean(source?.validation?.scope === 'ontology' && source.validation.canPublish && !dirty);
   const publishBlockers = source?.validation?.issues.filter(issue => issue.severity === 'error') ?? [];
   const published = !dirty && source?.publication?.configHash === source?.plan?.configHash && (source?.publication?.status === 'succeeded' || source?.publication?.status === 'completed');
   const completion = source?.draft && !source.publication?.completed.length ? <CompletionReview key={source.id} source={source} disabled={locked}
     onPrepare={async () => { const saved = dirty ? await saveModelingSource(source) : await getModelingSource(source.id); accept(saved); return saved; }}
     onEditClass={id => { setFocusClassId(`fd-class-${id}`); setStep(1); }}
-    onApplied={value => { accept(value); setError(''); setCompletionFeedback(value.validation?.canPublish ? '完整方案已应用并通过本体校验，可继续查看发布方案。暂缓类及其依赖实例不进入本次发布和同步。' : '完整方案已应用并重新校验，剩余平台发布冲突请查看下方结果。'); setStep(2); }} /> : null;
+    onApplied={value => { accept(value); setError(''); setCompletionFeedback('批量审批已完成。新建、复用或增加属性将在发布前选择。'); setStep(2); }} /> : null;
 
   return <div className="fd-page">
-    <PageHeader title="从数据建模" desc="从业务数据生成候选本体，审核后发布。" actions={<>
+    <PageHeader title="逆向发现本体" desc="从 Excel 资料发现本体候选，与已有企业本体匹配确认后形成变更草稿，经确认发布。" actions={<>
       {source && <Button icon={<RefreshCw size={15} />} disabled={locked} onClick={() => {
         const refresh = async () => { setBusy('刷新'); try { accept(await getModelingSource(source.id)); setError(''); setPublishError(''); } catch (err) { setError(message(err)); } finally { setBusy(''); } };
         if (dirty) Modal.confirm({ title: '重新读取来源？', content: '未保存的修改将丢失。', okText: '重新读取', onOk: refresh }); else void refresh();
@@ -216,11 +225,11 @@ export default function FromDataPage() {
         const file = e.target.files?.[0];
         if (dirty && file) Modal.confirm({ title: '导入新的数据来源？', content: '当前未保存的修改将丢失。', okText: '继续导入', onOk: () => upload(file) }); else void upload(file);
       }} /><Button icon={<Upload size={15} />} disabled={locked} onClick={() => uploadInput.current?.click()}>导入 Excel</Button></div>
-    <nav className="fd-steps" aria-label="从数据建模流程">{steps.map((label, i) => <button key={label} type="button" aria-current={step === i ? 'step' : undefined} disabled={!source || (i > 0 && !source.draft)} onClick={() => setStep(i)}><span>{i + 1}</span>{label}</button>)}</nav>
+    <nav className="fd-steps" aria-label="逆向发现本体流程">{steps.map((label, i) => <button key={label} type="button" aria-current={step === i ? 'step' : undefined} disabled={!source || (i > 0 && !source.draft)} onClick={() => setStep(i)}><span>{i + 1}</span>{label}</button>)}</nav>
     {error && step !== 4 && source?.job?.kind !== 'generate' && <Banner type="danger" description={error} closeIcon={null} />}
-    {(busy || running) && step !== 4 && !generating && busy !== '发布原生模型' && <div role="status" className="fd-status"><Spin size="small" /><span>{busy || (syncing ? '正在同步业务数据，可在第五步查看结果。' : '正在审查业务语义，审查不会修改候选模型。')}</span></div>}
+    {(busy || running) && step !== 4 && !generating && busy !== '发布原生模型' && <div role="status" className="fd-status"><Spin size="small" /><span>{busy || (syncing ? '正在同步业务数据，可在第五步查看结果。' : '正在处理候选，请稍候。')}</span></div>}
     {step !== 0 && step !== 4 && source?.job?.kind === 'generate' && (source.job.status !== 'succeeded' || error || generating) && <GenerationProgress job={source.job} submitting={busy === '生成候选模型'} error={error} sheetCount={source.profile.sheets.length} hasDraft={Boolean(source.draft)} onRetry={confirmGenerate} />}
-    {dirty && (source?.validation || source?.review || source?.plan) && <Banner type="warning" description="候选内容已修改，已有审查与校验结果已过期。点击校验并预览会先保存修改，再重新校验；AI 审查可跳过。" closeIcon={null} />}
+    {dirty && (source?.validation || source?.review || source?.plan) && <Banner type="warning" description="候选内容已修改，已有校验结果已过期。点击校验并预览会先保存修改，再重新校验。" closeIcon={null} />}
     {!source && !busy && <section className="fd-card"><EmptyState
       title="暂无数据来源"
       desc="支持 .xlsx 多工作表，公式请先转换为值。"
@@ -232,28 +241,28 @@ export default function FromDataPage() {
           {source.profile.sheets.map(sheet => <details className="fd-sheet" key={sheet.name} open={source.profile.sheets.length === 1}><summary>{sheet.name}<span>{sheet.rows.toLocaleString()} 条记录 · {sheet.columns.length} 列</span></summary><div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>字段</th><th>识别类型</th><th>空值</th><th>不同值</th><th>样例</th></tr></thead><tbody>{sheet.columns.map(column => <tr key={column.name}><td>{column.name}</td><td>{{ text: '文本', number: '数值', date: '日期' }[column.dataType] ?? column.dataType}</td><td>{sheet.rows - column.nonNull}</td><td>{column.uniqueCount}{column.unique && <Tag size="small">样本唯一</Tag>}</td><td>{column.samples.join(' / ')}</td></tr>)}</tbody></table></div></details>)}
           <p className="mp-onto-muted">样本唯一仅是候选身份的证据，不代表长期业务唯一性。</p>
         </section>
-        <section className="fd-card"><h2>业务背景与问题</h2><p className="mp-onto-muted">告诉系统这些数据代表什么，以及你希望通过模型回答的问题。缺少数据的问题也应保留。</p>
-          {sampleName && <div className="fd-actions"><Button onClick={() => {
-            if (source.context || source.questions.length) Modal.confirm({ title: '填入示例业务问题？', content: '将替换当前业务背景和问题，候选定义仍需重新生成或审核。', okText: '填入示例', onOk: applySample }); else void applySample();
-          }}>填入该示例的业务问题</Button></div>}
+        <section className="fd-card"><h2>业务背景</h2><p className="mp-onto-muted">先说明业务场景及核心概念，再从资料中发现补充候选。已有本体作为对齐依据，资料不直接写入正式本体。</p>
           <label>业务背景<textarea rows={4} maxLength={2000} placeholder="例如：分析工单物料需求与可用库存；库存按工厂、物料、批次区分，不同单位不能直接相加。" value={source.context} onChange={e => edit(next => { next.context = e.target.value; })} /></label>
-          {source.questions.map((question, i) => <div className="fd-question" key={question.id}><label>业务问题 {i + 1}<input maxLength={500} value={question.question} placeholder="希望模型回答什么？" onChange={e => edit(next => { next.questions[i].question = e.target.value; })} /></label><label>预期答案与判断口径<textarea rows={2} maxLength={1000} value={question.expected} onChange={e => edit(next => { next.questions[i].expected = e.target.value; })} /></label><Button aria-label={`删除业务问题 ${i + 1}`} theme="borderless" onClick={() => edit(next => { next.questions.splice(i, 1); })}>删除</Button></div>)}
-          <div className="fd-actions"><Button disabled={locked || source.questions.length >= 20} onClick={() => edit(next => { next.questions.push({ id: uniqueId('question', next.questions.map(q => q.id)), question: '', expected: '' }); })}>添加业务问题</Button><Button theme="solid" loading={generating} icon={<Sparkles size={15} />} disabled={locked || !source.context.trim() || source.questions.some(q => !q.question.trim())} onClick={confirmGenerate}>{generating ? '正在生成建议…' : source.draft ? '重新生成建议' : '生成模型建议'}</Button></div>
+          <div className="fd-actions"><Button theme="solid" loading={generating} icon={<Sparkles size={15} />} disabled={locked || !source.context.trim()} onClick={confirmGenerate}>{generating ? '正在生成建议…' : source.draft ? '重新发现候选' : '发现本体候选'}</Button></div>
           <GenerationProgress job={source.job} submitting={busy === '生成候选模型'} error={error} sheetCount={source.profile.sheets.length} hasDraft={Boolean(source.draft)} onRetry={confirmGenerate} />
         </section>
       </>}
       {step === 1 && source.draft && <>
         <section className="fd-card"><div className="fd-section-head"><div><h2>完整处理方案</h2><p className="mp-onto-muted">有依据的统一补全；不完整的类可选择本次不发布，其子类、关系和实例一起暂缓。确认一次后自动重新校验。</p></div>{completion}</div></section>
-        <GenerationQuality source={source} dirty={dirty} onLocate={target => setFocusClassId(target)} />
-        <ReviewWorkspace draft={source.draft} profile={source.profile} types={types} resolutions={source.resolutions} disabled={locked} focusClassId={focusClassId} identityLocked={Boolean(source.publication?.completed.length)} onChange={draft => edit(next => { next.draft = draft; })} onResolve={(classId, resolution) => edit(next => { next.resolutions[classId] = resolution; })} onRename={(draft, resolutions) => edit(next => { next.draft = draft; next.resolutions = resolutions; })} />
-        <div className="fd-review-footer"><span>{dirty ? '有未保存的修改，校验时将先保存。' : '当前修改已保存。'}确认表示已核对业务规则与依据。</span><div className="fd-inline"><Button theme="borderless" icon={<Sparkles size={15} />} onClick={() => void operate('review')}>AI 语义审查（可选）</Button>{source.publication?.completed.length ? <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => setStep(3)}>查看发布结果</Button> : <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => void operate('validate')}>校验并预览</Button>}</div></div>
-        {source.review && !dirty && <section className="fd-card"><h2>AI 语义审查</h2><p className="mp-onto-muted">审查是辅助建议，不能替代业务确认与数据校验。</p><Findings value={source.review} /></section>}
+        <ReviewWorkspace draft={source.draft} profile={source.profile} types={types} resolutions={source.resolutions} disabled={locked} focusClassId={focusClassId} identityLocked={Boolean(source.publication?.completed.length)} onChange={draft => edit(next => { next.draft = draft; })} onResolve={(classId, resolution) => edit(next => { next.resolutions[classId] = resolution;
+          if (next.draft) {
+            const cls = next.draft.classes.find(c => c.id === classId);
+            if (cls) cls.accepted = false;
+            next.draft.relationships.filter(r => r.source === classId || r.target === classId).forEach(r => { r.accepted = false; });
+          } })} onRename={(draft, resolutions) => edit(next => { next.draft = draft; next.resolutions = resolutions; })} />
+        <div className="fd-review-footer"><span>{dirty ? '有未保存的修改，校验时将先保存。' : '当前修改已保存。'}确认表示已核对业务规则与依据。</span><div className="fd-inline">{source.publication?.completed.length ? <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => setStep(3)}>查看发布结果</Button> : <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => void operate('validate')}>校验并预览</Button>}</div></div>
+
       </>}
       {step === 2 && <>
         {completionFeedback && !dirty && <Banner type={source.validation?.canPublish ? 'success' : 'warning'} description={completionFeedback} closeIcon={null} />}
         {completion && <section className="fd-card"><div className="fd-section-head"><div><h3>统一处理剩余问题</h3><p className="mp-onto-muted">集中核对补全与暂缓范围，无需逐项往返审核。</p></div>{completion}</div></section>}
         {source.draft && [...source.draft.classes, ...source.draft.relationships].some(item => !included(item)) && <section className="fd-card" aria-label="暂缓候选"><h3>暂缓候选（不进入本次发布）</h3><p>{[...source.draft.classes, ...source.draft.relationships].filter(item => !included(item)).map(item => item.name).join('、')}</p><p className="mp-onto-muted">候选保留在草稿，对应业务问题可能尚未覆盖。可返回审核恢复。</p></section>}
-        {source.draft && <CandidateGraph draft={selectedDraft(source.draft)} />}
+        {source.draft && <CandidateGraph draft={selectedDraft(source.draft)} layoutKey={source.id} />}
         <div className="fd-section-head"><div><h2>本体结构校验与接入预览</h2><p>检查概念、属性、继承和关系定义，再预检平台接入；数据质量独立限制可选同步。</p></div><Button onClick={() => void operate('validate')}>重新校验</Button></div>
         {(!source.validation || source.validation.scope !== 'ontology' || dirty) ? <Banner type="info" description="请保存当前候选并重新执行本体校验。旧版数据报告不能作为本体发布许可。" closeIcon={null} /> : <>
           <div className="fd-metrics"><section className="fd-card"><small>阻断问题</small><strong>{source.validation.errors}</strong></section><section className="fd-card"><small>警告</small><strong>{source.validation.warnings}</strong></section><section className="fd-card"><small>对象类型</small><strong>{source.draft?.classes.filter(included).length ?? 0}</strong></section><section className="fd-card"><small>关系定义</small><strong>{source.draft?.relationships.filter(included).length ?? 0}</strong></section></div>
@@ -262,9 +271,9 @@ export default function FromDataPage() {
           <details><summary>可选：数据接入检查</summary><DataReadiness report={source.validation.dataValidation} draft={source.draft} /></details>
           {source.validation.dataValidation?.canSync && source.preview && <details><summary>可选：实例样本</summary><section className="fd-card"><h3>对象与关系预览</h3><p className="mp-onto-muted">最多展示 {source.preview.limit} 条样本；总对象 {source.preview.totalNodes}，总关系 {source.preview.totalEdges}。来源行用于追溯。</p><div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>对象类型</th><th>父类</th><th>标签</th><th>身份</th><th>来源</th><th>来源行</th></tr></thead><tbody>{source.preview.nodes.map((node, i) => <tr key={i}><td>{readable(node.objectType ?? node.kind ?? '')}</td><td>{parentLabel(node.objectType)}</td><td>{readable(node.label ?? '')}</td><td>{readable(node.identity ?? '')}</td><td>{readable(node.sheet ?? '')}</td><td>{readable(node.row ?? '')}</td></tr>)}</tbody></table></div><details><summary>关系样本（{source.preview.edges.length} 条）</summary><Findings value={source.preview.edges} /></details></section></details>}
           {!ready && <section className="fd-card" aria-label="发布阻断原因">
-            <h3>暂不能查看发布方案</h3>
+            <h3>请先处理候选结构问题</h3>
             {dirty ? <p>候选已修改，请重新点击「校验并预览」，系统会先保存修改。</p> : source.validation.scope !== 'ontology' ? <p>当前校验报告已过期，请重新执行本体校验。</p> : publishBlockers.length ? <>
-              <p>本体校验有 {source.validation.errors} 项阻断。以下问题需要处理；AI 审查不是发布条件，数据接入问题不会阻止本体发布。</p>
+              <p>候选结构有 {source.validation.errors} 项问题需要处理。正式本体中的重复标识将在发布前检查。</p>
               <ul className="fd-issues">{publishBlockers.map((issue, i) => {
                 const cls = source.draft?.classes.find(item => item.id === issue.item);
                 const relation = source.draft?.relationships.find(item => item.id === issue.item);
@@ -272,25 +281,18 @@ export default function FromDataPage() {
                 const target = cls ? `fd-class-${cls.id}` : relation ? `fd-relation-${relation.id}` : null;
                 return <li key={i}><strong>{label}</strong><span>{issue.message}</span>{target && <Button size="small" onClick={() => { setFocusClassId(target); setStep(1); }}>处理{label}</Button>}</li>;
               })}</ul>
-            </> : <p>发布方案尚未生成，请重新执行本体校验。</p>}
+            </> : <p>候选尚未通过结构校验，请重新校验。</p>}
             <Button onClick={() => void operate('validate')}>重新校验本体</Button>
           </section>}
           <div className="fd-actions"><Button onClick={() => setStep(1)}>返回修改模型</Button><Button theme="solid" disabled={!ready} onClick={() => setStep(3)}>查看发布方案</Button></div>
         </>}
       </>}
       {step === 3 && <>
-        <section className="fd-card"><h2>原生本体发布</h2><p className="mp-onto-muted">先发布对象类型，再发布关系。中途失败会保留已完成结果，可按当前方案重试。</p>
-          {!source.plan || dirty ? <Banner type="warning" description="发布方案不存在或已经过期，请先重新校验。" closeIcon={null} /> : <>
-            <div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>候选对象</th><th>操作</th><th>原生类型</th><th>父类型</th></tr></thead><tbody>{source.plan.types.map(type => <tr key={type.classId}><td>{type.name}</td><td>{{ new: '新建', reuse: '复用', extend: '扩展' }[type.mode] ?? type.mode}</td><td><code>{type.rid}</code></td><td>{type.parentClassId ? source.plan?.types.find(parent => parent.classId === type.parentClassId)?.name ?? type.parentClassId : type.payload?.parent_class || '独立类'}</td></tr>)}</tbody></table></div>
-            {!!source.plan.warnings.length && <Findings value={source.plan.warnings} />}
-            <details><summary>发布影响与关系规则</summary>
-              {source.plan.types.map(type => <p key={type.classId}>{type.name}：{type.changes ? `新增属性 ${type.changes.addedProperties.length}，保留属性 ${type.changes.retainedProperties.length}；身份${type.changes.identityChanged ? '变更' : '保持'}，继承${type.changes.parentChanged ? '变更' : '保持'}` : '旧版方案，请重新校验以查看影响'}</p>)}
-              {source.plan.relationships.map((relation, index) => <p key={relation.rid ?? index}>{source.draft?.relationships.find(item => item.id === relation.relationId)?.name ?? relation.relationId}：{relation.payload?.cardinality ?? 'N:N'} · {relation.cardinalityStatus === 'confirmed' ? '已确认业务基数' : '未记录业务基数确认'} · {relation.targetSelection === 'entity' ? '实体定位' : relation.targetSelection === 'group' ? '集合匹配' : '旧版匹配规则'}</p>)}
-            </details>
-            <Checkbox checked={warningAck} onChange={e => setWarningAck(Boolean(e.target.checked))}>我已核对校验警告，理解分步发布可能保留部分已完成结果</Checkbox>
-            <div className="fd-confirm"><Checkbox checked={publishConfirmed} onChange={e => setPublishConfirmed(Boolean(e.target.checked))}>我确认业务定义和身份规则，发布到平台原生本体</Checkbox></div>
-            <Button theme="solid" loading={busy === '发布原生模型'} disabled={locked || !ready || !publishConfirmed || !warningAck || published} onClick={() => void operate('publish')}>{busy === '发布原生模型' ? '正在发布…' : published ? '原生模型已发布' : source.publication ? '重试发布' : '确认发布原生模型'}</Button>
-          </>}
+        <section className="fd-card"><h2>本体变更草稿与发布确认</h2><p className="mp-onto-muted">核对复用、新增、扩展属性及关系后确认发布。当前草稿尚未生效；发布按对象、关系分步执行，失败可重试。</p>
+          <p>这里只展示已审批候选。点击发布本体，在窗口中选择新建、复用或增加属性，再校验并确认。</p>
+          <PublicationReview source={source} types={types} disabled={locked || Boolean(published)}
+            onPrepare={async () => { const saved = dirty ? await saveModelingSource(source) : await getModelingSource(source.id); accept(saved); return saved; }}
+            onChanged={accept} onPublished={value => { accept(value); setPublishError(''); void listObjectTypes().then(setTypes).catch(err => setError(message(err))); }} />
           <div aria-label="发布操作反馈" aria-live="polite" aria-busy={busy === '发布原生模型'}>
             {busy === '发布原生模型' && <div role="status" className="fd-status"><Spin size="small" /><span>正在发布原生模型，请稍候。完成结果将在这里显示。</span></div>}
             {publishError && <Banner type="danger" description={publishError} closeIcon={null} />}
