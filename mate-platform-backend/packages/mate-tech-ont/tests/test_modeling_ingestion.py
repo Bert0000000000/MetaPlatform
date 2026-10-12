@@ -18,7 +18,11 @@ def source_with_relationship():
         "description": "订单中的客户编码引用客户。",
     }
     return {
-        "plan": {"configHash": "same", "types": [], "relationships": [{"rid": payload["rid"], "payload": payload}]},
+        "plan": {
+            "configHash": "same",
+            "types": [],
+            "relationships": [{"rid": payload["rid"], "payload": payload}],
+        },
         "publication": {"status": "succeeded", "configHash": "same", "results": []},
     }
 

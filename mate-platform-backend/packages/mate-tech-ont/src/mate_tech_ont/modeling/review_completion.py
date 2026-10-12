@@ -124,7 +124,10 @@ def propose(source, rows, defer_classes=()):
             for candidate in classes.values()
             if candidate["id"] in family and candidate["included"]
         ]
-        if any(prop and prop_id in protected_properties(candidate["id"]) for candidate, prop in affected):
+        if any(
+            prop and prop_id in protected_properties(candidate["id"])
+            for candidate, prop in affected
+        ):
             return False
         applied = False
         for candidate, prop in affected:
@@ -138,6 +141,7 @@ def propose(source, rows, defer_classes=()):
                 )
                 applied = True
         return applied
+
     scoped = publication_scope(draft)
     records = _records(Draft.model_validate(scoped), rows) if scoped["classes"] else {}
     for rel in draft["relationships"]:
@@ -202,7 +206,10 @@ def propose(source, rows, defer_classes=()):
                 defer_property(cls["id"], prop_id, f"{mapping['sheet']}中的来源列 {column} 不存在")
         if (
             mapping["sheet"] not in headers
-            or any(not mapping["bindings"].get(prop) or mapping["bindings"][prop] not in columns for prop in required)
+            or any(
+                not mapping["bindings"].get(prop) or mapping["bindings"][prop] not in columns
+                for prop in required
+            )
             or not set(mapping["bindings"]) <= {p["id"] for p in cls["properties"]}
         ):
             defer(cls, f"{mapping['sheet']}缺少有效身份、标签或字段绑定；本次暂缓该类及实例")
@@ -259,7 +266,9 @@ def propose(source, rows, defer_classes=()):
         class_id = entry.get("classId")
         for prop_id in entry.get("conflicts", []):
             if class_id in classes:
-                defer_property(class_id, prop_id, "同一业务身份存在多个非空值，当前来源无法可靠确定唯一值")
+                defer_property(
+                    class_id, prop_id, "同一业务身份存在多个非空值，当前来源无法可靠确定唯一值"
+                )
 
     report = validate_ontology(draft)
     evidence = validate_evidence(draft, source["profile"])

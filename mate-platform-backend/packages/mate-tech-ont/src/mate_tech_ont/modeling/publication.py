@@ -486,9 +486,7 @@ async def _publish_locked(request, source, store):
                 # any structural or naming change made after publication.
                 repairable = live_link is not None and {
                     key: value for key, value in live_link.items() if key != "description"
-                } == {
-                    key: value for key, value in item["payload"].items() if key != "description"
-                }
+                } == {key: value for key, value in item["payload"].items() if key != "description"}
                 if not repairable:
                     raise ValueError("已发布关系被修改，请重新预检")
                 await native.upsert_link_type(native.LinkTypeDTO(**item["payload"]), request)

@@ -43,9 +43,7 @@ def publication_scope(draft):
         if not any(e["key"].startswith(f"entity:{cid}:") for cid in deferred_classes)
     ]
     for edit in result["instanceEdits"]:
-        class_id = next(
-            (cid for cid in classes if edit["key"].startswith(f"entity:{cid}:")), None
-        )
+        class_id = next((cid for cid in classes if edit["key"].startswith(f"entity:{cid}:")), None)
         if class_id:
             edit["values"] = {
                 prop: value
@@ -70,8 +68,6 @@ def publication_scope(draft):
             for d in result["semantics"].get("definitions", [])
             if d["target"] not in deferred_targets
             and not any(d["target"].startswith(f"property:{cid}:") for cid in deferred_classes)
-            and not any(
-                d["target"] == f"property:{cid}:{pid}" for cid, pid in deferred_properties
-            )
+            and not any(d["target"] == f"property:{cid}:{pid}" for cid, pid in deferred_properties)
         ]
     return result
