@@ -155,12 +155,15 @@
       }
     },
     "browser_fixtures": {
-      "relationship_tenant": "mp11-rel-0fe037a2",
+      "run_id": "1194b651968c",
+      "relationship_tenant": "mp11-rel-1194b651968c",
+      "empty_tenant": "mp11-empty-1194b651968c",
       "object_types": 104,
       "customers": 201,
       "orders": 201,
       "paged_links": 201,
-      "signed_grants": true
+      "signed_grants": true,
+      "prior_inputs_retained": true
     },
     "ws_notification": {
       "signed_header_auth": true,

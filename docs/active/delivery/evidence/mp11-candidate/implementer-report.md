@@ -137,3 +137,52 @@ Final staging uses exact owned paths. Sanitized .log evidence is force-added onl
 Source/evidence first commit:658d2522. A follow-up preserves original CRLF fixture byte-lines in Git and removes archived log trailing whitespace only; tested Python semantics unchanged. No parent mp11-plan coordination files are staged.
 
 Final source commit: `01a5e9d5b2916acf602a26028bee09e16ce8aeb1`. All47 owned source files mapped to committed blobs with CRLF/LF normalization equality in commit-mapping.json; exact worktree and Git blob SHA256 both retained. Final BASE-to-source diff check0. Follow-on commit only publishes mapping/report metadata. Independent reviews remain pending; signed9368 candidate kept available.
+
+## Task8 fix round1/5: I1/I2 repair handoff
+
+Fix BASE 67a0e34d1b8ea65f8c903f800a598d6a50451b19; source commit 726be90950e42d650bd6dc73f34cd9b8cceeef64, fix(mp11): validate signed tenants and prepare fresh browser fixtures. Checkout D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform, branch codex/product-v1.1 unchanged. Original report,47-source manifests and historical results above are preserved. Task8 is not marked verified; Goal is not complete. Scoped independent re-review and whole-branch review remain required.
+
+### Finding dispositions and changed source
+
+I1 fixed in existing packages/mate-platform/src/mate_platform/auth/verifier.py. A present top-level tenant_id is authoritative, followed only when absent by attributes.tenant_id, then existing string-only tenant fallback. Strings must be nonblank; supported top/attribute lists select first string and require every member nonblank/string. Null/object/numeric/empty/whitespace/mixed values and malformed attributes raise TokenError, never coercion or fallback to valid lower-priority hints. Valid higher-priority claims retain precedence. Completely absent tenant still yields empty for existing internal/global compatibility; AuthService existing login/refresh gates refuse missing identity. services/auth-service/main.py required no new change: normal verifier calls now reject invalid shapes before trusted DTO emission. Signature/JWKS/issuer/audience/scopes unchanged.
+
+Owned tests services/auth-service/tests/test_mp11_login_tenant.py and packages/mate-platform/tests/test_mp11_signed_identity.py add login+refresh [null]/[object]/whitespace plus attributes/fallback equivalents, scalar/empty/mixed shapes, malformed attributes, valid string/list shapes/precedence, wrong audience and actual forged RSA signature. Original issuer/expiry/client-hint/userinfo/tenant-header/human-service/logout assertions remain. Process-local RSA/MockTransport and installed verifier, no ASGI lifespan/real IAM/Redis init; actual provider proof remains separate.
+
+I2 fixed in scripts/acceptance/run-mp11-acceptance.ps1 and mp11/verify.py. Each advertised full Browser invokes prepare-browser, refresh-browser and all selected tests. Existing helper creates new additive signed relation writer/reader and empty identities, seeds104 types/201 customers/201 orders/201 links, and preserves every prior tenant/account/data. Exact owned Keycloak checked before issuer mutation. Previous/private per-run account/session inputs remain in ignored ACL-protected .tmp/codex-mp11-candidate/browser-runs. Distinct public run fixtures/logs/check receipts preserve old actual-browser.log/browser-checks.json and original47 manifests. Direct inner browser refuses consumed fixtures before launching tests. Existing E2E files/assertions unchanged, including empty groups=[] and exactly-one initial relationship. README documents preparation/retention; no reset/deletion/auth/media weakening.
+
+The actual default powershell.exe -File invocation also exposed empty PSScriptRoot during parameter default evaluation. The same owned launcher now resolves unchanged config.example.json in its body and still validates explicit approved targets before dispatch. Failed default command and an incomplete intermediate insertion into mixed-newline source are preserved in fix-round-1-runner-preflight.json, original tool chunks19e3db/466594, both exit1/zero tests started. Both later complete successful phases use default config.
+
+### Commands, full outputs and counts
+
+Focused tests cwd mate-platform-backend, source package PYTHONPATH with PYTHONUTF8=1/PYTHONDONTWRITEBYTECODE=1. Only child test env removes inherited candidate issuer/DB config; actual candidate signatures/limiter remain strict.
+
+Command: .venv/Scripts/python.exe -m pytest -c pyproject.toml services/auth-service/tests/test_mp11_login_tenant.py packages/mate-platform/tests/test_mp11_signed_identity.py -q --tb=short -p no:cacheprovider
+RED before verifier edit:68 failed/66 passed/1 warning in7.77s, subprocess exit1, demonstrating authoritative malformed tenant acceptance/fallback. Complete sanitized output/argv/cwd/elapsed: fix-round-1-signed-red.log/.json.
+First GREEN:134 passed/1 warning in7.00s, exit0, complete fix-round-1-signed-green.log/.json.
+
+Final command adds packages/mate-platform/tests/test_sec_iam_01.py to the same argv after added signature/audience/attributes/precedence regressions. Concrete affected shared verifier/tenant/scope compatibility, not repeated full Platform. Result188 passed/0 failed/0 skipped/1 inherited Starlette/httpx TestClient deprecation warning in9.66s, exit0. Complete exact command/output: fix-round-1-signed-final-green.json/.log. Counts are separate; no warning filter.
+
+Twice consecutively from root:
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/acceptance/run-mp11-acceptance.ps1 -Phase Browser
+
+Both report explicit owned config validated, prepare-browser PASS, refresh-browser PASS, then44 selected web/core cases/one worker/no retries:
+- bf7ce3d0ff0d:44 passed/0 failed/0 skipped/0 warnings, outer/subprocess exit0, elapsed69.32s, reporter1.1m. Full output actual-browser-bf7ce3d0ff0d.log; exact Playwright argv/cwd/source_head/elapsed browser-checks-bf7ce3d0ff0d.json; fixtures browser-fixtures-bf7ce3d0ff0d.json.
+- 1194b651968c:44 passed/0 failed/0 skipped/0 warnings, outer/subprocess exit0, elapsed58.49s, reporter57.3s. Full output actual-browser-1194b651968c.log; exact argv/cwd/source_head/elapsed browser-checks-1194b651968c.json; fixtures browser-fixtures-1194b651968c.json.
+
+Both consume fresh empty/relation states while retaining old rows. Coverage includes draft/competition/publication, PG/CSV, existing migration, relations, app publication/action/receipt/history, normal provider logout/relogin, website22 and root core9. Authenticated trace/video/screenshots remain disabled. Original43-case failed/full and separate object/impact coverage remain historical; new44-case runs are separate, never an88-case invented run. No unchanged package suite/build/migration rerun.
+
+### Actual signed runtime and continuity
+
+Process-local lifecycle script uses existing manage.pg_dsn(DB), inspect_dependency(keycloak/redis), record_listener(api/auth/web), then stop(api/auth) and start(api/auth) only. Exact PID/executable/start/args/listener ancestry checked before stop; no shared service/container/PG change. Before identities fix-round-1-runtime-before.json; new API launcher10756/listener57396, Auth40756/listener45364, unchanged Web22216. Final exact identity/data manifests runtime-handoff.json and fix-round-1-final-continuity.json.
+
+Normal Acceptance.login invokes real AuthService password grants(writer/readonly/neighbor) and Keycloak client_credentials SERVICE; installed TokenVerifier checks signed tenant/scope/human identity. Writer/neighbor human read+write, readonly human read only, SERVICE read+write but nonhuman. New GET retained order and app-5214d2501e8f5c76b706dea3f69670af both200, original version ver-ad5edf1f07054feaa2dfd3632b0236cf unchanged. New proof fix-round-1-postfix-readback.json, not reused controller restoration evidence.
+
+After both full runs, fresh provider grants/readbacks passed; readonly WIP POST403 and readonly/SERVICE human confirm403. Original proposal replay equals retained receipt and real PG audit count remains1. All old/new archived empty identities still log in through AuthService and retain consumed group count1. Complete safe projection fix-round-1-final-continuity.json; no token/password/DSN output. Direct python scripts/acceptance/mp11/verify.py browser refused consumed fixture exit1/zero tests started, exact argv/output fix-round-1-consumed-refusal.json/.log. This is a guard proof, not a Browser test failure.
+
+fix-round-1-acceptance-before.json snapshots prior acceptance before additive preparation; acceptance.json retains earlier checks with latest fixture metadata. Original47 source-manifest.json/commit-mapping.json unchanged. Six source BASE/tested SHA256s fix-round-1-source-manifest.json; all map to committed726be909 blob hashes/normalized-LF equality in fix-round-1-commit-mapping.json. Browser source_head67a0e34d denotes precommit HEAD plus exact tested mapped delta, not unchanged BASE.
+
+### Self-review and concerns
+
+Read all six source diffs: authoritative shape/precedence/DTO denial, normal guards unchanged, additive fixtures/retention, separate full outputs and consumed refusal. Source staging verified exact six paths/diff-check0. No ownership expansion, assertion weakening, agents/reviewer, branch change/push/merge/deploy/reset/cleanup. Protected parent mp11-plan/WIP/PNG/pyc excluded. fix-round-1-coverage.json is additive; prior failed counts preserved. Final evidence scan/end HEAD follow.
+
+M1 warning noise deferred: focused run has one inherited Starlette/httpx warning, prior short-HMAC/class-fixture/lifecycle/build warnings remain disclosed. Previous release limits remain: native-browser WS gateway, direct JWT expiry after logout, explicit LISTEN restart, privileged RLS NOT_EXERCISED, external clients/bus/effects, deployment/72h SLO/user study. Private fixture histories accumulate intentionally; no cleanup authorized. Independent re-review is required before Task8 acceptance.
