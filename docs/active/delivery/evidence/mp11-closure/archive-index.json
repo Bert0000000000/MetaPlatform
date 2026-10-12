@@ -1,16 +1,20 @@
 {
-  "candidate_reviewed_head": "94277b97199f1823354fccbda07e772ef19081e8",
-  "scope": "Full sanitized final review/decisions/requirements/source/runtime/WIP archive; whole-Scratch private backup/retirement pending separate actual receipt. No private raw fixture copied to public.",
+  "reviewed_source_head": "94277b97199f1823354fccbda07e772ef19081e8",
+  "product_source_commit": "3e844b844a201731b8170bd40b22580a83103771",
+  "administrative_documentation_head": "69eb6e95a9c8c43f33b52da9bb5c71690241e278",
+  "closure_complete": true,
+  "private_backup_inactive_and_verified": true,
+  "scope": "All sanitized final public reports/47 rulings/48+22 requirements/source/runtime/WIP/private recovery-retirement proof; no private fixture contents published.",
   "files": [
     {
       "path": "completion-audit-matrix.json",
-      "bytes": 135680,
-      "sha256": "fd3c77ef5268e92bf058fc04176c8c2a322f22f38a2fd5e6faf111cb1997f147"
+      "bytes": 136410,
+      "sha256": "b47e02a1c6d539853429f6566bb84425dfcef6a63fdf905fb665bed1477baa7d"
     },
     {
       "path": "completion-audit-matrix.md",
-      "bytes": 20535,
-      "sha256": "e9a356c454406e92e93b5629021c2f8cdb557b494520fc43312f63e691915609"
+      "bytes": 20583,
+      "sha256": "a8cbe9653691bbfd22113e10fb87d76cd6c85133402fbccf6cd425d6b947db6f"
     },
     {
       "path": "completion-audit-requirements.json",
@@ -49,8 +53,8 @@
     },
     {
       "path": "controller-final-source-audit.json",
-      "bytes": 33944,
-      "sha256": "ba17c82f3de296102ca0ad2adcab38a82fbfe8bb220e9cf0b50e99d0690494e4"
+      "bytes": 37207,
+      "sha256": "45907d7bf7428cbcb5c5c3a7b8310f11716d8f1fbe19bf6b933913af5d8a7371"
     },
     {
       "path": "controller-legacy-retirement.json",
@@ -123,24 +127,44 @@
       "sha256": "43c1ee48db8978a789bf866f770f40cfe3d47d38da10c3401028bf878157d5af"
     },
     {
+      "path": "postcleanup-live-readback.json",
+      "bytes": 1945,
+      "sha256": "a756e25d36e315245c07d76b8dcf8b6efae35d81e65c78b05f0b711326b4e004"
+    },
+    {
+      "path": "postcleanup-runtime.json",
+      "bytes": 19903,
+      "sha256": "e22b6dc0cf3df4ccea5a42bb6cd121b54fc84713f8c91d56d8997c0b072531ed"
+    },
+    {
+      "path": "postclosure-secret-scan.json",
+      "bytes": 27133,
+      "sha256": "70cbc705e38fefd9d89908e3499adbdef35c77a1b321afc5063295335fd7018f"
+    },
+    {
       "path": "preclosure-secret-scan.json",
       "bytes": 26197,
       "sha256": "798a62408e162e0391781b7bc90bbc3789f32ff2cb6b1ed0834b60861295bbd0"
     },
     {
       "path": "progress.md",
-      "bytes": 121408,
-      "sha256": "655113a4bba6a0944458957d712ebc3683c6cdc93236b2aa19dc7e162c76185d"
+      "bytes": 121974,
+      "sha256": "511a2d77fa8b773a957bdfa3fbea8e3aa47679df41c367bb060974a114213aeb"
     },
     {
       "path": "README.md",
-      "bytes": 1083,
-      "sha256": "654577e533ef349b420a10fcc6fea90970732af6ee42e3071061e2e0683dcd4d"
+      "bytes": 1215,
+      "sha256": "d4b9f34e3d77897ea3c6b50a478bc874af966ac1b9390bbbe0214e1364780f29"
     },
     {
       "path": "rulings-exhaustive-final.md",
       "bytes": 24513,
       "sha256": "5edc8ad291fb368f92a43304c65bc9026a058583b6107b3c85c543efb240837f"
+    },
+    {
+      "path": "scratch-recovery-retirement.json",
+      "bytes": 1301,
+      "sha256": "f0158d6efcd1d9e9ba81251820bc20131309baec5aee3bd57f073762ab993272"
     }
   ]
 }

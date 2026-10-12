@@ -1,0 +1,77 @@
+{
+  "observed_utc": "2026-10-12T10:27:48.526889+00:00",
+  "head": "69eb6e95a9c8c43f33b52da9bb5c71690241e278",
+  "scope": "Current public GETs plus normal signed login and retained business GET-only readback; no source/app/proposal/receipt mutation, replay or runner Verify invocation.",
+  "public_http": [
+    {
+      "url": "http://127.0.0.1:9368/website/",
+      "http": 200,
+      "bytes": 29096
+    },
+    {
+      "url": "http://127.0.0.1:9368/login",
+      "http": 200,
+      "bytes": 1115
+    },
+    {
+      "url": "http://127.0.0.1:55523/healthz",
+      "http": 200,
+      "bytes": 33
+    }
+  ],
+  "normal_signed_grants": {
+    "writer": {
+      "tenant": "mp11-candidate",
+      "human": true,
+      "scope": [
+        "ont.read",
+        "ont.write",
+        "platform.read",
+        "platform.write"
+      ],
+      "session_present": true
+    },
+    "readonly": {
+      "tenant": "mp11-candidate",
+      "human": true,
+      "scope": [
+        "ont.read",
+        "platform.read"
+      ],
+      "session_present": true
+    },
+    "neighbor": {
+      "tenant": "mp11-neighbor",
+      "human": true,
+      "scope": [
+        "ont.read",
+        "ont.write",
+        "platform.read",
+        "platform.write"
+      ],
+      "session_present": true
+    },
+    "service": {
+      "tenant": "mp11-candidate",
+      "human": false,
+      "scope": [
+        "ont.read",
+        "ont.write",
+        "platform.read",
+        "platform.write"
+      ],
+      "session_present": false
+    }
+  },
+  "retained_business": {
+    "app_id": "app-5214d2501e8f5c76b706dea3f69670af",
+    "published_version_id": "ver-ad5edf1f07054feaa2dfd3632b0236cf",
+    "proposal_id": "prop-47f32dc6",
+    "proposal_status": "executed",
+    "history_count": 1,
+    "order_status": "approved",
+    "readonly_reads": true,
+    "neighbor_app_http": 404,
+    "wrong_tenant_header_http": 403
+  }
+}
