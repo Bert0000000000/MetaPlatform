@@ -1,0 +1,18 @@
+{
+  "command": [
+    "mate-platform-backend/.venv/Scripts/python.exe",
+    "-B",
+    "-X",
+    "utf8",
+    ".tmp/codex-mp11-candidate/final-residual-business.py",
+    "reload"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform",
+  "exit_code": 1,
+  "head": "3e844b844a201731b8170bd40b22580a83103771",
+  "phase": "pre-stop full identity snapshot",
+  "exception": "subprocess.TimeoutExpired: exact owned Keycloak docker inspect exceeded20s",
+  "stop_called": false,
+  "start_called": false,
+  "receipt_source": "observed exec session10791 final output; no private raw subprocess log was captured for first attempt"
+}

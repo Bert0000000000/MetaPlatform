@@ -1,0 +1,22 @@
+{
+  "run_wrapper": ".tmp/codex-mp11-candidate/final-residual-run.py",
+  "operations_wrapper": ".tmp/codex-mp11-candidate/final-residual-op.py",
+  "operations": ".tmp/codex-mp11-candidate/final-residual-business.py",
+  "private_scripts_sha256": {
+    "final-residual-run.py": "01860b3eeb69b384472968c8b558df2dfdac2e5b50f2160faf24e3a7c8428e2a",
+    "final-residual-op.py": "961992b480a61b772068b8bc90e336a9948c59b6c1a6d9e1bc3f5c00c8a62daa",
+    "final-residual-business.py": "d1732a9d301099fc0e799b90d5db256a2aa816c0ba40ff358ba46d6bcc4ec58e",
+    "final-residual-http.py": "61ca34c29b2f212cce5fa2ac27a1ae6aa39ba9e53bf961baae4ca5db555ac32f"
+  },
+  "database": "codex_mp11_candidate_tests_20261012",
+  "active_database": "codex_mp11_candidate_20261012",
+  "signature_verification": "required for new RSA-signed tests and live Keycloak continuity; no bypass",
+  "pytest_cache": "disabled",
+  "bytecode_writes": "disabled",
+  "fixture": "unique tenant-local collision records only; existing owned PG; no create DB/reset/drop/seed",
+  "runtime_stop": "exact API only; fixed PID/executable/command/ticks immediately before Stop-Process plus ancestry and dependency guard",
+  "docker_read_timeout": "original20s attempts preserved; controller-approved private-only60s inspect/image-inspect/ps recovery; predicates unchanged; manage.py unchanged",
+  "protected_inputs": "ignored ACL-protected .tmp/codex-mp11-candidate; no tokens/passwords/DSNs in public logs",
+  "independent_http_probe": "direct normal Auth password login/Keycloak client grant; live API signature guards; no Docker setup; no token obtained due504",
+  "root_recovery": "Ruling45 official bounded Docker Desktop recovery; no further worker probes/restarts until root outcome"
+}

@@ -1,0 +1,9 @@
+auth.err.log
+
+
+auth.out.log
+2026-10-12 14:32:34 [info     ] iam.routers.mounted            count=7
+{"key_count": 2, "event": "jwks.warmed", "level": "info", "timestamp": "2026-10-12T06:32:34.825365Z"}
+{"tenant_id": "tenant-default", "event": "iam.seed.complete", "level": "info", "timestamp": "2026-10-12T06:32:35.015329Z"}
+{"event": "iam.db.init_ok", "level": "info", "timestamp": "2026-10-12T06:32:35.016903Z"}
+{"version": "0.1.0", "event": "mate-auth-service.startup", "level": "info", "timestamp": "2026-10-12T06:32:35.017427Z"}

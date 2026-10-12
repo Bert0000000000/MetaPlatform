@@ -1,0 +1,3 @@
+Failed BEFORE stop/start.
+Traceback phase: final-residual-business.py reload -> snapshot(resources-before-api-reload) -> manage.inspect_dependency(keycloak) -> manage.command(docker inspect cf6841182877ca84387d8deb21fb44ad25c1e5d666fb0d8fe31f798190f3ab2a) -> subprocess.TimeoutExpired after20 seconds.
+Categorical reconstruction of observed complete failure output; not a fabricated raw stdout capture. The exec session contains the original traceback.

@@ -1,0 +1,37 @@
+{
+  "label": "page-save-red",
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "-B",
+    "-X",
+    "utf8",
+    "-m",
+    "pytest",
+    "-c",
+    "pyproject.toml",
+    "packages/mate-app-hub/tests/test_mp11_app_identity.py::test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas",
+    "-q",
+    "--tb=short",
+    "-p",
+    "no:cacheprovider",
+    "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\final-residual-pytest-ef395f19"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+  "exit_code": 1,
+  "elapsed_seconds": 6.95,
+  "head": "ca01bf738165e2ab6ad11fdd8c9864d797885879",
+  "source_sha256": {
+    "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py": "f8c48dd29dcd2d5a3312916c95ccd3bfa9242f11da6ec545f5cde5a39b30bf96",
+    "mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py": "2dbb14eeaeb791e66f85f433ba4f21311b4f6f02ff596d8bc5c904c6c64cd428",
+    "mate-platform-backend/packages/mate-app-hub/tests/test_apphub_publication.py": "772993391a5bd2f5f5acb7decd2c385892b384aab72d040f4c8606163f2eb54e",
+    "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/in_memory.py": "2afc7dd05e8913944a668b887f9405cc024d6e6fc587b80d049bf48768f5faed",
+    "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py": "dbc06768e0b6e5c95cfc1306b2c95b501a440f8a2259d460d64275a83581d5f0",
+    "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/__init__.py": "c4272220ee0c096146e89f9d540c56aab20d92874d061d41408397096449043a",
+    "scripts/acceptance/mp11/manage.py": "ebd69ee00c892dc7cb404b10e2203b03e3b661aea75a4613c5d35e47188efbfa",
+    "scripts/acceptance/mp11/candidate.py": "9d99789f1d9876a9c35eb538d208c84d6d34b4a69ec381f3e53a11a5822db747"
+  },
+  "bytecode_disabled": true,
+  "database": "codex_mp11_candidate_tests_20261012",
+  "pg_id": "d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+  "pg_image": "sha256:9b05db12a35460fff0587e009f9326e414a53e9484555547f96d214a2ba98ef7"
+}
