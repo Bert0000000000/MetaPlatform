@@ -2,6 +2,7 @@ import type { KernelObjectType } from '@/api/ont/kernel';
 import type { ModelingResolution, ModelingSource } from '@/api/ont/modeling';
 import { localMatches, suggestResolution } from './candidateMatching';
 import { included } from './review';
+import { hasPublicationStarted } from './publicationState';
 
 export default function PublicationDecisions({ source, types, disabled = false, issues = [], onResolve, onEditClass }: {
   source: ModelingSource; types: KernelObjectType[]; disabled?: boolean;
@@ -9,10 +10,11 @@ export default function PublicationDecisions({ source, types, disabled = false, 
   onResolve: (id: string, resolution: ModelingResolution) => void;
   onEditClass?: (id: string) => void;
 }) {
-  const locked = disabled || Boolean(source.publication?.completed.length);
+  const publicationStarted = hasPublicationStarted(source.publication);
+  const locked = disabled || publicationStarted;
   return <section aria-label="本体候选发布处理">
     <p>逐行选择新建、复用或增加属性。选择已有对象后自动带出完整 RID；修改后重新校验，确认发布才会生效。</p>
-    {source.publication?.completed.length ? <p>本方案已有部分发布结果，目标已锁定。后续增量请另建候选并复用已发布类型。</p> : null}
+    {publicationStarted ? <p>本方案已开始发布，目标已锁定。后续增量请另建候选并复用已发布类型。</p> : null}
     <div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>候选对象</th><th>本次操作</th><th>已有对象 / 完整 RID</th><th>变更与待处理问题</th></tr></thead><tbody>
       {source.draft?.classes.filter(included).map(cls => {
         const resolution = source.resolutions[cls.id];

@@ -10,7 +10,8 @@ from .scope import publication_scope
 
 
 def propose(source, rows, defer_classes=()):
-    if (source.get("publication") or {}).get("completed"):
+    publication = source.get("publication") or {}
+    if publication.get("completed") or publication.get("inFlight"):
         raise ValueError("已有发布结果，请使用原生迁移或另建来源；不能批量改变本次发布范围")
     draft = Draft.model_validate(source["draft"]).model_dump()
     original = deepcopy(draft)

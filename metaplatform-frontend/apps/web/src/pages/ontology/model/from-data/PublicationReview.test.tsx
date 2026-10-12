@@ -166,3 +166,26 @@ it.each([false, true])('部分发布重开与失败重试使用服务端实际�
   expect(runModelingOperation).toHaveBeenNthCalledWith(3, expect.objectContaining({revision:prepared.revision,resolutions,publication:partial.publication,plan:null}), 'validate', {preparePublication:true});
   expect(runModelingOperation).toHaveBeenNthCalledWith(4, rechecked, 'publish', {configHash:rechecked.plan!.configHash,acknowledgeWarnings:true});
 });
+
+it('首项 inFlight 重开时不补建议字段或隐式新建，校验仍发送已固定决定', async () => {
+  const prop = 'ont.test.prop.customer-code.v1';
+  const matchingTarget = {...target,properties:[{rid:prop,title:'客户编号',type_id:'string'}]} as KernelObjectType;
+  const fixed = {...source,revision:7,resolutions:{customer:{mode:'reuse',targetRid:rid,propertyMap:{}}}, publication:{status:'failed',configHash:'flight-hash',completed:[],inFlight:rid,results:[]}, draft:{...source.draft!,classes:[{...source.draft!.classes[0],properties:[{id:'code',name:'客户编号',dataType:'text'}]}, {id:'supplier',name:'供应商',properties:[],included:true}]}} as ModelingSource;
+  const published = vi.fn(), prepare = vi.fn().mockResolvedValue(fixed);
+  vi.mocked(runModelingOperation).mockImplementationOnce(async value => ({...value,validation:{canPublish:false,issues:[{item:'customer',severity:'error',message:'首项回读未完成'}]}} as ModelingSource));
+  render(<PublicationReview source={fixed} types={[matchingTarget]} disabled={false} onPrepare={prepare} onChanged={vi.fn()} onPublished={published} />);
+  fireEvent.click(screen.getByRole('button', {name:'发布本体'}));
+  await screen.findByRole('combobox', {name:'客户 发布操作'});
+  fireEvent.click(screen.getByRole('button', {name:'关闭'}));
+  fireEvent.click(screen.getByRole('button', {name:'发布本体'}));
+  await screen.findByRole('combobox', {name:'客户 发布操作'});
+  fireEvent.click(screen.getByRole('button', {name:'确认发布本体'}));
+  await screen.findByText('校验未通过：首项回读未完成');
+  expect(saveModelingSource).not.toHaveBeenCalled();
+  expect(runModelingOperation).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({revision:7,resolutions:fixed.resolutions,publication:fixed.publication,plan:null}), 'validate', {preparePublication:true});
+  expect(screen.getByRole('combobox', {name:'客户 发布属性 客户编号'})).toHaveValue('');
+  expect(screen.getByRole('combobox', {name:'供应商 发布操作'})).toHaveValue('');
+  expect(screen.getByRole('combobox', {name:'供应商 发布操作'})).toBeDisabled();
+  expect(prepare).toHaveBeenCalledTimes(2);
+  expect(published).not.toHaveBeenCalled();
+});

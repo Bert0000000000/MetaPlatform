@@ -209,7 +209,8 @@ async def save_source(ident: str, payload: Save, request: Request):
                 changes["draft"]["semantics"].update(
                     context=changes["context"], questions=changes["questions"]
                 )
-            if (source.get("publication") or {}).get("completed"):
+            publication_state = source.get("publication") or {}
+            if publication_state.get("completed") or publication_state.get("inFlight"):
 
                 def selected(value):
                     return {
@@ -257,7 +258,10 @@ async def begin_job(ident, payload, request, kind):
     with source_lock(store, ident):
         source, rows = read(store, ident, payload.revision, private=True)
         ensure_idle(source)
-        if kind == "generate" and (source.get("publication") or {}).get("completed"):
+        publication_state = source.get("publication") or {}
+        if kind == "generate" and (
+            publication_state.get("completed") or publication_state.get("inFlight")
+        ):
             raise HTTPException(
                 409, "已有发布结果，不能重新生成覆盖；请另建来源候选并复用已发布类型"
             )

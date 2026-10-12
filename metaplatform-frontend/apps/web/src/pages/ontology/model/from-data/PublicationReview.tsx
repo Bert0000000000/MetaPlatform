@@ -4,6 +4,7 @@ import type { KernelObjectType } from '@/api/ont/kernel';
 import { runModelingOperation, saveModelingSource, type ModelingSource } from '@/api/ont/modeling';
 import PublicationDecisions from './PublicationDecisions';
 import { suggestResolution } from './candidateMatching';
+import { hasPublicationStarted } from './publicationState';
 
 export default function PublicationReview({ source, types, disabled, onPrepare, onChanged, onPublished }: {
   source: ModelingSource; types: KernelObjectType[]; disabled: boolean;
@@ -30,7 +31,7 @@ export default function PublicationReview({ source, types, disabled, onPrepare, 
       // Old plans must be rechecked against the current native baseline.
       const next = structuredClone(current);
       next.plan = null;
-      if (!next.publication?.completed.length) {
+      if (!hasPublicationStarted(next.publication)) {
         next.draft?.classes.filter(cls => cls.included !== false).forEach(cls => {
           const resolution = next.resolutions[cls.id];
           if (!resolution) return;

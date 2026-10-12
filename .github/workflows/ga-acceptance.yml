@@ -388,6 +388,98 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # MP11 provider-to-consumer database cases use a separate ephemeral database.
+  # The business role cannot manage roles/databases; only guarded test fixtures
+  # receive the management identity for their UUID-prefixed child resources.
+  mp11-product-postgres:
+    name: MP11 data, AppHub and MCP PostgreSQL acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: meta
+          POSTGRES_PASSWORD: meta
+          POSTGRES_DB: postgres
+        ports:
+          - 55497:5432
+        options: >-
+          --health-cmd "pg_isready -U meta -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install locked product runtime and test dependencies
+        working-directory: mate-platform-backend
+        run: |
+          python -m pip install uv
+          uv sync --frozen --python 3.12 --package mate-tech-data --package mate-app-hub --package mate-tech-mcp --package mate-tech-ont --no-install-workspace
+          uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
+          uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
+      - name: Prepare the owned nonprivileged product database
+        run: |
+          mate-platform-backend/.venv/bin/python - <<'PY'
+          import os
+          import secrets
+          from pathlib import Path
+          import psycopg2
+          from psycopg2 import sql
+
+          database = 'codex_mp11_other_ci'
+          password = secrets.token_hex(24)
+          print(f'::add-mask::{password}')
+          conn = psycopg2.connect('postgresql://meta:meta@127.0.0.1:55497/postgres')
+          conn.autocommit = True
+          try:
+              with conn.cursor() as cursor:
+                  cursor.execute(sql.SQL('CREATE ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE').format(sql.Identifier(database), sql.Literal(password)))
+                  cursor.execute(sql.SQL('CREATE DATABASE {} OWNER {}').format(sql.Identifier(database), sql.Identifier(database)))
+          finally:
+              conn.close()
+          admin_dsn = f'postgresql://meta:meta@127.0.0.1:55497/{database}'
+          with psycopg2.connect(admin_dsn) as conn, conn.cursor() as cursor:
+              cursor.execute('CREATE EXTENSION IF NOT EXISTS vector')
+          dsn = f'postgresql://{database}:{password}@127.0.0.1:55497/{database}'
+          with psycopg2.connect(dsn) as conn, conn.cursor() as cursor:
+              cursor.execute('SELECT current_database(), rolsuper, rolbypassrls, rolcreatedb, rolcreaterole FROM pg_roles WHERE rolname = current_user')
+              identity = cursor.fetchone()
+              assert identity == (database, False, False, False, False), identity
+          with Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8') as env:
+              for name in ('MP11_SOURCE_PG_DSN', 'MP11_APPHUB_PG_DSN', 'MP11_APP_ID_PG_DSN'):
+                  env.write(f'{name}={dsn}\n')
+              env.write(f'MP11_SOURCE_ADMIN_DSN={admin_dsn}\nMP11_OWNED_PG_DATABASE={database}\n')
+          Path('.ci').mkdir(exist_ok=True)
+          print('Product database: owned CI fixture, NOSUPERUSER, NOBYPASSRLS, NOCREATEDB, NOCREATEROLE')
+          PY
+      - name: Execute data source and schema acceptance
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-tech-data/tests/test_mp11_connection_schema.py -q --junitxml=../.ci/mp11-data-postgres.xml
+      - name: Execute application identity and order binding acceptance
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-app-hub/tests/test_mp11_app_identity.py packages/mate-app-hub/tests/test_apphub_order_binding.py -q --junitxml=../.ci/mp11-apphub-postgres.xml
+      - name: Execute MCP business client acceptance
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-tech-mcp/tests/test_mp11_client_contract.py -q --junitxml=../.ci/mp11-mcp-postgres.xml
+      - name: Require executed product database cases with zero skips
+        run: |
+          python - <<'PY'
+          from xml.etree import ElementTree as ET
+          for suite in ('data', 'apphub', 'mcp'):
+              cases = list(ET.parse(f'.ci/mp11-{suite}-postgres.xml').getroot().iter('testcase'))
+              assert cases, f'{suite}: no executed tests'
+              assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error')), f'{suite}: every case must execute and pass'
+              print(f'{suite}: {len(cases)} executed, 0 skipped')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mp11-product-postgres-results
+          path: .ci/mp11-*-postgres.xml
+          if-no-files-found: error
+          retention-days: 14
+
   # ── 1.6 任务 3：Agent 产品层（mate-tech-agent-team）测试进 CI ──────────
   # 此前这 246 条用例从未在任何 workflow 里跑过（CI 只跑 tests/architecture
   # 与 packages/mate-platform）。没有门禁的测试等于没写——写在这里是因为

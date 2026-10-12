@@ -156,7 +156,7 @@ async def prepare(request, source):
         {k: source.get(k) for k in ("draft", "context", "questions", "resolutions")}
     )
     if (
-        previous.get("completed")
+        (previous.get("completed") or previous.get("inFlight"))
         and reviewed
         and previous.get("configHash") == reviewed.get("configHash")
         and previous.get("inputHash") == input_hash

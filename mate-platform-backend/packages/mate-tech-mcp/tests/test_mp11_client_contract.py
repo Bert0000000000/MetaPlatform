@@ -245,6 +245,88 @@ async def test_key_rejects_requested_foreign_workspace(_fresh_store):
         )
 
 
+@pytest.fixture(autouse=True)
+def _owned_pg_order_baseline(request, monkeypatch):
+    """Bootstrap actual PG cases only in the explicitly named disposable database."""
+    import os
+    from datetime import UTC, datetime
+    from urllib.parse import urlparse
+
+    import psycopg2
+    from mate_kernel.ontology import (
+        ActionType,
+        ClassRef,
+        Individual,
+        ObjectType,
+        Property,
+        PropertyFormat,
+    )
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+    dsn = os.environ.get("MP11_APPHUB_PG_DSN")
+    if not dsn or not request.node.name.startswith("test_actual_pg_"):
+        return
+    target = urlparse(dsn)
+    if not target.path.startswith("/codex_mp11_other_"):
+        return
+    expected = os.environ["MP11_OWNED_PG_DATABASE"]
+    assert target.hostname == "127.0.0.1" and target.port == 55497
+    assert target.path == "/" + expected
+    with psycopg2.connect(dsn) as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT current_database()")
+        assert cursor.fetchone() == (expected,)
+
+    monkeypatch.setenv("ONT_VECTOR_DIM", "3")
+    tenant = "mp11-app-ui"
+    rid = ClassRef(f"ont.{tenant}.obj.order")
+    pk = ClassRef(f"ont.{tenant}.prop.id")
+    total = ClassRef(f"ont.{tenant}.prop.total")
+    status = ClassRef(f"ont.{tenant}.prop.status")
+    repo = PgOntologyRepository(dsn=dsn)
+    with repo.tenant_scope(tenant):
+        repo.upsert_object_type(
+            ObjectType(
+                rid=rid,
+                primary_key=(pk,),
+                properties=(
+                    Property(pk, "integer", False, True, "id", PropertyFormat.INTEGER),
+                    Property(total, "integer", False, False, "total", PropertyFormat.INTEGER),
+                    Property(status, "string", False, False, "status", PropertyFormat.STRING),
+                ),
+            )
+        )
+        repo.upsert_action_type(
+            ActionType(
+                rid=ClassRef(f"ont.{tenant}.act.review"),
+                parameters=(),
+                submission_criteria=(),
+                side_effects=(),
+                function_ref=None,
+                on=(rid,),
+                declarative_edits=(
+                    {
+                        "op": "set_property",
+                        "target": "$target",
+                        "property_rid": status.rid,
+                        "value": "approved",
+                    },
+                ),
+            )
+        )
+        now = datetime.now(UTC)
+        repo.create_individual(
+            Individual(
+                rid=f"ont.{tenant}.ind.order.2",
+                class_rid=rid,
+                props=((pk, 2), (total, 20), (status, "pending")),
+                primary_key="2",
+                created_at=now,
+                updated_at=now,
+                tenant_id=tenant,
+            )
+        )
+
+
 @pytest.mark.skipif(
     not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit owned PG required"
 )
@@ -633,7 +715,7 @@ async def test_concrete_operation_authority_and_preview_metadata():
 
 @pytest.fixture
 def owned_embedding_repo(monkeypatch):
-    """Dedicated Fix1 DB; never alter the accepted published Order schema."""
+    """Use the explicit owned test DSN without selecting another database."""
     import os
     import uuid
     from urllib.parse import urlparse
@@ -648,7 +730,9 @@ def owned_embedding_repo(monkeypatch):
     parsed = urlparse(source)
     assert parsed.hostname == "127.0.0.1" and parsed.port == 55497
     assert parsed.path.startswith("/codex_mp11_")
-    dsn = source.rsplit("/", 1)[0] + "/codex_mp11_agent_pgvector_fix1_20261012"
+    if parsed.path.startswith("/codex_mp11_other_"):
+        assert parsed.path == "/" + os.environ["MP11_OWNED_PG_DATABASE"]
+    dsn = source
     monkeypatch.setenv("ONT_VECTOR_DIM", "3")
     repo = PgOntologyRepository(dsn=dsn)
     tenant = "mp11-vector-fix"
@@ -678,7 +762,7 @@ def owned_embedding_repo(monkeypatch):
 
         class OwnedEmbeddingFixture(tuple):
             def __repr__(self):
-                return "<owned embedding fixture: loopback55497/codex_mp11_agent_pgvector_fix1_20261012>"
+                return f"<owned embedding fixture: {parsed.hostname}:{parsed.port}{parsed.path}>"
 
         yield OwnedEmbeddingFixture((repo, dsn, tenant, rid, calls))
 

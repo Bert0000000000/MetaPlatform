@@ -129,6 +129,99 @@ def test_human_decision_requires_authenticated_user_write_scope(handler, identit
     assert error.value.status_code == 403
 
 
+@pytest.fixture(autouse=True)
+def _owned_pg_order_baseline(request, monkeypatch):
+    """Bootstrap actual PG cases only in the explicitly named disposable database."""
+    import os
+    from datetime import UTC, datetime
+    from urllib.parse import urlparse
+
+    import psycopg2
+
+    from mate_kernel.ontology import (
+        ActionType,
+        ClassRef,
+        Individual,
+        ObjectType,
+        Property,
+        PropertyFormat,
+    )
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+    dsn = os.environ.get("MP11_APPHUB_PG_DSN")
+    if not dsn or not request.node.name.startswith("test_actual_pg_"):
+        return
+    target = urlparse(dsn)
+    if not target.path.startswith("/codex_mp11_other_"):
+        return
+    expected = os.environ["MP11_OWNED_PG_DATABASE"]
+    assert target.hostname == "127.0.0.1" and target.port == 55497
+    assert target.path == "/" + expected
+    with psycopg2.connect(dsn) as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT current_database()")
+        assert cursor.fetchone() == (expected,)
+    from mate_app_hub.repositories import sql_models
+    from sqlalchemy import create_engine
+
+    engine = create_engine(dsn)
+    try:
+        for model in vars(sql_models).values():
+            if isinstance(model, type) and getattr(model, "__tablename__", None):
+                model.__table__.create(engine, checkfirst=True)
+    finally:
+        engine.dispose()
+
+    monkeypatch.setenv("ONT_VECTOR_DIM", "3")
+    tenant = "mp11-app-ui"
+    rid = ClassRef(f"ont.{tenant}.obj.order")
+    pk = ClassRef(f"ont.{tenant}.prop.id")
+    total = ClassRef(f"ont.{tenant}.prop.total")
+    status = ClassRef(f"ont.{tenant}.prop.status")
+    repo = PgOntologyRepository(dsn=dsn)
+    with repo.tenant_scope(tenant):
+        repo.upsert_object_type(
+            ObjectType(
+                rid=rid,
+                primary_key=(pk,),
+                properties=(
+                    Property(pk, "integer", False, True, "id", PropertyFormat.INTEGER),
+                    Property(total, "integer", False, False, "total", PropertyFormat.INTEGER),
+                    Property(status, "string", False, False, "status", PropertyFormat.STRING),
+                ),
+            )
+        )
+        repo.upsert_action_type(
+            ActionType(
+                rid=ClassRef(f"ont.{tenant}.act.review"),
+                parameters=(),
+                submission_criteria=(),
+                side_effects=(),
+                function_ref=None,
+                on=(rid,),
+                declarative_edits=(
+                    {
+                        "op": "set_property",
+                        "target": "$target",
+                        "property_rid": status.rid,
+                        "value": "approved",
+                    },
+                ),
+            )
+        )
+        now = datetime.now(UTC)
+        repo.create_individual(
+            Individual(
+                rid=f"ont.{tenant}.ind.order.2",
+                class_rid=rid,
+                props=((pk, 2), (total, 20), (status, "pending")),
+                primary_key="2",
+                created_at=now,
+                updated_at=now,
+                tenant_id=tenant,
+            )
+        )
+
+
 @pytest.mark.skipif(
     not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit isolated Task6 PG required"
 )
@@ -149,9 +242,12 @@ def test_actual_pg_declarative_proposal_replay_concurrency_and_state():
         and target.port == 55497
         and (
             target.path.startswith("/codex_mp11_apphub_")
+            or target.path.startswith("/codex_mp11_other_")
             or target.path == "/codex_mp11_candidate_tests_20261012"
         )
     )
+    if target.path.startswith("/codex_mp11_other_"):
+        assert target.path == "/" + os.environ["MP11_OWNED_PG_DATABASE"]
     tenant = "mp11-app-ui"
     repo = PgOntologyRepository(dsn=dsn)
 

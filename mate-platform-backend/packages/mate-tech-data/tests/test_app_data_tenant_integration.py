@@ -4,8 +4,8 @@ These tests exercise the auth + tenancy contract end-to-end:
 
   - test_wrong_tenant_403: token binds tenant A but caller requests
     data scoped to tenant B (via X-Tenant-Id header) -> 403.
-  - test_no_tenant_400: token with empty tenant_id is rejected by
-    require_tenant (TenantAccessError -> 400 E_TENANT_REQUIRED).
+  - test_signed_empty_tenant_rejected_by_auth: a signed empty tenant claim
+    is malformed and rejected by authentication (401) before dispatch.
   - test_tenant_isolation_cdc_tasks: two tenants querying the same
     endpoint see disjoint CDC task catalogs.
   - test_tenant_isolation_sources: two tenants querying the same
@@ -73,14 +73,15 @@ def test_wrong_tenant_403(fresh_app: TestClient) -> None:
     assert "tenant" in r.text.lower()
 
 
-def test_no_tenant_400(fresh_app: TestClient) -> None:
+def test_signed_empty_tenant_rejected_by_auth(fresh_app: TestClient) -> None:
     token = _token(tenant_id="")
     r = fresh_app.get(
         "/api/v1/data/cdc-tasks",
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert r.status_code == 400, r.text
-    assert r.json()["code"] == "E_TENANT_REQUIRED"
+    assert r.status_code == 401, r.text
+    assert r.json()["error"] == "unauthorized"
+    assert r.json()["detail"] == "token rejected: malformed signed tenant"
 
 
 def test_tenant_isolation_cdc_tasks(fresh_app: TestClient) -> None:

@@ -75,7 +75,7 @@ async def test_candidate_only_validation_preserves_published_plan_and_sync(app):
             assert {instance.primary_key for instance in instances} == {"A", "B"}
 
 
-async def _partial_publication(client, monkeypatch, fail_after_apply=False):
+async def _partial_publication(client, monkeypatch, fail_after_apply=False, fail_type_index=1):
     value = draft()
     target = deepcopy(value["classes"][0])
     target.update(id="target", name="Target")
@@ -89,7 +89,7 @@ async def _partial_publication(client, monkeypatch, fail_after_apply=False):
 
     async def fail_once(rid, *args, **kwargs):
         nonlocal failed
-        if rid == source["plan"]["types"][1]["rid"] and not failed:
+        if rid == source["plan"]["types"][fail_type_index]["rid"] and not failed:
             failed = True
             if fail_after_apply:
                 await original(rid, *args, **kwargs)
@@ -108,17 +108,22 @@ async def _partial_publication(client, monkeypatch, fail_after_apply=False):
     assert response.status_code == 200, response.text
     partial = response.json()
     assert partial["publication"]["status"] == "failed"
-    assert partial["publication"]["completed"] == [source["plan"]["types"][0]["rid"]]
+    assert partial["publication"]["completed"] == [
+        item["rid"] for item in source["plan"]["types"][:fail_type_index]
+    ]
     return partial
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("class_id", ["item", "target"])
-async def test_partial_publication_rejects_redirect_without_losing_plan(app, monkeypatch, class_id):
+@pytest.mark.parametrize("fail_type_index", [0, 1])
+async def test_partial_publication_rejects_redirect_without_losing_plan(
+    app, monkeypatch, class_id, fail_type_index
+):
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
-        source = await _partial_publication(client, monkeypatch)
+        source = await _partial_publication(client, monkeypatch, fail_type_index=fail_type_index)
         item = next(item for item in source["plan"]["types"] if item["classId"] == class_id)
         target_rid = f"ont.{app.state.test_tenant}.obj.redirect.v1"
         target = native.ObjectTypeDTO(**{**item["payload"], "rid": target_rid})
@@ -147,13 +152,14 @@ async def test_partial_publication_rejects_redirect_without_losing_plan(app, mon
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("fail_after_apply", [False, True])
+@pytest.mark.parametrize("fail_type_index", [0, 1])
 async def test_partial_publication_reopen_revalidates_and_resumes_completed_types(
-    app, monkeypatch, fail_after_apply
+    app, monkeypatch, fail_after_apply, fail_type_index
 ):
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
-        source = await _partial_publication(client, monkeypatch, fail_after_apply)
+        source = await _partial_publication(client, monkeypatch, fail_after_apply, fail_type_index)
         prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
         old_hash = source["plan"]["configHash"]
         saved = await client.put(

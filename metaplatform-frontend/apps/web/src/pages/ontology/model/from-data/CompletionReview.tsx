@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Banner, Button, Modal, Spin, Tag } from '@douyinfe/semi-ui';
 import { confirmModelingCompletion, prepareModelingCompletion, type ModelingCompletionPlan, type ModelingSource } from '@/api/ont/modeling';
+import { hasPublicationStarted } from './publicationState';
 
 const errorText = (error: unknown) => {
   const value = error as {response?: {data?: {detail?: unknown}};message?: string};
@@ -34,7 +35,7 @@ export default function CompletionReview({ source, disabled, onPrepare, onApplie
     } catch (err) { setPlan(null); setError(errorText(err)); } finally { setWorking(''); }
   };
   return <>
-    <Button disabled={disabled || Boolean(source.publication?.completed.length)} onClick={() => {
+    <Button disabled={disabled || hasPublicationStarted(source.publication)} onClick={() => {
       setDeferred([]); setVisible(true); void load([], true);
     }}>一次处理并确认</Button>
     <Modal title="一次处理候选本体" visible={visible} centered className="fd-batch-modal" width="min(1040px, calc(100vw - 32px))"

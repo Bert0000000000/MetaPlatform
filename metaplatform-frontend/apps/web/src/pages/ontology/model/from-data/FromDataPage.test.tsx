@@ -363,6 +363,58 @@ describe('逆向发现本体独立辅助入口', () => {
     expect(screen.getByText(/稳定标识与发布范围已锁定/)).toBeVisible();
   });
 
+  it('首项 inFlight 保留失败重试但锁定候选，不能被当成发布成功或开放同步', async () => {
+    const source = {...fixture(),publication:{status:'failed',configHash:'hash3',completed:[],inFlight:'ont.test.obj.material.v1',results:[],error:'首项回读未完成'}} as ModelingSource;
+    vi.mocked(getModelingSource).mockResolvedValue(source);
+    vi.mocked(runModelingOperation).mockImplementationOnce(async value => ({...value,validation:{...source.validation!,canPublish:false,issues:[{item:'material',severity:'error',message:'首项回读未完成'}]}}));
+    open();
+    await screen.findByRole('button', {name:'已保存'});
+    expect(screen.queryByRole('button', {name:'一次处理并确认'})).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', {name:'确认对象 物料'})).toBeDisabled();
+    expect(screen.getByRole('button', {name:'全部确认对象'})).toBeDisabled();
+    await openObject();
+    const name = screen.getByRole('textbox', {name:'业务名称'});
+    expect(name).toBeDisabled();
+    expect(screen.getByRole('button', {name:'修改稳定标识'})).toBeDisabled();
+    fireEvent.change(name, {target:{value:'不能重定向的物料'}});
+    expect(name).toHaveValue('物料');
+    fireEvent.click(screen.getByRole('button', {name:'完成查看'}));
+    fireEvent.click(screen.getByRole('button', {name:/1.*资料与业务范围/}));
+    expect(screen.getByRole('textbox', {name:'业务背景'})).toBeDisabled();
+    expect(screen.getByRole('button', {name:'重新发现候选'})).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', {name:/4.*本体发布与验收/}));
+    expect(screen.getByRole('heading', {name:'发布结果 · failed'})).toBeVisible();
+    expect(screen.queryByText('本次所选本体已发布')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name:/同步本次数据/})).not.toBeInTheDocument();
+    const retry = screen.getByRole('button', {name:'发布本体'});
+    expect(retry).toBeEnabled();
+    fireEvent.click(retry);
+    expect(await screen.findByRole('combobox', {name:'物料 发布操作'})).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', {name:'确认发布本体'}));
+    await screen.findByText('校验未通过：首项回读未完成');
+    expect(runModelingOperation).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({revision:3,resolutions:{},publication:source.publication}), 'validate', {preparePublication:true});
+    expect(saveModelingSource).not.toHaveBeenCalled();
+  });
+
+  it('正式发布成功后仍可修正数据映射，保留已有类型的稳定标识保护', async () => {
+    const source = {...fixture(),publication:{status:'succeeded',configHash:'hash3',completed:['ont.test.obj.material.v1'],inFlight:null,results:[]}} as ModelingSource;
+    vi.mocked(getModelingSource).mockResolvedValue(source);
+    open();
+    await screen.findByText('本次所选本体已发布');
+    fireEvent.click(screen.getByRole('button', {name:/2.*候选匹配与合并确认/}));
+    showMappings();
+    const mapping = screen.getByRole('checkbox', {name:'确认映射 库存 → 物料'});
+    expect(mapping).toBeEnabled();
+    fireEvent.click(mapping);
+    expect(mapping).not.toBeChecked();
+    expect(screen.getByRole('button', {name:'保存修改'})).toBeEnabled();
+    fireEvent.click(screen.getByRole('tab', {name:/对象类型/}));
+    await openObject();
+    expect(screen.getByRole('button', {name:'修改稳定标识'})).toBeDisabled();
+    expect(saveModelingSource).not.toHaveBeenCalled();
+    expect(runModelingOperation).not.toHaveBeenCalled();
+  });
+
   it('展示真实三级继承，并阻止选择自身或后代作为父类', async () => {
     const source = fixture();
     const parent = source.draft!.classes[0];

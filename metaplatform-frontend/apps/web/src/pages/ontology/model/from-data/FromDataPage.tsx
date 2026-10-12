@@ -15,6 +15,7 @@ import CompletionReview from './CompletionReview';
 import PublicationReview from './PublicationReview';
 import { included, selectedDraft } from './review';
 import { clearProgress, readProgress, rememberProgress } from './workspaceProgress';
+import { hasPublicationStarted } from './publicationState';
 import './from-data.css';
 
 const steps = ['资料与业务范围', '候选匹配与合并确认', '变更草稿与校验', '本体发布与验收', '数据同步（可选）'];
@@ -58,13 +59,16 @@ export default function FromDataPage() {
     element?.focus({ preventScroll: true });
     element?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
   }, [step, focusClassId]);
+  const publicationStarted = hasPublicationStarted(source?.publication);
+  const candidateLocked = Boolean(source?.publication?.inFlight) ||
+    (publicationStarted && source?.publication?.status !== 'succeeded' && source?.publication?.status !== 'completed');
   const running = source?.job?.status === 'running';
   const syncing = source?.sync?.status === 'running';
   const repairing = source?.dataRepair?.status === 'running';
   const locked = Boolean(busy || running || syncing || repairing);
   const generating = busy === '生成候选模型' || (running && source?.job?.kind === 'generate');
   const confirmGenerate = () => {
-    if (locked) return;
+    if (locked || candidateLocked) return;
     if (source?.draft) Modal.confirm({ title: '重新生成候选模型？', content: '相同数据、业务说明和平台定义将沿用同一生成基线，并替换当前人工修改及审核状态。输入变化时重新生成并执行全量预检；失败时保留原草稿。已有发布结果请另建来源候选。', okText: '重新生成', onOk: () => operate('generate') });
     else void operate('generate');
   };
@@ -150,7 +154,7 @@ export default function FromDataPage() {
   }, [dirty]);
 
   const edit = (fn: (next: ModelingSource) => void) => {
-    if (!source) return;
+    if (!source || candidateLocked) return;
     const next = structuredClone(source); fn(next);
     // New business intent invalidates previous human approvals, as well as reports.
     if (next.draft && (next.context !== source.context || JSON.stringify(next.questions) !== JSON.stringify(source.questions))) {
@@ -163,7 +167,7 @@ export default function FromDataPage() {
     setSource(next); setDirty(true); setWarningAck(false); setPublishConfirmed(false);
   };
   const save = async () => {
-    if (!source) return;
+    if (!source || candidateLocked) return;
     setBusy('保存候选修订'); setError('');
     try { accept(await saveModelingSource(source)); } catch (err) { setError(message(err)); } finally { setBusy(''); }
   };
@@ -207,7 +211,7 @@ export default function FromDataPage() {
   const ready = Boolean(source?.validation?.scope === 'ontology' && source.validation.canPublish && !dirty);
   const publishBlockers = source?.validation?.issues.filter(issue => issue.severity === 'error') ?? [];
   const published = !dirty && source?.publication?.configHash === source?.plan?.configHash && (source?.publication?.status === 'succeeded' || source?.publication?.status === 'completed');
-  const completion = source?.draft && !source.publication?.completed.length ? <CompletionReview key={source.id} source={source} disabled={locked}
+  const completion = source?.draft && !publicationStarted ? <CompletionReview key={source.id} source={source} disabled={locked}
     onPrepare={async () => { const saved = dirty ? await saveModelingSource(source) : await getModelingSource(source.id); accept(saved); return saved; }}
     onEditClass={id => { setFocusClassId(`fd-class-${id}`); setStep(1); }}
     onApplied={value => { accept(value); setError(''); setCompletionFeedback('批量审批已完成。新建、复用或增加属性将在发布前选择。'); setStep(2); }} /> : null;
@@ -218,7 +222,7 @@ export default function FromDataPage() {
         const refresh = async () => { setBusy('刷新'); try { accept(await getModelingSource(source.id)); setError(''); setPublishError(''); } catch (err) { setError(message(err)); } finally { setBusy(''); } };
         if (dirty) Modal.confirm({ title: '重新读取来源？', content: '未保存的修改将丢失。', okText: '重新读取', onOk: refresh }); else void refresh();
       }}>刷新</Button>}
-      {source && <Button theme="solid" icon={<Save size={15} />} disabled={!dirty || locked} title={!dirty ? '当前没有未保存的修改；修改候选或确认定义后即可保存' : undefined} onClick={() => void save()}>{dirty ? '保存修改' : '已保存'}</Button>}
+      {source && <Button theme="solid" icon={<Save size={15} />} disabled={!dirty || locked || candidateLocked} title={!dirty ? '当前没有未保存的修改；修改候选或确认定义后即可保存' : undefined} onClick={() => void save()}>{dirty ? '保存修改' : '已保存'}</Button>}
     </>} />
     <div className="fd-source-bar"><FileSpreadsheet size={18} /><label><span>历史导入</span><select aria-label="选择历史导入" value={sourceId ?? ''} disabled={locked || sources.length === 0} onChange={e => selectSource(e.target.value)}><option value="">{sources.length === 0 ? '暂无导入记录' : '选择历史导入记录'}</option>{sources.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{source && <Tag>修订 {source.revision}{dirty ? ' · 未保存' : ''}</Tag>}
       <input ref={uploadInput} className="fd-file-input" type="file" aria-label="上传 Excel 文件" accept=".xlsx" disabled={locked} onChange={e => {
@@ -242,20 +246,20 @@ export default function FromDataPage() {
           <p className="mp-onto-muted">样本唯一仅是候选身份的证据，不代表长期业务唯一性。</p>
         </section>
         <section className="fd-card"><h2>业务背景</h2><p className="mp-onto-muted">先说明业务场景及核心概念，再从资料中发现补充候选。已有本体作为对齐依据，资料不直接写入正式本体。</p>
-          <label>业务背景<textarea rows={4} maxLength={2000} placeholder="例如：分析工单物料需求与可用库存；库存按工厂、物料、批次区分，不同单位不能直接相加。" value={source.context} onChange={e => edit(next => { next.context = e.target.value; })} /></label>
-          <div className="fd-actions"><Button theme="solid" loading={generating} icon={<Sparkles size={15} />} disabled={locked || !source.context.trim()} onClick={confirmGenerate}>{generating ? '正在生成建议…' : source.draft ? '重新发现候选' : '发现本体候选'}</Button></div>
+          <label>业务背景<textarea disabled={candidateLocked} rows={4} maxLength={2000} placeholder="例如：分析工单物料需求与可用库存；库存按工厂、物料、批次区分，不同单位不能直接相加。" value={source.context} onChange={e => edit(next => { next.context = e.target.value; })} /></label>
+          <div className="fd-actions"><Button theme="solid" loading={generating} icon={<Sparkles size={15} />} disabled={locked || candidateLocked || !source.context.trim()} onClick={confirmGenerate}>{generating ? '正在生成建议…' : source.draft ? '重新发现候选' : '发现本体候选'}</Button></div>
           <GenerationProgress job={source.job} submitting={busy === '生成候选模型'} error={error} sheetCount={source.profile.sheets.length} hasDraft={Boolean(source.draft)} onRetry={confirmGenerate} />
         </section>
       </>}
       {step === 1 && source.draft && <>
         <section className="fd-card"><div className="fd-section-head"><div><h2>完整处理方案</h2><p className="mp-onto-muted">有依据的统一补全；不完整的类可选择本次不发布，其子类、关系和实例一起暂缓。确认一次后自动重新校验。</p></div>{completion}</div></section>
-        <ReviewWorkspace draft={source.draft} profile={source.profile} types={types} resolutions={source.resolutions} disabled={locked} focusClassId={focusClassId} identityLocked={Boolean(source.publication?.completed.length)} onChange={draft => edit(next => { next.draft = draft; })} onResolve={(classId, resolution) => edit(next => { next.resolutions[classId] = resolution;
+        <ReviewWorkspace draft={source.draft} profile={source.profile} types={types} resolutions={source.resolutions} disabled={locked || candidateLocked} focusClassId={focusClassId} identityLocked={publicationStarted} onChange={draft => edit(next => { next.draft = draft; })} onResolve={(classId, resolution) => edit(next => { next.resolutions[classId] = resolution;
           if (next.draft) {
             const cls = next.draft.classes.find(c => c.id === classId);
             if (cls) cls.accepted = false;
             next.draft.relationships.filter(r => r.source === classId || r.target === classId).forEach(r => { r.accepted = false; });
           } })} onRename={(draft, resolutions) => edit(next => { next.draft = draft; next.resolutions = resolutions; })} />
-        <div className="fd-review-footer"><span>{dirty ? '有未保存的修改，校验时将先保存。' : '当前修改已保存。'}确认表示已核对业务规则与依据。</span><div className="fd-inline">{source.publication?.completed.length ? <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => setStep(3)}>查看发布结果</Button> : <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => void operate('validate')}>校验并预览</Button>}</div></div>
+        <div className="fd-review-footer"><span>{dirty ? '有未保存的修改，校验时将先保存。' : '当前修改已保存。'}确认表示已核对业务规则与依据。</span><div className="fd-inline">{publicationStarted ? <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => setStep(3)}>查看发布结果</Button> : <Button theme="solid" icon={<ArrowRight size={15} />} onClick={() => void operate('validate')}>校验并预览</Button>}</div></div>
 
       </>}
       {step === 2 && <>

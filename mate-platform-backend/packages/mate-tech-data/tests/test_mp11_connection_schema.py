@@ -76,9 +76,35 @@ from urllib.parse import urlparse
 import pytest
 
 
+def _owned_pg_admin(source_dsn):
+    """Use explicit management credentials only against the named disposable target."""
+    import psycopg2
+    from psycopg2.extensions import parse_dsn
+
+    admin_dsn = os.environ.get("MP11_SOURCE_ADMIN_DSN")
+    if not admin_dsn:
+        pytest.skip("requires guarded MP11_SOURCE_ADMIN_DSN for role/database fixtures")
+    source = parse_dsn(source_dsn)
+    management = parse_dsn(admin_dsn)
+    expected = os.environ["MP11_OWNED_PG_DATABASE"]
+    assert expected.startswith("codex_mp11_other_")
+    assert source["host"] == "127.0.0.1" and int(source["port"]) == 55497
+    assert source["dbname"] == expected
+    assert management["host"] == source["host"]
+    assert int(management["port"]) == int(source["port"])
+    assert management["dbname"] in {expected, "postgres"}
+    connection = psycopg2.connect(**(management | {"dbname": expected}))
+    connection.autocommit = True
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT current_database()")
+        assert cursor.fetchone() == (expected,)
+    return connection
+
+
 @pytest.fixture
 def real_pg():
     import psycopg2
+    from psycopg2 import sql
     from psycopg2.extensions import parse_dsn
 
     dsn = os.environ.get("MP11_SOURCE_PG_DSN")
@@ -90,10 +116,11 @@ def real_pg():
         and target.port == 55497
         and target.path.startswith("/codex_mp11_")
     )
+    admin = _owned_pg_admin(dsn)
     conn = psycopg2.connect(dsn)
     conn.autocommit = True
     schema = "source_" + uuid.uuid4().hex[:10]
-    role = "mp11_reader_" + uuid.uuid4().hex[:10]
+    role = os.environ["MP11_OWNED_PG_DATABASE"] + "_reader_" + uuid.uuid4().hex[:10]
     password = uuid.uuid4().hex
     with conn.cursor() as cur:
         cur.execute(f"CREATE SCHEMA {schema}")
@@ -107,7 +134,10 @@ def real_pg():
         cur.execute(
             f"INSERT INTO {schema}.orders VALUES (1,1,10,'2026-01-01'),(2,1,20,'2026-01-01')"
         )
-        cur.execute(f"CREATE ROLE {role} LOGIN PASSWORD %s", (password,))
+    with admin.cursor() as cur:
+        cur.execute(
+            sql.SQL("CREATE ROLE {} LOGIN PASSWORD %s").format(sql.Identifier(role)), (password,)
+        )
     cfg = parse_dsn(dsn)
     config = {
         "host": cfg["host"],
@@ -120,8 +150,10 @@ def real_pg():
     yield conn, config, role, password
     with conn.cursor() as cur:
         cur.execute(f"DROP SCHEMA {schema} CASCADE")
-        cur.execute(f"DROP ROLE {role}")
+    with admin.cursor() as cur:
+        cur.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))
     conn.close()
+    admin.close()
 
 
 def test_real_pg_discovery_errors_and_http_credentials(real_pg, client, auth_headers_acme):
@@ -468,17 +500,22 @@ with p.tenant_scope(TENANT):
 
 def test_fresh_schema_and_old_backing_schema_upgrade(real_pg):
     import psycopg2
+    from psycopg2 import sql
     from psycopg2.extensions import make_dsn, parse_dsn
 
     from mate_tech_ont.v2_kernel.backing_datasources import BackingDatasource, _connect_source
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
     cfg = parse_dsn(os.environ["MP11_SOURCE_PG_DSN"])
-    database = "codex_mp11_upgrade_" + uuid.uuid4().hex[:10]
-    admin = psycopg2.connect(**(cfg | {"dbname": "postgres"}))
-    admin.autocommit = True
+    database = cfg["dbname"] + "_upgrade_" + uuid.uuid4().hex[:10]
+    assert database.startswith(os.environ["MP11_OWNED_PG_DATABASE"] + "_upgrade_")
+    admin = _owned_pg_admin(os.environ["MP11_SOURCE_PG_DSN"])
     with admin.cursor() as cur:
-        cur.execute(f"CREATE DATABASE {database}")
+        cur.execute(
+            sql.SQL("CREATE DATABASE {} OWNER {}").format(
+                sql.Identifier(database), sql.Identifier(cfg["user"])
+            )
+        )
     target = make_dsn(**(cfg | {"dbname": database}))
     try:
         fresh = PgOntologyRepository(dsn=target)
@@ -523,7 +560,7 @@ def test_fresh_schema_and_old_backing_schema_upgrade(real_pg):
     finally:
         os.environ.pop("MP11_LEGACY_SOURCE_DSN", None)
         with admin.cursor() as cur:
-            cur.execute(f"DROP DATABASE {database} WITH (FORCE)")
+            cur.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(database)))
         admin.close()
 
 
@@ -620,13 +657,20 @@ def mp11_sync_case(real_pg, monkeypatch):
 @pytest.fixture
 def mp11_retarget_db(mp11_sync_case):
     import psycopg2
+    from psycopg2 import sql
     from psycopg2.extensions import make_dsn, parse_dsn
 
     c = mp11_sync_case
-    database = "codex_mp11_retarget_" + uuid.uuid4().hex[:8]
-    with c.conn.cursor() as q:
-        q.execute(f"CREATE DATABASE {database}")
     cfg = parse_dsn(os.environ["MP11_SOURCE_PG_DSN"])
+    database = cfg["dbname"] + "_retarget_" + uuid.uuid4().hex[:8]
+    assert database.startswith(os.environ["MP11_OWNED_PG_DATABASE"] + "_retarget_")
+    admin = _owned_pg_admin(os.environ["MP11_SOURCE_PG_DSN"])
+    with admin.cursor() as q:
+        q.execute(
+            sql.SQL("CREATE DATABASE {} OWNER {}").format(
+                sql.Identifier(database), sql.Identifier(cfg["user"])
+            )
+        )
     other_dsn = make_dsn(**(cfg | {"dbname": database}))
     other = psycopg2.connect(other_dsn)
     other.autocommit = True
@@ -644,8 +688,9 @@ def mp11_retarget_db(mp11_sync_case):
         yield database, other_dsn
     finally:
         other.close()
-        with c.conn.cursor() as q:
-            q.execute(f"DROP DATABASE {database} WITH (FORCE)")
+        with admin.cursor() as q:
+            q.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(database)))
+        admin.close()
 
 
 def test_fix_i1_same_registered_source_retarget_restarts_older_dataset(

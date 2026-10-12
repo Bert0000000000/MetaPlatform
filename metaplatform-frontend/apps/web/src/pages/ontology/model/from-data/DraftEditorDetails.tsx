@@ -88,7 +88,7 @@ export default function DraftEditor({ draft, profile, types, resolutions, onChan
       {renameError && <p role="alert" className="fd-warning">{renameError}</p>}
       </div>
     </Modal>
-    {!selection && identityLocked && <p className="mp-onto-muted">此候选已有发布结果，稳定标识与发布范围已锁定。后续增量请另建候选并复用已发布类型；正式身份变更需走平台迁移。</p>}
+    {!selection && identityLocked && <p className="mp-onto-muted">此候选已开始发布，稳定标识与发布范围已锁定。后续增量请另建候选并复用已发布类型；正式身份变更需走平台迁移。</p>}
     {!selection && <>
     <div className="fd-section-head"><div><h2>对象类型</h2><p>确认业务概念、粒度与稳定身份，再选择新建或复用平台模型。</p></div>
       <Button icon={<Plus size={14} />} onClick={() => update(next => {
@@ -104,7 +104,7 @@ export default function DraftEditor({ draft, profile, types, resolutions, onChan
     {draft.classes.map((cls, i) => {
       if (selection && (selection.kind !== "classes" || selection.id !== cls.id)) return null;
       return <section className="fd-card" id={`fd-class-${cls.id}`} tabIndex={-1} onFocus={() => setCollapsed(current => { if (!current.has(cls.id)) return current; const next = new Set(current); next.delete(cls.id); return next; })} key={cls.id} aria-label={`对象类型 ${cls.name}`}>
-        <div className="fd-section-head"><div className="fd-inline"><Tag>{cls.id}</Tag><strong>{cls.name}</strong><Button size="small" theme="borderless" disabled={identityLocked} title={identityLocked ? '已有发布结果，请另建候选；正式身份变更需走平台迁移。' : '为不同业务概念选择不同的稳定标识'} onClick={() => { setRenaming({ from: cls.id, value: cls.id }); setRenameError(''); }}>修改稳定标识</Button></div>
+        <div className="fd-section-head"><div className="fd-inline"><Tag>{cls.id}</Tag><strong>{cls.name}</strong><Button size="small" theme="borderless" disabled={identityLocked} title={identityLocked ? '发布已开始，请另建候选；正式身份变更需走平台迁移。' : '为不同业务概念选择不同的稳定标识'} onClick={() => { setRenaming({ from: cls.id, value: cls.id }); setRenameError(''); }}>修改稳定标识</Button></div>
           <div className="fd-inline">{!selection && <Button size="small" theme="borderless" aria-expanded={!collapsed.has(cls.id)} aria-label={`${collapsed.has(cls.id) ? "展开" : "收起"}${cls.name}详情`} onClick={() => setCollapsed(current => { const next = new Set(current); if (next.has(cls.id)) next.delete(cls.id); else next.add(cls.id); return next; })}>{collapsed.has(cls.id) ? "展开详情" : "收起详情"}</Button>}<Button size="small" theme="borderless" disabled={identityLocked} onClick={() => changeScope('classes', cls.id)}>{included(cls) ? '本次暂不发布' : '恢复本次发布'}</Button><Checkbox disabled={!included(cls) || Boolean(classReviewProblem(cls, draft))} checked={classReviewed(cls)} onChange={e => e.target.checked ? onChange(confirmCandidates(draft, 'classes', [cls.id])) : update(next => { next.classes[i].accepted = false; })}>已确认对象定义</Checkbox>
             <Button disabled={identityLocked} aria-label={`删除对象类型 ${cls.name}`} type="danger" theme="borderless" icon={<Trash2 size={14} />} onClick={() => update(next => {
               next.classes.splice(i, 1); next.mappings = next.mappings.filter(m => m.classId !== cls.id);

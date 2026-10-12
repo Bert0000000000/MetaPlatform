@@ -93,6 +93,15 @@ def test_empty_scope_invalid_ids_and_published_candidates_cannot_apply():
         propose(source, rows)
 
 
+def test_first_publication_intent_locks_batch_approval_without_completed_types():
+    source, rows = fixture()
+    source["publication"] = {"status": "failed", "completed": [], "inFlight": "native-type"}
+    original = deepcopy(source)
+    with pytest.raises(ValueError, match="已有发布"):
+        propose(source, rows, ["line"])
+    assert source == original
+
+
 def test_inheritance_completion_requires_existing_identity_bindings_and_preserves_source():
     source, rows = fixture()
     child = deepcopy(source["draft"]["classes"][0])
