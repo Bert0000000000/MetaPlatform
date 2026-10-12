@@ -14,6 +14,21 @@ from pathlib import Path
 
 from ci_gate import current_main
 
+STATUS_TIMEOUT = 120
+UPLOAD_TIMEOUT = 900
+
+
+def invoke(ssh, command, input_file=None):
+    result = subprocess.run(
+        [*ssh, command],
+        stdin=input_file,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=UPLOAD_TIMEOUT if input_file is not None else STATUS_TIMEOUT,
+    )
+    return json.loads(result.stdout)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -76,17 +91,6 @@ def main() -> None:
             user + "@" + host,
         ]
 
-        def invoke(command, input_file=None):
-            result = subprocess.run(
-                [*ssh, command],
-                stdin=input_file,
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=120,
-            )
-            return json.loads(result.stdout)
-
         deadline = time.monotonic() + 4200
         while True:
             if manifest:
@@ -94,10 +98,20 @@ def main() -> None:
                 if current_main(os.environ["GITHUB_REPOSITORY"]) != revision:
                     print("main advanced; superseded deployment skipped.")
                     return
+                print(
+                    f"Uploading {bundle.stat().st_size} bytes; transfer budget {UPLOAD_TIMEOUT}s.",
+                    flush=True,
+                )
+                started = time.monotonic()
                 with bundle.open("rb") as source:
-                    response = invoke(f"release {revision} {entry['sha256']}", source)
+                    response = invoke(ssh, f"release {revision} {entry['sha256']}", source)
+                print(
+                    f"Upload request completed in {time.monotonic() - started:.1f}s: "
+                    + response["status"],
+                    flush=True,
+                )
             else:
-                response = invoke("rollback")
+                response = invoke(ssh, "rollback")
             if response["status"] != "busy":
                 break
             if time.monotonic() > deadline:
@@ -108,7 +122,7 @@ def main() -> None:
         revision = response["revision"]
         print(f"Server is deploying {revision}; worker survives SSH disconnection.", flush=True)
         while time.monotonic() < deadline:
-            response = invoke("status " + revision)
+            response = invoke(ssh, "status " + revision)
             if response["status"] != "running":
                 print(json.dumps(response, indent=2))
                 output = Path("infra/demo-cloud/artifacts/deploy-result.json")

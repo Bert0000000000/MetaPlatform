@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -92,6 +93,30 @@ class GateTests(unittest.TestCase):
         fixture = runs()
         fixture.append(dict(fixture[0], id=70, name="Extra checks", conclusion="failure"))
         self.assertEqual(load("ci_gate").evaluate(fixture, SHA, REPO)[0], "failed")
+
+
+class TransferTests(unittest.TestCase):
+    def test_slow_source_upload_has_a_separate_budget_from_status_queries(self):
+        client = load("ci_client")
+        # Scale the deadlines while using a real child process and stdin transfer.
+        client.STATUS_TIMEOUT = 0.05
+        client.UPLOAD_TIMEOUT = 2
+        with tempfile.TemporaryDirectory() as directory:
+            helper = Path(directory) / "slow_receiver.py"
+            helper.write_text(
+                "import json,sys,time\n"
+                "data=sys.stdin.buffer.read() if sys.argv[1]=='release' else b''\n"
+                "time.sleep(0.15)\n"
+                "print(json.dumps({'status':'running','bytes':len(data)}))\n",
+                encoding="utf-8",
+            )
+            source = Path(directory) / "source"
+            source.write_bytes(b"public source" * 1000)
+            with source.open("rb") as stream:
+                response = client.invoke([sys.executable, str(helper)], "release", stream)
+            self.assertEqual(response["bytes"], source.stat().st_size)
+            with self.assertRaises(subprocess.TimeoutExpired):
+                client.invoke([sys.executable, str(helper)], "status")
 
 
 def archive_bytes(name="docker-compose.yml", kind=None):
