@@ -116,6 +116,13 @@ def unpack(stream, target: Path, expected_digest: str) -> None:
         for item in members:
             destination = target / item.name
             destination.parent.mkdir(parents=True, exist_ok=True)
+            # The SSH receiver uses umask 077. Docker COPY preserves source directory
+            # modes, so the non-root runtime needs normal permissions on public code.
+            # The enclosing release directory and shared private configuration stay private.
+            for directory in destination.parents:
+                if directory == target:
+                    break
+                directory.chmod(0o755)
             with archive.extractfile(item) as source, destination.open("wb") as output:
                 shutil.copyfileobj(source, output)
             destination.chmod(0o755 if item.mode & 0o111 else 0o644)
