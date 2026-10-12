@@ -45,12 +45,145 @@ async def _save_draft(client, source, value):
 async def _validate(client, source):
     response = await client.post(
         f"/api/v1/ont/v2/modeling/sources/{source['id']}/validate",
-        json={"revision": source["revision"]},
+        json={"revision": source["revision"], "preparePublication": True},
     )
     assert response.status_code == 200, response.text
     source = response.json()
     assert source["validation"]["canPublish"], source
     return source
+
+
+@pytest.mark.asyncio
+async def test_candidate_only_validation_preserves_published_plan_and_sync(app):
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = await validate_publish(client, await candidate(client))
+        prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
+        original_plan = deepcopy(source["plan"])
+        checked = await client.post(prefix + "/validate", json={"revision": source["revision"]})
+        assert checked.status_code == 200, checked.text
+        assert checked.json()["plan"] == original_plan
+        assert checked.json()["publication"] == source["publication"]
+        synced = await client.post(prefix + "/sync", json={"revision": source["revision"]})
+        assert synced.status_code == 200, synced.text
+        assert synced.json()["sync"]["status"] == "succeeded", synced.text
+        with app.state.kernel_repo.tenant_scope(app.state.test_tenant):
+            instances = app.state.kernel_repo.list_individuals(
+                ClassRef(original_plan["types"][0]["rid"])
+            )
+            assert {instance.primary_key for instance in instances} == {"A", "B"}
+
+
+async def _partial_publication(client, monkeypatch, fail_after_apply=False):
+    value = draft()
+    target = deepcopy(value["classes"][0])
+    target.update(id="target", name="Target")
+    value["classes"].append(target)
+    mapping = deepcopy(value["mappings"][0])
+    mapping.update(id="target_rows", classId="target")
+    value["mappings"].append(mapping)
+    source = await _validate(client, await _save_draft(client, await candidate(client), value))
+    original = native.apply_schema_wip
+    failed = False
+
+    async def fail_once(rid, *args, **kwargs):
+        nonlocal failed
+        if rid == source["plan"]["types"][1]["rid"] and not failed:
+            failed = True
+            if fail_after_apply:
+                await original(rid, *args, **kwargs)
+            raise ValueError("Injected transient failure after the first native type")
+        return await original(rid, *args, **kwargs)
+
+    monkeypatch.setattr(native, "apply_schema_wip", fail_once)
+    response = await client.post(
+        f"/api/v1/ont/v2/modeling/sources/{source['id']}/publish",
+        json={
+            "revision": source["revision"],
+            "configHash": source["plan"]["configHash"],
+            "acknowledgeWarnings": True,
+        },
+    )
+    assert response.status_code == 200, response.text
+    partial = response.json()
+    assert partial["publication"]["status"] == "failed"
+    assert partial["publication"]["completed"] == [source["plan"]["types"][0]["rid"]]
+    return partial
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("class_id", ["item", "target"])
+async def test_partial_publication_rejects_redirect_without_losing_plan(app, monkeypatch, class_id):
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = await _partial_publication(client, monkeypatch)
+        item = next(item for item in source["plan"]["types"] if item["classId"] == class_id)
+        target_rid = f"ont.{app.state.test_tenant}.obj.redirect.v1"
+        target = native.ObjectTypeDTO(**{**item["payload"], "rid": target_rid})
+        with app.state.kernel_repo.tenant_scope(app.state.test_tenant):
+            app.state.kernel_repo.upsert_object_type(native._dto_to_ot(target), create_only=True)
+        resolutions = deepcopy(source["resolutions"])
+        resolutions[class_id] = {
+            "mode": "reuse",
+            "targetRid": target_rid,
+            "propertyMap": item["propertyMap"],
+        }
+        prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
+        refused = await client.put(
+            prefix,
+            json={
+                "revision": source["revision"],
+                "draft": source["draft"],
+                "resolutions": resolutions,
+            },
+        )
+        assert refused.status_code == 409, refused.text
+        preserved = (await client.get(prefix)).json()
+        for key in ("revision", "plan", "publication", "resolutions"):
+            assert preserved[key] == source[key]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fail_after_apply", [False, True])
+async def test_partial_publication_reopen_revalidates_and_resumes_completed_types(
+    app, monkeypatch, fail_after_apply
+):
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = await _partial_publication(client, monkeypatch, fail_after_apply)
+        prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
+        old_hash = source["plan"]["configHash"]
+        saved = await client.put(
+            prefix,
+            json={
+                "revision": source["revision"],
+                "draft": source["draft"],
+                "resolutions": source["resolutions"],
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        checked = await _validate(client, saved.json())
+        assert checked["plan"]["configHash"] == old_hash
+        assert checked["publication"]["completed"] == source["publication"]["completed"]
+        resumed = await client.post(
+            prefix + "/publish",
+            json={
+                "revision": checked["revision"],
+                "configHash": old_hash,
+                "acknowledgeWarnings": True,
+            },
+        )
+        assert resumed.status_code == 200, resumed.text
+        result = resumed.json()
+        assert result["publication"]["status"] == "succeeded", resumed.text
+        assert len(result["publication"]["completed"]) == 2
+        assert len({item["rid"] for item in result["publication"]["results"]}) == 2
+        with app.state.kernel_repo.tenant_scope(app.state.test_tenant):
+            for item in result["plan"]["types"]:
+                assert app.state.kernel_repo.get_object_type(ClassRef(item["rid"])) is not None
 
 
 @pytest.mark.asyncio

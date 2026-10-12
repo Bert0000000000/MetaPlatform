@@ -13,6 +13,7 @@ vi.mock('@/api/ont/kernel', async importOriginal => ({
   ...await importOriginal<typeof import('./kernel')>(),
   listLinkTypes: async () => [], listActionTypes: async () => [],
   listBackingDatasources: async () => [], listIndividuals: async () => [], listLinkInstances: async () => [],
+  getMaterialization: async (classRid: string) => ({ class_rid: classRid, schema: {}, rows: [], count: 0 }),
 }));
 import BackingDatasourcePanel from '@/pages/ontology/data/mappings/BackingDatasourcePanel';
 import OrderReviewBinding from '@/pages/apphub/components/OrderReviewBinding';
@@ -45,6 +46,7 @@ it.each(consumers)('%s exposes late-page Order and Customer and preserves select
   await screen.findAllByRole('option', { name: 'Late Order' });
   expect(screen.getAllByRole('option', { name: 'Late Customer' }).length).toBeGreaterThan(0);
   if (consumer === 'mapping') {
+    await waitFor(() => expect((screen.getByLabelText('对象类型') as HTMLSelectElement).disabled).toBe(false));
     fireEvent.change(screen.getByLabelText('对象类型'), { target: { value: models[102].rid } });
     expect((screen.getByLabelText('对象类型') as HTMLSelectElement).value).toBe(models[102].rid);
   } else if (consumer === 'onboarding') {

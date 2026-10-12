@@ -14201,7 +14201,7 @@ paths:
 
         expected_diff 预览在 proposal 记录中可查（GET /proposals/{id}/preview）。
         ADR-0064 S3：edits 回落链同 propose-edit-set（body → declarative → function）；
-        markings 非空 → 安全闸门（行/列策略 + G6 合取门 + X-Scope-Markings 收窄）。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body. 
+        markings 非空 → 安全闸门（行/列策略 + G6 合取门 + X-Scope-Markings 收窄）。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body.
       operationId: ontApplyV2EditSet
       x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
       parameters:
@@ -14336,7 +14336,7 @@ paths:
       tags:
         - ont
       summary: Propose Action
-      description: 'AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。 Verified tenant and platform.write required. '
+      description: AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。 Verified tenant and platform.write required.
       operationId: ontProposeV2ActionType
       x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
       parameters:
@@ -14400,7 +14400,7 @@ paths:
 
         ADR-0064 S3：与 /propose 入口等价（统一执行器按 ActionType 声明分派）。
         edits 缺省时依次回落：body.edits → ActionType.declarative_edits →
-        function 产物（执行时两规约解释）；三者全空才 422。 Verified tenant and platform.write required. 
+        function 产物（执行时两规约解释）；三者全空才 422。 Verified tenant and platform.write required.
       operationId: ontProposeV2EditSet
       x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
       parameters:
@@ -15669,7 +15669,7 @@ paths:
       tags:
         - data-modeling
       operationId: ontConfirmModelingCompletion
-      summary: Confirm all reviewed decisions once and automatically run native publication preparation
+      summary: Confirm candidate definitions and deferred scope independently of native publication
       parameters:
         - name: ident
           in: path
@@ -15684,7 +15684,7 @@ paths:
               $ref: '#/components/schemas/DataModelingCompletionConfirmation'
       responses:
         '200':
-          description: Candidate and confirmation audit saved with fresh native validation; no native publication or instance writes
+          description: Candidate and confirmation audit saved with candidate structure validation; no native plan, publication or instance writes
           content:
             application/json:
               schema:
@@ -16135,7 +16135,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DataModelingRevision'
+              $ref: '#/components/schemas/DataModelingValidationRequest'
       responses:
         '200':
           description: Persisted source and candidate; 202 includes running job
@@ -16835,7 +16835,7 @@ paths:
     get:
       operationId: ontListV2BackingDatasources
       summary: List mappings, cursors and recent runs
-      description: 'Tenant-bound backing datasource operation. '
+      description: Tenant-bound backing datasource operation.
       tags:
         - ont
       security:
@@ -16888,7 +16888,7 @@ paths:
     post:
       operationId: ontUpsertV2BackingDatasource
       summary: Preflight and save backing source
-      description: 'Tenant-bound backing datasource operation. Requires platform.write. '
+      description: Tenant-bound backing datasource operation. Requires platform.write.
       tags:
         - ont
       security:
@@ -17638,7 +17638,7 @@ paths:
       tags:
         - ont
       summary: Confirm Proposal
-      description: '用户确认（pending → confirmed）。只能由用户侧发起——不是 LLM 工具。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body. '
+      description: 用户确认（pending → confirmed）。只能由用户侧发起——不是 LLM 工具。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body.
       operationId: ontConfirmV2Proposal
       parameters:
         - name: proposal_id
@@ -17719,7 +17719,7 @@ paths:
           propose 时的报告只是快照，本体在窗口期可能已变化；violation 级
           发现 → 409 阻断（机器预检是 HITL 之后的强制底线）。
         - ADR-0064 S2/S3：markings 非空 → 完整安全闸门（行/列策略 + G6 合取门 +
-          X-Scope-Markings 收窄）；FunctionNotRegistered / 闸门拒写 → 422（不再 500）。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body. 
+          X-Scope-Markings 收窄）；FunctionNotRegistered / 闸门拒写 → 422（不再 500）。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body.
       operationId: ontExecuteV2Proposal
       parameters:
         - name: proposal_id
@@ -17893,7 +17893,7 @@ paths:
       x-mate-requirements:
         - MP11-APP-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body. '
+      description: ' Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body.'
   /api/v1/ont/v2/proposals/{proposal_id}/revert:
     post:
       tags:
@@ -17903,7 +17903,7 @@ paths:
         PRD-02 FR-ACT-CONFIRM-002..006：executed → reverted（人审撤销 + 补偿）。
 
         create_instance → 实例删除（I1 ≃ 等价判定）；action/model → audit-only
-        partial；7 天窗口外拒绝（409）。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body. 
+        partial；7 天窗口外拒绝（409）。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body.
       operationId: ontRevertV2Proposal
       parameters:
         - name: proposal_id
@@ -17962,7 +17962,7 @@ paths:
       tags:
         - ont
       summary: Withdraw Proposal
-      description: 'PRD-02 FR-ACT-CONFIRM-001：pending → withdrawn（作者确认前撤回；终态）。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body. '
+      description: PRD-02 FR-ACT-CONFIRM-001：pending → withdrawn（作者确认前撤回；终态）。 Verified tenant and platform.write required. Human USER identity required; actor is server verified and cannot be supplied by body.
       operationId: ontWithdrawV2Proposal
       parameters:
         - name: proposal_id
@@ -25810,6 +25810,7 @@ components:
     DataModelingResolution:
       properties:
         mode:
+          description: 候选处理决策；高相似候选新增前须显式保存 new，复用/扩展需人工核对目标和属性映射。
           type: string
           enum:
             - new
@@ -26542,6 +26543,19 @@ components:
           type: boolean
           default: false
           description: Return 202 with persistent running state; GET source to poll. Default retains synchronous compatibility.
+    DataModelingValidationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - revision
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        preparePublication:
+          type: boolean
+          default: false
+          description: Only the publication dialog opts in to native collision/mapping checks and plan preparation; candidate review remains independent.
     QueryConditionV2:
       type: object
       additionalProperties: false

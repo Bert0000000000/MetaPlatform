@@ -6,6 +6,7 @@ import IdentityReview from './IdentityReview';
 import RelationshipReview from './RelationshipReview';
 import ReuseComparison from './ReuseComparison';
 import type { ModelingClass, ModelingRelationship } from '@/api/ont/modeling';
+vi.mock('@/api/ont/kernel', () => ({ precheckObjectTypes: vi.fn().mockResolvedValue({ candidates: [] }) }));
 vi.mock('@douyinfe/semi-ui', () => ({ Modal: () => null, Tag: ({ children }: { children: React.ReactNode }) => <span>{children}</span>, Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>, Checkbox: ({ children, checked, disabled, onChange, ...props }: { children: React.ReactNode; checked: boolean; disabled?: boolean; onChange: React.ChangeEventHandler<HTMLInputElement> }) => <label><input {...props} type="checkbox" checked={checked} disabled={disabled} onChange={onChange} />{children}</label> }));
 afterEach(cleanup);
 const cls: ModelingClass = { id: 'lot', name: '批次', description: '工厂批次', properties: [{ id: 'plant', name: '工厂', dataType: 'text' }, { id: 'code', name: '编码', dataType: 'text' }], identity: ['plant', 'code'], identityStatus: 'confirmed', identityReason: '各工厂内编码唯一', labelProperty: 'code', accepted: true };
