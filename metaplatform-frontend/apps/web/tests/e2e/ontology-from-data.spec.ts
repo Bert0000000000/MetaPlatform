@@ -34,7 +34,10 @@ async function syncReviewedData(page: Page, repeat = false) {
   await page.getByRole('checkbox', { name: '我已核对同步范围，确认写入正式实例', exact: true }).press('Space');
   const synced = page.waitForResponse(r => r.url().endsWith('/sync') && r.request().method() === 'POST');
   await page.getByRole('button', { name: repeat ? '重新同步本次数据' : '开始同步', exact: true }).click();
-  expect((await synced).ok()).toBeTruthy();
+  const response = await synced;
+  expect(response.ok()).toBeTruthy();
+  const result = await response.json();
+  expect(result.sync.status, result.sync.error ?? 'Sync must finish successfully').toBe('succeeded');
   await expect(page.getByRole('heading', { name: '同步结果 · 已完成', exact: true })).toBeVisible({ timeout: 60_000 });
 }
 
