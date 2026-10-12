@@ -85,9 +85,61 @@ def propose(source, rows, defer_classes=()):
         if not cls["accepted"]:
             note(cls, "确认", cls["identityReason"] or "保留明确声明的来源记录身份，不跨文件对齐")
         cls["accepted"] = True
-    records = _records(
-        Draft.model_validate({**draft, "mappings": publication_scope(draft)["mappings"]}), rows
-    )
+
+    def protected_properties(cls_id):
+        cls = classes[cls_id]
+        protected = {cls["labelProperty"], *cls["identity"]}
+        protected.update(
+            prop
+            for key in cls.get("uniqueKeys", [])
+            if key.get("confirmed")
+            for prop in key["properties"]
+        )
+        for relation in draft["relationships"]:
+            if not relation["included"]:
+                continue
+            protected.update(
+                join["sourceProperty"] for join in relation["joins"] if relation["source"] == cls_id
+            )
+            protected.update(
+                join["targetProperty"] for join in relation["joins"] if relation["target"] == cls_id
+            )
+        return protected
+
+    def defer_property(cls_id, prop_id, reason):
+        family = {cls_id}
+        changed = True
+        while changed:
+            before = len(family)
+            for candidate in classes.values():
+                if candidate.get("parentClassId") in family or (
+                    candidate["id"] in family and candidate.get("parentClassId")
+                ):
+                    family.add(candidate["id"])
+                    if candidate.get("parentClassId"):
+                        family.add(candidate["parentClassId"])
+            changed = len(family) != before
+        affected = [
+            (candidate, next((p for p in candidate["properties"] if p["id"] == prop_id), None))
+            for candidate in classes.values()
+            if candidate["id"] in family and candidate["included"]
+        ]
+        if any(prop and prop_id in protected_properties(candidate["id"]) for candidate, prop in affected):
+            return False
+        applied = False
+        for candidate, prop in affected:
+            if prop and prop.get("included", True):
+                prop["included"] = False
+                prop["deferReason"] = reason
+                note(
+                    candidate,
+                    "暂缓属性",
+                    f"{prop['name']}：{reason}；本次不发布该属性且不同步其值",
+                )
+                applied = True
+        return applied
+    scoped = publication_scope(draft)
+    records = _records(Draft.model_validate(scoped), rows) if scoped["classes"] else {}
     for rel in draft["relationships"]:
         if not rel["included"]:
             continue
@@ -101,7 +153,7 @@ def propose(source, rows, defer_classes=()):
                 tp = {p["id"]: p["dataType"] for p in dst["properties"]}
                 if any(sp.get(j["sourceProperty"]) != tp.get(j["targetProperty"]) for j in joins):
                     joins = []
-                elif records[src["id"]] and records[dst["id"]]:
+                elif records.get(src["id"]) and records.get(dst["id"]):
                     targets = {
                         tuple(r["values"].get(j["targetProperty"]) for j in joins)
                         for r in records[dst["id"]]
@@ -145,13 +197,24 @@ def propose(source, rows, defer_classes=()):
             if len(matches) == 1:
                 mapping["bindings"][prop["id"]] = next(iter(matches))
                 note(cls, "修复映射", f"{mapping['sheet']}：{prop['name']}采用唯一同名来源列")
+        for prop_id, column in list(mapping["bindings"].items()):
+            if column not in columns and prop_id not in required:
+                defer_property(cls["id"], prop_id, f"{mapping['sheet']}中的来源列 {column} 不存在")
         if (
             mapping["sheet"] not in headers
-            or not required <= mapping["bindings"].keys()
-            or not set(mapping["bindings"].values()) <= columns
+            or any(not mapping["bindings"].get(prop) or mapping["bindings"][prop] not in columns for prop in required)
             or not set(mapping["bindings"]) <= {p["id"] for p in cls["properties"]}
         ):
             defer(cls, f"{mapping['sheet']}缺少有效身份、标签或字段绑定；本次暂缓该类及实例")
+
+    for cls in classes.values():
+        mappings = [m for m in draft["mappings"] if m["classId"] == cls["id"]]
+        if not cls["included"] or not mappings:
+            continue
+        bound = {prop for mapping in mappings for prop in mapping["bindings"]}
+        for prop in cls["properties"]:
+            if prop["id"] not in bound:
+                defer_property(cls["id"], prop["id"], "没有可用的 Excel 来源字段")
 
     # Resolve the complete dependency closure before asking the user to confirm.
     for _ in range(len(classes) + len(draft["relationships"]) + 1):
@@ -187,6 +250,17 @@ def propose(source, rows, defer_classes=()):
                 "核对当前来源字段绑定，数据问题由同步检查隔离",
             )
 
+    # Conflicting values on an ordinary attribute should not quarantine every
+    # otherwise stable entity. Keep the candidate in the draft and omit only
+    # that attribute from this publication and data sync.
+    trial = {**source, "draft": draft}
+    _, _, _, deferred_rows = prepare(trial, rows, True)
+    for entry in deferred_rows:
+        class_id = entry.get("classId")
+        for prop_id in entry.get("conflicts", []):
+            if class_id in classes:
+                defer_property(class_id, prop_id, "同一业务身份存在多个非空值，当前来源无法可靠确定唯一值")
+
     report = validate_ontology(draft)
     evidence = validate_evidence(draft, source["profile"])
     remaining = [i for i in report["issues"] + evidence if i["severity"] == "error"]
@@ -214,6 +288,11 @@ def propose(source, rows, defer_classes=()):
                 ),
                 "",
             ),
+            "deferredProperties": [
+                {"id": p["id"], "name": p["name"], "reason": p.get("deferReason", "")}
+                for p in c["properties"]
+                if not p.get("included", True)
+            ],
         }
         for c, old in zip(draft["classes"], original["classes"], strict=True)
     ]
@@ -240,6 +319,12 @@ def propose(source, rows, defer_classes=()):
             "relationships": sum(r["included"] for r in draft["relationships"]),
             "deferred": sum(not c["included"] for c in classes.values())
             + sum(not r["included"] for r in draft["relationships"]),
+            "deferredProperties": sum(
+                not p.get("included", True)
+                for c in classes.values()
+                if c["included"]
+                for p in c["properties"]
+            ),
         },
         "data": {
             "nodes": len(nodes),

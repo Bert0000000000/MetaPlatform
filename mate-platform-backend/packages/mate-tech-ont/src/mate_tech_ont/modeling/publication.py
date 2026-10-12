@@ -161,6 +161,8 @@ async def prepare(request, source):
         if mode != "new" and not existing:
             raise ValueError(f"{cls['name']} 选择的原生类型不存在")
         prop_map = dict(resolution.get("propertyMap") or {})
+        selected_properties = {prop["id"] for prop in cls["properties"]}
+        prop_map = {key: value for key, value in prop_map.items() if key in selected_properties}
         parent_id = cls.get("parentClassId") or ""
         inherited_props = {}
         if parent_id:

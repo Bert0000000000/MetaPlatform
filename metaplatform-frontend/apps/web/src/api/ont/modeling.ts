@@ -1,7 +1,7 @@
 import { apiClient } from '@/api/client';
 
 export interface ModelingQuestion { id: string; question: string; expected: string }
-export interface ModelingProperty { id: string; name: string; dataType: 'text' | 'number' | 'date' }
+export interface ModelingProperty { included?: boolean; deferReason?: string; id: string; name: string; dataType: 'text' | 'number' | 'date' }
 export interface ModelingEvidence { kind: 'source' | 'business' | 'inference'; detail: string; sheet: string; columns: string[] }
 export interface ModelingUniqueKey { properties: string[]; reason: string; confirmed: boolean }
 export interface ModelingClass { included?: boolean; grain?: string; identityStatus?: 'legacy' | 'proposed' | 'confirmed' | 'unresolved' | 'source-record'; identityCandidate?: string[]; identityReason?: string; uniqueKeys?: ModelingUniqueKey[]; evidence?: ModelingEvidence[]; id: string; name: string; description: string; properties: ModelingProperty[]; identity: string[]; labelProperty: string; accepted: boolean; parentClassId?: string | null; inheritanceReason?: string }
@@ -66,10 +66,10 @@ const sourcePath = (id: string) => `${base}/${encodeURIComponent(id)}`;
 export interface ModelingCompletionPlan {
   hash: string; canApply: boolean;
   changes: Array<{id: string;name: string;action: string;reason: string}>;
-  candidates: Array<{id: string;name: string;included: boolean;originallyIncluded: boolean;parent: string | null;identity: string[];reason: string;problem: string}>;
+  candidates: Array<{id: string;name: string;included: boolean;originallyIncluded: boolean;parent: string | null;identity: string[];reason: string;problem: string;deferredProperties?: Array<{id:string;name:string;reason:string}>}>;
   relationships: Array<{id: string;name: string;included: boolean;cardinality: string;reason: string;source: string;target: string;joins: Array<{sourceProperty: string;targetProperty: string}>}>;
   remaining: Array<{item: string;message: string;severity: string}>;
-  counts: {classes: number;relationships: number;deferred: number};
+  counts: {classes: number;relationships: number;deferred: number;deferredProperties?:number};
   data: {nodes: number;edges: number;rows: number;canSync: boolean;errors: number};
 }
 export const prepareModelingCompletion = async (source: ModelingSource, deferClasses: string[]): Promise<ModelingCompletionPlan> =>

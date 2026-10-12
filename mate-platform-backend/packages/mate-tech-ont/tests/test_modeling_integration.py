@@ -205,6 +205,65 @@ async def test_completion_plan_is_inert_hash_gated_and_deferred_class_never_sync
         ).status_code == 422
 
 
+@pytest.mark.asyncio
+async def test_completion_defers_conflicting_ordinary_properties_and_syncs_stable_entity(app):
+    from .test_modeling_generation_quality import fixture as quality_fixture
+
+    draft, _ = quality_fixture()
+    book = Workbook()
+    sheet = book.active
+    sheet.title = "费用"
+    sheet.append(["单号", "明细号", "金额"])
+    sheet.append(["A", "10", 100])
+    sheet.append(["B", "10", 200])
+    output = BytesIO()
+    book.save(output)
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = (
+            await client.post(
+                "/api/v1/ont/v2/modeling/sources",
+                files={"file": ("property-deferral.xlsx", output.getvalue())},
+            )
+        ).json()
+        prefix = "/api/v1/ont/v2/modeling/sources/" + source["id"]
+        source = (
+            await client.put(prefix, json={"revision": source["revision"], "draft": draft})
+        ).json()
+        body = {"revision": source["revision"]}
+        plan = (await client.post(prefix + "/completion-plan", json=body)).json()
+
+        assert plan["canApply"] and plan["data"]["canSync"]
+        assert plan["data"]["nodes"] == 1 and plan["data"]["rows"] == 0
+        assert {p["id"] for p in plan["candidates"][0]["deferredProperties"]} == {
+            "document_id",
+            "amount",
+        }
+
+        confirmed = (
+            await client.post(
+                prefix + "/completion-confirm", json={**body, "planHash": plan["hash"]}
+            )
+        ).json()
+        published = await validate_publish(client, confirmed)
+        type_plan = published["plan"]["types"][0]
+        assert set(type_plan["propertyMap"]) == {"line_no"}
+        assert len(type_plan["payload"]["properties"]) == 1
+
+        synced = await client.post(prefix + "/sync", json={"revision": published["revision"]})
+        assert synced.status_code == 200, synced.text
+        result = synced.json()
+        assert result["sync"]["status"] == "succeeded"
+        assert result["sync"]["types"][0]["total_synced"] == 1
+
+        repo = app.state.kernel_repo
+        with repo.tenant_scope(app.state.test_tenant):
+            instances = repo.list_individuals(ClassRef(type_plan["rid"]))
+            assert len(instances) == 1
+
+
 async def treatment_candidate(client):
     from .test_modeling_data_treatment import source_fixture
 
