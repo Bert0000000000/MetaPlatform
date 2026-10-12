@@ -1282,7 +1282,8 @@ async def save_page(request: Request, page_id: str, body: PageSaveRequest) -> di
     metadata_updated = True
     module = get_module(tid, page.module_code)
     if module:
-        app = get_app(tid, module.app_code)
+        # Module associations store a code, not a public ID-or-code input.
+        app = next((a for a in list_apps(tid) if a.code == module.app_code), None)
         if app:
             try:
                 put_app(tid, replace(app, updated_at=_now_iso()))

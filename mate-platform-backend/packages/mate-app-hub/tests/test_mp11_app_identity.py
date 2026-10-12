@@ -117,3 +117,100 @@ def test_published_loader_collision_preserves_exact_snapshot(collision):
     runtime = load_app_runtime(tenant, key, published_only=True)
     assert runtime.app_id == exact.id
     assert runtime.published_version_id == 'version-' + exact.id
+
+def test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas(collision):
+    """Internal module codes stay attached to their parent across public ID collisions."""
+    from dataclasses import asdict
+
+    tenant, key, owner, exact, neighbor = collision
+    module_code = 'module-' + uuid4().hex
+    page_id = 'page-' + uuid4().hex
+    repo.put_module(tenant, mem.ApphubModule('mod-' + uuid4().hex, tenant, 'Owner module',
+                                           module_code, owner.code, '', ''))
+    original_page = mem.ApphubPage(page_id, tenant, 'Owner page', 'page-' + uuid4().hex,
+                                   module_code, 'grid')
+    repo.put_page(tenant, original_page)
+    neighbor_page = replace(original_page, id='neighbor-page-' + uuid4().hex,
+                            tenant_id=neighbor.tenant_id, name='Neighbor page')
+    repo.put_module(neighbor.tenant_id, mem.ApphubModule('neighbor-mod-' + uuid4().hex,
+                    neighbor.tenant_id, 'Neighbor module', module_code, neighbor.code, '', ''))
+    repo.put_page(neighbor.tenant_id, neighbor_page)
+    encode = lambda value: json.dumps(asdict(value), sort_keys=True).encode('utf-8')
+    before_exact = encode(repo.get_app(tenant, exact.id))
+    before_neighbor = encode(repo.get_app(neighbor.tenant_id, neighbor.id))
+    before_neighbor_page = encode(neighbor_page)
+    before_owner = repo.get_app(tenant, owner.id)
+
+    app = FastAPI()
+    cfg = AuthConfig('https://issuer.invalid', 'mp11', 'backend', 'backend', 'unused',
+                     300, 5, 0, False, False)
+    verifier = install_auth(app, config=cfg)
+    signing_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    verifier._cache._by_kid = {'test': json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(signing_key.public_key()))}
+    now = int(time.time())
+    token = jwt.encode({'sub': 'writer', 'preferred_username': 'writer', 'sid': 'signed-human',
+                       'azp': 'web', 'tenant_id': tenant, 'iss': cfg.issuer, 'aud': cfg.audience,
+                       'iat': now, 'exp': now + 60, 'scope': 'platform.read platform.write'},
+                      signing_key, algorithm='RS256', headers={'kid': 'test'})
+    app.include_router(router)
+    body = {'name': 'Owner page edited', 'layout': 'grid',
+            'widgets': [{'id': 'saved-text', 'type': 'text', 'title': 'Saved owner content'}]}
+    app_path = '/api/v1/apphub/apps/'
+    page_path = '/api/v1/apphub/pages/' + page_id
+    with TestClient(app, headers={'Authorization': 'Bearer ' + token},
+                    raise_server_exceptions=False) as client:
+        saved = client.put(page_path, json=body)
+        assert saved.status_code == 200, saved.text
+        assert saved.json()['application_metadata_updated'] is True
+        actual_owner = repo.get_app(tenant, owner.id)
+        actual_exact = repo.get_app(tenant, exact.id)
+        print(json.dumps({'page_save_http': saved.status_code, 'parent_before': before_owner.revision,
+                          'parent_after': actual_owner.revision, 'unrelated_before': exact.revision,
+                          'unrelated_after': actual_exact.revision}))
+        assert actual_owner.revision == before_owner.revision + 1
+        assert actual_owner.updated_at is not None
+        assert actual_owner.versions == before_owner.versions
+        assert actual_owner.published_version_id == before_owner.published_version_id
+        assert encode(actual_exact) == before_exact
+        assert encode(repo.get_app(neighbor.tenant_id, neighbor.id)) == before_neighbor
+        assert encode(next(p for p in repo.list_pages(neighbor.tenant_id)
+                           if p.id == neighbor_page.id)) == before_neighbor_page
+        actual_page = next(p for p in repo.list_pages(tenant) if p.id == page_id)
+        assert actual_page.schema_version == original_page.schema_version + 1
+        assert actual_page.name == body['name']
+        assert actual_page.definition['widgets'] == body['widgets']
+        assert client.get(page_path).json()['widgets'] == body['widgets']
+        # The public ID-first resolver and tenant-local fallback keep their contract.
+        assert client.get(app_path + key).json()['id'] == exact.id
+        assert client.get(app_path + owner.id).json()['id'] == owner.id
+        assert repo.get_app(tenant, exact.code).id == exact.id
+        assert client.put('/api/v1/apphub/pages/' + neighbor_page.id, json=body).status_code == 404
+        # A page-save revision invalidates a previously read parent, not B's revision.
+        with pytest.raises(mem.AppRevisionConflict, match='changed'):
+            repo.put_app(tenant, replace(before_owner, name='Stale owner write'))
+        check = client.get(app_path + owner.id + '/publication-check')
+        assert check.status_code == 200, check.text
+        assert check.json()['revision'] == actual_owner.revision
+        assert check.json()['can_publish'] is True
+        published = client.post(app_path + owner.id + '/publish')
+        assert published.status_code == 200, published.text
+        current = repo.get_app(tenant, owner.id)
+        assert current.revision == actual_owner.revision + 1
+        snapshot = current.versions[0]
+        assert snapshot['appId'] == owner.id
+        assert snapshot['versionId'] == published.json()['version_id']
+        assert snapshot['modules'][0]['pages'][0]['definition']['widgets'] == body['widgets']
+        assert current.versions[1:] == before_owner.versions
+        # A later draft save cannot mutate the running snapshot or defeat its CAS.
+        changed = client.put(page_path, json={**body, 'name': 'Next draft'})
+        assert changed.status_code == 200 and changed.json()['application_metadata_updated'] is True
+        after_draft = repo.get_app(tenant, owner.id)
+        assert after_draft.revision == current.revision + 1
+        assert after_draft.versions == current.versions
+        with pytest.raises(mem.AppRevisionConflict, match='changed'):
+            repo.put_app(tenant, replace(current, name='Stale publication metadata'))
+        assert repo.get_app(tenant, owner.id) == after_draft
+        assert encode(repo.get_app(tenant, exact.id)) == before_exact
+        assert encode(repo.get_app(neighbor.tenant_id, neighbor.id)) == before_neighbor
+        assert encode(next(p for p in repo.list_pages(neighbor.tenant_id)
+                           if p.id == neighbor_page.id)) == before_neighbor_page
