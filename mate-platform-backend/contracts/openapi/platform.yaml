@@ -193,14 +193,34 @@ paths:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1domains
   /api/v1/apphub/apps/groups:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1groups
-  /api/v1/apphub/apps/{appId}/publish:
-    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{appId}~1publish
-  /api/v1/apphub/apps/{appId}/runtime:
-    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{appId}~1runtime
-  /api/v1/apphub/apps/{appId}/runtime/execute:
-    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{appId}~1runtime~1execute
-  /api/v1/apphub/apps/{code}:
-    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{code}
+  /api/v1/apphub/apps/{app_id}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}
+  /api/v1/apphub/apps/{app_id}/publication-check:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1publication-check
+  /api/v1/apphub/apps/{app_id}/publish:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1publish
+  /api/v1/apphub/apps/{app_id}/releases:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1releases
+  /api/v1/apphub/apps/{app_id}/runtime:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1runtime
+  /api/v1/apphub/apps/{app_id}/runtime/data:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1runtime~1data
+  /api/v1/apphub/apps/{app_id}/runtime/execute:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1runtime~1execute
+  /api/v1/apphub/apps/{app_id}/runtime/history:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1runtime~1history
+  /api/v1/apphub/apps/{app_id}/runtime/proposal-context:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1runtime~1proposal-context
+  /api/v1/apphub/apps/{app_id}/versions:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1versions
+  /api/v1/apphub/apps/{app_id}/versions/{version_id}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1versions~1{version_id}
+  /api/v1/apphub/apps/{app_id}/versions/{version_id}/publish:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1versions~1{version_id}~1publish
+  /api/v1/apphub/apps/{app_id}/versions/{version_id}/rollback:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{app_id}~1versions~1{version_id}~1rollback
+  /api/v1/apphub/bindings/usage:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1bindings~1usage
   /api/v1/apphub/domains:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1domains
   /api/v1/apphub/domains/{code}:
@@ -211,14 +231,28 @@ paths:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1groups~1{code}
   /api/v1/apphub/modules:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1modules
+  /api/v1/apphub/modules/{module_id}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1modules~1{module_id}
   /api/v1/apphub/pages:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1pages
+  /api/v1/apphub/pages/{page_id}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1pages~1{page_id}
+  /api/v1/apphub/pages/{page_id}/preview:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1pages~1{page_id}~1preview
+  /api/v1/apphub/releases/{release_id}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1releases~1{release_id}
+  /api/v1/apphub/releases/{release_id}/logs:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1releases~1{release_id}~1logs
   /api/v1/apphub/shortlinks:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1shortlinks
   /api/v1/apphub/shortlinks/{code}:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1shortlinks~1{code}
   /api/v1/apphub/templates:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1templates
+  /api/v1/apphub/v1/wfe/release-approval/{process_instance_id}/tasks:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1v1~1wfe~1release-approval~1{process_instance_id}~1tasks
+  /api/v1/apphub/v1/wfe/release-approval/{process_instance_id}/tasks/{task_id}/complete:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1v1~1wfe~1release-approval~1{process_instance_id}~1tasks~1{task_id}~1complete
   /api/v1/arch/applications:
     $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1applications
   /api/v1/arch/business-processes:
@@ -415,6 +449,8 @@ paths:
     $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1todos~1{task_id}~1action
   /api/v1/dashboard/workers:
     $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1workers
+  /api/v1/data/catalog/search:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1catalog~1search
   /api/v1/data/cdc-tasks:
     $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1cdc-tasks
   /api/v1/data/cdc-tasks/{id}:
@@ -425,6 +461,16 @@ paths:
     $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1cdc-tasks~1{id}~1resume
   /api/v1/data/cdc-tasks/{id}/status:
     $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1cdc-tasks~1{id}~1status
+  /api/v1/data/lineage/edges:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1lineage~1edges
+  /api/v1/data/lineage/graph:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1lineage~1graph
+  /api/v1/data/quality/results:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1quality~1results
+  /api/v1/data/quality/rules:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1quality~1rules
+  /api/v1/data/quality/run:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1quality~1run
   /api/v1/data/sources:
     $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1sources
   /api/v1/data/sources/{id}:
@@ -599,16 +645,30 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1ontologies~1{ontology_id}
   /api/v1/ont/sparql:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1sparql
+  /api/v1/ont/v2/action-audit:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-audit
   /api/v1/ont/v2/action-types:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-types
   /api/v1/ont/v2/action-types/{rid}/apply:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-types~1{rid}~1apply
+  /api/v1/ont/v2/action-types/{rid}/apply-edit-set:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-types~1{rid}~1apply-edit-set
   /api/v1/ont/v2/action-types/{rid}/flow:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-types~1{rid}~1flow
   /api/v1/ont/v2/action-types/{rid}/propose:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-types~1{rid}~1propose
+  /api/v1/ont/v2/action-types/{rid}/propose-edit-set:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-types~1{rid}~1propose-edit-set
+  /api/v1/ont/v2/agent-metrics/health:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1agent-metrics~1health
+  /api/v1/ont/v2/agent-metrics/summary:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1agent-metrics~1summary
+  /api/v1/ont/v2/agent-metrics/trend:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1agent-metrics~1trend
   /api/v1/ont/v2/agent-tools:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1agent-tools
+  /api/v1/ont/v2/alignment/run:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1alignment~1run
   /api/v1/ont/v2/axioms:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1axioms
   /api/v1/ont/v2/axioms/validate:
@@ -675,6 +735,8 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-sets~1query
   /api/v1/ont/v2/object-types:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types
+  /api/v1/ont/v2/object-types/merge-preview:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1merge-preview
   /api/v1/ont/v2/object-types/propose:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1propose
   /api/v1/ont/v2/object-types/validate:
@@ -689,6 +751,8 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1branch
   /api/v1/ont/v2/object-types/{rid}/datasources:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1datasources
+  /api/v1/ont/v2/object-types/{rid}/datasources/runs/{run_id}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1datasources~1runs~1{run_id}
   /api/v1/ont/v2/object-types/{rid}/datasources/sync:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}~1datasources~1sync
   /api/v1/ont/v2/object-types/{rid}/diff:
@@ -713,8 +777,16 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1proposals~1{proposal_id}~1confirm
   /api/v1/ont/v2/proposals/{proposal_id}/execute:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1proposals~1{proposal_id}~1execute
+  /api/v1/ont/v2/proposals/{proposal_id}/preview:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1proposals~1{proposal_id}~1preview
   /api/v1/ont/v2/proposals/{proposal_id}/reject:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1proposals~1{proposal_id}~1reject
+  /api/v1/ont/v2/proposals/{proposal_id}/revert:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1proposals~1{proposal_id}~1revert
+  /api/v1/ont/v2/proposals/{proposal_id}/withdraw:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1proposals~1{proposal_id}~1withdraw
+  /api/v1/ont/v2/shacl/validate:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1shacl~1validate
   /api/v1/ont/v2/versions/{class_rid}:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1versions~1{class_rid}
   /api/v1/orchestrator/capabilities:

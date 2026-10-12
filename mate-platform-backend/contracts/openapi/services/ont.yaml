@@ -273,8 +273,21 @@ paths:
                     type: [number, "null"]
                     description: accepted/(accepted+rejected)；分母 0 → null
                   rejection_reasons:
-                    type: [array, "null"]
-                    description: 现状无 reason 字段 → null（不编造）
+                    type:
+                    - array
+                    - 'null'
+                    description: Reject reasons are aggregated from recorded values. No rejected proposals returns an empty array;
+                      rejected proposals with no recorded reasons return null.
+                    items:
+                      type: object
+                      required:
+                      - reason
+                      - count
+                      properties:
+                        reason:
+                          type: string
+                        count:
+                          type: integer
                   by_actor:
                     type: array
                     items:
