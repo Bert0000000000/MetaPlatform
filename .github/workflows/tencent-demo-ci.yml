@@ -1,0 +1,59 @@
+name: Tencent Demo CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, codex/tencent-demo-deploy]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-validation:
+    name: Demo release validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf # v3
+        with:
+          version: "0.5.11"
+      - name: Test CI gate, archive validation and recovery
+        run: python -m unittest discover -s infra/demo-cloud/tests -v
+      - name: Prepare disposable configuration from the backend lock
+        run: python infra/demo-cloud/prepare.py
+      - name: Validate the actual Compose overlay
+        run: docker compose --env-file infra/demo-cloud/private/.env -f docker-compose.yml -f infra/demo-cloud/compose.yml config --quiet
+      - name: Package and validate the real source archive
+        run: |
+          python infra/demo-cloud/bundle.py
+          python - <<'PY'
+          import json, sys, tempfile
+          from pathlib import Path
+          sys.path.insert(0, 'infra/demo-cloud')
+          from ci_server import unpack
+          folder = Path('infra/demo-cloud/artifacts')
+          manifest = json.loads((folder / 'bundle-manifest.json').read_text())
+          entry = manifest['files'][0]
+          with tempfile.TemporaryDirectory() as temporary:
+              with (folder / entry['name']).open('rb') as stream:
+                  unpack(stream, Path(temporary) / 'release', entry['sha256'])
+          print('Actual source bundle validated; server credentials excluded.')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: demo-bundle-manifest
+          path: infra/demo-cloud/artifacts/bundle-manifest.json
+          if-no-files-found: error
+          retention-days: 14

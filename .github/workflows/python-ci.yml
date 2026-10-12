@@ -4,13 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, master, develop]
-    paths:
-      - "mate-platform-backend/**"
-      - "pyproject.toml"
-      - "uv.lock"
-      - "docker-compose.yml"
-      - ".github/workflows/python-ci.yml"
-      - "ruff.toml"
+    # Demo CD needs a successful result on every actual main release SHA.
   pull_request:
     branches: [main, master, develop]
     # **刻意不加 `paths:` 过滤**（1.7 任务 3）。
@@ -23,7 +17,7 @@ on:
     # 代价是文档类 PR 也会跑这四个 job（约 2 分钟，缓存命中后更快）。用"job 总是
     # 运行、内部按变更快速跳过"可以把这点省掉，但那要在每个 job 里重复一段
     # 变更探测 + 多一次全历史 checkout；对"required check 绝不能漏报"这条来说，
-    # 少的这几分钟不值那个复杂度与失败面。`push` 侧保留过滤（推送不参与保护）。
+    # 少的这几分钟不值那个复杂度与失败面。push 同样完整运行，为演示 CD 提供当前 SHA 的结果。
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

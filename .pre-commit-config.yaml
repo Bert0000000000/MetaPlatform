@@ -15,7 +15,7 @@ repos:
       - id: check-yaml
         args: [--allow-multiple-documents]
         # Helm 模板含 Go template 指令（{{- if }} 等），非纯 YAML —— 排除
-        exclude: ^(docs/|infra/helm/|\.worktrees/|\.tmp-build-context/)|^docker-compose\.(acceptance|paimon|task5)\.yml$
+        exclude: ^(docs/|infra/helm/|\.worktrees/|\.tmp-build-context/)|^docker-compose\.(acceptance|paimon|task5)\.yml$|^infra/demo-cloud/compose\.yml$
       - id: check-json
         # acceptance evidence 是运行时抓包产物（非规范 JSON，含日志前缀行）
         exclude: ^acceptance/evidence/

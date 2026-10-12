@@ -3,13 +3,8 @@ name: OpenAPI Contract CI
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "mate-platform-backend/contracts/**"
-      - "mate-platform-backend/packages/**/src/**"
-      - "mate-platform-backend/services/**/src/**"
-      - "docs/active/prd/**"
-      - "docs/swagger/**"
-      - ".github/workflows/openapi-ci.yml"
+    branches: [main, master, develop, codex/**]
+    # CD waits for contracts on the same SHA, including frontend/infra-only changes.
   pull_request:
     # **刻意不加 `paths:` 过滤**（A-5 收紧 required 的前提，同 1.7 对
     # `python-ci.yml` 的处理）：`breaking-change`（契约破坏性变更门禁）是
