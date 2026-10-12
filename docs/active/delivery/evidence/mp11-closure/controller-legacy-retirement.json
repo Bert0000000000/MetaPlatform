@@ -1,0 +1,12 @@
+{
+  "observed_utc": "2026-10-12T10:07:13.3250778Z",
+  "legacy_port": 55510,
+  "legacy_exact_script_process_count": 0,
+  "legacy_port_listener_count": 0,
+  "old_listener_pid_present": false,
+  "old_launcher_pid_present": false,
+  "process_stopped": false,
+  "retired_as_active_fixture": true,
+  "recovery": "All original legacy script/launcher/listener inputs require full private Scratch recovery before bounded deletion; no active runtime depends on old path",
+  "scope": "Read-only exact script/PID/port check; no stale PID or unrelated process terminated"
+}

@@ -1,0 +1,218 @@
+{
+  "base": "ca01bf738165e2ab6ad11fdd8c9864d797885879",
+  "head": "94277b97199f1823354fccbda07e772ef19081e8",
+  "bytes": 133955,
+  "sha256": "921718ec0b4b6f52a1cb1e625fd7d903926a1c06225d137dcddb46e7e3e7b4c8",
+  "sections": [
+    {
+      "header": "diff --git a/.superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/final-residual-report.md b/.superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/final-residual-report.md",
+      "offset": 3057,
+      "bytes": 17125
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-1.json b/docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-1.json",
+      "offset": 20182,
+      "bytes": 1011
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-1.log b/docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-1.log",
+      "offset": 21193,
+      "bytes": 778
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-2.json b/docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-2.json",
+      "offset": 21971,
+      "bytes": 981
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-2.log b/docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-2.log",
+      "offset": 22952,
+      "bytes": 2427
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/auth-login-status.json b/docs/active/delivery/evidence/mp11-final-residual/auth-login-status.json",
+      "offset": 25379,
+      "bytes": 433
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/auth-runtime-diagnosis.log b/docs/active/delivery/evidence/mp11-final-residual/auth-runtime-diagnosis.log",
+      "offset": 25812,
+      "bytes": 898
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/final-residual-report.md b/docs/active/delivery/evidence/mp11-final-residual/final-residual-report.md",
+      "offset": 26710,
+      "bytes": 17068
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/owned-evidence-paths.json b/docs/active/delivery/evidence/mp11-final-residual/owned-evidence-paths.json",
+      "offset": 43778,
+      "bytes": 3724
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/owned-source-paths.json b/docs/active/delivery/evidence/mp11-final-residual/owned-source-paths.json",
+      "offset": 47502,
+      "bytes": 512
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/page-save-green.json b/docs/active/delivery/evidence/mp11-final-residual/page-save-green.json",
+      "offset": 48014,
+      "bytes": 2521
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/page-save-green.log b/docs/active/delivery/evidence/mp11-final-residual/page-save-green.log",
+      "offset": 50535,
+      "bytes": 940
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/page-save-red.json b/docs/active/delivery/evidence/mp11-final-residual/page-save-red.json",
+      "offset": 51475,
+      "bytes": 2586
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/page-save-red.log b/docs/active/delivery/evidence/mp11-final-residual/page-save-red.log",
+      "offset": 54061,
+      "bytes": 4681
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-read60.json b/docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-read60.json",
+      "offset": 58742,
+      "bytes": 1046
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-read60.log b/docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-read60.log",
+      "offset": 59788,
+      "bytes": 2358
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-retry.json b/docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-retry.json",
+      "offset": 62146,
+      "bytes": 1042
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-retry.log b/docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-retry.log",
+      "offset": 63188,
+      "bytes": 2334
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/processes-after-api-reload.json b/docs/active/delivery/evidence/mp11-final-residual/processes-after-api-reload.json",
+      "offset": 65522,
+      "bytes": 3213
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/protected-wip-after.json b/docs/active/delivery/evidence/mp11-final-residual/protected-wip-after.json",
+      "offset": 68735,
+      "bytes": 3663
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/protected-wip-before.json b/docs/active/delivery/evidence/mp11-final-residual/protected-wip-before.json",
+      "offset": 72398,
+      "bytes": 8600
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/publication-page-save-cover.json b/docs/active/delivery/evidence/mp11-final-residual/publication-page-save-cover.json",
+      "offset": 80998,
+      "bytes": 3002
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/publication-page-save-cover.log b/docs/active/delivery/evidence/mp11-final-residual/publication-page-save-cover.log",
+      "offset": 84000,
+      "bytes": 1635
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/readonly-runtime-http-status.json b/docs/active/delivery/evidence/mp11-final-residual/readonly-runtime-http-status.json",
+      "offset": 85635,
+      "bytes": 955
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/resource-continuity.json b/docs/active/delivery/evidence/mp11-final-residual/resource-continuity.json",
+      "offset": 86590,
+      "bytes": 3363
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/resources-before-api-reload.json b/docs/active/delivery/evidence/mp11-final-residual/resources-before-api-reload.json",
+      "offset": 89953,
+      "bytes": 6554
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/resources-initial.json b/docs/active/delivery/evidence/mp11-final-residual/resources-initial.json",
+      "offset": 96507,
+      "bytes": 6522
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/retained-business-check.json b/docs/active/delivery/evidence/mp11-final-residual/retained-business-check.json",
+      "offset": 103029,
+      "bytes": 995
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/retained-business-check.log b/docs/active/delivery/evidence/mp11-final-residual/retained-business-check.log",
+      "offset": 104024,
+      "bytes": 2544
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http-status.json b/docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http-status.json",
+      "offset": 106568,
+      "bytes": 1026
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http-status.log b/docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http-status.log",
+      "offset": 107594,
+      "bytes": 746
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http.json b/docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http.json",
+      "offset": 108340,
+      "bytes": 998
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http.log b/docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http.log",
+      "offset": 109338,
+      "bytes": 683
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/retained-business-read60.json b/docs/active/delivery/evidence/mp11-final-residual/retained-business-read60.json",
+      "offset": 110021,
+      "bytes": 999
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/retained-business-read60.log b/docs/active/delivery/evidence/mp11-final-residual/retained-business-read60.log",
+      "offset": 111020,
+      "bytes": 2568
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/runtime-handoff.json b/docs/active/delivery/evidence/mp11-final-residual/runtime-handoff.json",
+      "offset": 113588,
+      "bytes": 3793
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/sanitization-check.json b/docs/active/delivery/evidence/mp11-final-residual/sanitization-check.json",
+      "offset": 117381,
+      "bytes": 709
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/self-review.json b/docs/active/delivery/evidence/mp11-final-residual/self-review.json",
+      "offset": 118090,
+      "bytes": 1092
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/source-commit-map.json b/docs/active/delivery/evidence/mp11-final-residual/source-commit-map.json",
+      "offset": 119182,
+      "bytes": 3532
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-residual/validation-command-context.json b/docs/active/delivery/evidence/mp11-final-residual/validation-command-context.json",
+      "offset": 122714,
+      "bytes": 2130
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py b/mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py",
+      "offset": 124844,
+      "bytes": 1512
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py b/mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py",
+      "offset": 126356,
+      "bytes": 7599
+    }
+  ]
+}

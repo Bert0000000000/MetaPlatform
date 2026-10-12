@@ -1,0 +1,5 @@
+# Local candidate closure record
+
+Source/review/business criteria are verified; final private recovery/removal and post-cleanup runtime receipt are recorded separately. Original immutable task/full/fix evidence stays in mp11-plan/mp11-application/mp11-agent/mp11-candidate/mp11-final-fix/mp11-final-residual. This archive captures current full final reports, all47 unabridged rulings, unchanged48/22 requirements, source hashes, signed retained business and guarded Docker recovery/legacy/WIP facts. No credential or private fixture content belongs here.
+
+Before retiring only this plan Scratch, preserve its whole original bytes in ignored owner-only .tmp/codex-mp11-retired-fixtures/2026-10-12-final-scratch with exact per-file hashes. This is inactive recovery input, not a portable active launcher; original absolute paths require deliberate restoration. CurrentAPI/Auth/Web/private manifests remain outside Scratch and stay live. Final receipt is scratch-recovery-retirement.json after guarded removal. User worktrees/screenshots/specs/prototype and allDocker data remain.

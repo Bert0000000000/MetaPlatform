@@ -1,0 +1,468 @@
+{
+  "base": "38ff11900b9d72560afe20db4715d344c1370a23",
+  "head": "ca01bf738165e2ab6ad11fdd8c9864d797885879",
+  "bytes": 579990,
+  "sha256": "179b1bc4f58b5c9416a5e576fa11eb40c3b0c2fc3448611ea147fecff28cff82",
+  "sections": [
+    {
+      "header": "diff --git a/.superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/final-fix-report.md b/.superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/final-fix-report.md",
+      "offset": 5954,
+      "bytes": 27669
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-candidate/browser-fixtures-fd816e17f27b.json b/docs/active/delivery/evidence/mp11-candidate/browser-fixtures-fd816e17f27b.json",
+      "offset": 33623,
+      "bytes": 643
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/README.md b/docs/active/delivery/evidence/mp11-final-fix/README.md",
+      "offset": 34266,
+      "bytes": 823
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/actual-browser-fd816e17f27b.json b/docs/active/delivery/evidence/mp11-final-fix/actual-browser-fd816e17f27b.json",
+      "offset": 35089,
+      "bytes": 827
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/actual-browser-fd816e17f27b.log b/docs/active/delivery/evidence/mp11-final-fix/actual-browser-fd816e17f27b.log",
+      "offset": 35916,
+      "bytes": 7500
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/actual-mcp-model-forwarding-failure.json b/docs/active/delivery/evidence/mp11-final-fix/actual-mcp-model-forwarding-failure.json",
+      "offset": 43416,
+      "bytes": 788
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/actual-proposal-scopes-da9c5eef585a.json b/docs/active/delivery/evidence/mp11-final-fix/actual-proposal-scopes-da9c5eef585a.json",
+      "offset": 44204,
+      "bytes": 2284
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red-2.json b/docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red-2.json",
+      "offset": 46488,
+      "bytes": 1099
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red-2.log b/docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red-2.log",
+      "offset": 47587,
+      "bytes": 12179
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red.json b/docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red.json",
+      "offset": 59766,
+      "bytes": 1061
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red.log b/docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red.log",
+      "offset": 60827,
+      "bytes": 955
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/apphub-package-final.json b/docs/active/delivery/evidence/mp11-final-fix/apphub-package-final.json",
+      "offset": 61782,
+      "bytes": 1016
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/apphub-package-final.log b/docs/active/delivery/evidence/mp11-final-fix/apphub-package-final.log",
+      "offset": 62798,
+      "bytes": 2040
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/apphub-package.json b/docs/active/delivery/evidence/mp11-final-fix/apphub-package.json",
+      "offset": 64838,
+      "bytes": 992
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/apphub-package.log b/docs/active/delivery/evidence/mp11-final-fix/apphub-package.log",
+      "offset": 65830,
+      "bytes": 5627
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/backend-focused-green.json b/docs/active/delivery/evidence/mp11-final-fix/backend-focused-green.json",
+      "offset": 71457,
+      "bytes": 1172
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/backend-focused-green.log b/docs/active/delivery/evidence/mp11-final-fix/backend-focused-green.log",
+      "offset": 72629,
+      "bytes": 943
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/backend-red-2.json b/docs/active/delivery/evidence/mp11-final-fix/backend-red-2.json",
+      "offset": 73572,
+      "bytes": 1140
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/backend-red-2.log b/docs/active/delivery/evidence/mp11-final-fix/backend-red-2.log",
+      "offset": 74712,
+      "bytes": 20381
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/backend-red-3.json b/docs/active/delivery/evidence/mp11-final-fix/backend-red-3.json",
+      "offset": 95093,
+      "bytes": 1140
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/backend-red-3.log b/docs/active/delivery/evidence/mp11-final-fix/backend-red-3.log",
+      "offset": 96233,
+      "bytes": 11634
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/backend-red.json b/docs/active/delivery/evidence/mp11-final-fix/backend-red.json",
+      "offset": 107867,
+      "bytes": 1132
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/backend-red.log b/docs/active/delivery/evidence/mp11-final-fix/backend-red.log",
+      "offset": 108999,
+      "bytes": 20367
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/browser-run-preparation-fd816e17f27b.json b/docs/active/delivery/evidence/mp11-final-fix/browser-run-preparation-fd816e17f27b.json",
+      "offset": 129366,
+      "bytes": 560
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/catalog-binding-fd816e17f27b.json b/docs/active/delivery/evidence/mp11-final-fix/catalog-binding-fd816e17f27b.json",
+      "offset": 129926,
+      "bytes": 672
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/catalog-fixture-fd816e17f27b.json b/docs/active/delivery/evidence/mp11-final-fix/catalog-fixture-fd816e17f27b.json",
+      "offset": 130598,
+      "bytes": 860
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/catalog-mapping-fd816e17f27b.json b/docs/active/delivery/evidence/mp11-final-fix/catalog-mapping-fd816e17f27b.json",
+      "offset": 131458,
+      "bytes": 695
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/catalog-onboarding-fd816e17f27b.json b/docs/active/delivery/evidence/mp11-final-fix/catalog-onboarding-fd816e17f27b.json",
+      "offset": 132153,
+      "bytes": 700
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/fixture-repairs.json b/docs/active/delivery/evidence/mp11-final-fix/fixture-repairs.json",
+      "offset": 132853,
+      "bytes": 1552
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green-2.json b/docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green-2.json",
+      "offset": 134405,
+      "bytes": 933
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green-2.log b/docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green-2.log",
+      "offset": 135338,
+      "bytes": 926
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green.json b/docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green.json",
+      "offset": 136264,
+      "bytes": 925
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green.log b/docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green.log",
+      "offset": 137189,
+      "bytes": 23973
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-red-2.json b/docs/active/delivery/evidence/mp11-final-fix/frontend-red-2.json",
+      "offset": 161162,
+      "bytes": 690
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-red-2.log b/docs/active/delivery/evidence/mp11-final-fix/frontend-red-2.log",
+      "offset": 161852,
+      "bytes": 3569
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-red-3.json b/docs/active/delivery/evidence/mp11-final-fix/frontend-red-3.json",
+      "offset": 165421,
+      "bytes": 690
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-red-3.log b/docs/active/delivery/evidence/mp11-final-fix/frontend-red-3.log",
+      "offset": 166111,
+      "bytes": 3569
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-red-4.json b/docs/active/delivery/evidence/mp11-final-fix/frontend-red-4.json",
+      "offset": 169680,
+      "bytes": 691
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-red-4.log b/docs/active/delivery/evidence/mp11-final-fix/frontend-red-4.log",
+      "offset": 170371,
+      "bytes": 191276
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-red.json b/docs/active/delivery/evidence/mp11-final-fix/frontend-red.json",
+      "offset": 361647,
+      "bytes": 683
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/frontend-red.log b/docs/active/delivery/evidence/mp11-final-fix/frontend-red.log",
+      "offset": 362330,
+      "bytes": 3564
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/mcp-model-tenant-red.json b/docs/active/delivery/evidence/mp11-final-fix/mcp-model-tenant-red.json",
+      "offset": 365894,
+      "bytes": 1078
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/mcp-model-tenant-red.log b/docs/active/delivery/evidence/mp11-final-fix/mcp-model-tenant-red.log",
+      "offset": 366972,
+      "bytes": 1870
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/mcp-package.json b/docs/active/delivery/evidence/mp11-final-fix/mcp-package.json",
+      "offset": 368842,
+      "bytes": 980
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/mcp-package.log b/docs/active/delivery/evidence/mp11-final-fix/mcp-package.log",
+      "offset": 369822,
+      "bytes": 3616
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/mcp-write-tools-green.json b/docs/active/delivery/evidence/mp11-final-fix/mcp-write-tools-green.json",
+      "offset": 373438,
+      "bytes": 1048
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/mcp-write-tools-green.log b/docs/active/delivery/evidence/mp11-final-fix/mcp-write-tools-green.log",
+      "offset": 374486,
+      "bytes": 413
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/ont-package.json b/docs/active/delivery/evidence/mp11-final-fix/ont-package.json",
+      "offset": 374899,
+      "bytes": 981
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/ont-package.log b/docs/active/delivery/evidence/mp11-final-fix/ont-package.log",
+      "offset": 375880,
+      "bytes": 6637
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/owned-source-paths.json b/docs/active/delivery/evidence/mp11-final-fix/owned-source-paths.json",
+      "offset": 382517,
+      "bytes": 2216
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/public-log-redaction.json b/docs/active/delivery/evidence/mp11-final-fix/public-log-redaction.json",
+      "offset": 384733,
+      "bytes": 1083
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/resource-continuity.json b/docs/active/delivery/evidence/mp11-final-fix/resource-continuity.json",
+      "offset": 385816,
+      "bytes": 701
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/resources-after-api-reload-mcp.json b/docs/active/delivery/evidence/mp11-final-fix/resources-after-api-reload-mcp.json",
+      "offset": 386517,
+      "bytes": 6546
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/resources-after-api-reload.json b/docs/active/delivery/evidence/mp11-final-fix/resources-after-api-reload.json",
+      "offset": 393063,
+      "bytes": 6534
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/resources-before-api-reload-mcp.json b/docs/active/delivery/evidence/mp11-final-fix/resources-before-api-reload-mcp.json",
+      "offset": 399597,
+      "bytes": 6549
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/resources-before-api-reload.json b/docs/active/delivery/evidence/mp11-final-fix/resources-before-api-reload.json",
+      "offset": 406146,
+      "bytes": 6537
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/retained-business-after-api-reload.json b/docs/active/delivery/evidence/mp11-final-fix/retained-business-after-api-reload.json",
+      "offset": 412683,
+      "bytes": 682
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/retained-business-final.json b/docs/active/delivery/evidence/mp11-final-fix/retained-business-final.json",
+      "offset": 413365,
+      "bytes": 758
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/runtime-handoff.json b/docs/active/delivery/evidence/mp11-final-fix/runtime-handoff.json",
+      "offset": 414123,
+      "bytes": 7074
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/source-commit-map.json b/docs/active/delivery/evidence/mp11-final-fix/source-commit-map.json",
+      "offset": 421197,
+      "bytes": 18007
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/source-evidence-map.json b/docs/active/delivery/evidence/mp11-final-fix/source-evidence-map.json",
+      "offset": 439204,
+      "bytes": 12497
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/strict-signed-tenant-cover.json b/docs/active/delivery/evidence/mp11-final-fix/strict-signed-tenant-cover.json",
+      "offset": 451701,
+      "bytes": 1068
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/strict-signed-tenant-cover.log b/docs/active/delivery/evidence/mp11-final-fix/strict-signed-tenant-cover.log",
+      "offset": 452769,
+      "bytes": 957
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/validation-command-context.json b/docs/active/delivery/evidence/mp11-final-fix/validation-command-context.json",
+      "offset": 453726,
+      "bytes": 1671
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/web-build.json b/docs/active/delivery/evidence/mp11-final-fix/web-build.json",
+      "offset": 455397,
+      "bytes": 610
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/web-build.log b/docs/active/delivery/evidence/mp11-final-fix/web-build.log",
+      "offset": 456007,
+      "bytes": 22130
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/web-types.json b/docs/active/delivery/evidence/mp11-final-fix/web-types.json",
+      "offset": 478137,
+      "bytes": 626
+    },
+    {
+      "header": "diff --git a/docs/active/delivery/evidence/mp11-final-fix/web-types.log b/docs/active/delivery/evidence/mp11-final-fix/web-types.log",
+      "offset": 478763,
+      "bytes": 274
+    },
+    {
+      "header": "diff --git a/docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md b/docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md",
+      "offset": 479037,
+      "bytes": 3822
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py b/mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py",
+      "offset": 482859,
+      "bytes": 8379
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/in_memory.py b/mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/in_memory.py",
+      "offset": 491238,
+      "bytes": 1837
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py b/mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py",
+      "offset": 493075,
+      "bytes": 1701
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-app-hub/tests/test_app_hub_tenant_integration.py b/mate-platform-backend/packages/mate-app-hub/tests/test_app_hub_tenant_integration.py",
+      "offset": 494776,
+      "bytes": 2832
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py b/mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py",
+      "offset": 497608,
+      "bytes": 6674
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/ontology_proxy.py b/mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/ontology_proxy.py",
+      "offset": 504282,
+      "bytes": 1956
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-tech-mcp/tests/test_ontology_write_tools.py b/mate-platform-backend/packages/mate-tech-mcp/tests/test_ontology_write_tools.py",
+      "offset": 506238,
+      "bytes": 3428
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py b/mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py",
+      "offset": 509666,
+      "bytes": 3281
+    },
+    {
+      "header": "diff --git a/mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py b/mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py",
+      "offset": 512947,
+      "bytes": 5408
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/src/api/ont/catalog-consumers.test.tsx b/metaplatform-frontend/apps/web/src/api/ont/catalog-consumers.test.tsx",
+      "offset": 518355,
+      "bytes": 5076
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/src/api/ont/kernel.ts b/metaplatform-frontend/apps/web/src/api/ont/kernel.ts",
+      "offset": 523431,
+      "bytes": 1837
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/src/pages/apphub/components/OrderReviewBinding.test.tsx b/metaplatform-frontend/apps/web/src/pages/apphub/components/OrderReviewBinding.test.tsx",
+      "offset": 525268,
+      "bytes": 1610
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/src/pages/apphub/components/OrderReviewBinding.tsx b/metaplatform-frontend/apps/web/src/pages/apphub/components/OrderReviewBinding.tsx",
+      "offset": 526878,
+      "bytes": 2513
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.test.tsx b/metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.test.tsx",
+      "offset": 529391,
+      "bytes": 3365
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.tsx b/metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.tsx",
+      "offset": 532756,
+      "bytes": 3101
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx b/metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx",
+      "offset": 535857,
+      "bytes": 3322
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.tsx b/metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.tsx",
+      "offset": 539179,
+      "bytes": 8435
+    },
+    {
+      "header": "diff --git a/metaplatform-frontend/apps/web/tests/e2e/mp11-catalog-pagination.spec.ts b/metaplatform-frontend/apps/web/tests/e2e/mp11-catalog-pagination.spec.ts",
+      "offset": 547614,
+      "bytes": 6767
+    },
+    {
+      "header": "diff --git a/scripts/acceptance/mp11/README.md b/scripts/acceptance/mp11/README.md",
+      "offset": 554381,
+      "bytes": 6558
+    },
+    {
+      "header": "diff --git a/scripts/acceptance/mp11/manage.py b/scripts/acceptance/mp11/manage.py",
+      "offset": 560939,
+      "bytes": 2762
+    },
+    {
+      "header": "diff --git a/scripts/acceptance/mp11/playwright.config.ts b/scripts/acceptance/mp11/playwright.config.ts",
+      "offset": 563701,
+      "bytes": 1912
+    },
+    {
+      "header": "diff --git a/scripts/acceptance/mp11/tests/test_manage_stop.py b/scripts/acceptance/mp11/tests/test_manage_stop.py",
+      "offset": 565613,
+      "bytes": 3169
+    },
+    {
+      "header": "diff --git a/scripts/acceptance/mp11/verify.py b/scripts/acceptance/mp11/verify.py",
+      "offset": 568782,
+      "bytes": 11208
+    }
+  ]
+}
