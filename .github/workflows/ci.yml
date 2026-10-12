@@ -43,6 +43,9 @@ jobs:
           pnpm rebuild puppeteer esbuild
       - name: Operations audit
         run: python scripts/audit/operations-audit.py
+      - name: Data-modeling frontend regressions
+        working-directory: ./metaplatform-frontend
+        run: pnpm --filter @mate/web test:unit src/pages/ontology/model/from-data
       - name: Typecheck web
         working-directory: ./metaplatform-frontend
         run: pnpm --filter @mate/web typecheck

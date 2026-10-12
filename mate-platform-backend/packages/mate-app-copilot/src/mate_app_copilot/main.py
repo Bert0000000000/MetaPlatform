@@ -59,6 +59,9 @@ def create_app() -> FastAPI:
         return Response(content='{"status":"ok"}', media_type="application/json")
 
     app.include_router(copilot_router)
+    from .modeling_router import router as modeling_router
+
+    app.include_router(modeling_router)
     return app
 
 

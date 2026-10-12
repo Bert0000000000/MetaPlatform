@@ -33,6 +33,7 @@ from .federation import router as federation_router
 from .inference.api import router as inference_router
 from .inference.shacl_api import router as shacl_router
 from .instances.api import router as instances_router
+from .modeling.api import router as modeling_router
 from .repos.neo4j_repo import create_neo4j_repository
 from .sparql.api import router as sparql_router
 from .sparql.explain import router as explain_router
@@ -206,6 +207,7 @@ def create_app() -> FastAPI:
     app.include_router(shacl_router)
     app.include_router(federation_router)
     app.include_router(v2_kernel_router)
+    app.include_router(modeling_router)
     # ONT-AGENT-METRICS-01：AI Agent 回归指标（只读；proposal 接受率/趋势）
     from .v2_kernel.agent_metrics import router as agent_metrics_router
 

@@ -5762,6 +5762,187 @@ paths:
       x-mate-requirements:
         - FR-COPILOT-COPILOTGETCOPILOTKNOWLEDGEBASES
       x-mate-implementation-status: implemented
+  /api/v1/copilot/modeling/data-repair:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - modeling
+      operationId: copilotProposeModelingDataRepair
+      summary: Propose observed-value repairs for nonidentity instance conflicts
+      description: Inert proposals only. Never invent values, fill missing identities, alter schemas, approve, publish or synchronize. The ONT service validates every selected value against the actual source conflict group and requires explicit human confirmation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingModelingRequest'
+      responses:
+        '200':
+          description: Strict repair proposals or an empty repairs list for ambiguous values
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - repairs
+                properties:
+                  repairs:
+                    type: array
+                    maxItems: 30
+                    items:
+                      type: object
+        '401':
+          description: Authentication required
+        '422':
+          description: Invalid or oversized input
+        '502':
+          description: Provider failure
+      x-mate-owner: copilot-platform
+      x-mate-permission: copilot.post
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+  /api/v1/copilot/modeling/generate:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - modeling
+      summary: Generate Model
+      description: Transient connection failures and provider HTTP 429/502/503/504 responses receive at most three attempts per request. Connect timeout is 15 seconds; read timeout is 180 seconds and is not automatically retried. Transport, access, rate-limit and JSON failures have distinct curated diagnostics. Batch mapping schemas enumerate allowed source sheets and global class IDs; source evidence for other batches is excluded only from the mapping request, without modifying candidate evidence. Global concepts are immutable across mapping batches. Technical mapping ID collisions are disambiguated without changing business references. Invalid class, sheet, property or column references receive one bounded batch repair, then fail closed with a curated diagnostic code; existing drafts and native resources are never changed by this endpoint.
+      operationId: generate_model_api_v1_copilot_modeling_generate_post
+      parameters:
+        - in: header
+          name: Accept
+          required: false
+          schema:
+            type: string
+          description: Use text/event-stream for real stage and mapping batch progress. Events contain type=progress with progress, type=result with result, or type=error with curated detail and status. Comments are keep-alives. Without this header, returns the existing JSON response.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingModelingRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE data carries JSON progress, result, or error events. Only result is a complete candidate; a partial stream must never replace a draft.
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingHTTPValidationError'
+      x-mate-owner: copilot-platform
+      x-mate-permission: copilot.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+  /api/v1/copilot/modeling/refine:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - modeling
+      summary: Propose bounded repairs from full-data diagnostics
+      operationId: copilotRefineModelingCandidate
+      description: Proposes identity additions or join replacements for existing unreviewed candidates. No concept creation, renaming, deletion, approval, source mutation, publication or cardinality changes. The ontology service validates all patches locally before accepting them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingModelingRequest'
+      responses:
+        '200':
+          description: Inert repairs; validated by the ontology adapter.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - repairs
+                properties:
+                  repairs:
+                    type: array
+                    maxItems: 30
+                    items:
+                      type: object
+        '401':
+          description: Authentication required
+        '422':
+          description: Invalid or oversized input
+        '502':
+          description: Provider response failure
+      x-mate-owner: copilot-platform
+      x-mate-permission: copilot.post
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+  /api/v1/copilot/modeling/review:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - modeling
+      summary: Review Model
+      operationId: review_model_api_v1_copilot_modeling_review_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingModelingRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingHTTPValidationError'
+      x-mate-owner: copilot-platform
+      x-mate-permission: copilot.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
   /api/v1/copilot/models/multimodal:
     get:
       security:
@@ -12368,6 +12549,747 @@ paths:
                 $ref: '#/components/schemas/LinkTypeV2'
         '404':
           $ref: '#/components/responses/Error404'
+  /api/v1/ont/v2/modeling/sources:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - data-modeling
+      summary: List Sources
+      operationId: ontListModelingSources
+      responses:
+        '200':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      summary: Upload Source
+      operationId: ontCreateModelingSource
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DataModelingBody_ontCreateModelingSource'
+        required: true
+      responses:
+        '201':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+  /api/v1/ont/v2/modeling/sources/{ident}:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - data-modeling
+      summary: Get Source
+      operationId: ontGetModelingSource
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Ident
+      responses:
+        '200':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+    put:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      summary: Save Source
+      operationId: ontSaveModelingSource
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Ident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingSave'
+      responses:
+        '200':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+  /api/v1/ont/v2/modeling/sources/{ident}/acceptance:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - data-modeling
+      operationId: ontVerifyModelingPublication
+      summary: Read-only reverse modeling acceptance
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Does not update source or native resources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingAcceptance'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '404':
+          description: Resource not found
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/modeling/sources/{ident}/comparison:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - data-modeling
+      operationId: ontCompareModelingNativeType
+      summary: Read-only reverse modeling comparison
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: classId
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 40
+        - name: targetRid
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 240
+      responses:
+        '200':
+          description: Does not update source or native resources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingComparison'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '404':
+          description: Resource not found
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/modeling/sources/{ident}/completion-confirm:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      operationId: ontConfirmModelingCompletion
+      summary: Confirm candidate definitions and deferred scope independently of native publication
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingCompletionConfirmation'
+      responses:
+        '200':
+          description: Candidate and confirmation audit saved with candidate structure validation; no native plan, publication or instance writes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '409':
+          description: Busy source or stale plan
+        '422':
+          description: Invalid or empty scope; candidate not saved
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+  /api/v1/ont/v2/modeling/sources/{ident}/completion-plan:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      operationId: ontPrepareModelingCompletion
+      summary: Preview one complete candidate repair, review and deferred dependency scope without writing
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingCompletionRequest'
+      responses:
+        '200':
+          description: Inert hash-gated plan, rules, decisions, dependency scope and eligible data preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingCompletionPlan'
+        '409':
+          description: Busy source or stale revision
+        '422':
+          description: Invalid candidate or existing publication
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+  /api/v1/ont/v2/modeling/sources/{ident}/data-repair:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      operationId: ontProposeModelingDataRepair
+      summary: Analyze observed instance conflicts and persist an inert AI repair proposal
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingRevision'
+      responses:
+        '202':
+          description: Persistent dataRepair running state; poll source GET. No source/native changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '409':
+          description: Busy or stale revision
+        '422':
+          description: Invalid candidate
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+  /api/v1/ont/v2/modeling/sources/{ident}/data-repair-confirm:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      operationId: ontConfirmModelingDataRepair
+      summary: Explicitly confirm selected AI repairs as source-local nonidentity instance edits
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingRepairConfirmation'
+      responses:
+        '200':
+          description: Audit and confirmed edits saved; sync check invalidated. Original Excel and published definitions unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '409':
+          description: Stale proposal or busy source
+        '422':
+          description: Invalid confirmation
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+  /api/v1/ont/v2/modeling/sources/{ident}/generate:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      summary: Generate
+      operationId: ontGenerateModelingCandidate
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Ident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingGenerate'
+      responses:
+        '202':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+  /api/v1/ont/v2/modeling/sources/{ident}/publish:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      summary: Publish
+      operationId: ontPublishModelingCandidate
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Ident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingPublish'
+      responses:
+        '200':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+  /api/v1/ont/v2/modeling/sources/{ident}/quarantine:
+    get:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      tags:
+        - data-modeling
+      operationId: ontExportModelingQuarantine
+      summary: Export every deferred source reference and reason as UTF-8 CSV
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: checkHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: All deferred references; spreadsheet formula injection escaped
+          content:
+            text/csv:
+              schema:
+                type: string
+        '409':
+          description: Stale check
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-implementation-status: implemented
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+  /api/v1/ont/v2/modeling/sources/{ident}/review:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      summary: Review
+      operationId: ontReviewModelingCandidate
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Ident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingRevision'
+      responses:
+        '202':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+  /api/v1/ont/v2/modeling/sources/{ident}/sync:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      summary: Sync
+      operationId: ontSyncModelingSource
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Ident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingSyncRequest'
+      responses:
+        '200':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '202':
+          description: Persisted running sync; poll the source GET endpoint for progress and completion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+  /api/v1/ont/v2/modeling/sources/{ident}/sync-check:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      summary: Check data synchronization readiness without importing instances
+      operationId: ontCheckModelingDataSync
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Ident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingRevision'
+      responses:
+        '200':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
+  /api/v1/ont/v2/modeling/sources/{ident}/validate:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.write
+      tags:
+        - data-modeling
+      summary: Validate
+      operationId: ontValidateModelingCandidate
+      parameters:
+        - name: ident
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Ident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataModelingValidationRequest'
+      responses:
+        '200':
+          description: Persisted source and candidate; 202 includes running job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataModelingSource'
+        '401':
+          description: Authentication required
+        '403':
+          description: Tenant or role denied
+        '409':
+          description: Stale revision, source busy or native baseline changed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemas-DataModelingHTTPValidationError'
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+        - FR-ONT-DATA-MODELING-PHASE1
+      x-mate-implementation-status: implemented
+      description: Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive modeling remains independent. Revision and native baseline conflicts fail closed.
   /api/v1/ont/v2/object-query:
     post:
       security:
@@ -12655,6 +13577,13 @@ paths:
         - ont
       summary: Stage schema WIP without publishing
       operationId: ontSaveV2SchemaWip
+      parameters:
+        - in: query
+          name: preserve_existing
+          description: Refuse replacing a WIP with different payload or author. Optional; default behavior is unchanged.
+          schema:
+            type: boolean
+            default: false
       x-mate-owner: ontology-platform
       x-mate-permission: ont.write
       x-mate-required-tenant: true
@@ -12772,6 +13701,12 @@ paths:
             default: ''
         - in: query
           name: expected_checksum
+          schema:
+            type: string
+            default: ''
+        - in: query
+          name: expected_payload_checksum
+          description: Optional reviewed WIP definition checksum. Rejects payload drift and preserves any newer WIP saved during publication.
           schema:
             type: string
             default: ''
@@ -17139,6 +18074,86 @@ components:
         created_at:
           type: string
           format: date-time
+    DataModelingModelingRequest:
+      properties:
+        profile:
+          additionalProperties: true
+          type: object
+          title: Profile
+        context:
+          type: string
+          maxLength: 2000
+          title: Context
+          default: ''
+        questions:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          maxItems: 20
+          title: Questions
+        existingTypes:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          maxItems: 100
+          title: Existingtypes
+        outputSchema:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: 'null'
+          description: Inert JSON Schema supplied by the ontology adapter; at most 30000 JSON characters. References are never fetched.
+          title: Outputschema
+          default: null
+        draft:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: 'null'
+          title: Draft
+        validation:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: 'null'
+          title: Validation
+      additionalProperties: false
+      type: object
+      required:
+        - profile
+      title: ModelingRequest
+    DataModelingValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    DataModelingHTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/DataModelingValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     AnomalyRuleCreate:
       type: object
       required:
@@ -19412,6 +20427,1333 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PropertyCreateV2'
+    DataModelingProperty:
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Id
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        dataType:
+          type: string
+          enum:
+            - text
+            - number
+            - date
+          title: Datatype
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - name
+        - dataType
+      title: Property
+    DataModelingUniqueKey:
+      additionalProperties: false
+      properties:
+        properties:
+          type: array
+          items:
+            pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+            type: string
+          minItems: 1
+          maxItems: 4
+          title: Properties
+        reason:
+          default: ''
+          maxLength: 1000
+          title: Reason
+          type: string
+        confirmed:
+          default: false
+          title: Confirmed
+          type: boolean
+      required:
+        - properties
+      title: UniqueKey
+      type: object
+    DataModelingEvidence:
+      additionalProperties: false
+      properties:
+        kind:
+          enum:
+            - source
+            - business
+            - inference
+          title: Kind
+          type: string
+        detail:
+          maxLength: 1000
+          minLength: 1
+          title: Detail
+          type: string
+        sheet:
+          default: ''
+          maxLength: 120
+          title: Sheet
+          type: string
+        columns:
+          items:
+            maxLength: 120
+            minLength: 1
+            type: string
+          maxItems: 12
+          title: Columns
+          type: array
+      required:
+        - kind
+        - detail
+      title: Evidence
+      type: object
+    DataModelingClass:
+      additionalProperties: false
+      properties:
+        id:
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Id
+          type: string
+        name:
+          maxLength: 120
+          minLength: 1
+          title: Name
+          type: string
+        description:
+          default: ''
+          maxLength: 1000
+          title: Description
+          type: string
+        properties:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataModelingProperty'
+          minItems: 1
+          maxItems: 40
+          title: Properties
+        identity:
+          items:
+            pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+            type: string
+          maxItems: 4
+          title: Identity
+          type: array
+        labelProperty:
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Labelproperty
+          type: string
+        included:
+          type: boolean
+          default: true
+          description: 本次发布及同步范围；false 保留候选但暂不发布。与审核状态独立，父类和端点依赖须完整。
+        accepted:
+          default: false
+          title: Accepted
+          type: boolean
+        parentClassId:
+          anyOf:
+            - pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+              type: string
+            - type: 'null'
+          default: null
+          title: Parentclassid
+        inheritanceReason:
+          default: ''
+          maxLength: 1000
+          title: Inheritancereason
+          type: string
+        grain:
+          default: ''
+          maxLength: 500
+          title: Grain
+          type: string
+        identityStatus:
+          default: legacy
+          enum:
+            - legacy
+            - proposed
+            - confirmed
+            - unresolved
+            - source-record
+          title: Identitystatus
+          type: string
+        identityCandidate:
+          items:
+            pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+            type: string
+          maxItems: 4
+          title: Identitycandidate
+          type: array
+        identityReason:
+          default: ''
+          maxLength: 1000
+          title: Identityreason
+          type: string
+        uniqueKeys:
+          items:
+            $ref: '#/components/schemas/DataModelingUniqueKey'
+          maxItems: 4
+          title: Uniquekeys
+          type: array
+        evidence:
+          items:
+            $ref: '#/components/schemas/DataModelingEvidence'
+          maxItems: 8
+          title: Evidence
+          type: array
+      required:
+        - id
+        - name
+        - properties
+        - identity
+        - labelProperty
+      title: Class
+      type: object
+    DataModelingMapping:
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Id
+        classId:
+          type: string
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Classid
+        sheet:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Sheet
+        bindings:
+          patternProperties:
+            ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$:
+              type: string
+              maxLength: 120
+              minLength: 1
+          type: object
+          title: Bindings
+        reason:
+          type: string
+          maxLength: 1000
+          title: Reason
+          default: ''
+        accepted:
+          type: boolean
+          title: Accepted
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - classId
+        - sheet
+        - bindings
+      title: Mapping
+    DataModelingJoin:
+      description: Draft joins may contain an empty selection; incomplete joins cannot pass validation or be published/synchronized.
+      properties:
+        sourceProperty:
+          type: string
+          pattern: ^(?:[a-zA-Z][a-zA-Z0-9_-]{0,39})?$
+          title: Sourceproperty
+        targetProperty:
+          type: string
+          pattern: ^(?:[a-zA-Z][a-zA-Z0-9_-]{0,39})?$
+          title: Targetproperty
+      additionalProperties: false
+      type: object
+      required:
+        - sourceProperty
+        - targetProperty
+      title: Join
+    DataModelingRelationship:
+      additionalProperties: false
+      properties:
+        id:
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Id
+          type: string
+        name:
+          maxLength: 120
+          minLength: 1
+          title: Name
+          type: string
+        source:
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Source
+          type: string
+        target:
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Target
+          type: string
+        joins:
+          items:
+            $ref: '#/components/schemas/DataModelingJoin'
+          maxItems: 4
+          title: Joins
+          type: array
+        reason:
+          default: ''
+          maxLength: 1000
+          title: Reason
+          type: string
+        included:
+          type: boolean
+          default: true
+          description: 本次发布及同步范围；false 保留候选但暂不发布。与审核状态独立，父类和端点依赖须完整。
+        accepted:
+          default: false
+          title: Accepted
+          type: boolean
+        cardinality:
+          default: N:N
+          enum:
+            - '1:1'
+            - 1:N
+            - N:1
+            - N:N
+          title: Cardinality
+          type: string
+        cardinalityStatus:
+          default: legacy
+          enum:
+            - legacy
+            - proposed
+            - confirmed
+            - unresolved
+          title: Cardinalitystatus
+          type: string
+        cardinalityReason:
+          default: ''
+          maxLength: 1000
+          title: Cardinalityreason
+          type: string
+        targetSelection:
+          default: legacy
+          enum:
+            - legacy
+            - entity
+            - group
+          title: Targetselection
+          type: string
+        evidence:
+          items:
+            $ref: '#/components/schemas/DataModelingEvidence'
+          maxItems: 8
+          title: Evidence
+          type: array
+      required:
+        - id
+        - name
+        - source
+        - target
+      title: Relationship
+      type: object
+    DataModelingManualInstance:
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Id
+        classId:
+          type: string
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Classid
+        values:
+          patternProperties:
+            ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$:
+              anyOf:
+                - type: string
+                - type: integer
+                - type: number
+                - type: boolean
+                - type: 'null'
+          type: object
+          title: Values
+        accepted:
+          type: boolean
+          title: Accepted
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - classId
+        - values
+      title: ManualInstance
+    DataModelingInstanceEdit:
+      properties:
+        key:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Key
+        values:
+          patternProperties:
+            ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$:
+              anyOf:
+                - type: string
+                - type: integer
+                - type: number
+                - type: boolean
+                - type: 'null'
+          type: object
+          title: Values
+        excluded:
+          type: boolean
+          title: Excluded
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+        - key
+      title: InstanceEdit
+    DataModelingLinkEdit:
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Id
+        relationId:
+          type: string
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Relationid
+        source:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Source
+        target:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Target
+        excluded:
+          type: boolean
+          title: Excluded
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - relationId
+        - source
+        - target
+      title: LinkEdit
+    DataModelingModelingQuestion:
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z][a-zA-Z0-9_-]{0,39}$
+          title: Id
+        question:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Question
+        expected:
+          type: string
+          maxLength: 1000
+          title: Expected
+          default: ''
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - question
+      title: ModelingQuestion
+    DataModelingSemanticDefinition:
+      properties:
+        target:
+          type: string
+          pattern: ^(?:(class|mapping|relationship):[a-zA-Z][a-zA-Z0-9_-]{0,39}|property:[a-zA-Z][a-zA-Z0-9_-]{0,39}:[a-zA-Z][a-zA-Z0-9_-]{0,39})$
+          title: Target
+        definition:
+          type: string
+          maxLength: 1000
+          title: Definition
+          default: ''
+        aliases:
+          items:
+            type: string
+            maxLength: 120
+            minLength: 1
+          type: array
+          maxItems: 12
+          title: Aliases
+        scope:
+          type: string
+          maxLength: 500
+          title: Scope
+          default: ''
+        grain:
+          type: string
+          maxLength: 300
+          title: Grain
+          default: ''
+        unit:
+          type: string
+          maxLength: 120
+          title: Unit
+          default: ''
+        constraints:
+          type: string
+          maxLength: 1000
+          title: Constraints
+          default: ''
+        basis:
+          type: string
+          maxLength: 1000
+          title: Basis
+          default: ''
+        confirmed:
+          type: boolean
+          title: Confirmed
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+        - target
+      title: SemanticDefinition
+    DataModelingModelingSemantics:
+      properties:
+        context:
+          type: string
+          maxLength: 2000
+          title: Context
+          default: ''
+        questions:
+          items:
+            $ref: '#/components/schemas/DataModelingModelingQuestion'
+          type: array
+          maxItems: 20
+          title: Questions
+        definitions:
+          items:
+            $ref: '#/components/schemas/DataModelingSemanticDefinition'
+          type: array
+          maxItems: 150
+          title: Definitions
+      additionalProperties: false
+      type: object
+      title: ModelingSemantics
+    DataModelingDraft:
+      properties:
+        schemaVersion:
+          type: integer
+          const: 2
+          title: Schemaversion
+          default: 2
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        classes:
+          items:
+            $ref: '#/components/schemas/DataModelingClass'
+          type: array
+          maxItems: 30
+          minItems: 1
+          title: Classes
+        mappings:
+          items:
+            $ref: '#/components/schemas/DataModelingMapping'
+          type: array
+          maxItems: 60
+          title: Mappings
+        relationships:
+          items:
+            $ref: '#/components/schemas/DataModelingRelationship'
+          type: array
+          maxItems: 60
+          title: Relationships
+        instances:
+          items:
+            $ref: '#/components/schemas/DataModelingManualInstance'
+          type: array
+          maxItems: 500
+          title: Instances
+        instanceEdits:
+          items:
+            $ref: '#/components/schemas/DataModelingInstanceEdit'
+          type: array
+          maxItems: 1000
+          title: Instanceedits
+        links:
+          items:
+            $ref: '#/components/schemas/DataModelingLinkEdit'
+          type: array
+          maxItems: 1000
+          title: Links
+        notes:
+          items:
+            type: string
+            maxLength: 1000
+          type: array
+          maxItems: 30
+          title: Notes
+        semantics:
+          $ref: '#/components/schemas/DataModelingModelingSemantics'
+      additionalProperties: false
+      type: object
+      required:
+        - name
+        - classes
+        - mappings
+        - relationships
+      title: Draft
+    DataModelingResolution:
+      properties:
+        mode:
+          description: 候选处理决策；高相似候选新增前须显式保存 new，复用/扩展需人工核对目标和属性映射。
+          type: string
+          enum:
+            - new
+            - reuse
+            - extend
+          title: Mode
+          default: new
+        targetRid:
+          type: string
+          title: Targetrid
+          default: ''
+        propertyMap:
+          additionalProperties:
+            type: string
+          type: object
+          title: Propertymap
+      additionalProperties: false
+      type: object
+      title: Resolution
+    DataModelingIssueGroup:
+      type: object
+      required:
+        - severity
+        - item
+        - message
+        - count
+      properties:
+        severity:
+          type: string
+          enum:
+            - error
+            - warning
+        item:
+          type: string
+        message:
+          type: string
+        count:
+          type: integer
+          minimum: 1
+    DataModelingDataValidation:
+      type: object
+      required:
+        - scope
+        - errors
+        - warnings
+        - canSync
+        - issues
+        - issueGroups
+      properties:
+        scope:
+          type: string
+          const: data
+        errors:
+          type: integer
+          minimum: 0
+        warnings:
+          type: integer
+          minimum: 0
+        canSync:
+          type: boolean
+        issues:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+        issueGroups:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/DataModelingIssueGroup'
+        issueGroupsTruncated:
+          type: boolean
+      additionalProperties: true
+    DataModelingOntologyValidation:
+      type: object
+      required:
+        - scope
+        - errors
+        - warnings
+        - canPublish
+        - configHash
+        - issues
+        - counts
+        - dataValidation
+      properties:
+        scope:
+          type: string
+          const: ontology
+        errors:
+          type: integer
+          minimum: 0
+        warnings:
+          type: integer
+          minimum: 0
+        canPublish:
+          type: boolean
+        configHash:
+          type: string
+        issues:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+        counts:
+          type: object
+        dataValidation:
+          $ref: '#/components/schemas/DataModelingDataValidation'
+      additionalProperties: true
+    DataModelingAcceptance:
+      type: object
+      required:
+        - status
+        - sourceRevision
+        - checkedAt
+        - types
+        - relationships
+        - counts
+        - limitations
+      properties:
+        status:
+          type: string
+          enum:
+            - not_published
+            - drifted
+            - passed
+        sourceRevision:
+          type: integer
+        checkedAt:
+          type: string
+        types:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        relationships:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        counts:
+          type: object
+          required:
+            - types
+            - relationships
+            - drifted
+          properties:
+            types:
+              type: integer
+              minimum: 0
+            relationships:
+              type: integer
+              minimum: 0
+            drifted:
+              type: integer
+              minimum: 0
+        limitations:
+          type: array
+          items:
+            type: string
+    DataModelingSource:
+      type: object
+      required:
+        - id
+        - name
+        - revision
+        - profile
+        - context
+        - questions
+        - resolutions
+      properties:
+        completionAudit:
+          type: array
+          description: Explicit complete-plan confirmation audit; no native data writes.
+          items:
+            type: object
+            properties:
+              actor:
+                type: string
+              at:
+                type: string
+                format: date-time
+              planHash:
+                type: string
+              beforeHash:
+                type: string
+              afterHash:
+                type: string
+              changes:
+                type: array
+                items:
+                  type: object
+        dataTreatment:
+          type:
+            - object
+            - 'null'
+          description: Source-local confirmed instance edits and append-only audit; invalidated by source/draft changes. Never changes published identity or ontology definitions.
+        dataRepair:
+          type:
+            - object
+            - 'null'
+          description: Persistent AI job and inert proposal (id, inputHash, repairs with observed before values, proposed values, reason, before/after subset reports). Requires explicit proposal ID and key confirmation.
+        generation:
+          type:
+            - object
+            - 'null'
+          description: Tenant-scoped stable generation baseline and full-data preflight. Does not approve business semantics or permit publication/sync. Same rows, headers, context, questions, native definitions, schema and policy version reuse the first complete baseline. Human edits never update that baseline.
+          properties:
+            fingerprint:
+              type: string
+            policyVersion:
+              type: string
+            origin:
+              type: string
+              enum:
+                - generated
+                - reused
+            rounds:
+              type: integer
+              minimum: 0
+              maximum: 2
+            draftHash:
+              type: string
+            stale:
+              type: boolean
+              description: Historical generation evidence; rerun validation after manual edits.
+            structureErrors:
+              type: integer
+              minimum: 0
+            dataErrors:
+              type: integer
+              minimum: 0
+            identities:
+              type: array
+              items:
+                type: object
+            relationshipCandidates:
+              type: array
+              items:
+                type: object
+            findings:
+              type: array
+              items:
+                type: object
+            changes:
+              type: array
+              items:
+                type: object
+            notices:
+              type: array
+              items:
+                type: string
+            capabilities:
+              type: object
+        id:
+          type: string
+        name:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+        profile:
+          type: object
+          additionalProperties: true
+        draft:
+          anyOf:
+            - $ref: '#/components/schemas/DataModelingDraft'
+            - type: 'null'
+        context:
+          type: string
+          maxLength: 2000
+        questions:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+        resolutions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DataModelingResolution'
+        job:
+          description: Durable generation or review state. Generation progress is reported by Copilot, never estimated from elapsed time. Progress-only updates do not increment the candidate revision.
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+          properties:
+            startedAt:
+              type: string
+              format: date-time
+            finishedAt:
+              type: string
+              format: date-time
+            progress:
+              type: object
+              properties:
+                stage:
+                  type: string
+                  enum:
+                    - preparing
+                    - concepts
+                    - mapping
+                    - checking
+                batch:
+                  type: integer
+                  minimum: 1
+                totalBatches:
+                  type: integer
+                  minimum: 1
+                retrying:
+                  type: boolean
+        validation:
+          description: Ontology structure and explicit definition approvals govern publication. Nested dataValidation independently governs optional instance synchronization. Revalidate legacy reports before publication.
+          anyOf:
+            - $ref: '#/components/schemas/DataModelingOntologyValidation'
+            - type: 'null'
+        review:
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+        preview:
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+        plan:
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+        publication:
+          properties:
+            acceptance:
+              $ref: '#/components/schemas/DataModelingAcceptance'
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+        syncCheck:
+          type:
+            - object
+            - 'null'
+          description: Independent data readiness report; never imports instances or rewrites the publication plan. Invalidated on candidate edits.
+          properties:
+            partial:
+              type: object
+              description: Eligible graph and deferred scope compiled using the same native rules; explicit checkHash confirmation required. An empty eligible graph cannot synchronize.
+              properties:
+                canSync:
+                  type: boolean
+                checkHash:
+                  type: string
+                preview:
+                  type: object
+                  properties:
+                    nodes:
+                      type: integer
+                    edges:
+                      type: integer
+                report:
+                  $ref: '#/components/schemas/DataModelingDataValidation'
+                quarantine:
+                  type: object
+                  properties:
+                    rows:
+                      type: integer
+                      description: Distinct affected source rows; not the number of validation messages.
+                    entities:
+                      type: integer
+                    relationships:
+                      type: integer
+                      description: Number of relationship definitions with deferred links or unmatched sources.
+                    groups:
+                      type: array
+                      maxItems: 100
+                      items:
+                        type: object
+                    groupsTruncated:
+                      type: boolean
+            sourceRevision:
+              type: integer
+            checkedAt:
+              type: string
+              format: date-time
+            canSync:
+              type: boolean
+            baselineError:
+              type:
+                - string
+                - 'null'
+            report:
+              $ref: '#/components/schemas/DataModelingDataValidation'
+            preview:
+              type:
+                - object
+                - 'null'
+              properties:
+                nodes:
+                  type: integer
+                edges:
+                  type: integer
+        sync:
+          description: Persistent execution status and actual completed results. Failures may retain partial writes. Source GET reads status; repeats do not delete missing instances.
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+    DataModelingBody_ontCreateModelingSource:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+        - file
+      title: Body_ontCreateModelingSource
+    schemas-DataModelingValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    schemas-DataModelingHTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/schemas-DataModelingValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    DataModelingSave:
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+          title: Revision
+        draft:
+          anyOf:
+            - $ref: '#/components/schemas/DataModelingDraft'
+            - type: 'null'
+        context:
+          type: string
+          maxLength: 2000
+          title: Context
+          default: ''
+        questions:
+          items:
+            $ref: '#/components/schemas/DataModelingModelingQuestion'
+          type: array
+          maxItems: 20
+          title: Questions
+        resolutions:
+          additionalProperties:
+            $ref: '#/components/schemas/DataModelingResolution'
+          type: object
+          title: Resolutions
+      additionalProperties: false
+      type: object
+      required:
+        - revision
+        - draft
+      title: Save
+    DataModelingComparison:
+      type: object
+      required:
+        - classId
+        - targetRid
+        - requiresDecision
+        - sourceRevision
+        - properties
+      properties:
+        classId:
+          type: string
+        targetRid:
+          type: string
+        requiresDecision:
+          const: true
+        sourceRevision:
+          type: integer
+        identityMatches:
+          type: boolean
+        properties:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      additionalProperties: true
+    DataModelingCompletionConfirmation:
+      type: object
+      additionalProperties: false
+      required:
+        - revision
+        - planHash
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        deferClasses:
+          type: array
+          maxItems: 40
+          items:
+            type: string
+          default: []
+        planHash:
+          type: string
+          minLength: 64
+          maxLength: 64
+    DataModelingCompletionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - revision
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        deferClasses:
+          type: array
+          maxItems: 40
+          items:
+            type: string
+          default: []
+    DataModelingCompletionPlan:
+      type: object
+      required:
+        - hash
+        - canApply
+        - changes
+        - remaining
+        - candidates
+        - relationships
+        - counts
+        - data
+      properties:
+        hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+        canApply:
+          type: boolean
+        changes:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              action:
+                type: string
+              reason:
+                type: string
+              kind:
+                type: string
+                enum:
+                  - classes
+                  - relationships
+                  - mappings
+        remaining:
+          type: array
+          items:
+            type: object
+        candidates:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              included:
+                type: boolean
+              originallyIncluded:
+                type: boolean
+              parent:
+                type:
+                  - string
+                  - 'null'
+              identity:
+                type: array
+                items:
+                  type: string
+              reason:
+                type: string
+              problem:
+                type: string
+        relationships:
+          type: array
+          items:
+            type: object
+        counts:
+          type: object
+          properties:
+            classes:
+              type: integer
+            relationships:
+              type: integer
+            deferred:
+              type: integer
+        data:
+          type: object
+          properties:
+            nodes:
+              type: integer
+            edges:
+              type: integer
+            rows:
+              type: integer
+            errors:
+              type: integer
+            canSync:
+              type: boolean
+    DataModelingRevision:
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+          title: Revision
+      additionalProperties: false
+      type: object
+      required:
+        - revision
+      title: Revision
+    DataModelingRepairConfirmation:
+      type: object
+      additionalProperties: false
+      required:
+        - revision
+        - proposalId
+        - keys
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        proposalId:
+          type: string
+        keys:
+          type: array
+          minItems: 1
+          maxItems: 30
+          uniqueItems: true
+          items:
+            type: string
+    DataModelingGenerate:
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+          title: Revision
+        context:
+          type: string
+          maxLength: 2000
+          title: Context
+          default: ''
+        questions:
+          items:
+            $ref: '#/components/schemas/DataModelingModelingQuestion'
+          type: array
+          maxItems: 20
+          title: Questions
+      additionalProperties: false
+      type: object
+      required:
+        - revision
+      title: Generate
+    DataModelingPublish:
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+          title: Revision
+        configHash:
+          type: string
+          maxLength: 64
+          minLength: 64
+          title: Confighash
+        acknowledgeWarnings:
+          type: boolean
+          title: Acknowledgewarnings
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+        - revision
+        - configHash
+      title: Publish
+    DataModelingSyncRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - revision
+      properties:
+        allowPartial:
+          type: boolean
+          default: false
+          description: Explicitly accept quarantining invalid records and dependent relationships. Existing instances/links are retained.
+        checkHash:
+          type:
+            - string
+            - 'null'
+          description: Required for partial sync; must match freshly recomputed graph and stored check.
+        revision:
+          type: integer
+          minimum: 1
+        background:
+          type: boolean
+          default: false
+          description: Return 202 with persistent running state; GET source to poll. Default retains synchronous compatibility.
+    DataModelingValidationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - revision
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        preparePublication:
+          type: boolean
+          default: false
+          description: Only the publication dialog opts in to native collision/mapping checks and plan preparation; candidate review remains independent.
     QueryConditionV2:
       type: object
       additionalProperties: false

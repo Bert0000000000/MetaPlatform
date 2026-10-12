@@ -1,0 +1,36 @@
+{
+  "context": "制造齐套：物料主数据、分仓库存、BOM和工单。库存身份为物料编码+仓库，BOM身份为产品编码+物料编码；不同表中的同一物料应复用一个概念。库存行同时描述物料与库存。",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "某物料分布在哪些仓库？",
+      "expected": "M01 在 A、B 仓；库存以物料+仓库区分"
+    },
+    {
+      "id": "q2",
+      "question": "P01 需要哪些物料？",
+      "expected": "M01、M02；单位分别为台、个"
+    },
+    {
+      "id": "q3",
+      "question": "W01 的计划量是多少？",
+      "expected": "4"
+    },
+    {
+      "id": "q4",
+      "question": "W01 需要多少螺栓？",
+      "expected": "4×4=16；首期结构支持关联，自动计算留待派生指标"
+    },
+    {
+      "id": "q5",
+      "question": "供应商何时到货？",
+      "expected": "无法回答：缺供应商和采购交期数据"
+    }
+  ],
+  "expected": {
+    "materials": 2,
+    "inventory": 3,
+    "bom_lines": 2,
+    "work_orders": 2
+  }
+}

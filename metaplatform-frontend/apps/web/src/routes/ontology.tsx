@@ -15,6 +15,7 @@ import SecurityPage from '@/pages/ontology/governance/security/SecurityPage';
 import ImportExportPage from '@/pages/ontology/governance/import-export/ImportExportPage';
 import AuditPage from '@/pages/ontology/governance/audit/AuditPage';
 import ObjectTypesPage from '@/pages/ontology/model/object-types/ObjectTypesPage';
+import FromDataPage from '@/pages/ontology/model/from-data/FromDataPage';
 import ObjectTypeDetailPage from '@/pages/ontology/model/object-types/ObjectTypeDetailPage';
 import LinkTypesPage from '@/pages/ontology/model/link-types/LinkTypesPage';
 import InterfacesPage from '@/pages/ontology/model/interfaces/InterfacesPage';
@@ -80,6 +81,7 @@ export const ontologyRoutes = (
     <Route path="model">
       <Route index element={<Navigate to={ontologyWorkspaceDefaultPath()} replace />} />
       <Route path="object-types" element={<ObjectTypesPage />} />
+      <Route path="from-data" element={<FromDataPage />} />
       <Route path="object-types/:rid" element={<ObjectTypeDetailPage />} />
       <Route path="object-types/:rid/:tab" element={<ObjectTypeDetailPage />} />
       <Route path="link-types" element={<LinkTypesPage />} />

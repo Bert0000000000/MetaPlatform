@@ -66,11 +66,34 @@ jobs:
       # docker-compose.override.yml 引用本地敏感文件（.env.local，gitignore）；
       # 脚本的 prepare_env 会生成等价的最小 .env / 空 .env.local。
       - name: Prepare compose inputs
+        id: modeling-source-fixture
         run: |
           cp -r mate-platform-backend .tmp-build-context
+          fixture_password="$(python3 -c 'import secrets; print(secrets.token_hex(24))')"
+          printf '::add-mask::%s\n' "$fixture_password"
+          cat > docker-compose.modeling-ci.yml <<EOF
+          services:
+            mate-tech-ont:
+              environment:
+                ONT_MODELING_SOURCE_DSN: postgresql://modeling_source_fixture:$fixture_password@postgres:5432/metaplatform
+          EOF
+          printf 'password=%s\n' "$fixture_password" >> "$GITHUB_OUTPUT"
+          echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.override.yml:docker-compose.modeling-ci.yml' >> "$GITHUB_ENV"
 
       - name: Boot ontology-core stack + wait healthy
         run: bash scripts/ci/ontology-core-e2e.sh up && bash scripts/ci/ontology-core-e2e.sh wait
+
+      - name: Prepare nonprivileged Excel staging source reader
+        env:
+          FIXTURE_PASSWORD: ${{ steps.modeling-source-fixture.outputs.password }}
+        run: |
+          docker compose exec -T postgres psql -U meta -d metaplatform --quiet --set=ON_ERROR_STOP=1 --set=fixture_password="$FIXTURE_PASSWORD" <<'SQL'
+          CREATE ROLE modeling_source_fixture LOGIN PASSWORD :'fixture_password' NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
+          GRANT CONNECT ON DATABASE metaplatform TO modeling_source_fixture;
+          GRANT USAGE ON SCHEMA public TO modeling_source_fixture;
+          GRANT SELECT ON ALL TABLES IN SCHEMA public TO modeling_source_fixture;
+          ALTER DEFAULT PRIVILEGES FOR ROLE meta IN SCHEMA public GRANT SELECT ON TABLES TO modeling_source_fixture;
+          SQL
 
       - name: Run ontology core e2e
         run: bash scripts/ci/ontology-core-e2e.sh test
@@ -146,6 +169,27 @@ jobs:
             metaplatform-frontend/test-results/builder-artifacts/**/*.png
           if-no-files-found: error
           retention-days: 14
+
+      - name: Execute Excel modeling publication and sync browser cases
+        if: ${{ !cancelled() }}
+        working-directory: metaplatform-frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:9200
+          E2E_GATEWAY: http://127.0.0.1:8100/api/v1
+          E2E_IAM_LOGIN_URL: http://127.0.0.1:8100/api/v1/iam/auth/login
+        run: pnpm exec playwright test --config playwright.modeling.config.ts
+
+      - name: Require all seven executed modeling browser cases with zero skips
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          cases = list(ET.parse('metaplatform-frontend/test-results/modeling.xml').getroot().iter('testcase'))
+          assert len(cases) == 7, f'Expected 7 modeling browser cases, found {len(cases)}'
+          assert all('ontology-from-data.spec.ts' in case.get('classname', '') for case in cases)
+          assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error'))
+          print('Modeling browser gate: 7 executed, 0 skipped')
+          PY
 
       - name: Dump container logs
         if: failure()
