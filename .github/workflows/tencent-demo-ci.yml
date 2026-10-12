@@ -28,7 +28,7 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf # v3
         with:
-          version: "0.5.11"
+          version: "0.12.0"
       - name: Test CI gate, archive validation and recovery
         run: python -m unittest discover -s infra/demo-cloud/tests -v
       - name: Prepare disposable configuration from the backend lock

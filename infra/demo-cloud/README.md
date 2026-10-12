@@ -16,6 +16,8 @@ Keycloak。RAG 使用 PostgreSQL；Milvus、Nacos、RabbitMQ 及额外 AI / Java
 
 ## 准备和启动
 
+依赖导出使用 uv 0.12.0，与演示 CI 固定版本一致。
+
 从仓库根目录执行：
 
 ```sh
