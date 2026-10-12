@@ -40,8 +40,8 @@ CI invocation against an existing explicitly selected stack:
 ```sh
 python3 infra/demo-cloud/configure_auth.py --no-sudo \
   --compose-file docker-compose.yml \
+  --compose-file docker-compose.override.yml \
   --compose-file .tmp/ontology-core-ci.compose.json \
-  --project "$COMPOSE_PROJECT_NAME" \
   --journal .ci/mp11-auth-scope-migration.jsonl
 ```
 

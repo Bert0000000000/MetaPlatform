@@ -82,3 +82,15 @@ Commit：`a2d0aa8695ebf2fd67aa8c6ddcf3e703a8a32c98`；[ga CI](https://github.com
 - 原始证据在 a2d0aa8 的纯文本格式规范及对应原始字节保存见 [MP11-INTEGRATION-FORMAT](MP11-INTEGRATION-FORMAT.md)。上节“原始 JSON/log 不修改”描述的是 d3539e85 文档修订阶段；不能拿规范后的文件摘要冒充原收据。
 
 OpenAPI 原始固定比较仍为 270 ERR、37 WARN；精确审核材料见 ADR-0084。自动审批拒绝了持久接入这些例外，用户明确批准前清单保持 pending，ga-001 与 breaking-change 原入口保持失败。没有修改 Goal Board、Accepted 或 GA 状态，没有合并 #103、没有部署本轮腾讯云版本。新提交的 PR、main 与部署验收需分别追加实际结果。
+
+### d9dcbc56 实际身份与浏览器闭环
+
+Commit：`d9dcbc564bf579645c1aa2aa892065052d9aa60f`。这组结果只归本提交，不能覆盖后续提交、main 或云环境。
+
+- [ontology-loop PR CI](https://github.com/Bert0000000000/MetaPlatform/actions/runs/38291719201) 最终 SUCCESS：旧 realm 含无人持有角色限制的 profile，实际 CLI 两遍迁移成功，第二遍零修改；真实管理员/普通用户分别具备 read+write/read-only。浏览器核心 9、迁移 2、Builder 21、Excel modeling 7，全部实际通过；迁移/Builder/modeling 核对零 skipped。web 550 + shared 3，类型与生产构建成功。
+- [ga PR CI](https://github.com/Bert0000000000/MetaPlatform/actions/runs/38291719177) 内 native required job 实际执行六组 123 + modeling 52、零 skipped。Ontology broad 1527 passed、266 原有 skipped；本轮 MP11/modeling 用例 373 全部实际执行、零 skipped。整个 broad 集不能记为零跳过。
+- [Tencent Demo CI](https://github.com/Bert0000000000/MetaPlatform/actions/runs/38291719179) SUCCESS，包含实际 Compose 消费目标与源包校验；不包含真实镜像 build 或部署。
+- product job 中 Data 31、AppHub 59 成功；schema 全 53 执行，43 passed、10 个 PG 负例在列快照 `primary_key` 读取时失败，未完成预期守门断言。SQLite 的 `get_columns` 返回该字段，PG 不返回。本轮改用公开 `get_pk_constraint` 明确获取主键集合，保留类型/nullable/default/PK 前后比较；nodeid 不变。本地 36 passed，17 PG 必须重新完整执行，不能把旧 43 当成全通过。
+- ga-tests 在 backend `.venv` 已安装 cryptography49.0.0，但 selected member runtime 未安装 pytest，子包 `uv run ... pytest` 和 KB 裸 pytest 回落到系统解释器，导致新签名测试收集失败。本轮分别安装冻结 runtime/root dev closure，三套测试显式使用同一 venv Python，保留原套件与治理步骤；完整 Linux 执行须取新 CI。
+
+契约例外仍未获用户明确批准，清单全部 pending/false，原 ga-001 和 breaking-change 保持阻断。#103 未合并，本轮腾讯云未部署。

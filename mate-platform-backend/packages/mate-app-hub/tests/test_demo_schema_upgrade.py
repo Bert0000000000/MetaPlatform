@@ -203,13 +203,15 @@ def rows(connection):
 
 
 def column_shape(connection):
-    return {
-        name: [
-            (c["name"], str(c["type"]), c["nullable"], c["default"], c["primary_key"])
-            for c in sa.inspect(connection).get_columns(name)
+    inspector = sa.inspect(connection)
+    shapes = {}
+    for name in TABLES:
+        primary_key = set(inspector.get_pk_constraint(name)["constrained_columns"])
+        shapes[name] = [
+            (c["name"], str(c["type"]), c["nullable"], c["default"], c["name"] in primary_key)
+            for c in inspector.get_columns(name)
         ]
-        for name in TABLES
-    }
+    return shapes
 
 
 @contextmanager

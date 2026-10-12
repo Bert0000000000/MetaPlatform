@@ -231,22 +231,28 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - name: install uv + pytest
-        run: python -m pip install uv pytest pytest-asyncio pyyaml sqlalchemy pydantic httpx structlog fastapi tenacity pyjwt python-multipart opentelemetry-api opentelemetry-sdk temporalio alembic
-      # 依赖闭包一次性安装：uv sync --frozen 从 workspace 锁文件解全部
-      # runtime+dev 依赖（手工 pip 清单连续 6 轮暴露缺口：fastapi→pyjwt→
-      # otel→temporalio→alembic…），与 ga-014 同一验证过的路径
-      - name: sync workspace deps (frozen, complete closure)
-        run: uv sync --directory mate-platform-backend --package mate-platform --package mate-app-kb --dev --frozen
+      - name: Install uv
+        run: python -m pip install uv
+      # Selected packages supply runtime dependencies; the root dev group
+      # supplies pytest. Install both frozen closures into the same environment.
+      - name: Install locked platform and KB runtime and test dependencies
+        working-directory: mate-platform-backend
+        run: |
+          uv sync --frozen --python 3.12 --package mate-platform --package mate-app-kb
+          uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
+          uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
+          .venv/bin/python -c "import sys, cryptography, pytest; print('test interpreter:', sys.executable); print('locked runtime cryptography:', cryptography.__version__); print('locked test runner pytest:', pytest.__version__)"
       - name: infra/tests (PLATFORM-K8S-01 regression, rule 8 contract)
-        run: pytest -q
+        run: '"${{ github.workspace }}/mate-platform-backend/.venv/bin/python" -m pytest -q'
         working-directory: infra/tests
-      # 后端两套件走 uv venv（完整闭包；系统 pip 只保 infra tests）
+      # Explicit interpreter and suite paths prevent PATH fallback or a child
+      # uv run from resynchronizing the selected runtime/test environment.
       - name: mate-platform/tests (SEC-IAM-01 + SEC-TENANT-01 + PLATFORM-EVENT-01)
-        run: uv run --directory mate-platform-backend/packages/mate-platform pytest -q
+        run: .venv/bin/python -m pytest packages/mate-platform/tests -q
+        working-directory: mate-platform-backend
       - name: mate-app-kb/tests (TECH-SERVICES canonical)
-        run: pytest -q
-        working-directory: mate-platform-backend/packages/mate-app-kb
+        run: .venv/bin/python -m pytest packages/mate-app-kb/tests -q
+        working-directory: mate-platform-backend
       - name: GOVERN-02 forbid_iam_dep_imports (rule 5 DEPRECATED mate_tech_iam)
         run: python scripts/ci/forbid_iam_dep_imports.py
       - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
