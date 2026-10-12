@@ -51,13 +51,16 @@ def test_structure_publication_is_independent_of_missing_identity_and_mapping_ap
 @pytest.mark.asyncio
 async def test_similar_customer_requires_explicit_new_decision(monkeypatch):
     from types import SimpleNamespace
+
     from mate_tech_ont.modeling import publication
 
     value = draft()
     value["classes"][0].update(id="customer", name="客户")
     value["mappings"] = []
     source = {"revision": 1, "draft": value, "resolutions": {}}
-    monkeypatch.setattr(publication.native, "_ctx", lambda request: SimpleNamespace(tenant_id="test"))
+    monkeypatch.setattr(
+        publication.native, "_ctx", lambda request: SimpleNamespace(tenant_id="test")
+    )
 
     async def missing(*args):
         return None
@@ -66,9 +69,17 @@ async def test_similar_customer_requires_explicit_new_decision(monkeypatch):
         return {"valid": True}
 
     async def similar(*args):
-        return SimpleNamespace(model_dump=lambda: {"candidates": [
-            {"rid": "ont.test.obj.crm.customer.v1", "display_name": "Customer", "similarity": 0.95}
-        ]})
+        return SimpleNamespace(
+            model_dump=lambda: {
+                "candidates": [
+                    {
+                        "rid": "ont.test.obj.crm.customer.v1",
+                        "display_name": "Customer",
+                        "similarity": 0.95,
+                    }
+                ]
+            }
+        )
 
     monkeypatch.setattr(publication, "current_type", missing)
     monkeypatch.setattr(publication.native, "validate_model_endpoint", valid)

@@ -99,7 +99,10 @@ async def new_type_conflicts(request, source):
                     if len(batch) < 100:
                         break
                     offset += 100
-            existing = next((item for item in native_types if item["rid"].split(".")[-2] == slug(cls["id"])), None)
+            existing = next(
+                (item for item in native_types if item["rid"].split(".")[-2] == slug(cls["id"])),
+                None,
+            )
         if existing:
             occupied_rid = existing["rid"]
             issues.append(
@@ -258,11 +261,14 @@ async def prepare(request, source):
         ).model_dump()
         if mode == "new" and not own_completed and cid not in resolutions:
             strong_matches = [
-                item for item in similar.get("candidates", [])
+                item
+                for item in similar.get("candidates", [])
                 if item.get("similarity", 0) >= 0.9 and item.get("rid") != rid
             ]
             if strong_matches:
-                names = "、".join(item.get("display_name") or item["rid"] for item in strong_matches)
+                names = "、".join(
+                    item.get("display_name") or item["rid"] for item in strong_matches
+                )
                 raise ValueError(
                     f"{cls['name']} 与已有本体 {names} 高度相似，请在候选详情核对后显式选择复用、扩展属性或新增，不能默认新增。"
                 )

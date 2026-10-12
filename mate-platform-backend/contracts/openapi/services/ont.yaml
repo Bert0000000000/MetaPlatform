@@ -67,7 +67,7 @@ paths:
                 $ref: "#/components/schemas/DataModelingCompletionConfirmation",
               }
       responses:
-        '200':
+        "200":
           description: Candidate and confirmation audit saved with candidate structure validation; no native plan, publication or instance writes
           content:
             application/json:
@@ -536,7 +536,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DataModelingValidationRequest'
+              $ref: "#/components/schemas/DataModelingValidationRequest"
       responses:
         "200":
           description: Persisted source and candidate; 202 includes running job
@@ -3398,7 +3398,7 @@ components:
       additionalProperties: false
       required: [revision]
       properties:
-        revision: {type: integer, minimum: 1}
+        revision: { type: integer, minimum: 1 }
         preparePublication:
           type: boolean
           default: false

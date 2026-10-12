@@ -21645,20 +21645,6 @@ components:
               type: integer
             canSync:
               type: boolean
-    DataModelingValidationRequest:
-      type: object
-      additionalProperties: false
-      required:
-        - revision
-      properties:
-        revision:
-          type: integer
-          minimum: 1
-        preparePublication:
-          type: boolean
-          default: false
-          description: Only the publication dialog opts in to native collision/mapping
-            checks and plan preparation; candidate review remains independent.
     DataModelingRevision:
       properties:
         revision:
@@ -21755,6 +21741,19 @@ components:
           type: boolean
           default: false
           description: Return 202 with persistent running state; GET source to poll. Default retains synchronous compatibility.
+    DataModelingValidationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - revision
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        preparePublication:
+          type: boolean
+          default: false
+          description: Only the publication dialog opts in to native collision/mapping checks and plan preparation; candidate review remains independent.
     QueryConditionV2:
       type: object
       additionalProperties: false
