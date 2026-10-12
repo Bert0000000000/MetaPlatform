@@ -26,6 +26,8 @@ from mate_tech_mcp.server import create_server
 
 class AddTool:
     name = "add"
+    required_scope = "platform.read"
+    agent_invokable = True
     description = "Add two numbers"
     input_schema = {
         "type": "object",
@@ -45,18 +47,26 @@ def _build_server() -> object:
     return server
 
 
+def _surface(server):
+    from types import SimpleNamespace
+    surf = MateStreamableHttpServer(server)
+    surf._request_object = lambda: SimpleNamespace(state=SimpleNamespace(ctx=SimpleNamespace(
+        tenant_id="default", scopes=frozenset({"platform.read"}), auth_method="api_key")), headers={})
+    return surf
+
+
 # --- unit ---------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_list_tools_includes_static_and_dynamic() -> None:
+async def test_list_tools_excludes_unscoped_dynamic() -> None:
     server = _build_server()
     # The protocol surface resolves dynamic tools against the default tenant.
     register_tool("default", "hr_tool", endpoint="http://hr:9000")
     try:
-        surf = MateStreamableHttpServer(server)
+        surf = _surface(server)
         tools = await surf.list_tools()
         names = [t.name for t in tools]
         assert "add" in names
-        assert "hr_tool" in names  # W2 dynamic registry surfaced
+        assert "hr_tool" not in names  # no trustworthy capability metadata
     finally:
         from mate_tech_mcp.repositories import reset_store
 
@@ -66,7 +76,7 @@ async def test_list_tools_includes_static_and_dynamic() -> None:
 @pytest.mark.asyncio
 async def test_call_tool_local_handler() -> None:
     server = _build_server()
-    surf = MateStreamableHttpServer(server)
+    surf = _surface(server)
     result = await surf.call_tool("add", {"a": 2, "b": 3})
     assert result == {"sum": 5}
 
@@ -74,8 +84,8 @@ async def test_call_tool_local_handler() -> None:
 @pytest.mark.asyncio
 async def test_call_tool_unknown_raises() -> None:
     server = _build_server()
-    surf = MateStreamableHttpServer(server)
-    with pytest.raises(ValueError):
+    surf = _surface(server)
+    with pytest.raises(PermissionError):
         await surf.call_tool("nope", {})
 
 
@@ -102,7 +112,7 @@ def _authed_app(server: object) -> object:
                 user_id=UserId("test-user"),
                 roles=frozenset(),
                 permissions=frozenset(),
-                scopes=frozenset(),
+                scopes=frozenset({"platform.read"}),
                 client_id="test",
                 auth_method=AuthMethod.API_KEY,
             )
@@ -125,17 +135,23 @@ def _authed_app(server: object) -> object:
 def test_streamable_http_roundtrip() -> None:
     """Official MCP client <-> streamable-http surface end-to-end."""
     app = _authed_app(_build_server())
-    cfg = uvicorn.Config(app, host="127.0.0.1", port=18601, log_level="error")
+    cfg = uvicorn.Config(app, host="127.0.0.1", port=55517, log_level="error")
     u = uvicorn.Server(cfg)
-    threading.Thread(target=u.run, daemon=True).start()
-    time.sleep(1.0)
+    import socket
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 55517))  # checked-free owned loopback test listener
+    thread = threading.Thread(target=lambda: u.run(sockets=[listener]), daemon=True)
+    thread.start()
+    for _ in range(100):
+        if u.started: break
+        time.sleep(.02)
 
     from mcp.client.session import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.client.streamable_http import streamable_http_client
 
     async def run() -> tuple[list[str], object]:
         async with (
-            streamablehttp_client("http://127.0.0.1:18601/api/v1/mcp/protocol/mcp") as (
+            streamable_http_client("http://127.0.0.1:55517/api/v1/mcp/protocol/mcp") as (
                 read,
                 write,
                 _sid,
@@ -148,7 +164,13 @@ def test_streamable_http_roundtrip() -> None:
             res = await session.call_tool("add", {"a": 4, "b": 5})
             return names, res
 
-    names, res = asyncio.run(run())
-    u.should_exit = True
+    try:
+        assert u.started
+        names, res = asyncio.run(run())
+    finally:
+        u.should_exit = True
+        thread.join(5)
+        listener.close()
+        assert not thread.is_alive()
     assert "add" in names
     assert res.structuredContent == {"sum": 9}, res

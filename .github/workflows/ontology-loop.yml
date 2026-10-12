@@ -23,6 +23,14 @@ on:
       - "scripts/ci/ontology-core-e2e.sh"
       - "metaplatform-frontend/tests/e2e/ontology-loop/**"
       - "metaplatform-frontend/tests/e2e/helpers/**"
+      - "metaplatform-frontend/apps/web/**"
+      - "metaplatform-frontend/packages/shared/**"
+      - "scripts/acceptance/**"
+      - "mate-platform-backend/contracts/**"
+      - "mate-platform-backend/packages/mate-platform/**"
+      - "mate-platform-backend/packages/mate-app-hub/**"
+      - "mate-platform-backend/packages/mate-tech-data/**"
+      - "mate-platform-backend/packages/mate-tech-mcp/**"
       - "metaplatform-frontend/playwright.config.ts"
       - "metaplatform-frontend/playwright.migration.config.ts"
       - "metaplatform-frontend/playwright.builder.config.ts"
@@ -54,6 +62,9 @@ jobs:
     name: ontology core e2e
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # Every compose consumer, including browser helpers, uses this isolated CI configuration.
+      COMPOSE_FILE: docker-compose.yml:docker-compose.override.yml:.tmp/ontology-core-ci.compose.json
     steps:
       - uses: actions/checkout@v4
 
@@ -80,14 +91,76 @@ jobs:
           pnpm rebuild puppeteer esbuild
           pnpm exec playwright install --with-deps chromium
 
+      - name: MP11 web unit, type and production build
+        working-directory: metaplatform-frontend/apps/web
+        env:
+          NODE_OPTIONS: --no-experimental-webstorage
+        run: |
+          pnpm exec vitest run
+          pnpm exec tsc --noEmit
+          pnpm run build
+          pnpm exec vitest run --root ../../packages/shared --environment jsdom src/components/SharedLoginPage.test.tsx
+
+      # Deliberate split: this ephemeral Linux stack runs ontology-loop-core.
+      # The signed MP11 DATA/AppHub/relationship/application/website projects
+      # run via scripts/acceptance/mp11/playwright.config.ts on the isolated
+      # candidate, with private issuer inputs and exact owned resource guards.
+      # Do not silently add those files to a project whose testDir ignores them.
       # docker-compose.override.yml 引用本地敏感文件（.env.local，gitignore）；
       # 脚本的 prepare_env 会生成等价的最小 .env / 空 .env.local。
       - name: Prepare compose inputs
         run: |
           cp -r mate-platform-backend .tmp-build-context
 
+      - name: Prepare a restricted, consistent Ontology database
+        run: |
+          python3 - <<'PY'
+          import json
+          import secrets
+          from pathlib import Path
+
+          root = Path('.tmp')
+          root.mkdir(exist_ok=True)
+          password = secrets.token_hex(24)
+          print(f'::add-mask::{password}')
+          role = 'ontology_core_ci'
+          dsn = f'postgresql://{role}:{password}@postgres:5432/metaplatform_ont'
+          (root / 'ontology-core-app.sql').write_text(
+              f"CREATE ROLE {role} LOGIN PASSWORD '{password}' NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;\n"
+              f"GRANT CONNECT ON DATABASE metaplatform_ont TO {role};\n"
+              "\\connect metaplatform_ont\n"
+              "CREATE EXTENSION IF NOT EXISTS vector;\n"
+              f"GRANT USAGE, CREATE ON SCHEMA public TO {role};\n"
+              f"ALTER DEFAULT PRIVILEGES FOR ROLE meta IN SCHEMA public GRANT SELECT ON TABLES TO {role};\n",
+              encoding='utf-8',
+          )
+          (root / 'ontology-core-ci.compose.json').write_text(json.dumps({'services': {
+              'postgres': {'volumes': ['./.tmp/ontology-core-app.sql:/docker-entrypoint-initdb.d/99-ontology-core-app.sql:ro']},
+              'mate-tech-ont': {'environment': {
+                  'KERNEL_PG_DSN': dsn, 'PG_DSN': dsn, 'ONT_MODELING_SOURCE_DSN': dsn,
+              }},
+          }}), encoding='utf-8')
+          PY
+
       - name: Boot ontology-core stack + wait healthy
         run: bash scripts/ci/ontology-core-e2e.sh up && bash scripts/ci/ontology-core-e2e.sh wait
+
+      - name: Verify native storage and modeling source have the same restricted identity
+        run: |
+          docker compose exec -T mate-tech-ont python - <<'PY'
+          import os
+          import psycopg2
+          identities = []
+          for name in ('KERNEL_PG_DSN', 'ONT_MODELING_SOURCE_DSN'):
+              with psycopg2.connect(os.environ[name]) as conn, conn.cursor() as cursor:
+                  cursor.execute('SELECT current_database(), current_user, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user')
+                  identity = cursor.fetchone()
+                  assert identity[0] == 'metaplatform_ont' and identity[1] == 'ontology_core_ci'
+                  assert not identity[2] and not identity[3], 'Ontology runtime must obey RLS'
+                  identities.append(identity)
+          assert identities[0] == identities[1], 'Modeling staging must use the native database and role'
+          print('Native storage and modeling reader: same database, NOSUPERUSER, NOBYPASSRLS')
+          PY
 
       - name: Run ontology core e2e
         run: bash scripts/ci/ontology-core-e2e.sh test
@@ -173,20 +246,8 @@ jobs:
             docker compose logs --tail=200 "$svc" || true
           done
 
-      - name: Upload playwright artifacts (trace / screenshot / report)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ontology-core-e2e-artifacts
-          # Builder uploads only its dedicated safe whitelist; keep diagnostics private.
-          path: |
-            metaplatform-frontend/tests/e2e/.artifacts/**
-            metaplatform-frontend/playwright-report/**
-            metaplatform-frontend/test-results/**
-            !metaplatform-frontend/test-results/builder*
-            !metaplatform-frontend/test-results/builder*/**
-          if-no-files-found: ignore
-          retention-days: 14
+      # Real-auth traces/video/screenshots are disabled in the core spec.
+      # Do not upload broad playwright directories containing session material.
 
       - name: Teardown (always)
         if: always()

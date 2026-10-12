@@ -1,0 +1,82 @@
+{
+  "identity": "signature-bypass USER fixture, not signed issuer proof",
+  "negative_checks": [
+    [
+      "top",
+      "app_id",
+      404
+    ],
+    [
+      "top",
+      "page_id",
+      422
+    ],
+    [
+      "top",
+      "app_version_id",
+      404
+    ],
+    [
+      "parameters",
+      "app_id",
+      404
+    ],
+    [
+      "parameters",
+      "page_id",
+      422
+    ],
+    [
+      "parameters",
+      "app_version_id",
+      404
+    ],
+    [
+      "propose-edit-set",
+      "forged404/custom422"
+    ],
+    [
+      "apply-edit-set",
+      "forged404/custom422"
+    ],
+    [
+      "top",
+      "verified_registered_action",
+      "prop-51397555"
+    ],
+    [
+      "parameters",
+      "verified_registered_action",
+      "prop-31c07f57"
+    ],
+    [
+      "propose-edit-set",
+      "verified_registered_action",
+      "prop-8236d12431bc"
+    ]
+  ],
+  "executed_aliases": [
+    {
+      "alias": "propose-edit-set",
+      "app_id": "app-e1598b1298475cdf91c87b5bf7ecca26",
+      "page_id": "page-f5329031a0285d1d9d4fb07a9eae7409",
+      "version_id": "ver-f1d4394ba9b146b7a9002bb0090f1cf1",
+      "target_iid": "ont.mp11-app-ui.ind.order.alias-f321163f85f14837b5e1e859341f0066",
+      "audit_id": "audit-ab1b8291ac8d",
+      "proposal_id": "prop-44e84e655718",
+      "left_object_set": true
+    },
+    {
+      "alias": "apply-edit-set",
+      "app_id": "app-e1598b1298475cdf91c87b5bf7ecca26",
+      "page_id": "page-f5329031a0285d1d9d4fb07a9eae7409",
+      "version_id": "ver-f1d4394ba9b146b7a9002bb0090f1cf1",
+      "target_iid": "ont.mp11-app-ui.ind.order.alias-04b5fb3246f04d25a087cb3c062465fb",
+      "audit_id": "audit-071ebc1b5bda",
+      "proposal_id": "prop-b30f296f9da3",
+      "left_object_set": true
+    }
+  ],
+  "actual_http_pg_alias_history": "PASS",
+  "new_api_process_same_alias_receipts": "PASS"
+}

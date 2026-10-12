@@ -1,0 +1,15 @@
+{
+  "profile": "local-candidate-only",
+  "keycloak": "http://127.0.0.1:55520",
+  "redis": "redis://127.0.0.1:55521/0",
+  "api": "http://127.0.0.1:55522",
+  "auth": "http://127.0.0.1:55523",
+  "web": "http://127.0.0.1:9368",
+  "database": "${MP11_CANDIDATE_DATABASE_URL}",
+  "iam_database": "${MP11_CANDIDATE_IAM_DATABASE_URL}",
+  "credentials": "${MP11_PROTECTED_INPUT_PATH}",
+  "signature_verification": "required",
+  "acceptance_status": "in_progress",
+  "database_name": "codex_mp11_candidate_20261012",
+  "iam_database_name": "codex_mp11_candidate_iam_20261012"
+}

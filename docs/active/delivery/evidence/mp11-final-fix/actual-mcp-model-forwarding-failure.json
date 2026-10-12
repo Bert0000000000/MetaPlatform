@@ -1,0 +1,14 @@
+{
+  "direct_signed_three_kinds_pass": true,
+  "readonly_denial_no_pg_proposal": true,
+  "instance_forwarded_user_service_delegated": true,
+  "model_forwarding": {
+    "rest_http": 500,
+    "upstream_http": 403,
+    "cause": "unreplaced ont.__TENANT__ model RID rejected by correct tenant guard"
+  },
+  "new_owned_key_revoked": [
+    "key-273d548781c7b872"
+  ],
+  "no_scope_changes": true
+}

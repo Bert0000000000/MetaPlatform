@@ -1,0 +1,24 @@
+{
+  "observed_utc": "2026-10-12T10:32:31.424501+00:00",
+  "head": "231ee53e1e4d66578462cea1b36df11a24813a51",
+  "status_documentation_hash_refresh": [
+    {
+      "path": "docs/active/delivery/evidence/MP11-ACCEPTANCE.md",
+      "before": "88c2c63c39728c3db56ff07cf3b42a80708dc152c62fcf879cc4b0dae63e670e",
+      "after": "0d7f8e9b8c2b0b5f02588ddc8bd672689af9fec586f1ffbbb5c68ae8705b4e90"
+    },
+    {
+      "path": "docs/active/delivery/evidence/MP11-RELEASE-NOTES.md",
+      "before": "a855156b7b4ca72a1a139359f819faafb4b1e0ccd5bcac0442fd1eda39986bb6",
+      "after": "4636a4fdd95d558deb2ec3452ae9734c187099aeaf682f58a34336e5d30f0b03"
+    }
+  ],
+  "named_entries_verified": 88,
+  "plan_acceptances": 48,
+  "p0_verified": 22,
+  "requirements_text_changed": false,
+  "spec_unchanged": true,
+  "evidence_fingerprints_verified": 71,
+  "remaining_gates": [],
+  "scope": "Refresh only two living-document SHA entries after final status edits; source/business/review proofs unchanged. All named and evidence hashes now checked."
+}

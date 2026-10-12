@@ -1,0 +1,15 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+___________ TestWebSocketSubscription.test_ws_receives_outbox_event ___________
+packages\mate-tech-ont\tests\test_ont_g23_functions.py:161: in test_ws_receives_outbox_event
+    raise RuntimeError('G23 requires explicit owned MP11_WS_PG_DSN on127.0.0.1:55497')
+E   RuntimeError: G23 requires explicit owned MP11_WS_PG_DSN on127.0.0.1:55497
+============================== warnings summary ===============================
+packages/mate-tech-ont/tests/test_ont_g23_functions.py::TestWebSocketSubscription::test_ws_receives_outbox_event
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED packages/mate-tech-ont/tests/test_ont_g23_functions.py::TestWebSocketSubscription::test_ws_receives_outbox_event
+1 failed, 1 warning in 0.71s

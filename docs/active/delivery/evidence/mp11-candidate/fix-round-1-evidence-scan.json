@@ -1,0 +1,8 @@
+{
+  "scanned_owned_evidence_files": 27,
+  "private_secret_scan": "clean; values/matches never printed",
+  "jwt_scan": "clean",
+  "credential_dsn_scan": "clean",
+  "excluded": "all private inputs, parent mp11-plan, WIP/PNG/pyc/worktrees",
+  "source_commit": "726be90950e42d650bd6dc73f34cd9b8cceeef64"
+}

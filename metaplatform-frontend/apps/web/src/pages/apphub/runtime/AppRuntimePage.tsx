@@ -7,17 +7,17 @@ import { getApp } from '@/api/apphub/apps';
 import type { AppRuntime, FormConfig, RenderNode } from '@/api/apphub/types';
 import type { PageDesignerConfig } from '@/api/apphub/pages';
 import AppRuntimeLayout from './AppRuntimeLayout';
+import OrderReviewRuntime from './OrderReviewRuntime';
+import type { OrderBinding } from '@/api/apphub/pages';
 import RuntimeForm from './RuntimeForm';
 import RuntimePageCmp from './RuntimePage';
 import RuntimePlaceholder from './RuntimePlaceholder';
-import { DEMO_RENDER_TREE } from './demoData';
 import { flattenLeaves } from './treeUtils';
 import '../apps.css';
 
 /**
  * 应用运行时入口（/s/:code）：全屏独立应用壳。
- * code 解析：先尝试 resolveShortlink（短链 → app_id），失败则把 code 当 app code（兼容 /s/kb 直连）。
- * 后端 render_tree 为空时启用内置 demo 数据兜底，保证应用壳可演示与验证。
+ * 仅解析已发布应用短链；错误与空页面显式显示，不构造演示结果。
  */
 export default function AppRuntimePage() {
   const { code } = useParams<{ code: string }>();
@@ -33,14 +33,9 @@ export default function AppRuntimePage() {
       setLoading(true);
       setError(null);
       try {
-        let appCode = code || '';
-        // 短链优先解析；非短链则回退 code 当 app code
-        try {
-          const resolved = await resolveShortlink(code || '');
-          if (resolved?.app_id) appCode = resolved.app_id;
-        } catch {
-          /* 不是短链，按 app code 处理 */
-        }
+        const resolved = await resolveShortlink(code || '');
+        if (!resolved?.app_id) throw new Error('无效或无权访问的应用短链');
+        const appCode = resolved.app_id;
 
         const rt = await getAppRuntime(appCode);
         if (cancelled) return;
@@ -64,12 +59,12 @@ export default function AppRuntimePage() {
     };
   }, [code]);
 
-  const useDemo = !runtime?.render_tree?.length;
-  const tree: RenderNode[] = useDemo ? DEMO_RENDER_TREE : runtime!.render_tree;
+  const tree: RenderNode[] = runtime?.render_tree ?? [];
   const leaves = useMemo(() => flattenLeaves(tree), [tree]);
   const current = leaves.find((n) => n.key === selectedKey) || leaves[0];
 
   const renderContent = (node: RenderNode) => {
+    if (node.config?.binding) return <OrderReviewRuntime appId={runtime!.app_id} pageId={String(node.config.page_id)} binding={node.config.binding as OrderBinding} />;
     switch (node.node_type) {
       case 'form':
         return <RuntimeForm config={node.config as unknown as FormConfig} />;
@@ -98,7 +93,7 @@ export default function AppRuntimePage() {
       tree={tree}
       selectedKey={current.key}
       onSelect={setSelectedKey}
-      isDemo={useDemo}
+      isDemo={false}
     >
       {renderContent(current.node)}
     </AppRuntimeLayout>

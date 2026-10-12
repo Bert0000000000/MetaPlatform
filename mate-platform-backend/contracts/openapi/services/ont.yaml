@@ -17,6 +17,1214 @@ security:
     tenantHeader: []
     oidcScopes: [platform.read]
 paths:
+  /api/v1/ont/v2/shacl/validate:
+    post:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
+      x-required-scopes: [platform.write]
+      tags: [ont]
+      summary: SHACL Core 关键约束验证（minCount/maxCount/datatype/pattern/class/closed）
+      description: >-
+        NodeShape 由 ObjectType 定义合成（pk/非空 → minCount 1，type_id →
+        datatype），与 ontValidateV2* 类型语义对齐；可选 property_shapes
+        叠加 W3C 特有约束（pattern/class），closed 拒绝未声明属性。
+        individuals 缺省取 repo 内该类全部实例。返回 W3C 验证报告结构子集
+        {conforms, violations, stats}。
+      operationId: ontValidateV2Shacl
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-G14-SHACL]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_class]
+              properties:
+                target_class:
+                  type: string
+                  description: 聚焦类 rid（须为本租户）
+                individuals:
+                  type: array
+                  description: 显式实例集（缺省取 repo 内该类全部实例）
+                  items: { type: object }
+                property_shapes:
+                  type: array
+                  description: >-
+                    叠加的 PropertyShape。支持 W3C 约束：min_count/max_count/
+                    datatype/pattern/node_class + severity（Violation/Warning/
+                    Info，仅 Violation 影响 conforms）+ language_in（sh:languageIn，
+                    语言标签集）+ not_shape（sh:not 内嵌 shape，节点级取反）+
+                    qualified_value_shape/qualified_min_count/
+                    qualified_max_count（sh:qualifiedValueShape）。
+                  items: { type: object }
+                closed:
+                  type: boolean
+                  default: false
+                subclass_axioms:
+                  type: array
+                  description: >-
+                    (sub, super) 公理对（推理联动）：target 类的传递子类实例纳入验证、
+                    sh:class 满足子类 is-a 语义（G21 descendant_closure）
+                  items:
+                    type: array
+                    items: { type: string }
+      responses:
+        "200":
+          description: W3C 验证报告（severity 分级 + 计数）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conforms: { type: boolean }
+                  violations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        focus_node: { type: string }
+                        path: { type: string }
+                        constraint: { type: string }
+                        message: { type: string }
+                        severity:
+                          type: string
+                          enum: [Violation, Warning, Info]
+                  severity_counts:
+                    type: object
+                    description: 各 severity 结果计数 {Violation, Warning, Info}
+                  stats:
+                    type: object
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+  /api/v1/ont/v2/alignment/run:
+    post:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
+      x-required-scopes: [platform.write]
+      tags: [ont]
+      summary: 跨本体实例对齐（same_as 词汇 + 结构相似，并查集聚类）
+      description: >-
+        ONT-G33 FR-ALIGN-001 stateless 对齐：explicit_pairs（显式 same_as）+
+        词汇相似（label 规范化相等）+ 结构相似（属性 slug + 值签名 Jaccard）。
+        聚类复用 reasoning R2 并查集（传递闭包）。不落库。
+      operationId: ontAlignV2Individuals
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ALIGN-001]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [left, right]
+              properties:
+                left:
+                  type: array
+                  description: 左侧实例 [{rid, class_rid, props}]
+                  items: { type: object }
+                right:
+                  type: array
+                  description: 右侧实例
+                  items: { type: object }
+                explicit_pairs:
+                  type: array
+                  description: 已知 same_as 配对 [[left_rid, right_rid]]
+                  items:
+                    type: array
+                    items: { type: string }
+                lexical_threshold: { type: number, default: 1.0 }
+                structural_threshold: { type: number, default: 0.5 }
+      responses:
+        "200":
+          description: 对齐结果（clusters / matched_pairs / stats）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clusters:
+                    type: object
+                    description: 代表元 → 簇成员（多成员簇）
+                  matched_pairs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        left: { type: string }
+                        right: { type: string }
+                        score: { type: number }
+                        evidence:
+                          type: array
+                          items:
+                            type: string
+                            enum: [explicit, lexical, structural]
+                  stats: { type: object }
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+  /api/v1/ont/v2/object-types/merge-preview:
+    post:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
+      x-required-scopes: [platform.write]
+      tags: [ont]
+      summary: 类型定义合并预览（字段并集 + 冲突标记 + 合并审计）
+      description: >-
+        ONT-G33 FR-ALIGN-002 stateless 合并预览：两 ObjectType 字段并集，
+        同 rid 属性冲突按策略（keep_left / keep_right）消解并留冲突标记与
+        合并审计记录。不落库（实例重映射走 ontMergeV2ObjectTypes）。
+      operationId: ontPreviewV2ObjectTypeMerge
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ALIGN-002]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [left, right]
+              properties:
+                left:
+                  type: object
+                  description: ObjectType 定义（ObjectTypeDTO 同构）
+                right:
+                  type: object
+                  description: ObjectType 定义（ObjectTypeDTO 同构）
+                strategy:
+                  type: string
+                  enum: [keep_left, keep_right]
+                  default: keep_left
+      responses:
+        "200":
+          description: 合并结果（merged ObjectType + audit）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object_type:
+                    type: object
+                    description: 合并后 ObjectType（rid 取 left）
+                  audit:
+                    type: object
+                    properties:
+                      merged_from:
+                        type: array
+                        items: { type: string }
+                      into: { type: string }
+                      strategy: { type: string }
+                      properties_merged: { type: integer }
+                      added:
+                        type: array
+                        items: { type: string }
+                      conflicts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            property_rid: { type: string }
+                            field: { type: string }
+                            left: {}
+                            right: {}
+                            resolved: {}
+        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
+  /api/v1/ont/v2/agent-metrics/summary:
+    get:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
+      tags: [ont]
+      summary: AI Agent regression metrics summary (proposal acceptance)
+      description: |
+        ONT-AGENT-METRICS-01：proposal 接受率/状态分布/驳回原因分布/by-actor。
+        accepted = executed + reverted（都曾被采纳）；rejected = 显式 rejected 终态；
+        withdrawn/pending/confirmed 不入分母。created_by 现状仅 edit_set 写入，
+        其余归 (unattributed)。窗口 days=1..365 默认 30；数据基于 list_proposals
+        上游 LIMIT 200（最近 200 条）。
+      operationId: ontAgentMetricsSummary
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-AGENT-METRICS]
+      x-mate-implementation-status: implemented
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema: { type: integer, default: 30, minimum: 1, maximum: 365 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  by_status:
+                    { type: object, additionalProperties: { type: integer } }
+                  acceptance_rate:
+                    type: [number, "null"]
+                    description: accepted/(accepted+rejected)；分母 0 → null
+                  rejection_reasons:
+                    type: [array, "null"]
+                    description: 现状无 reason 字段 → null（不编造）
+                  by_actor:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        actor: { type: string }
+                        proposed: { type: integer }
+                        executed: { type: integer }
+                        acceptance_rate: { type: [number, "null"] }
+                  window_days: { type: integer }
+        "503": { $ref: ../common/errors.yaml#/components/responses/Error503 }
+  /api/v1/ont/v2/agent-metrics/trend:
+    get:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
+      tags: [ont]
+      summary: AI Agent proposal trend by day
+      description: |
+        proposed 按 created_at 分桶；executed 以 confirmed_at 为代理（executed
+        无独立时间戳，confirm 紧邻 execute）；rejected 退化为 created_at。
+        UTC 零填充连续序列。
+      operationId: ontAgentMetricsTrend
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-AGENT-METRICS]
+      x-mate-implementation-status: implemented
+      parameters:
+        - in: query
+          name: days
+          required: false
+          schema: { type: integer, default: 30, minimum: 1, maximum: 365 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date: { type: string, format: date }
+                    proposed: { type: integer }
+                    executed: { type: integer }
+                    rejected: { type: integer }
+        "503": { $ref: ../common/errors.yaml#/components/responses/Error503 }
+  /api/v1/ont/v2/agent-metrics/health:
+    get:
+      security:
+        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
+      tags: [ont]
+      summary: Agent metrics data-source health probe
+      operationId: ontAgentMetricsHealth
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-AGENT-METRICS]
+      x-mate-implementation-status: implemented
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  source: { type: string }
+                  available: { type: boolean }
+                  proposal_count: { type: integer }
+
+  /api/v1/ont/v2/action-audit:
+    get:
+      tags:
+      - ont
+      summary: List Action Audit
+      description: Verified tenant receipt history. Optional app_id/page_id/app_version_id must be complete and filter
+        Proposal provenance before LIMIT.
+      operationId: ontListV2ActionAudit
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 100
+          title: Limit
+      - name: action_rid
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action Rid
+      - name: app_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Id
+      - name: page_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Page Id
+      - name: app_version_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Version Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Ontlistv2Actionaudit
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.read
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/proposals/{proposal_id}/withdraw:
+    post:
+      tags:
+      - ont
+      summary: Withdraw Proposal
+      description: 'PRD-02 FR-ACT-CONFIRM-001：pending → withdrawn（作者确认前撤回；终态）。 Verified tenant and platform.write
+        required. Human USER identity required; actor is server verified and cannot be supplied by body. '
+      operationId: ontWithdrawV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Ontwithdrawv2Proposal
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/proposals/{proposal_id}/reject:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - ont
+      summary: Reject Proposal
+      operationId: ontRejectV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalConfirmDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+      description: ' Verified tenant and platform.write required. Human USER identity required; actor is server verified
+        and cannot be supplied by body. '
+  /api/v1/ont/v2/proposals/{proposal_id}/confirm:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - ont
+      summary: Confirm Proposal
+      description: '用户确认（pending → confirmed）。只能由用户侧发起——不是 LLM 工具。 Verified tenant and platform.write required. Human
+        USER identity required; actor is server verified and cannot be supplied by body. '
+      operationId: ontConfirmV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalConfirmDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/action-types/{rid}/propose:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - ont
+      summary: Propose Action
+      description: 'AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。 Verified tenant and platform.write required. '
+      operationId: ontProposeV2ActionType
+      x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
+      parameters:
+      - name: rid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalCreateDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/proposals/{proposal_id}/execute:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - ont
+      summary: Execute Proposal
+      description: "MP-SAL-04b / MP-DEDUP-01：confirmed proposal 落库执行。\n\n- create_instance → 新建实例\n- model_type →\
+        \ upsert 类型\n- merge_suggestion → 自动触发 merge_object_types，archived source\n- action / edit_set → ADR-0064\
+        \ 统一执行器（按 ActionType 声明分派：\n  声明式/混合式走 EditSet 单事务，纯 function 式走 legacy 回写 is_compat）\n- ONT-GATE-01：执行前**重跑**三闸门预检（schema×SHACL×Axiom）——\n\
+        \  propose 时的报告只是快照，本体在窗口期可能已变化；violation 级\n  发现 → 409 阻断（机器预检是 HITL 之后的强制底线）。\n- ADR-0064 S2/S3：markings\
+        \ 非空 → 完整安全闸门（行/列策略 + G6 合取门 +\n  X-Scope-Markings 收窄）；FunctionNotRegistered / 闸门拒写 → 422（不再 500）。 Verified\
+        \ tenant and platform.write required. Human USER identity required; actor is server verified and cannot be\
+        \ supplied by body. "
+      operationId: ontExecuteV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      - name: markings
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Markings
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalExecuteResultDTO'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/proposals/{proposal_id}/revert:
+    post:
+      tags:
+      - ont
+      summary: Revert Proposal
+      description: 'PRD-02 FR-ACT-CONFIRM-002..006：executed → reverted（人审撤销 + 补偿）。
+
+
+        create_instance → 实例删除（I1 ≃ 等价判定）；action/model → audit-only
+
+        partial；7 天窗口外拒绝（409）。 Verified tenant and platform.write required. Human USER identity required; actor is
+        server verified and cannot be supplied by body. '
+      operationId: ontRevertV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Ontrevertv2Proposal
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/action-types/{rid}/apply-edit-set:
+    post:
+      tags:
+      - ont
+      summary: Apply Edit Set
+      description: 'ACT-05 / D7：人工路径「预览即确认」—— 即时 proposal + 单事务执行 + 审计。
+
+
+        expected_diff 预览在 proposal 记录中可查（GET /proposals/{id}/preview）。
+
+        ADR-0064 S3：edits 回落链同 propose-edit-set（body → declarative → function）；
+
+        markings 非空 → 安全闸门（行/列策略 + G6 合取门 + X-Scope-Markings 收窄）。 Verified tenant and platform.write required. Human
+        USER identity required; actor is server verified and cannot be supplied by body. '
+      operationId: ontApplyV2EditSet
+      x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
+      parameters:
+      - name: rid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rid
+      - name: markings
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Markings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditSetApplyBodyDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Ontapplyv2Editset
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/action-types/{rid}/propose-edit-set:
+    post:
+      tags:
+      - ont
+      summary: Propose Edit Set
+      description: 'ACT-05：AI 路径 edit-set 提案（强制 HITL —— pending → 用户 confirm → execute）。
+
+
+        ADR-0064 S3：与 /propose 入口等价（统一执行器按 ActionType 声明分派）。
+
+        edits 缺省时依次回落：body.edits → ActionType.declarative_edits →
+
+        function 产物（执行时两规约解释）；三者全空才 422。 Verified tenant and platform.write required. '
+      operationId: ontProposeV2EditSet
+      x-mate-application-attribution: App/page/published-version provenance requires actual AppHub snapshot and ObjectSet validation using the caller Bearer. Duplicate/conflicting attribution and custom application edits are rejected.
+      parameters:
+      - name: rid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditSetApplyBodyDTO'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Ontproposev2Editset
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Tenant/scope or human USER denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+        '409':
+          description: State or idempotency conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: {}
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-APP-01
+      x-mate-implementation-status: implemented
+  /api/v1/ont/v2/object-types/{rid}/datasources:
+    parameters:
+    - name: rid
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: ontListV2BackingDatasources
+      summary: List mappings, cursors and recent runs
+      description: 'Tenant-bound backing datasource operation. '
+      tags:
+      - ont
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-requirements:
+      - MP11-DATA-02
+      - MP11-DATA-03
+      - MP11-DATA-04
+      - FR-ONT-BUILDER-MODEL-WORKBENCH
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BackingDatasourceDeclaration'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '404':
+          description: Object type, binding or retained run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '422':
+          description: Preflight, concurrent run or request validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+      x-mate-required-tenant: true
+    post:
+      operationId: ontUpsertV2BackingDatasource
+      summary: Preflight and save backing source
+      description: 'Tenant-bound backing datasource operation. Requires platform.write. '
+      tags:
+      - ont
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-DATA-02
+      - MP11-DATA-03
+      - MP11-DATA-04
+      - FR-ONT-BUILDER-SOURCE-MAPPING
+      x-mate-implementation-status: implemented
+      responses:
+        '409':
+          description: A sync owns this tenant/object-type lock; retry the mapping edit or run after it finishes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceSaved'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '404':
+          description: Object type, binding or retained run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '422':
+          description: Preflight or request validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackingDatasourceDTO'
+      x-mate-required-tenant: true
+  /api/v1/ont/v2/object-types/{rid}/datasources/sync:
+    parameters:
+    - name: rid
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      operationId: ontSyncV2BackingDatasources
+      summary: Run PostgreSQL sync or CSV batch
+      description: Tenant-bound backing datasource operation. Requires platform.write. Synchronous request; runtime
+        failures return HTTP 200 with ok=false/status=failed and diagnostics. Retry uses stable PKs. Failed rows do
+        not advance the source boundary.
+      tags:
+      - ont
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-DATA-02
+      - MP11-DATA-03
+      - MP11-DATA-04
+      - FR-ONT-BUILDER-SOURCE-MAPPING
+      x-mate-implementation-status: implemented
+      responses:
+        '409':
+          description: A sync owns this tenant/object-type lock; retry the mapping edit or run after it finishes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingSyncRun'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '404':
+          description: Object type, binding or retained run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '422':
+          description: Preflight or request validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+      parameters:
+      - name: incremental
+        in: query
+        schema:
+          type: boolean
+          default: false
+        description: True skips CSV and uses PG timestamp+PK checkpoint. False upserts all source rows; missing rows
+          are not deleted. No destructive rebuild or cancellation parameter.
+      x-mate-required-tenant: true
+  /api/v1/ont/v2/object-types/{rid}/datasources/runs/{run_id}:
+    parameters:
+    - name: rid
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: ontGetV2BackingSyncRun
+      summary: Read a retained sync run
+      description: Tenant-bound backing datasource operation. Returns the original failed/interrupted record after
+        retries. Missing or expired IDs outside the most recent 20 runs return 404.
+      tags:
+      - ont
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-requirements:
+      - MP11-DATA-02
+      - MP11-DATA-03
+      - MP11-DATA-04
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingSyncRun'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '403':
+          description: Tenant or write scope denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '404':
+          description: Object type, binding or retained run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+        '422':
+          description: Preflight, concurrent run or request validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackingDatasourceHttpError'
+      x-mate-required-tenant: true
   /healthz:
     get:
       security:
@@ -596,6 +1804,12 @@ paths:
       tags: [ont]
       summary: Create ObjectType (v2 不可变类型层)
       operationId: ontCreateV2ObjectType
+      description: Defaults to the existing upsert contract. New-form callers set create_only=true; an existing RID is atomically rejected with 409 and its contents remain unchanged.
+      parameters:
+        - in: query
+          name: create_only
+          schema: { type: boolean, default: false }
+          description: Strict new intent; never replace an existing RID.
       x-mate-owner: ontology-platform
       x-mate-permission: ont.write
       x-mate-required-tenant: true
@@ -614,6 +1828,163 @@ paths:
               schema: { $ref: "#/components/schemas/ObjectTypeV2" }
         "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
         "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
+  /api/v1/ont/v2/object-types/wip:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      tags:
+      - ont
+      operationId: ontListV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-requirements:
+      - MP11-ONT-02
+      - MP11-ONT-08
+      - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      summary: List persisted schema drafts for the current tenant
+      responses:
+        '200':
+          description: Drafts include payload, verified author, base_checksum and create_only; status metadata is
+            not draft storage.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - rid
+                  - author
+                  - payload
+                  properties:
+                    rid:
+                      type: string
+                    author:
+                      type: string
+                    payload:
+                      $ref: '#/components/schemas/ObjectTypeCreateV2'
+                    created_at:
+                      type: string
+                    base_checksum:
+                      type: string
+                    create_only:
+                      type: boolean
+                      default: false
+        '403':
+          $ref: ../common/errors.yaml#/components/responses/Error403
+        '404':
+          $ref: ../common/errors.yaml#/components/responses/Error404
+        '409':
+          $ref: ../common/errors.yaml#/components/responses/Error409
+        '422':
+          $ref: ../common/errors.yaml#/components/responses/Error422
+      x-mate-required-tenant: true
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      tags:
+      - ont
+      operationId: ontSaveV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-ONT-02
+      - MP11-ONT-08
+      - FR-ONT-BUILDER-MODEL-WORKBENCH
+      x-mate-implementation-status: implemented
+      summary: Save a schema draft without changing the live model
+      parameters:
+      - in: query
+        name: create_only
+        schema:
+          type: boolean
+          default: false
+        description: Persist strict-new intent through restore and publication.
+      - in: query
+        name: expected_checksum
+        schema:
+          type: string
+        description: Baseline of the definition opened by the editor. Re-saving preserves an existing draft baseline.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaWipSaveV2'
+      responses:
+        '200':
+          description: Staged; not published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaWipSavedV2'
+        '403':
+          $ref: ../common/errors.yaml#/components/responses/Error403
+        '422':
+          $ref: ../common/errors.yaml#/components/responses/Error422
+      x-mate-required-tenant: true
+  /api/v1/ont/v2/object-types/wip/{rid}/apply:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema:
+        type: string
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      tags:
+      - ont
+      operationId: ontApplyV2SchemaWip
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-requirements:
+      - MP11-ONT-02
+      - MP11-ONT-03
+      - MP11-ONT-08
+      - FR-ONT-BUILDER-PUBLICATION
+      x-mate-implementation-status: implemented
+      summary: Publish a saved schema draft atomically against its live baseline
+      parameters:
+      - in: query
+        name: confirm_name
+        schema:
+          type: string
+          default: ''
+      - in: query
+        name: expected_checksum
+        schema:
+          type: string
+          default: ''
+        description: Explicitly acknowledge a compared current definition; never overrides strict-new intent.
+      responses:
+        '200':
+          description: Published model; draft removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectTypeV2'
+        '403':
+          $ref: ../common/errors.yaml#/components/responses/Error403
+        '409':
+          description: RID already exists, stale model baseline, slug conflict or destructive confirmation required.
+            Draft and competing live content are preserved.
+          $ref: ../common/errors.yaml#/components/responses/Error409
+        '404':
+          $ref: ../common/errors.yaml#/components/responses/Error404
+        '422':
+          $ref: ../common/errors.yaml#/components/responses/Error422
+      x-mate-required-tenant: true
   /api/v1/ont/v2/object-types/{rid}:
     parameters:
       - in: path
@@ -740,7 +2111,14 @@ paths:
       security:
         [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
-      summary: Create LinkType
+      summary: Create or update LinkType
+      description: Default calls retain upsert behavior. With create_only=true, an existing RID returns 409 atomically and its definition remains unchanged. Structural edits with existing instances also return 409.
+      parameters:
+        - in: query
+          name: create_only
+          required: false
+          schema: { type: boolean, default: false }
+          description: Strict creation without overwriting an existing RID; duplicate or competing creation returns 409.
       operationId: ontCreateV2LinkType
       x-mate-owner: ontology-platform
       x-mate-permission: ont.write
@@ -758,6 +2136,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LinkTypeV2" }
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
+        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
         "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/link-types/{rid}:
     parameters:
@@ -1084,6 +2465,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LinkInstanceV2" }
+        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
+        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
         "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
   /api/v1/ont/v2/link-instances/stats:
     get:
@@ -1403,35 +2787,6 @@ paths:
                 required: [indexed]
                 properties:
                   indexed: { type: integer }
-  /api/v1/ont/v2/action-types/{rid}/propose:
-    parameters:
-      - in: path
-        name: rid
-        required: true
-        schema: { type: string }
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      tags: [ont]
-      summary: Propose an action (SAL-04 pending proposal, not applied)
-      operationId: ontProposeV2ActionType
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-SAL04-PROPOSE]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/ProposalCreateV2" }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ProposalV2" }
-        "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
   /api/v1/ont/v2/action-types/{rid}/flow:
     parameters:
       - in: path
@@ -1502,63 +2857,6 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ProposalV2" }
         "404": { $ref: ../common/errors.yaml#/components/responses/Error404 }
-  /api/v1/ont/v2/proposals/{proposal_id}/confirm:
-    parameters:
-      - in: path
-        name: proposal_id
-        required: true
-        schema: { type: string }
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      tags: [ont]
-      summary: Confirm proposal (user-side HITL; pending -> confirmed)
-      operationId: ontConfirmV2Proposal
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-SAL04-CONFIRM]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/ProposalConfirmV2" }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ProposalV2" }
-        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
-  /api/v1/ont/v2/proposals/{proposal_id}/reject:
-    parameters:
-      - in: path
-        name: proposal_id
-        required: true
-        schema: { type: string }
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      tags: [ont]
-      summary: Reject proposal (terminal)
-      operationId: ontRejectV2Proposal
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-SAL04-REJECT]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/ProposalConfirmV2" }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ProposalV2" }
   /api/v1/ont/v2/classes/{class_rid}/propose-instance:
     parameters:
       - in: path
@@ -1611,37 +2909,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ProposalV2" }
-  /api/v1/ont/v2/proposals/{proposal_id}/execute:
-    parameters:
-      - in: path
-        name: proposal_id
-        required: true
-        schema: { type: string }
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      tags: [ont]
-      summary: Execute a confirmed proposal (create_instance / model_type; SAL-04b)
-      operationId: ontExecuteV2Proposal
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-SAL04B-EXECUTE]
-      x-mate-implementation-status: implemented
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [kind]
-                properties:
-                  kind: { type: string, enum: [create_instance, model_type] }
-                  individual_rid: { type: string }
-                  type_rid: { type: string }
-        "409": { $ref: ../common/errors.yaml#/components/responses/Error409 }
   /api/v1/ont/v2/versions/{class_rid}:
     parameters:
       - in: path
@@ -1884,6 +3151,58 @@ paths:
                 type: array
                 items: { type: object, additionalProperties: true }
         "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
+  /api/v1/ont/v2/proposals/{proposal_id}/preview:
+    get:
+      tags:
+      - ont
+      summary: Get Proposal Preview
+      description: 'MP-SAL-04c：pending proposal 渲染（前端 staging 卡片用）。
+
+
+        返回 proposal 的渲染信息 + 自动算出的 ``impact_summary``：
+
+        - kind=model_type：受影响 Property 表 / 主键 / interface / 反向引用列表
+
+        - kind=create_instance：字段值 / class 关联 / 验证状态
+
+        - kind=merge_suggestion：source/target 对比 + property mapping 建议
+
+        - kind=action：透传参数 + 提示走 /apply
+
+
+        已确认/已应用/已拒绝的 proposal 返回 409（preview 已不可改）。'
+      operationId: ontPreviewV2Proposal
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Proposal Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalPreviewResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.read
+        tenantHeader: []
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-implementation-status: implemented
+      x-mate-required-tenant: true
+      x-mate-requirements:
+      - MP11-AGENT-01
   /api/v1/ont/v2/object-types/validate:
     post:
       security:
@@ -1918,206 +3237,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ObjectTypeCreateV2"
-  /api/v1/ont/v2/object-types/wip:
-    post:
-      security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
-      tags:
-        - ont
-      summary: Stage schema WIP without publishing
-      operationId: ontSaveV2SchemaWip
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements:
-        - FR-ONT-BUILDER-MODEL-WORKBENCH
-      x-mate-implementation-status: implemented
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SchemaWipSavedV2"
-        "403":
-          $ref: ../common/errors.yaml#/components/responses/Error403
-        "422":
-          $ref: ../common/errors.yaml#/components/responses/Error422
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SchemaWipSaveV2"
-    get:
-      security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.read
-      tags:
-        - ont
-      summary: ontListV2SchemaWip
-      operationId: ontListV2SchemaWip
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.read
-      x-mate-required-tenant: true
-      x-mate-requirements:
-        - FR-ONT-BUILDER-PUBLICATION
-      x-mate-implementation-status: implemented
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  required:
-                    - rid
-                    - author
-                    - payload
-                  properties:
-                    rid:
-                      type: string
-                    author:
-                      type: string
-                    payload:
-                      $ref: "#/components/schemas/ObjectTypeCreateV2"
-                    created_at:
-                      type: string
-                    base_checksum:
-                      type: string
-        "403":
-          $ref: ../common/errors.yaml#/components/responses/Error403
-        "404":
-          $ref: ../common/errors.yaml#/components/responses/Error404
-        "409":
-          $ref: ../common/errors.yaml#/components/responses/Error409
-        "422":
-          $ref: ../common/errors.yaml#/components/responses/Error422
-  /api/v1/ont/v2/object-types/{rid}/datasources:
-    parameters:
-      - in: path
-        name: rid
-        required: true
-        schema:
-          type: string
-    get:
-      security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.read
-      tags:
-        - ont
-      summary: Read backing datasource declarations
-      operationId: ontListV2BackingDatasources
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.read
-      x-mate-required-tenant: true
-      x-mate-requirements:
-        - FR-ONT-BUILDER-MODEL-WORKBENCH
-      x-mate-implementation-status: implemented
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/BackingDatasourceV2"
-        "403":
-          $ref: ../common/errors.yaml#/components/responses/Error403
-        "422":
-          $ref: ../common/errors.yaml#/components/responses/Error422
-    post:
-      security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
-      tags:
-        - ont
-      summary: Declare or update a backing datasource
-      operationId: ontUpsertV2BackingDatasource
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements:
-        - FR-ONT-BUILDER-SOURCE-MAPPING
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BackingDatasourceCreateV2"
-      responses:
-        "200":
-          description: Declaration saved; read the declaration list for actual configuration
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [rid, name]
-                properties:
-                  rid:
-                    type: string
-                  name:
-                    type: string
-        "403":
-          $ref: ../common/errors.yaml#/components/responses/Error403
-        "422":
-          $ref: ../common/errors.yaml#/components/responses/Error422
-  /api/v1/ont/v2/object-types/{rid}/datasources/sync:
-    parameters:
-      - in: path
-        name: rid
-        required: true
-        schema:
-          type: string
-    post:
-      security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
-      tags:
-        - ont
-      summary: Synchronize declared backing datasources
-      description: Synchronizes every declared source for this type. HTTP 200 may contain failed rows and ok=false; the result is not an overall success in that case.
-      operationId: ontSyncV2BackingDatasources
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements:
-        - FR-ONT-BUILDER-SOURCE-MAPPING
-      x-mate-implementation-status: implemented
-      parameters:
-        - in: query
-          name: incremental
-          schema:
-            type: boolean
-            default: false
-      responses:
-        "200":
-          description: Actual aggregate and per-source outcomes
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BackingDatasourceSyncV2"
-        "403":
-          $ref: ../common/errors.yaml#/components/responses/Error403
-        "404":
-          $ref: ../common/errors.yaml#/components/responses/Error404
-        "422":
-          $ref: ../common/errors.yaml#/components/responses/Error422
   /api/v1/ont/v2/object-types/{rid}/materialization:
     parameters:
       - in: path
@@ -2152,104 +3271,64 @@ paths:
           $ref: ../common/errors.yaml#/components/responses/Error403
         "422":
           $ref: ../common/errors.yaml#/components/responses/Error422
-  /api/v1/ont/v2/object-types/wip/{rid}/apply:
-    parameters:
-      - &task4rid
-        in: path
-        name: rid
-        required: true
-        schema:
-          type: string
-    post:
-      security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
-      tags:
-        - ont
-      summary: ontApplyV2SchemaWip
-      operationId: ontApplyV2SchemaWip
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements:
-        - FR-ONT-BUILDER-PUBLICATION
-      x-mate-implementation-status: implemented
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObjectTypeV2"
-        "403":
-          $ref: ../common/errors.yaml#/components/responses/Error403
-        "404":
-          $ref: ../common/errors.yaml#/components/responses/Error404
-        "409":
-          $ref: ../common/errors.yaml#/components/responses/Error409
-        "422":
-          $ref: ../common/errors.yaml#/components/responses/Error422
-      parameters:
-        - in: query
-          name: confirm_name
-          schema:
-            type: string
-            default: ""
-        - in: query
-          name: expected_checksum
-          schema:
-            type: string
-            default: ""
   /api/v1/ont/v2/object-types/{rid}/wip:
     parameters:
-      - *task4rid
+    - in: path
+      name: rid
+      required: true
+      schema:
+        type: string
     delete:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes:
-            - platform.write
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
       tags:
-        - ont
-      summary: Discard staged schema WIP
-      description: |
-        Discard schema WIP without deleting the published ObjectType.
+      - ont
+      summary: Discard a persisted draft without deleting the live model
+      description: 'Discard schema WIP without deleting the published ObjectType.
+
         Compatibility alias: DELETE /api/v1/ont/v2/object-types/wip/{rid}.
+
         The deprecated alias remains supported by the same handler and tenant guard;
+
         it is omitted from the public runtime schema in favor of this canonical operation.
+
+        '
       operationId: ontDiscardV2SchemaWip
       x-mate-compatibility-aliases:
-        - method: DELETE
-          path: /api/v1/ont/v2/object-types/wip/{rid}
-          deprecated: true
-          includeInSchema: false
+      - method: DELETE
+        path: /api/v1/ont/v2/object-types/wip/{rid}
+        deprecated: true
+        includeInSchema: false
       x-mate-owner: ontology-platform
       x-mate-permission: ont.write
       x-mate-required-tenant: true
       x-mate-requirements:
-        - FR-ONT-BUILDER-PUBLICATION
+      - MP11-ONT-02
+      - MP11-ONT-08
+      - FR-ONT-BUILDER-PUBLICATION
       x-mate-implementation-status: implemented
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        "403":
+        '403':
           $ref: ../common/errors.yaml#/components/responses/Error403
-        "404":
+        '404':
           $ref: ../common/errors.yaml#/components/responses/Error404
-        "409":
+        '409':
           $ref: ../common/errors.yaml#/components/responses/Error409
-        "422":
+        '422':
           $ref: ../common/errors.yaml#/components/responses/Error422
   /api/v1/ont/v2/object-types/{rid}/branch:
     parameters:
-      - *task4rid
+      - {in: path, name: rid, required: true, schema: {type: string}}
     post:
       security:
         - bearerAuth: []
@@ -2296,7 +3375,7 @@ paths:
                   type: string
   /api/v1/ont/v2/object-types/{rid}/diff:
     parameters:
-      - *task4rid
+      - {in: path, name: rid, required: true, schema: {type: string}}
     get:
       security:
         - bearerAuth: []
@@ -2337,7 +3416,7 @@ paths:
             type: string
   /api/v1/ont/v2/object-types/{rid}/rollback:
     parameters:
-      - *task4rid
+      - {in: path, name: rid, required: true, schema: {type: string}}
     post:
       security:
         - bearerAuth: []
@@ -2401,10 +3480,248 @@ components:
             platform.admin: Service-to-service admin
             tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
-    BackingDatasourceCreateV2:
+    EditSetApplyBodyDTO:
+      properties:
+        parameters:
+          additionalProperties: true
+          type: object
+          title: Parameters
+        target_iid:
+          type: string
+          title: Target Iid
+          default: ''
+        edits:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Edits
+        impact_summary:
+          type: string
+          title: Impact Summary
+          default: ''
       type: object
-      description: The path supplies class_rid and authenticated context supplies tenant authority. Credentials are server environment references. No ts_column input is supported; upsert uses the server default updated_at.
-      required: [class_rid, name, table, pk_column]
+      title: EditSetApplyBodyDTO
+      description: ACT-05：edit-set 执行体。edits 缺省时用 ActionType.declarative_edits 模板。
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ProposalExecuteResultDTO:
+      properties:
+        kind:
+          type: string
+          title: Kind
+        individual_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Individual Rid
+        type_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type Rid
+        action_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action Rid
+        target_iid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Iid
+        audit_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Audit Id
+        outbox_event_ids:
+          items:
+            type: string
+          type: array
+          title: Outbox Event Ids
+        side_effects_emitted:
+          items:
+            type: string
+          type: array
+          title: Side Effects Emitted
+        source_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Rid
+        target_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Rid
+        affected_individuals:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Affected Individuals
+        affected_links:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Affected Links
+        postflight:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Postflight
+      type: object
+      required:
+      - kind
+      title: ProposalExecuteResultDTO
+    ProposalCreateDTO:
+      properties:
+        parameters:
+          additionalProperties: true
+          type: object
+          title: Parameters
+        target_iid:
+          type: string
+          title: Target Iid
+          default: ''
+        impact_summary:
+          type: string
+          title: Impact Summary
+          default: ''
+        expected_diff:
+          additionalProperties: true
+          type: object
+          title: Expected Diff
+        provenance:
+          additionalProperties: true
+          type: object
+          title: Provenance
+      type: object
+      title: ProposalCreateDTO
+    ProposalResponse:
+      properties:
+        proposal_id:
+          title: Proposal Id
+          type: string
+        action_rid:
+          title: Action Rid
+          type: string
+        target_iid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Target Iid
+        parameters:
+          additionalProperties: true
+          title: Parameters
+          type: object
+        impact_summary:
+          default: ''
+          title: Impact Summary
+          type: string
+        expected_diff:
+          additionalProperties: true
+          title: Expected Diff
+          type: object
+        status:
+          title: Status
+          type: string
+        kind:
+          default: action
+          title: Kind
+          type: string
+        confirmed_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed By
+        created_at:
+          default: ''
+          title: Created At
+          type: string
+        confirmed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed At
+        approval_expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Approval Expires At
+          description: Server-owned nullable legacy deadline. Missing or expired approvals
+            cannot authorize new execution.
+        approval_ttl_seconds:
+          title: Approval Ttl Seconds
+          type: integer
+          minimum: 60
+          maximum: 86400
+          description: Server duration in seconds; default 900. Invalid configuration refuses
+            confirmation.
+        preflight:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Preflight
+      required:
+      - proposal_id
+      - action_rid
+      - status
+      - approval_ttl_seconds
+      title: ProposalResponse
+      type: object
+    ProposalConfirmDTO:
+      properties: {}
+      type: object
+      title: ProposalConfirmDTO
+      description: 'Confirmation payload reserved for future user-provided rationale.
+
+
+        The confirming principal is deliberately excluded: it is always read from
+
+        the authenticated request context, never from client supplied JSON.'
+    BackingDatasourceDTO:
+      type: object
       properties:
         class_rid:
           type: string
@@ -2413,26 +3730,224 @@ components:
         kind:
           type: string
           default: pg_table
+          description: 'Supported kinds: pg_table (PostgreSQL) and csv (batch only).'
+        source_id:
+          type:
+          - string
+          - 'null'
+          default: null
+          description: Registered source in the verified tenant. Resolution failure never falls back to dsn_env.
+        ts_column:
+          type:
+          - string
+          - 'null'
+          default: null
+          description: Optional non-null source timestamp for (timestamp, primary-key) incremental ordering. CSV has
+            no incremental cursor.
         dsn_env:
           type: string
           default: ONT_SOURCE_DSN
+          description: Legacy server environment variable name, not a DSN value; used only without source_id.
         table:
           type: string
+          description: Schema-qualified PostgreSQL table or discovered CSV table name.
         pk_column:
           type: string
+          description: Stable single-column primary key; CSV values must be unique and nonblank.
         field_mapping:
           type: object
-          description: Full property RID to source column name
           additionalProperties:
             type: string
           default: {}
+          description: Target property RID to actual source column; unknown supplied fields are rejected.
         priority:
           type: integer
           default: 100
-    BackingDatasourceSyncV2:
+      required:
+      - class_rid
+      - name
+      - table
+      - pk_column
+      description: Verified tenant/path class override body identity. Registered sources are preflighted for actual
+        fields, primary key, nullable and type compatibility.
+    BackingDatasourceSaved:
       type: object
-      required: [ok, total_synced, total_failed, total_deleted, sources]
       properties:
+        rid:
+          type: string
+        name:
+          type: string
+      required:
+      - rid
+      - name
+    BackingDatasourceDeclaration:
+      type: object
+      properties:
+        class_rid:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          default: pg_table
+          description: 'Supported kinds: pg_table (PostgreSQL) and csv (batch only).'
+        source_id:
+          type:
+          - string
+          - 'null'
+          default: null
+          description: Registered source in the verified tenant. Resolution failure never falls back to dsn_env.
+        ts_column:
+          type:
+          - string
+          - 'null'
+          default: null
+          description: Optional non-null source timestamp for (timestamp, primary-key) incremental ordering. CSV has
+            no incremental cursor.
+        dsn_env:
+          type: string
+          default: ONT_SOURCE_DSN
+          description: Legacy server environment variable name, not a DSN value; used only without source_id.
+        pk_column:
+          type: string
+          description: Stable single-column primary key; CSV values must be unique and nonblank.
+        field_mapping:
+          type: object
+          additionalProperties:
+            type: string
+          default: {}
+          description: Target property RID to actual source column; unknown supplied fields are rejected.
+        priority:
+          type: integer
+          default: 100
+        rid:
+          type: string
+        tenant_id:
+          type: string
+        table_name:
+          type: string
+        last_synced_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        last_synced_pk:
+          type:
+          - string
+          - 'null'
+        last_error:
+          type:
+          - string
+          - 'null'
+        last_failed:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+        run_history:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/BackingSyncRun'
+          description: Oldest to newest, at most 20 recent runs.
+      required:
+      - rid
+      - tenant_id
+      - class_rid
+      - name
+      - kind
+      - table_name
+      - pk_column
+      - field_mapping
+      - run_history
+    BackingSyncCursor:
+      type: object
+      properties:
+        ts:
+          type:
+          - string
+          - 'null'
+          description: Source timestamp boundary, never target wall clock.
+        pk:
+          type:
+          - string
+          - 'null'
+      required:
+      - ts
+      - pk
+    BackingSyncFailure:
+      type: object
+      properties:
+        pk:
+          type:
+          - string
+          - 'null'
+        error:
+          type: string
+        stage:
+          type: string
+        error_code:
+          type: string
+        trace_id:
+          type: string
+      required:
+      - error
+    BackingSyncSourceResult:
+      type: object
+      properties:
+        synced:
+          type: integer
+        failed:
+          type: integer
+        deleted:
+          type: integer
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackingSyncFailure'
+        cursor:
+          $ref: '#/components/schemas/BackingSyncCursor'
+      required:
+      - synced
+      - failed
+      - deleted
+      - failures
+      - cursor
+    BackingSyncError:
+      type: object
+      properties:
+        message:
+          type: string
+        error_code:
+          type: string
+        trace_id:
+          type: string
+      required:
+      - message
+    BackingSyncRun:
+      type: object
+      properties:
+        run_id:
+          type: string
+        trace_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - running
+          - succeeded
+          - failed
+          - interrupted
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        incremental:
+          type: boolean
         ok:
           type: boolean
         total_synced:
@@ -2444,158 +3959,30 @@ components:
         sources:
           type: object
           additionalProperties:
-            type: object
-            required: [synced, failed, deleted, failures, cursor]
-            properties:
-              synced:
-                type: integer
-              failed:
-                type: integer
-              deleted:
-                type: integer
-              failures:
-                type: array
-                items:
-                  type: object
-                  required: [pk, error]
-                  properties:
-                    pk: {}
-                    error:
-                      type: string
-              cursor:
-                type: object
-                required: [ts, pk]
-                properties:
-                  ts:
-                    type: [string, "null"]
-                  pk:
-                    type: [string, "null"]
-    SchemaWipSaveV2:
-      type: object
+            $ref: '#/components/schemas/BackingSyncSourceResult'
+        error:
+          $ref: '#/components/schemas/BackingSyncError'
       required:
-        - payload
-      properties:
-        payload:
-          $ref: "#/components/schemas/ObjectTypeCreateV2"
-        author:
-          type: string
-          default: ""
-    SchemaWipSavedV2:
+      - run_id
+      - trace_id
+      - status
+      - started_at
+      - ended_at
+      - incremental
+      description: Persistent run. Counts/results appear when completed; running/interrupted records may have no counts.
+        Original failed/interrupted run IDs survive retry within the 20-run retention limit.
+    BackingDatasourceHttpError:
       type: object
-      required:
-        - rid
-        - status
-        - base_checksum
       properties:
-        rid:
-          type: string
-        status:
-          type: string
-          enum:
-            - staged
-        base_checksum:
-          type: string
-    ModelPreflightV2:
-      type: object
+        detail:
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/BackingSyncError'
+          - type: array
+            items:
+              type: object
       required:
-        - rid
-        - valid
-        - errors
-        - warnings
-        - destructive
-        - references
-      properties:
-        rid:
-          type: string
-        valid:
-          type: boolean
-        errors: &id001
-          type: array
-          items:
-            type: string
-        warnings: *id001
-        destructive: *id001
-        references:
-          type: object
-          required:
-            - resolved
-            - unresolved
-            - dependencies
-          properties:
-            resolved: *id001
-            unresolved: *id001
-            dependencies: *id001
-    BackingDatasourceV2:
-      type: object
-      required:
-        - rid
-        - class_rid
-        - name
-        - kind
-        - dsn_env
-        - table_name
-        - pk_column
-        - field_mapping
-        - priority
-      properties:
-        rid:
-          type: string
-        class_rid:
-          type: string
-        name:
-          type: string
-        kind:
-          type: string
-        dsn_env:
-          type: string
-        table_name:
-          type: string
-        pk_column:
-          type: string
-        ts_column:
-          type: string
-        field_mapping:
-          type: object
-          additionalProperties:
-            type: string
-        priority:
-          type: integer
-        last_synced_at:
-          type:
-            - string
-            - "null"
-        last_synced_pk:
-          type: [string, "null"]
-        last_error:
-          type: string
-        last_failed:
-          type: integer
-        updated_at:
-          type: string
-    MaterializationV2:
-      type: object
-      required:
-        - class_rid
-        - count
-        - rows
-        - schema
-      properties:
-        class_rid:
-          type: string
-        count:
-          type: integer
-        rows:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        schema:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties: true
-        generated_at:
-          type: string
+      - detail
     OntologyCreate:
       type: object
       required:
@@ -2868,28 +4255,6 @@ components:
           struct,
           vector,
         ]
-    PropertyFormatInputV2:
-      type: string
-      description: Existing kernel PropertyFormat values, including the original seven formats.
-      default: string
-      enum:
-        [
-          string,
-          integer,
-          double,
-          boolean,
-          date,
-          timestamp,
-          marking,
-          geojson,
-          latlon,
-          timeseries,
-          image,
-          audio,
-          video,
-          struct,
-          vector,
-        ]
     CardinalityV2:
       type: string
       enum: ["1:1", "1:N", "N:1", "N:N"]
@@ -2921,33 +4286,6 @@ components:
         struct_fields:
           type: array
           items: { $ref: "#/components/schemas/PropertyV2" }
-        array: { type: boolean, default: false }
-        reducer: { type: [string, "null"] }
-        shared: { type: boolean, default: false }
-        derived:
-          anyOf:
-            - { type: "null" }
-            - type: object
-              required: [fn, over_link]
-              properties:
-                fn: { type: string }
-                over_link: { type: string }
-                field: { type: [string, "null"] }
-    PropertyCreateV2:
-      type: object
-      additionalProperties: false
-      required: [rid, type_id]
-      properties:
-        rid: { $ref: "#/components/schemas/RidString" }
-        type_id: { type: string, minLength: 1 }
-        nullable: { type: boolean, default: false }
-        primary_key: { type: boolean, default: false }
-        title: { type: string, default: "" }
-        format: { $ref: "#/components/schemas/PropertyFormatInputV2" }
-        description: { type: string, default: "" }
-        struct_fields:
-          type: array
-          items: { $ref: "#/components/schemas/PropertyCreateV2" }
         array: { type: boolean, default: false }
         reducer: { type: [string, "null"] }
         shared: { type: boolean, default: false }
@@ -3055,7 +4393,7 @@ components:
     ActionTypeV2:
       type: object
       additionalProperties: false
-      required: [rid, parameters, function_ref, on]
+      required: [rid, parameters, function_ref, "on"]
       properties:
         rid: { $ref: "#/components/schemas/RidString" }
         parameters:
@@ -3073,7 +4411,7 @@ components:
           description: >-
             引用的 Function rid（ADR-0064：可选 backing）。恒出现在响应中；空串 =
             纯声明式 Action（与 declarative_edits 至少声明一个，不互斥）。
-        on:
+        "on":
           type: array
           minItems: 1
           items: { $ref: "#/components/schemas/RidString" }
@@ -3088,7 +4426,7 @@ components:
     ActionTypeCreateV2:
       type: object
       additionalProperties: false
-      required: [rid, parameters, on]
+      required: [rid, parameters, "on"]
       properties:
         rid: { $ref: "#/components/schemas/RidString" }
         parameters:
@@ -3106,7 +4444,7 @@ components:
           description: >-
             引用的 Function rid（ADR-0064：可选 backing；请求可缺省）。空串/缺省 =
             纯声明式 Action；与 declarative_edits 至少声明一个，不互斥。
-        on:
+        "on":
           type: array
           minItems: 1
           items: { $ref: "#/components/schemas/RidString" }
@@ -3554,20 +4892,83 @@ components:
         config: { type: object, additionalProperties: true }
         updated_at: { type: string, format: date-time }
     ProposalV2:
-      type: object
-      additionalProperties: false
-      required: [proposal_id, action_rid, status]
       properties:
-        proposal_id: { type: string }
-        action_rid: { type: string }
-        target_iid: { type: [string, "null"] }
-        parameters: { type: object, additionalProperties: true }
-        impact_summary: { type: string }
-        expected_diff: { type: object, additionalProperties: true }
-        status: { type: string, enum: [pending, confirmed, rejected, applied] }
-        confirmed_by: { type: [string, "null"] }
-        created_at: { type: string }
-        confirmed_at: { type: [string, "null"] }
+        proposal_id:
+          title: Proposal Id
+          type: string
+        action_rid:
+          title: Action Rid
+          type: string
+        target_iid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Target Iid
+        parameters:
+          additionalProperties: true
+          title: Parameters
+          type: object
+        impact_summary:
+          default: ''
+          title: Impact Summary
+          type: string
+        expected_diff:
+          additionalProperties: true
+          title: Expected Diff
+          type: object
+        status:
+          title: Status
+          type: string
+        kind:
+          default: action
+          title: Kind
+          type: string
+        confirmed_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed By
+        created_at:
+          default: ''
+          title: Created At
+          type: string
+        confirmed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed At
+        approval_expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Approval Expires At
+          description: Server-owned nullable legacy deadline. Missing or expired approvals
+            cannot authorize new execution.
+        approval_ttl_seconds:
+          title: Approval Ttl Seconds
+          type: integer
+          minimum: 60
+          maximum: 86400
+          description: Server duration in seconds; default 900. Invalid configuration refuses
+            confirmation.
+        preflight:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Preflight
+      required:
+      - proposal_id
+      - action_rid
+      - status
+      - approval_ttl_seconds
+      title: ProposalResponse
+      type: object
     ObjectSearchV2:
       type: object
       additionalProperties: false
@@ -3629,331 +5030,401 @@ components:
         change_set:
           type: array
           items: { type: string }
-  /api/v1/ont/v2/shacl/validate:
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      x-required-scopes: [platform.write]
-      tags: [ont]
-      summary: SHACL Core 关键约束验证（minCount/maxCount/datatype/pattern/class/closed）
-      description: >-
-        NodeShape 由 ObjectType 定义合成（pk/非空 → minCount 1，type_id →
-        datatype），与 ontValidateV2* 类型语义对齐；可选 property_shapes
-        叠加 W3C 特有约束（pattern/class），closed 拒绝未声明属性。
-        individuals 缺省取 repo 内该类全部实例。返回 W3C 验证报告结构子集
-        {conforms, violations, stats}。
-      operationId: ontValidateV2Shacl
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-G14-SHACL]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [target_class]
-              properties:
-                target_class:
-                  type: string
-                  description: 聚焦类 rid（须为本租户）
-                individuals:
-                  type: array
-                  description: 显式实例集（缺省取 repo 内该类全部实例）
-                  items: { type: object }
-                property_shapes:
-                  type: array
-                  description: >-
-                    叠加的 PropertyShape。支持 W3C 约束：min_count/max_count/
-                    datatype/pattern/node_class + severity（Violation/Warning/
-                    Info，仅 Violation 影响 conforms）+ language_in（sh:languageIn，
-                    语言标签集）+ not_shape（sh:not 内嵌 shape，节点级取反）+
-                    qualified_value_shape/qualified_min_count/
-                    qualified_max_count（sh:qualifiedValueShape）。
-                  items: { type: object }
-                closed:
-                  type: boolean
-                  default: false
-                subclass_axioms:
-                  type: array
-                  description: >-
-                    (sub, super) 公理对（推理联动）：target 类的传递子类实例纳入验证、
-                    sh:class 满足子类 is-a 语义（G21 descendant_closure）
-                  items:
-                    type: array
-                    items: { type: string }
-      responses:
-        "200":
-          description: W3C 验证报告（severity 分级 + 计数）
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  conforms: { type: boolean }
-                  violations:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        focus_node: { type: string }
-                        path: { type: string }
-                        constraint: { type: string }
-                        message: { type: string }
-                        severity:
-                          type: string
-                          enum: [Violation, Warning, Info]
-                  severity_counts:
-                    type: object
-                    description: 各 severity 结果计数 {Violation, Warning, Info}
-                  stats:
-                    type: object
-        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
-  /api/v1/ont/v2/alignment/run:
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      x-required-scopes: [platform.write]
-      tags: [ont]
-      summary: 跨本体实例对齐（same_as 词汇 + 结构相似，并查集聚类）
-      description: >-
-        ONT-G33 FR-ALIGN-001 stateless 对齐：explicit_pairs（显式 same_as）+
-        词汇相似（label 规范化相等）+ 结构相似（属性 slug + 值签名 Jaccard）。
-        聚类复用 reasoning R2 并查集（传递闭包）。不落库。
-      operationId: ontAlignV2Individuals
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ALIGN-001]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [left, right]
-              properties:
-                left:
-                  type: array
-                  description: 左侧实例 [{rid, class_rid, props}]
-                  items: { type: object }
-                right:
-                  type: array
-                  description: 右侧实例
-                  items: { type: object }
-                explicit_pairs:
-                  type: array
-                  description: 已知 same_as 配对 [[left_rid, right_rid]]
-                  items:
-                    type: array
-                    items: { type: string }
-                lexical_threshold: { type: number, default: 1.0 }
-                structural_threshold: { type: number, default: 0.5 }
-      responses:
-        "200":
-          description: 对齐结果（clusters / matched_pairs / stats）
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  clusters:
-                    type: object
-                    description: 代表元 → 簇成员（多成员簇）
-                  matched_pairs:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        left: { type: string }
-                        right: { type: string }
-                        score: { type: number }
-                        evidence:
-                          type: array
-                          items:
-                            type: string
-                            enum: [explicit, lexical, structural]
-                  stats: { type: object }
-        "403": { $ref: ../common/errors.yaml#/components/responses/Error403 }
-  /api/v1/ont/v2/object-types/merge-preview:
-    post:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
-      x-required-scopes: [platform.write]
-      tags: [ont]
-      summary: 类型定义合并预览（字段并集 + 冲突标记 + 合并审计）
-      description: >-
-        ONT-G33 FR-ALIGN-002 stateless 合并预览：两 ObjectType 字段并集，
-        同 rid 属性冲突按策略（keep_left / keep_right）消解并留冲突标记与
-        合并审计记录。不落库（实例重映射走 ontMergeV2ObjectTypes）。
-      operationId: ontPreviewV2ObjectTypeMerge
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.write
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ALIGN-002]
-      x-mate-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [left, right]
-              properties:
-                left:
-                  type: object
-                  description: ObjectType 定义（ObjectTypeDTO 同构）
-                right:
-                  type: object
-                  description: ObjectType 定义（ObjectTypeDTO 同构）
-                strategy:
-                  type: string
-                  enum: [keep_left, keep_right]
-                  default: keep_left
-      responses:
-        "200":
-          description: 合并结果（merged ObjectType + audit）
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  object_type:
-                    type: object
-                    description: 合并后 ObjectType（rid 取 left）
-                  audit:
-                    type: object
-                    properties:
-                      merged_from:
-                        type: array
-                        items: { type: string }
-                      into: { type: string }
-                      strategy: { type: string }
-                      properties_merged: { type: integer }
-                      added:
-                        type: array
-                        items: { type: string }
-                      conflicts:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            property_rid: { type: string }
-                            field: { type: string }
-                            left: {}
-                            right: {}
-                            resolved: {}
-        "422": { $ref: ../common/errors.yaml#/components/responses/Error422 }
-  /api/v1/ont/v2/agent-metrics/summary:
-    get:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
-      tags: [ont]
-      summary: AI Agent regression metrics summary (proposal acceptance)
-      description: |
-        ONT-AGENT-METRICS-01：proposal 接受率/状态分布/驳回原因分布/by-actor。
-        accepted = executed + reverted（都曾被采纳）；rejected = 显式 rejected 终态；
-        withdrawn/pending/confirmed 不入分母。created_by 现状仅 edit_set 写入，
-        其余归 (unattributed)。窗口 days=1..365 默认 30；数据基于 list_proposals
-        上游 LIMIT 200（最近 200 条）。
-      operationId: ontAgentMetricsSummary
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.read
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-AGENT-METRICS]
-      x-mate-implementation-status: implemented
-      parameters:
-        - in: query
-          name: days
-          required: false
-          schema: { type: integer, default: 30, minimum: 1, maximum: 365 }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  total: { type: integer }
-                  by_status:
-                    { type: object, additionalProperties: { type: integer } }
-                  acceptance_rate:
-                    type: [number, "null"]
-                    description: accepted/(accepted+rejected)；分母 0 → null
-                  rejection_reasons:
-                    type: [array, "null"]
-                    description: 现状无 reason 字段 → null（不编造）
-                  by_actor:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        actor: { type: string }
-                        proposed: { type: integer }
-                        executed: { type: integer }
-                        acceptance_rate: { type: [number, "null"] }
-                  window_days: { type: integer }
-        "503": { $ref: ../common/errors.yaml#/components/responses/Error503 }
-  /api/v1/ont/v2/agent-metrics/trend:
-    get:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
-      tags: [ont]
-      summary: AI Agent proposal trend by day
-      description: |
-        proposed 按 created_at 分桶；executed 以 confirmed_at 为代理（executed
-        无独立时间戳，confirm 紧邻 execute）；rejected 退化为 created_at。
-        UTC 零填充连续序列。
-      operationId: ontAgentMetricsTrend
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.read
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-AGENT-METRICS]
-      x-mate-implementation-status: implemented
-      parameters:
-        - in: query
-          name: days
-          required: false
-          schema: { type: integer, default: 30, minimum: 1, maximum: 365 }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
+    ProposalPreviewResponse:
+      description: 'MP-SAL-04c：pending proposal 渲染预览（不落库）。
+
+
+        字段说明：
+
+        - kind: action / create_instance / model_type / merge_suggestion
+
+        - action_type: 后端建议的动作标签（"create" / "upsert" / "execute" / "apply"）
+
+        - impact_summary: 自动算出的影响摘要（受影响个体数 / 跨 schema 引用 / etc）
+
+        - parameters: 原样透传 proposals.parameters（结构化）
+
+        - expected_diff: 原样透传 proposals.expected_diff
+
+        - 额外 kind-specific 字段：properties / field_values / merge_mapping / etc'
+      properties:
+        proposal_id:
+          title: Proposal Id
+          type: string
+        kind:
+          title: Kind
+          type: string
+        action_type:
+          title: Action Type
+          type: string
+        target_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Target Rid
+        status:
+          title: Status
+          type: string
+        parameters:
+          additionalProperties: true
+          title: Parameters
+          type: object
+        expected_diff:
+          additionalProperties: true
+          title: Expected Diff
+          type: object
+        impact_summary:
+          additionalProperties: true
+          title: Impact Summary
+          type: object
+        properties:
+          type: array
+          items:
+            additionalProperties: true
+            type: object
+          title: Properties
+        primary_key:
+          items:
+            type: string
+          title: Primary Key
+          type: array
+        interfaces:
+          items:
+            type: string
+          title: Interfaces
+          type: array
+        display_name:
+          default: ''
+          title: Display Name
+          type: string
+        backward_link_candidates:
+          items:
+            type: string
+          title: Backward Link Candidates
+          type: array
+        field_values:
+          additionalProperties: true
+          title: Field Values
+          type: object
+        class_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Class Rid
+        validation_status:
+          default: unknown
+          title: Validation Status
+          type: string
+        merge_source_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Merge Source Rid
+        merge_target_rid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Merge Target Rid
+        merge_mapping:
+          additionalProperties:
+            type: string
+          title: Merge Mapping
+          type: object
+        merge_property_overlap:
+          additionalProperties: true
+          title: Merge Property Overlap
+          type: object
+        created_at:
+          default: ''
+          title: Created At
+          type: string
+        confirmed_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed By
+        confirmed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Confirmed At
+        approval_expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Approval Expires At
+          description: Server-owned nullable legacy deadline. Missing or expired approvals
+            cannot authorize new execution.
+        approval_ttl_seconds:
+          title: Approval Ttl Seconds
+          type: integer
+          minimum: 60
+          maximum: 86400
+          description: Server duration in seconds; default 900. Invalid configuration refuses
+            confirmation.
+      required:
+      - proposal_id
+      - kind
+      - action_type
+      - status
+      - approval_ttl_seconds
+      title: ProposalPreviewResponse
+      type: object
+    BackingDatasourceCreateV2:
+      type: object
+      description: Legacy compatibility input shape. The path supplies class_rid and authenticated context supplies
+        tenant authority. Credentials are server environment references. Current endpoints use BackingDatasourceDTO,
+        which also supports registered source_id and configurable ts_column.
+      required:
+      - class_rid
+      - name
+      - table
+      - pk_column
+      properties:
+        class_rid:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          default: pg_table
+        dsn_env:
+          type: string
+          default: ONT_SOURCE_DSN
+        table:
+          type: string
+        pk_column:
+          type: string
+        field_mapping:
+          type: object
+          description: Full property RID to source column name
+          additionalProperties:
+            type: string
+          default: {}
+        priority:
+          type: integer
+          default: 100
+    BackingDatasourceSyncV2:
+      type: object
+      required: [ok, total_synced, total_failed, total_deleted, sources]
+      properties:
+        ok:
+          type: boolean
+        total_synced:
+          type: integer
+        total_failed:
+          type: integer
+        total_deleted:
+          type: integer
+        sources:
+          type: object
+          additionalProperties:
+            type: object
+            required: [synced, failed, deleted, failures, cursor]
+            properties:
+              synced:
+                type: integer
+              failed:
+                type: integer
+              deleted:
+                type: integer
+              failures:
                 type: array
                 items:
                   type: object
+                  required: [pk, error]
                   properties:
-                    date: { type: string, format: date }
-                    proposed: { type: integer }
-                    executed: { type: integer }
-                    rejected: { type: integer }
-        "503": { $ref: ../common/errors.yaml#/components/responses/Error503 }
-  /api/v1/ont/v2/agent-metrics/health:
-    get:
-      security:
-        [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read] }]
-      tags: [ont]
-      summary: Agent metrics data-source health probe
-      operationId: ontAgentMetricsHealth
-      x-mate-owner: ontology-platform
-      x-mate-permission: ont.read
-      x-mate-required-tenant: true
-      x-mate-requirements: [FR-ONT-AGENT-METRICS]
-      x-mate-implementation-status: implemented
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
+                    pk: {}
+                    error:
+                      type: string
+              cursor:
                 type: object
+                required: [ts, pk]
                 properties:
-                  source: { type: string }
-                  available: { type: boolean }
-                  proposal_count: { type: integer }
+                  ts:
+                    type: [string, "null"]
+                  pk:
+                    type: [string, "null"]
+    SchemaWipSaveV2:
+      type: object
+      required:
+      - payload
+      properties:
+        payload:
+          $ref: '#/components/schemas/ObjectTypeCreateV2'
+        author:
+          type: string
+          default: ''
+          description: Legacy input retained; attribution uses the verified caller.
+    SchemaWipSavedV2:
+      type: object
+      required:
+        - rid
+        - status
+        - base_checksum
+      properties:
+        rid:
+          type: string
+        status:
+          type: string
+          enum:
+            - staged
+        base_checksum:
+          type: string
+    ModelPreflightV2:
+      type: object
+      required:
+        - rid
+        - valid
+        - errors
+        - warnings
+        - destructive
+        - references
+      properties:
+        rid:
+          type: string
+        valid:
+          type: boolean
+        errors: &id001
+          type: array
+          items:
+            type: string
+        warnings: *id001
+        destructive: *id001
+        references:
+          type: object
+          required:
+            - resolved
+            - unresolved
+            - dependencies
+          properties:
+            resolved: *id001
+            unresolved: *id001
+            dependencies: *id001
+    BackingDatasourceV2:
+      type: object
+      required:
+        - rid
+        - class_rid
+        - name
+        - kind
+        - dsn_env
+        - table_name
+        - pk_column
+        - field_mapping
+        - priority
+      properties:
+        rid:
+          type: string
+        class_rid:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+        dsn_env:
+          type: string
+        table_name:
+          type: string
+        pk_column:
+          type: string
+        ts_column:
+          type: string
+        field_mapping:
+          type: object
+          additionalProperties:
+            type: string
+        priority:
+          type: integer
+        last_synced_at:
+          type:
+            - string
+            - "null"
+        last_synced_pk:
+          type: [string, "null"]
+        last_error:
+          type: string
+        last_failed:
+          type: integer
+        updated_at:
+          type: string
+    MaterializationV2:
+      type: object
+      required:
+        - class_rid
+        - count
+        - rows
+        - schema
+      properties:
+        class_rid:
+          type: string
+        count:
+          type: integer
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        schema:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        generated_at:
+          type: string
+    PropertyFormatInputV2:
+      type: string
+      description: Existing kernel PropertyFormat values, including the original seven formats.
+      default: string
+      enum:
+        [
+          string,
+          integer,
+          double,
+          boolean,
+          date,
+          timestamp,
+          marking,
+          geojson,
+          latlon,
+          timeseries,
+          image,
+          audio,
+          video,
+          struct,
+          vector,
+        ]
+    PropertyCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, type_id]
+      properties:
+        rid: { $ref: "#/components/schemas/RidString" }
+        type_id: { type: string, minLength: 1 }
+        nullable: { type: boolean, default: false }
+        primary_key: { type: boolean, default: false }
+        title: { type: string, default: "" }
+        format: { $ref: "#/components/schemas/PropertyFormatInputV2" }
+        description: { type: string, default: "" }
+        struct_fields:
+          type: array
+          items: { $ref: "#/components/schemas/PropertyCreateV2" }
+        array: { type: boolean, default: false }
+        reducer: { type: [string, "null"] }
+        shared: { type: boolean, default: false }
+        derived:
+          anyOf:
+            - { type: "null" }
+            - type: object
+              required: [fn, over_link]
+              properties:
+                fn: { type: string }
+                over_link: { type: string }
+                field: { type: [string, "null"] }

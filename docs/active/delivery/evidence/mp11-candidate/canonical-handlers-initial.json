@@ -1,0 +1,97 @@
+{
+  "checks": [
+    {
+      "path": "/api/v1/ont/v2/shacl/validate",
+      "method": "post",
+      "canonical_operation_id": "ontValidateV2Shacl",
+      "handler_operation_id": "ontValidateV2Shacl",
+      "match": true
+    },
+    {
+      "path": "/api/v1/ont/v2/alignment/run",
+      "method": "post",
+      "canonical_operation_id": "ontAlignV2Individuals",
+      "handler_operation_id": "ontAlignV2Individuals",
+      "match": true
+    },
+    {
+      "path": "/api/v1/ont/v2/object-types/merge-preview",
+      "method": "post",
+      "canonical_operation_id": "ontPreviewV2ObjectTypeMerge",
+      "handler_operation_id": "ontPreviewV2ObjectTypeMerge",
+      "match": true
+    },
+    {
+      "path": "/api/v1/ont/v2/agent-metrics/summary",
+      "method": "get",
+      "canonical_operation_id": "ontAgentMetricsSummary",
+      "handler_operation_id": null,
+      "match": false
+    },
+    {
+      "path": "/api/v1/ont/v2/agent-metrics/trend",
+      "method": "get",
+      "canonical_operation_id": "ontAgentMetricsTrend",
+      "handler_operation_id": null,
+      "match": false
+    },
+    {
+      "path": "/api/v1/ont/v2/agent-metrics/health",
+      "method": "get",
+      "canonical_operation_id": "ontAgentMetricsHealth",
+      "handler_operation_id": null,
+      "match": false
+    },
+    {
+      "path": "/api/v1/data/lineage/edges",
+      "method": "post",
+      "canonical_operation_id": "dataPostDataLineageEdges",
+      "handler_operation_id": "create_lineage_edge_endpoint_api_v1_data_lineage_edges_post",
+      "match": false
+    },
+    {
+      "path": "/api/v1/data/lineage/graph",
+      "method": "get",
+      "canonical_operation_id": "dataGetDataLineageGraph",
+      "handler_operation_id": "lineage_graph_endpoint_api_v1_data_lineage_graph_get",
+      "match": false
+    },
+    {
+      "path": "/api/v1/data/quality/rules",
+      "method": "get",
+      "canonical_operation_id": "dataGetDataQualityRules",
+      "handler_operation_id": "list_quality_rules_endpoint_api_v1_data_quality_rules_get",
+      "match": false
+    },
+    {
+      "path": "/api/v1/data/quality/rules",
+      "method": "post",
+      "canonical_operation_id": "dataPostDataQualityRules",
+      "handler_operation_id": "create_quality_rule_endpoint_api_v1_data_quality_rules_post",
+      "match": false
+    },
+    {
+      "path": "/api/v1/data/quality/run",
+      "method": "post",
+      "canonical_operation_id": "dataPostDataQualityRun",
+      "handler_operation_id": "run_quality_endpoint_api_v1_data_quality_run_post",
+      "match": false
+    },
+    {
+      "path": "/api/v1/data/quality/results",
+      "method": "get",
+      "canonical_operation_id": "dataGetDataQualityResults",
+      "handler_operation_id": "list_quality_results_endpoint_api_v1_data_quality_results_get",
+      "match": false
+    },
+    {
+      "path": "/api/v1/data/catalog/search",
+      "method": "get",
+      "canonical_operation_id": "dataGetDataCatalogSearch",
+      "handler_operation_id": "catalog_search_endpoint_api_v1_data_catalog_search_get",
+      "match": false
+    }
+  ],
+  "source": "actual owned candidate /openapi.json",
+  "schema_sha256": "46cded506b682f7cedbcd87cccd38446f0d930f3eaf8998eb5be0c9c33a76808"
+}

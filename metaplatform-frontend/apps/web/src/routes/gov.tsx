@@ -14,6 +14,7 @@ const ApplicationManagementPage = lazy(() => import('@/pages/arch/ApplicationMan
 const ValueStreamPage = lazy(() => import('@/pages/arch/ValueStreamPage'));
 const BusinessProcessPage = lazy(() => import('@/pages/arch/BusinessProcessPage'));
 const OrgRolePage = lazy(() => import('@/pages/arch/OrgRolePage'));
+const DataSourcesPage = lazy(() => import('@/pages/arch/DataSourcesPage'));
 const DataArchPage = lazy(() => import('@/pages/arch/DataArchPage'));
 const DataEntityDetailPage = lazy(() => import('@/pages/arch/DataEntityDetailPage'));
 const DataFlowPage = lazy(() => import('@/pages/arch/DataFlowPage'));
@@ -41,6 +42,7 @@ export const govRoutes = (
     <Route path="gov/business/org-roles" element={<OrgRolePage />} />
 
     {/* 数据架构 */}
+    <Route path="gov/data/sources" element={<DataSourcesPage />} />
     <Route path="gov/data" element={<DataArchPage />} />
     <Route path="gov/data/entities/:id" element={<DataEntityDetailPage />} />
     <Route path="gov/data/flows" element={<DataFlowPage />} />

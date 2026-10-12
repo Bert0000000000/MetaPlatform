@@ -1,0 +1,310 @@
+[
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "sha": "12f9e16ed2693af671179c81ce847438d44d3ceb",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/12f9e16ed2693af671179c81ce847438d44d3ceb/README.md",
+    "sha256": "06a9b258ffddcd339488aef2339158bce91d4f7f3708dd726b9829539fe01ae2"
+  },
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "sha": "12f9e16ed2693af671179c81ce847438d44d3ceb",
+    "path": "pom.xml",
+    "url": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/12f9e16ed2693af671179c81ce847438d44d3ceb/pom.xml",
+    "sha256": "688c4618da5b9197c0f466ac25e0c2638186d510c497d170cc6f0e4ad0a23139"
+  },
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "sha": "12f9e16ed2693af671179c81ce847438d44d3ceb",
+    "path": "openmetadata-ui/src/main/resources/ui/package.json",
+    "url": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/12f9e16ed2693af671179c81ce847438d44d3ceb/openmetadata-ui/src/main/resources/ui/package.json",
+    "sha256": "0c2da134b4294bd7c9d1b4d2d212dc34a6bbe960154984cfcaaa0ac074116024"
+  },
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "sha": "12f9e16ed2693af671179c81ce847438d44d3ceb",
+    "path": "openmetadata-service/src/main/java/org/openmetadata/service/OpenMetadataApplication.java",
+    "url": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/12f9e16ed2693af671179c81ce847438d44d3ceb/openmetadata-service/src/main/java/org/openmetadata/service/OpenMetadataApplication.java",
+    "sha256": "b4e7dcf2865e2431575463eed4057d85edbb7af8b595ae8e4bcf0c2294a0df85"
+  },
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "sha": "12f9e16ed2693af671179c81ce847438d44d3ceb",
+    "path": "openmetadata-service/src/main/java/org/openmetadata/service/resources/services/database/DatabaseServiceResource.java",
+    "url": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/12f9e16ed2693af671179c81ce847438d44d3ceb/openmetadata-service/src/main/java/org/openmetadata/service/resources/services/database/DatabaseServiceResource.java",
+    "sha256": "603273ff69bc8a2e295eae52d4436c4687248d41fbbd4da18fbbbb5ce02d4fe5"
+  },
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "sha": "12f9e16ed2693af671179c81ce847438d44d3ceb",
+    "path": "openmetadata-ui/src/main/resources/ui/src/pages/AddServicePage/AddServicePage.component.tsx",
+    "url": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/12f9e16ed2693af671179c81ce847438d44d3ceb/openmetadata-ui/src/main/resources/ui/src/pages/AddServicePage/AddServicePage.component.tsx",
+    "sha256": "9ee3359b79e84cdca4c92bad4740398b5e985a4d2cff978595026e26130dd3f6"
+  },
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "sha": "12f9e16ed2693af671179c81ce847438d44d3ceb",
+    "path": "openmetadata-mcp/src/main/java/org/openmetadata/mcp/McpServer.java",
+    "url": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/12f9e16ed2693af671179c81ce847438d44d3ceb/openmetadata-mcp/src/main/java/org/openmetadata/mcp/McpServer.java",
+    "sha256": "9be76f2946b6b4d76db7b1b95bf0a1d4adaabf58181f3897f507e895effe9f1b"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/README.md",
+    "sha256": "940fadc43b44b84c3a3a8e15c81dd54443d5358fd95cf588de8c17ca81cbf606"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "package.json",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/package.json",
+    "sha256": "a0411e7f032f5699ce1a1616ba9a6362320933342b2e2ac4b2507637653887d8"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "packages/core/server/src/application.ts",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/packages/core/server/src/application.ts",
+    "sha256": "cb25d34451d15859da3216a143b399b5b5154b9f8957021ba9179ca194776722"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "packages/core/server/src/plugin-manager/plugin-manager.ts",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/packages/core/server/src/plugin-manager/plugin-manager.ts",
+    "sha256": "610ae6b2ba0c69f969ebca2d6cfc22526c608669a429e67039bfd32070489f14"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "packages/plugins/@nocobase/plugin-data-source-main/src/server/index.ts",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/packages/plugins/@nocobase/plugin-data-source-main/src/server/index.ts",
+    "sha256": "5b241da983fcf20a17e2eaf2e1637ce1b620b2e289c7be0fc728aff0e09d9a98"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "packages/plugins/@nocobase/plugin-workflow/src/server/index.ts",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/packages/plugins/@nocobase/plugin-workflow/src/server/index.ts",
+    "sha256": "791b7746f02fa2967cfb05ccd555681b6b97c8e82a75f0c8ce218375535c5899"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "packages/plugins/@nocobase/plugin-acl/src/server/index.ts",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/packages/plugins/@nocobase/plugin-acl/src/server/index.ts",
+    "sha256": "6d529546a1feea898313e9e8d2ca57d7ee733b3075d761f0c97a71ba223cedaf"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "packages/plugins/@nocobase/plugin-workflow/LICENSE",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/packages/plugins/@nocobase/plugin-workflow/LICENSE",
+    "sha256": "8d300fccfb9c50c1c47395b057f41d192603793c7732bcf25c99b7ff75312064"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "path": "packages/plugins/@nocobase/plugin-data-source-main/LICENSE",
+    "url": "https://raw.githubusercontent.com/nocobase/nocobase/e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c/packages/plugins/@nocobase/plugin-data-source-main/LICENSE",
+    "sha256": "8d300fccfb9c50c1c47395b057f41d192603793c7732bcf25c99b7ff75312064"
+  },
+  {
+    "repo": "datahub-project/datahub",
+    "sha": "1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/datahub-project/datahub/1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5/README.md",
+    "sha256": "9711dc90543bb6a6703e37e246244e4eb689ff68234d9bdfc081edef544fdd7a"
+  },
+  {
+    "repo": "datahub-project/datahub",
+    "sha": "1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5",
+    "path": "datahub-web-react/package.json",
+    "url": "https://raw.githubusercontent.com/datahub-project/datahub/1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5/datahub-web-react/package.json",
+    "sha256": "289a78e40dc8472a705188a2284b73285f08fdd3952012a1f495752c4e263d29"
+  },
+  {
+    "repo": "datahub-project/datahub",
+    "sha": "1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5",
+    "path": "metadata-ingestion/src/datahub/ingestion/api/source.py",
+    "url": "https://raw.githubusercontent.com/datahub-project/datahub/1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5/metadata-ingestion/src/datahub/ingestion/api/source.py",
+    "sha256": "b0bcc59275cba6de1e026f4fa437f605461c44c2e686cd9086e9d080850a31d6"
+  },
+  {
+    "repo": "datahub-project/datahub",
+    "sha": "1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5",
+    "path": "metadata-ingestion/src/datahub/emitter/rest_emitter.py",
+    "url": "https://raw.githubusercontent.com/datahub-project/datahub/1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5/metadata-ingestion/src/datahub/emitter/rest_emitter.py",
+    "sha256": "4c31bbd6dd0411793b3e490020c4dea5d46a42c392223d3330f9828db8c17957"
+  },
+  {
+    "repo": "datahub-project/datahub",
+    "sha": "1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5",
+    "path": "datahub-web-react/src/app/ingestV2/source/multiStepBuilder/IngestionSourceBuilder.tsx",
+    "url": "https://raw.githubusercontent.com/datahub-project/datahub/1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5/datahub-web-react/src/app/ingestV2/source/multiStepBuilder/IngestionSourceBuilder.tsx",
+    "sha256": "2203e5042b11c2facf449215d328810b3e772a89e9b70f439d53b4819ab73bdc"
+  },
+  {
+    "repo": "protegeproject/webprotege",
+    "sha": "1e84fa02aef68be45f18c08dbeae94bec9b04a41",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/protegeproject/webprotege/1e84fa02aef68be45f18c08dbeae94bec9b04a41/README.md",
+    "sha256": "a5f58be6c5a3c55a7bbecf741a00eff4142fe6958dcc4886ca260c424fdde96d"
+  },
+  {
+    "repo": "protegeproject/webprotege",
+    "sha": "1e84fa02aef68be45f18c08dbeae94bec9b04a41",
+    "path": "pom.xml",
+    "url": "https://raw.githubusercontent.com/protegeproject/webprotege/1e84fa02aef68be45f18c08dbeae94bec9b04a41/pom.xml",
+    "sha256": "d1743e1caa87780c8e91f7571b0acc42da561c94c6fa2bd4f11bd60e487bb643"
+  },
+  {
+    "repo": "protegeproject/webprotege",
+    "sha": "1e84fa02aef68be45f18c08dbeae94bec9b04a41",
+    "path": "webprotege-server-core/src/main/java/edu/stanford/bmir/protege/web/server/project/chg/ChangeManager.java",
+    "url": "https://raw.githubusercontent.com/protegeproject/webprotege/1e84fa02aef68be45f18c08dbeae94bec9b04a41/webprotege-server-core/src/main/java/edu/stanford/bmir/protege/web/server/project/chg/ChangeManager.java",
+    "sha256": "9bdacc9feb6c2c2e378bd3d5918125a9836a61b8c023a6d78781fa75e38ecfa3"
+  },
+  {
+    "repo": "protegeproject/webprotege",
+    "sha": "1e84fa02aef68be45f18c08dbeae94bec9b04a41",
+    "path": "webprotege-server-core/src/main/java/edu/stanford/bmir/protege/web/server/sharing/ProjectSharingSettingsManagerImpl.java",
+    "url": "https://raw.githubusercontent.com/protegeproject/webprotege/1e84fa02aef68be45f18c08dbeae94bec9b04a41/webprotege-server-core/src/main/java/edu/stanford/bmir/protege/web/server/sharing/ProjectSharingSettingsManagerImpl.java",
+    "sha256": "1fa504aeb5dd0ab78f1132a8234558e2450d49f4d510538e5c08acf225fc078e"
+  },
+  {
+    "repo": "ontop/ontop",
+    "sha": "b529b39db0519aa2db3200095b24f705135d75f3",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/ontop/ontop/b529b39db0519aa2db3200095b24f705135d75f3/README.md",
+    "sha256": "f466c451d308ba412de0eeaa1f9c63a81b8bd9580c1c1b3860e8e16e6517c618"
+  },
+  {
+    "repo": "ontop/ontop",
+    "sha": "b529b39db0519aa2db3200095b24f705135d75f3",
+    "path": "pom.xml",
+    "url": "https://raw.githubusercontent.com/ontop/ontop/b529b39db0519aa2db3200095b24f705135d75f3/pom.xml",
+    "sha256": "4df6bb1e43a704be5b8ce6d5b2f36e49d98b4cb151a8dcb33ba4fe55cf87aaeb"
+  },
+  {
+    "repo": "apache/jena",
+    "sha": "3014246b382d2439f4cd81aa72a7383ba0f9b3d5",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/apache/jena/3014246b382d2439f4cd81aa72a7383ba0f9b3d5/README.md",
+    "sha256": "c0945ead2869c99ac6eea88519529560d5e8e01c4f718d356e231d144ab10034"
+  },
+  {
+    "repo": "apache/jena",
+    "sha": "3014246b382d2439f4cd81aa72a7383ba0f9b3d5",
+    "path": "jena-shacl/src/main/java/org/apache/jena/shacl/ShaclValidator.java",
+    "url": "https://raw.githubusercontent.com/apache/jena/3014246b382d2439f4cd81aa72a7383ba0f9b3d5/jena-shacl/src/main/java/org/apache/jena/shacl/ShaclValidator.java",
+    "sha256": "918eb9ab580832812f4b1d640035b189bf857fcad83d8eead541ff43010fae58"
+  },
+  {
+    "repo": "getzep/graphiti",
+    "sha": "964bb11d1e7020e3cc67fab244268b0736b6c219",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/getzep/graphiti/964bb11d1e7020e3cc67fab244268b0736b6c219/README.md",
+    "sha256": "72c09aa0f12b7835f8c2919000788bca43306cf847269d4c3a7f35c957218689"
+  },
+  {
+    "repo": "getzep/graphiti",
+    "sha": "964bb11d1e7020e3cc67fab244268b0736b6c219",
+    "path": "pyproject.toml",
+    "url": "https://raw.githubusercontent.com/getzep/graphiti/964bb11d1e7020e3cc67fab244268b0736b6c219/pyproject.toml",
+    "sha256": "b95a5450b3dbd705541da5a1006fea79ee61067a6a5287bd1e1b72c1d5a0e054"
+  },
+  {
+    "repo": "getzep/graphiti",
+    "sha": "964bb11d1e7020e3cc67fab244268b0736b6c219",
+    "path": "graphiti_core/graphiti.py",
+    "url": "https://raw.githubusercontent.com/getzep/graphiti/964bb11d1e7020e3cc67fab244268b0736b6c219/graphiti_core/graphiti.py",
+    "sha256": "f3a4a26094e681fea3ed333d70d89fcb5df5af49b1a9599d8e77d4fcaf8be45a"
+  },
+  {
+    "repo": "getzep/graphiti",
+    "sha": "964bb11d1e7020e3cc67fab244268b0736b6c219",
+    "path": "graphiti_core/edges.py",
+    "url": "https://raw.githubusercontent.com/getzep/graphiti/964bb11d1e7020e3cc67fab244268b0736b6c219/graphiti_core/edges.py",
+    "sha256": "637732ae4291ca0e5b53e43dd92be6f46a91e352719cb7ea1570ebab7d5d0e33"
+  },
+  {
+    "repo": "deepseek-ai/deepseek-harness",
+    "sha": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/d743267388641bc76f17c45ce8b4c231aed1d32c/README.md",
+    "sha256": "0f5516be2acde776f05572cbc8c3093c90549afe04ce118e11157d073d5d15f4"
+  },
+  {
+    "repo": "deepseek-ai/deepseek-harness",
+    "sha": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "path": "packages/mcp/mcp-client/README.md",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/README.md",
+    "sha256": "346ad21f0c7f8bd7248a021513228769fcde1dec7065a3ea77e809f999805806"
+  },
+  {
+    "repo": "deepseek-ai/deepseek-harness",
+    "sha": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "path": "packages/mcp/mcp-client/package.json",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/package.json",
+    "sha256": "12290e4de18caae80c23a042f39ff20e53ecf96ea3ac577ec4928ef7ecd13cfb"
+  },
+  {
+    "repo": "deepseek-ai/deepseek-harness",
+    "sha": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "path": "packages/mcp/mcp-client/src/index.ts",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/src/index.ts",
+    "sha256": "f279bd88743ca73b0d9834915d1bb31e455e21c87f4990808cfd55b273db4d1c"
+  },
+  {
+    "repo": "deepseek-ai/deepseek-harness",
+    "sha": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "path": "packages/mcp/mcp-client/src/transport.ts",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/src/transport.ts",
+    "sha256": "6f3fca685af3d5654c476e95db24e1245dc1fa021a0bd7f477ce4ad997e1c8f6"
+  },
+  {
+    "repo": "deepseek-ai/deepseek-harness",
+    "sha": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "path": "packages/mcp/mcp-client/src/tools.ts",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/src/tools.ts",
+    "sha256": "59203150bda479a990afcdaf60483a35a836887926892e1074e02d0294c01af9"
+  },
+  {
+    "repo": "deepseek-ai/deepseek-harness",
+    "sha": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "path": "packages/mcp/mcp-client/src/connection.ts",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/mcp/mcp-client/src/connection.ts",
+    "sha256": "06dc1b3a1297b8b23f6ac5c44f3ba6740716c76db71c28cfb8f14d6c0340030e"
+  },
+  {
+    "repo": "PrefectHQ/fastmcp",
+    "sha": "e2fcc412001ff7414095c5dc282f94c70299a612",
+    "path": "README.md",
+    "url": "https://raw.githubusercontent.com/PrefectHQ/fastmcp/e2fcc412001ff7414095c5dc282f94c70299a612/README.md",
+    "sha256": "5deedd45b58cc1b7c2ab256a0aa2ebec773345e5d7794210bfc33d20231e6f88"
+  },
+  {
+    "repo": "PrefectHQ/fastmcp",
+    "sha": "e2fcc412001ff7414095c5dc282f94c70299a612",
+    "path": "pyproject.toml",
+    "url": "https://raw.githubusercontent.com/PrefectHQ/fastmcp/e2fcc412001ff7414095c5dc282f94c70299a612/pyproject.toml",
+    "sha256": "0fc3989c0c5148ba208fec9758708fd5c8fdf3a480097edc9a6e15287fd29f03"
+  },
+  {
+    "repo": "directus/directus",
+    "sha": "8e140f94250834cea0a0fb6eb822cac39ed9faec",
+    "path": "license",
+    "url": "https://raw.githubusercontent.com/directus/directus/8e140f94250834cea0a0fb6eb822cac39ed9faec/license",
+    "sha256": "f209dfa60e56b29f6e8e5cefde91dec4ce86f12289209ede63520556385d555d"
+  },
+  {
+    "repo": "Budibase/budibase",
+    "sha": "b2e164ceb76e2ffbff3f632536bc4d8081eeb254",
+    "path": "packages/client/LICENSE",
+    "url": "https://raw.githubusercontent.com/Budibase/budibase/b2e164ceb76e2ffbff3f632536bc4d8081eeb254/packages/client/LICENSE",
+    "sha256": "c07a272bbf9f78cfbe44b76d807333a881937b288f90b37ce5e7af4f3f6d4400"
+  }
+]

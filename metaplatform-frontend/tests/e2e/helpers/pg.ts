@@ -10,7 +10,7 @@ export interface PgConfig {
 }
 
 export function pgConfigFromEnv(): PgConfig {
-  return {
+  const cfg = {
     host: process.env.PGHOST ?? 'localhost',
     port: Number(process.env.PGPORT ?? '5432'),
     user: process.env.PGUSER ?? 'meta',
@@ -18,6 +18,8 @@ export function pgConfigFromEnv(): PgConfig {
     password: process.env.PGPASSWORD ?? 'meta',
     database: process.env.PGDATABASE ?? 'metaplatform_ont',
   };
+  if(process.env.MP11_CANDIDATE === '1' && (cfg.host !== '127.0.0.1' || cfg.port !== 55497 || !cfg.database.startsWith('codex_mp11_'))) throw new Error('Unsafe candidate PG target');
+  return cfg;
 }
 
 export async function pgQuery<T = Record<string, unknown>>(
@@ -25,6 +27,7 @@ export async function pgQuery<T = Record<string, unknown>>(
   params: unknown[] = [],
   cfg: PgConfig = pgConfigFromEnv(),
 ): Promise<T[]> {
+  if(process.env.MP11_CANDIDATE === '1' && (cfg.host !== '127.0.0.1' || cfg.port !== 55497 || !cfg.database.startsWith('codex_mp11_'))) throw new Error('Unsafe effective candidate PG target');
   const client = new Client(cfg);
   await client.connect();
   try {

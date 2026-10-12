@@ -23,8 +23,17 @@ Seed data:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from copy import deepcopy
+from threading import RLock
 from typing import Any
+
+
+class AppRevisionConflict(ValueError):
+    pass
+
+
+_APP_LOCK = RLock()
 
 
 @dataclass(frozen=True)
@@ -42,6 +51,13 @@ class ApphubApp:
     # category 是技术分类（platform/knowledge/data/business），business_domain
     # 是业务分类，两者是独立的分类轴。
     business_domain: str = ""
+    revision: int = 0
+    status: str = "DESIGNING"
+    created_at: str | None = None
+    updated_at: str | None = None
+    published_version_id: str | None = None
+    versions: list[dict[str, Any]] = field(default_factory=list)
+    releases: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -84,6 +100,7 @@ class ApphubPage:
     module_code: str
     layout: str
     schema_version: int = 1
+    definition: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -342,7 +359,7 @@ def list_apps(tenant_id: str) -> list[ApphubApp]:
     if not tenant_id:
         return []
     _ensure_tenant(tenant_id)
-    return sorted(_APPS[tenant_id].values(), key=lambda a: (a.category, a.name))
+    return deepcopy(sorted(_APPS[tenant_id].values(), key=lambda a: (a.category, a.name)))
 
 
 def list_groups(tenant_id: str) -> list[ApphubGroup]:
@@ -389,31 +406,44 @@ def list_templates(tenant_id: str) -> list[ApphubTemplate]:
 # Public write API (BUSINESS-SLICES deep implementation)
 # ---------------------------------------------------------------------------
 def get_app(tenant_id: str, code: str) -> ApphubApp | None:
-    """Return a single app by code, or None."""
+    """Resolve an exact ID before the tenant-local legacy code."""
     if not tenant_id:
         return None
     _ensure_tenant(tenant_id)
-    return _APPS[tenant_id].get(code)
+    apps = _APPS[tenant_id]
+    with _APP_LOCK:
+        app = next((a for a in apps.values() if a.id == code), None) or apps.get(code)
+        return deepcopy(app)
 
 
-def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
+def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> ApphubApp:
     """Insert or replace an app."""
-    if not tenant_id:
-        raise ValueError("tenant_id is required")
+    if not tenant_id or app.tenant_id != tenant_id:
+        raise ValueError("cross-tenant app write denied")
     _ensure_tenant(tenant_id)
-    _APPS[tenant_id][app.code] = app
-    return app
+    with _APP_LOCK:
+        existing = _APPS[tenant_id].get(app.code)
+        if insert_only and (existing or any(a.id == app.id for a in _APPS[tenant_id].values())):
+            raise ValueError("app already registered")
+        if existing and existing.revision != app.revision:
+            raise AppRevisionConflict("Application changed; reload before saving")
+        saved = replace(app, revision=existing.revision + 1 if existing else 0)
+        _APPS[tenant_id][app.code] = deepcopy(saved)
+        return deepcopy(saved)
 
 
-def delete_app(tenant_id: str, code: str) -> bool:
-    """Delete an app by code. Returns True if deleted."""
+def delete_app(tenant_id: str, code: str, *, by_id: bool = False) -> bool:
+    """Delete the exact resolved ID when requested, preserving same-valued codes."""
     if not tenant_id:
         return False
     _ensure_tenant(tenant_id)
-    if code not in _APPS[tenant_id]:
-        return False
-    del _APPS[tenant_id][code]
-    return True
+    with _APP_LOCK:
+        if by_id:
+            code = next((a.code for a in _APPS[tenant_id].values() if a.id == code), None)
+        if code not in _APPS[tenant_id]:
+            return False
+        del _APPS[tenant_id][code]
+        return True
 
 
 def get_group(tenant_id: str, code: str) -> ApphubGroup | None:
@@ -422,6 +452,17 @@ def get_group(tenant_id: str, code: str) -> ApphubGroup | None:
         return None
     _ensure_tenant(tenant_id)
     return _GROUPS[tenant_id].get(code)
+
+
+def insert_group(tenant_id: str, group: ApphubGroup) -> ApphubGroup:
+    if not tenant_id or group.tenant_id != tenant_id:
+        raise ValueError("cross-tenant group creation denied")
+    with _APP_LOCK:
+        _ensure_tenant(tenant_id)
+        if group.code in _GROUPS[tenant_id]:
+            raise ValueError("group already exists")
+        _GROUPS[tenant_id][group.code] = group
+        return group
 
 
 def put_group(tenant_id: str, group: ApphubGroup) -> ApphubGroup:
@@ -480,22 +521,26 @@ def get_module(tenant_id: str, code: str) -> ApphubModule | None:
     return _MODULES[tenant_id].get(code)
 
 
-def put_module(tenant_id: str, module: ApphubModule) -> ApphubModule:
-    """Insert or replace a module."""
-    if not tenant_id:
-        raise ValueError("tenant_id is required")
-    _ensure_tenant(tenant_id)
-    _MODULES[tenant_id][module.code] = module
-    return module
+def put_module(tenant_id: str, module: ApphubModule, *, insert_only: bool = False) -> ApphubModule:
+    if not tenant_id or module.tenant_id != tenant_id:
+        raise ValueError("cross-tenant module write denied")
+    with _APP_LOCK:
+        _ensure_tenant(tenant_id)
+        if insert_only and (module.code in _MODULES[tenant_id] or any(row.id == module.id for row in _MODULES[tenant_id].values())):
+            raise ValueError("module already exists")
+        _MODULES[tenant_id][module.code] = deepcopy(module)
+        return deepcopy(module)
 
 
-def put_page(tenant_id: str, page: ApphubPage) -> ApphubPage:
-    """Insert or replace a page."""
-    if not tenant_id:
-        raise ValueError("tenant_id is required")
-    _ensure_tenant(tenant_id)
-    _PAGES[tenant_id][page.code] = page
-    return page
+def put_page(tenant_id: str, page: ApphubPage, *, insert_only: bool = False) -> ApphubPage:
+    if not tenant_id or page.tenant_id != tenant_id:
+        raise ValueError("cross-tenant page write denied")
+    with _APP_LOCK:
+        _ensure_tenant(tenant_id)
+        if insert_only and (page.code in _PAGES[tenant_id] or any(row.id == page.id for row in _PAGES[tenant_id].values())):
+            raise ValueError("page already exists")
+        _PAGES[tenant_id][page.code] = deepcopy(page)
+        return deepcopy(page)
 
 
 def get_template(tenant_id: str, code: str) -> ApphubTemplate | None:

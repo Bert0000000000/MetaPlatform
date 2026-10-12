@@ -1,0 +1,9 @@
+
+ RUN  v3.2.7 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/metaplatform-frontend/apps/web
+
+·································
+
+ Test Files  7 passed (7)
+      Tests  33 passed (33)
+   Start at  01:13:26
+   Duration  14.12s (transform 4.31s, setup 0ms, collect 14.87s, tests 2.29s, environment 3.98s, prepare 1.16s)

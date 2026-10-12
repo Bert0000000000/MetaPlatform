@@ -24,6 +24,8 @@ export interface AuthUserInfo {
 }
 
 export interface AuthResponse {
+  /** Tenant resolved by the server from the verified issuer token. */
+  tenantId?: string;
   loginResult?: string;
   userId?: string;
   username?: string;
@@ -52,9 +54,10 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
   return resp.data;
 }
 
-export async function logout(): Promise<void> {
+export async function logout(refreshToken?: string | null): Promise<{ loggedOut: boolean; blacklisted: boolean; providerLoggedOut: boolean }> {
   const url = apiPath('iam', '/auth/logout');
-  await apiClient.post(url);
+  const response = await apiClient.post(url, { refreshToken: refreshToken ?? undefined });
+  return response.data;
 }
 
 export async function refresh(refreshToken: string): Promise<AuthResponse> {

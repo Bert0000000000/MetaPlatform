@@ -1,0 +1,613 @@
+{
+  "base": "2f869020a50707857fb5e42151ddd5dcbef03f8c",
+  "description": "Final owned source bytes; full runs plus documented covering amendments. LF/whitespace-only fixes do not alter parsed source. DATA seven decorators covered by live13 IDs and AST equivalence. Evidence/docs excluded to avoid self-reference.",
+  "files": [
+    {
+      "path": ".github/workflows/ontology-loop.yml",
+      "sha256": "d6a1a85d030b5692bd9af47c800ea8ffe72b064ac1bf1dd00274a59264e77a8f",
+      "lines": 125,
+      "changed_source_ranges": [
+        "26,8",
+        "84,15",
+        "120,2"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/contracts/openapi/services/data.yaml",
+      "sha256": "d35d492311184c9ffdad3d07f31699c9f24ff016a29c7980fd04dafb32adf3ae",
+      "lines": 2360,
+      "changed_source_ranges": [
+        "21,182",
+        "2360,0"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/contracts/openapi/services/ont.yaml",
+      "sha256": "0ca7a958e0656b05e7054e027738bbcef6203361d38538f50cc4b8f2ac66eb6d",
+      "lines": 4719,
+      "changed_source_ranges": [
+        "20,2",
+        "23,11",
+        "35,3",
+        "39",
+        "41,34",
+        "76,2",
+        "83,21",
+        "105,9",
+        "116,2",
+        "118,0",
+        "124,19",
+        "144,2",
+        "151,20",
+        "172,9",
+        "183,2",
+        "185,0",
+        "191,13",
+        "205,2",
+        "212,28",
+        "241,10",
+        "252,3",
+        "255,0",
+        "257,4",
+        "262,2",
+        "269,71",
+        "345,69",
+        "417",
+        "419",
+        "423",
+        "427,4",
+        "437,0",
+        "444,3",
+        "478,7",
+        "488,2",
+        "502,6",
+        "514",
+        "546,9",
+        "558,2",
+        "561",
+        "563",
+        "568,4",
+        "573,0",
+        "579",
+        "586",
+        "618,7",
+        "628,3",
+        "644",
+        "651",
+        "683",
+        "685,2",
+        "690",
+        "693,28",
+        "723",
+        "727,3",
+        "733",
+        "735",
+        "739,5",
+        "747,3",
+        "755",
+        "757",
+        "759,25",
+        "784,0",
+        "786",
+        "790,5",
+        "798",
+        "800",
+        "804,5",
+        "812,3",
+        "820",
+        "822",
+        "824,36",
+        "860,0",
+        "862",
+        "866,5",
+        "874",
+        "876",
+        "880,5",
+        "888,91",
+        "996,3",
+        "1023,4",
+        "1028,5",
+        "1034",
+        "1036,3",
+        "1039,0",
+        "1041,2",
+        "1046,2",
+        "1052,3",
+        "1058,3",
+        "1064,40",
+        "1105,3",
+        "1109,37",
+        "1147,67",
+        "1218",
+        "1220,0",
+        "1223,0",
+        "1226,2",
+        "1231,3",
+        "1239",
+        "1247",
+        "1254,3",
+        "1258,3",
+        "1264,3",
+        "1269",
+        "1278",
+        "1287",
+        "1291,3",
+        "1297,2",
+        "1300",
+        "1305,2",
+        "1311",
+        "1314,6",
+        "1323,6",
+        "1330,3",
+        "1334",
+        "1336,175",
+        "4719,0"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/conftest.py",
+      "sha256": "e5f0905f7c7d8458b56b9b05ce8c4ff1d6391e3a02cbb86a3adad5af1084abf7",
+      "lines": 80,
+      "changed_source_ranges": [
+        "46"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/test_apphub_order_binding.py",
+      "sha256": "4de64c8b5ef4171b71735a5e80a8ddbf8a1c24ee5a54cb43d52d86376abdf652",
+      "lines": 326,
+      "changed_source_ranges": [
+        "86"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/test_apphub_publication.py",
+      "sha256": "772993391a5bd2f5f5acb7decd2c385892b384aab72d040f4c8606163f2eb54e",
+      "lines": 565,
+      "changed_source_ranges": [
+        "317"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-kernel/src/mate_kernel/action/engine.py",
+      "sha256": "85ce1b96bb15292cd07bbcee5d55bb05a5b82b8e3972f1e1a510da147ab25f3c",
+      "lines": 466,
+      "changed_source_ranges": [
+        "29,0",
+        "447"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-kernel/tests/test_action_engine.py",
+      "sha256": "72c0c753d3fb2282cd2e2e0ed7eb795015b42068733bae1de70f061902db83f0",
+      "lines": 187,
+      "changed_source_ranges": [
+        "121,5"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-kernel/tests/test_mp11_audit_identity.py",
+      "sha256": "f168d29e4f81faa103265ac56232b463e6ee14b4a13a3cc1819ebfeb54a1c348",
+      "lines": 11,
+      "changed_source_ranges": [
+        "1,11"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-platform/src/mate_platform/auth/middleware.py",
+      "sha256": "50f5f09e4310f0779d0c19d7a5c4735ddb73c4a59fc504cde491d2a83af0ed0c",
+      "lines": 230,
+      "changed_source_ranges": [
+        "8,0",
+        "198,9"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-platform/src/mate_platform/auth/verifier.py",
+      "sha256": "e0ff3991b492cd9d02ef625f7ec357def8ee06bf2d382c2a862f7993cedb5b03",
+      "lines": 223,
+      "changed_source_ranges": [
+        "33,3",
+        "84,3",
+        "219,5"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-platform/tests/test_mp11_signed_identity.py",
+      "sha256": "22d5c3f45a62edf822b7856813f0afcf9a72451fd5120c94e9f4e8ba7824b223",
+      "lines": 64,
+      "changed_source_ranges": [
+        "1,64"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py",
+      "sha256": "f665410c8e4adc4ae636107a064af14d240d8594b31584d5bb7683475ecaa106",
+      "lines": 870,
+      "changed_source_ranges": [
+        "775",
+        "796",
+        "805",
+        "827",
+        "836",
+        "856",
+        "865"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_dynamic_registry.py",
+      "sha256": "8815e390cc948d271d4064ba9b8d4d5a8b4fdbe5538c004c52059f4d7a05e8c2",
+      "lines": 155,
+      "changed_source_ranges": [
+        "36,2",
+        "44",
+        "46",
+        "67",
+        "88,12",
+        "125",
+        "128",
+        "130",
+        "146,10"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_llm_adv_mcp.py",
+      "sha256": "a2e57c04f095fff35f53c9b07faf9682167fc1cb0ddfc966b78472ed60a9694d",
+      "lines": 150,
+      "changed_source_ranges": [
+        "54",
+        "63",
+        "136"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_http_endpoints.py",
+      "sha256": "867d29299fc76bca7532e36d08c24a3ef4520518a6802e1c02fc7ff358723256",
+      "lines": 347,
+      "changed_source_ranges": [
+        "56,2",
+        "59,6",
+        "77,2",
+        "112,13",
+        "137,0",
+        "140,6",
+        "149,2",
+        "178,2",
+        "185,2",
+        "192"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_protocol_tenant_binding.py",
+      "sha256": "e47b2ec4912447f5225bc90bf04ac234afdea84e46771bfb3d3326eb07f096c3",
+      "lines": 321,
+      "changed_source_ranges": [
+        "295",
+        "298",
+        "300,2",
+        "303"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_streamable_http.py",
+      "sha256": "426f99a9a31b60c75c1b112f8b9aa17ad79e8231e7b37ed183c762e28b076031",
+      "lines": 176,
+      "changed_source_ranges": [
+        "150",
+        "154"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py",
+      "sha256": "8d8eae2a5e78f349a2a36659979687fd910ff285a3c9a36361e07c6f421662ee",
+      "lines": 5565,
+      "changed_source_ranges": [
+        "1104",
+        "1106,4",
+        "1111,19",
+        "1137,0",
+        "1144,2",
+        "1147,7",
+        "1155,2",
+        "1159",
+        "1161",
+        "1171,3",
+        "1177,5",
+        "1188,2",
+        "1194",
+        "1209,2"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py",
+      "sha256": "e590775ab8348b52166f31df2e6d9ea580bee1faff02d73d925f26aa6bdc369d",
+      "lines": 7549,
+      "changed_source_ranges": [
+        "4607,8"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/conftest.py",
+      "sha256": "755fbfae611439243166fa9c84035ada23d7a626bfa368a1ed378e4f79cc6350",
+      "lines": 133,
+      "changed_source_ranges": [
+        "72",
+        "97"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_e2e.py",
+      "sha256": "32417eb454869bdaedcb54e89ee45e1947324edc0bcad102a283f238eae8ef7d",
+      "lines": 654,
+      "changed_source_ranges": [
+        "413,3"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_ws_auth.py",
+      "sha256": "7a5f20c0c6a15338b634b75a8d8a9043f94f4039b22d9315bbb8b92e6f8952c8",
+      "lines": 63,
+      "changed_source_ranges": [
+        "1,63"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_ont_act05_unified.py",
+      "sha256": "8c438686e2446347961a3287abbb8448ba01bdb8464525dc240058a631ba2af6",
+      "lines": 944,
+      "changed_source_ranges": [
+        "745",
+        "747",
+        "766",
+        "769",
+        "771",
+        "805",
+        "807",
+        "838",
+        "840",
+        "860",
+        "862"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_ont_ai09_vector_search.py",
+      "sha256": "243b381ec61299cbb4c2be2b0c8cf62b8a48e65d242c18f987e225328f7cf2d7",
+      "lines": 163,
+      "changed_source_ranges": [
+        "108",
+        "110"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_ont_g23_functions.py",
+      "sha256": "708d0ed0726a55c1c3615c584e09caea5f11bbb9c0345afd65d5d52a65d0eccc",
+      "lines": 226,
+      "changed_source_ranges": [
+        "97,34",
+        "132,10",
+        "152,11",
+        "166,3",
+        "174,16",
+        "192,28",
+        "221,6"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+      "sha256": "39626498723fb195452e712e9218e943eb1107cf923a5cfa0249530f462c8b20",
+      "lines": 657,
+      "changed_source_ranges": [
+        "140",
+        "371,10",
+        "391",
+        "400",
+        "441,7",
+        "449,2",
+        "459,4",
+        "464,3",
+        "468,0",
+        "470,7",
+        "478,17"
+      ]
+    },
+    {
+      "path": "mate-platform-backend/services/auth-service/tests/test_mp11_login_tenant.py",
+      "sha256": "0280e0414411e2c6a265bb4b89606888dd519fdc16225af8db8f020cf0b0c2ee",
+      "lines": 90,
+      "changed_source_ranges": [
+        "1,90"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/components/shell/TopBar.test.tsx",
+      "sha256": "36e2165eaef4db7d6ddf2614b297d308c3dfa20d274480ade2f4ca4cc53e7063",
+      "lines": 32,
+      "changed_source_ranges": [
+        "1,32"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/components/shell/TopBar.tsx",
+      "sha256": "d2eb7889345712723a80d212ee9dba9743a82a84c63b434f1cbdf54f7f84b500",
+      "lines": 139,
+      "changed_source_ranges": [
+        "4",
+        "110,9"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/mp11-order-app-flow.spec.ts",
+      "sha256": "65b9968230b7cd4b0466257a17cdd0259b134c7f3f2c1257ae3df69cf3a2e541",
+      "lines": 181,
+      "changed_source_ranges": [
+        "7,2",
+        "29",
+        "95",
+        "105",
+        "109",
+        "114",
+        "117",
+        "136,46"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-ia-v2-data-flow.spec.ts",
+      "sha256": "3c568c63016ecd34f9256aa1d2d568488c1f955a0ce3c0842f6a845ce77b8b7d",
+      "lines": 159,
+      "changed_source_ranges": [
+        "73",
+        "77",
+        "81",
+        "83",
+        "108",
+        "127,5",
+        "136",
+        "143",
+        "149",
+        "151",
+        "157"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-object-creation-flow.spec.ts",
+      "sha256": "381422e25d96ad0ca4089f4935e536720d4623eace41f3e1fe0810d46ed760b0",
+      "lines": 70,
+      "changed_source_ranges": [
+        "1",
+        "5,3",
+        "22",
+        "25",
+        "28,2",
+        "32",
+        "39",
+        "42",
+        "49,2"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-relationship-flow.spec.ts",
+      "sha256": "a1dea45ad533c28020ba643468f2cc858c0dcd7543bb5ee27e1e7bb3d1d9f460",
+      "lines": 149,
+      "changed_source_ranges": [
+        "1",
+        "5,2",
+        "105,2",
+        "111",
+        "141",
+        "148"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/packages/shared/src/api/auth.ts",
+      "sha256": "e17671008ca33b6fa4af771b7a235e08d6fac49ece055e52c498536d65da2d33",
+      "lines": 80,
+      "changed_source_ranges": [
+        "27,2",
+        "57",
+        "59,2"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/packages/shared/src/components/SharedLoginPage.test.tsx",
+      "sha256": "4688f4f6cb673f9531062177fadd565567821398fa4bb2fc60237de258bee337",
+      "lines": 48,
+      "changed_source_ranges": [
+        "1,48"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/packages/shared/src/components/SharedLoginPage.tsx",
+      "sha256": "617f0b2f2abb72049313c86ce6f51cf271b29078214c635982b22aad249ca3c0",
+      "lines": 479,
+      "changed_source_ranges": [
+        "95,7",
+        "105"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/tests/e2e/helpers/pg.ts",
+      "sha256": "00c3fea4c19122f46fff90483b4ca2037cce32b2ece636855f870582d9b459c2",
+      "lines": 39,
+      "changed_source_ranges": [
+        "13",
+        "21,2",
+        "30"
+      ]
+    },
+    {
+      "path": "metaplatform-frontend/tests/e2e/ontology-loop/ontology-core.spec.ts",
+      "sha256": "bb3f2f5db929b6a1d406e76f185d373bea9d3288a41f2237b4530f8c8284eb0c",
+      "lines": 422,
+      "changed_source_ranges": [
+        "19,3",
+        "23",
+        "55,2"
+      ]
+    },
+    {
+      "path": "scripts/acceptance/mp11/README.md",
+      "sha256": "a85bda9c955af5f814caf4746a76e77cc436aa3d73fbd095a7fe6237d2807319",
+      "lines": 31,
+      "changed_source_ranges": [
+        "1,31"
+      ]
+    },
+    {
+      "path": "scripts/acceptance/mp11/candidate.py",
+      "sha256": "9d99789f1d9876a9c35eb538d208c84d6d34b4a69ec381f3e53a11a5822db747",
+      "lines": 82,
+      "changed_source_ranges": [
+        "1,82"
+      ]
+    },
+    {
+      "path": "scripts/acceptance/mp11/config.example.json",
+      "sha256": "f52321d4ec937bfa2a04c0807e819d00440a2e899f200c6fd41530bb028dd8c5",
+      "lines": 15,
+      "changed_source_ranges": [
+        "1,15"
+      ]
+    },
+    {
+      "path": "scripts/acceptance/mp11/manage.py",
+      "sha256": "9a887aab5b3b4556faa79c9a01ce56a88bdf2674c5191e6f1654689124734d84",
+      "lines": 269,
+      "changed_source_ranges": [
+        "1,269"
+      ]
+    },
+    {
+      "path": "scripts/acceptance/mp11/playwright.config.ts",
+      "sha256": "ead19c330a3103b6c1bbc652cc569a0e14a4cfc4215646951f6af3fa19783c4f",
+      "lines": 28,
+      "changed_source_ranges": [
+        "1,28"
+      ]
+    },
+    {
+      "path": "scripts/acceptance/mp11/verify.py",
+      "sha256": "c828fb6060b3ab6473984666670c994c4f7b82f5f0fb55b614c8fa26b5652bd8",
+      "lines": 765,
+      "changed_source_ranges": [
+        "1,765"
+      ]
+    },
+    {
+      "path": "scripts/acceptance/mp11/vite.config.ts",
+      "sha256": "181bddb439a59d357d9f88db71b2993cd80e70ed3dd90632001a049b197447d2",
+      "lines": 13,
+      "changed_source_ranges": [
+        "1,13"
+      ]
+    },
+    {
+      "path": "scripts/acceptance/run-mp11-acceptance.ps1",
+      "sha256": "77c80df7186ed491e89cd835c338000defd6b1ead7307e9892a435141032d2ed",
+      "lines": 35,
+      "changed_source_ranges": [
+        "1,35"
+      ]
+    }
+  ],
+  "source_commit": "01a5e9d5b2916acf602a26028bee09e16ce8aeb1"
+}

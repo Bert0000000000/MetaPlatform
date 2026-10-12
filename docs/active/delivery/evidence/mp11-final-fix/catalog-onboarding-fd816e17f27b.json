@@ -1,0 +1,9 @@
+{
+  "run_id": "fd816e17f27b",
+  "tenant": "mp11-catalog-fd816e17f27b",
+  "order": "ont.mp11-catalog-fd816e17f27b.obj.zorder",
+  "customer": "ont.mp11-catalog-fd816e17f27b.obj.zcustomer",
+  "signed_subject": "08b701df-8e30-4768-98ef-c64c60af65c4",
+  "retained_after_reload": true,
+  "retained_after_revalidation": true
+}

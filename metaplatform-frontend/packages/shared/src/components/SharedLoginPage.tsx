@@ -97,10 +97,17 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
           typeof resp.accessToken !== 'string' || !resp.accessToken.trim()) {
         throw new Error('登录未返回有效用户身份或令牌，请重试登录');
       }
+      if (resp.tenantId !== undefined && (typeof resp.tenantId !== "string" || !resp.tenantId.trim())) {
+        throw new Error("登录响应缺少已验证的租户信息，请联系管理员");
+      }
+      // Older AuthService responses omit tenantId. Keep that tenant unknown:
+      // the API client then omits the header and the server binds its JWT claim.
+      // Neither the login hint nor a client-decoded payload grants tenant access.
+      const verifiedTenant = resp.tenantId ?? "";
       const user: AuthUser = {
         id: userId,
         username: resp.username ?? resp.user?.username ?? username,
-        tenantId: defaultTenantId,
+        tenantId: verifiedTenant,
         realName: resp.realName ?? resp.user?.realName,
         email: resp.user?.email,
         roles: ["USER"],

@@ -19,6 +19,7 @@ def load_app_runtime(
     tenant_id: str,
     app_id: str,
     version: str = "latest",
+    *, published_only: bool = False,
 ) -> RuntimeContext:
     """Load the full runtime context for an app.
 
@@ -36,8 +37,16 @@ def load_app_runtime(
         if app is None:
             raise ValueError(f"app '{app_id}' not found in tenant '{tenant_id}'")
 
+        if published_only:
+            snapshot = next((v for v in app.versions if v.get("versionId") == app.published_version_id
+                             and (version == "latest" or v.get("version") == version)), None)
+            if app.status != "PUBLISHED" or snapshot is None or snapshot.get("status") != "PUBLISHED":
+                raise ValueError("App has no matching published snapshot")
+            return RuntimeContext(app_id=app.id, tenant_id=tenant_id, version=snapshot["version"],
+                                  modules=snapshot["modules"], published_version_id=snapshot["versionId"])
+
         all_modules = list_modules(tenant_id)
-        app_modules = [m for m in all_modules if m.app_code == app_id]
+        app_modules = [m for m in all_modules if m.app_code == app.code]
 
         all_pages = list_pages(tenant_id)
         all_templates = list_templates(tenant_id)
@@ -54,6 +63,8 @@ def load_app_runtime(
                     "name": p.name,
                     "layout": p.layout,
                     "schema_version": p.schema_version,
+                    "id": p.id,
+                    "definition": p.definition,
                 }
                 for p in mod_pages
             ]

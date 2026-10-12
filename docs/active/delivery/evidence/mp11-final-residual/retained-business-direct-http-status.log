@@ -1,0 +1,6 @@
+
+Traceback (most recent call last):
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-residual-http.py", line 19, in <module>
+    assert response.status_code==200,'normal Auth login failed '+actor+' HTTP'+str(response.status_code)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: normal Auth login failed writer HTTP504

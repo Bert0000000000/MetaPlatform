@@ -1,0 +1,11 @@
+{
+  "auth_web_exact_identities_unchanged": true,
+  "owned_kc_redis_pg_unchanged": true,
+  "all_initial_running_container_ids_retained": true,
+  "initial_running_count": 37,
+  "final_running_count": 37,
+  "shared_stop_reset_delete": false,
+  "api_only_reload_count": 2,
+  "second_post_reload_docker_read_timeout": true,
+  "read_only_retry_passed": true
+}

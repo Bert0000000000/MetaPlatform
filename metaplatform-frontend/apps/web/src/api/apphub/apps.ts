@@ -8,9 +8,6 @@ async function get<T>(url: string, params?: Record<string, unknown>): Promise<T>
 async function post<T>(url: string, body?: unknown): Promise<T> {
   return data(await client.post<T>(url, body));
 }
-async function put<T>(url: string, body?: unknown): Promise<T> {
-  return data(await client.put<T>(url, body));
-}
 async function patch<T>(url: string, body?: unknown): Promise<T> {
   return data(await client.patch<T>(url, body));
 }
@@ -48,6 +45,8 @@ interface ApphubAppRaw {
   createdAt?: string | null;
   updated_at?: string | null;
   updatedAt?: string | null;
+  published_version_id?: string;
+  published_version?: string | null;
 }
 
 /** Map backend snake_case app record to the frontend AppItem shape. */
@@ -59,6 +58,9 @@ function mapApp(raw: ApphubAppRaw): AppItem {
     description: raw.description,
     group: raw.category,
     businessDomain: raw.business_domain ?? '',
+    owner: raw.owner,
+    publishedVersionId: raw.published_version_id,
+    publishedVersion: raw.published_version ?? undefined,
     version: raw.version,
     status: raw.status ?? undefined,
     moduleCount: raw.module_count ?? raw.moduleCount ?? undefined,
@@ -88,12 +90,12 @@ export async function getApp(appId: string): Promise<AppItem> {
 }
 
 export async function createApp(request: AppCreateRequest): Promise<AppItem> {
-  const raw = await post<ApphubAppRaw>('/apps', request);
+  const raw = await post<ApphubAppRaw>('/apps', { ...request, category: request.group || 'business' });
   return mapApp(raw);
 }
 
 export async function updateApp(appId: string, request: AppUpdateRequest): Promise<AppItem> {
-  const raw = await put<ApphubAppRaw>(`/apps/${appId}`, request);
+  const raw = await patch<ApphubAppRaw>(`/apps/${appId}`, request);
   return mapApp(raw);
 }
 
@@ -129,4 +131,16 @@ export async function updateDomain(
 
 export async function deleteDomain(code: string): Promise<void> {
   await del<void>(`/domains/${encodeURIComponent(code)}`);
+}
+
+export async function createOrderReviewApplication(name: string): Promise<AppItem> {
+  const groups = await listGroups();
+  if (!groups.includes('business')) {
+    try { await post('/groups', { name: '业务应用', code: 'business' }); }
+    catch (error) {
+      const status = (error as { response?: { status?: number } }).response?.status;
+      if (status !== 409 || !(await listGroups()).includes('business')) throw error;
+    }
+  }
+  return createApp({ name, code: 'order_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16), group: 'business' });
 }

@@ -2,9 +2,8 @@
 
 Default: in-memory (dev / test). When ``MATE_DB_URL`` or ``DATABASE_URL`` is
 set, prefer the SQL-backed ``sql_store`` so CDC tasks / data sources / data
-products persist in PostgreSQL. The dynamic helpers (``get_source_schema`` /
-``test_source_connection``) and the ``*_to_dict`` serializers always come from
-``in_memory`` because they operate on the same domain dataclasses.
+products persist in PostgreSQL. Probe/schema resolve the selected store record
+and call the real connector. Shared serializers redact server-only credentials.
 """
 
 from __future__ import annotations
@@ -18,11 +17,9 @@ from .in_memory import (
     DataProduct,
     DataSource,
     data_product_to_dict,
-    get_source_schema,
     reset_store,
     source_to_dict,
     task_to_dict,
-    test_source_connection,
 )
 
 
@@ -133,3 +130,15 @@ __all__ = [
 ]
 
 from . import sql_store
+
+
+def get_source_schema(tenant_id: str, source_id: str):
+    from ..services.source_connector import discover
+    source = get_source(tenant_id, source_id)
+    return discover(source) if source is not None else None
+
+
+def test_source_connection(tenant_id: str, source_id: str):
+    from ..services.source_connector import probe
+    source = get_source(tenant_id, source_id)
+    return probe(source) if source is not None else None

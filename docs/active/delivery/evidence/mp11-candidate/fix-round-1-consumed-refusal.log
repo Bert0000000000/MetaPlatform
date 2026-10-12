@@ -1,0 +1,8 @@
+
+Traceback (most recent call last):
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\scripts\acceptance\mp11\verify.py", line 770, in <module>
+    if len(sys.argv)>1 and sys.argv[1] in ('frontend','backend','frontend-rest','backend-rest','backend-fixes','backend-cover','backend-ws','browser','browser-object','browser-impact'):sys.exit(run_checks(sys.argv[1]))
+                                                                                                                                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\scripts\acceptance\mp11\verify.py", line 718, in run_checks
+    raise RuntimeError('Browser fixtures already consumed; run advertised Browser phase for fresh preparation')
+RuntimeError: Browser fixtures already consumed; run advertised Browser phase for fresh preparation

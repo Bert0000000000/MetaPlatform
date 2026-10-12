@@ -1,0 +1,10 @@
+{
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\verify.py",
+    "browser"
+  ],
+  "exit_code": 1,
+  "tests_started": 0,
+  "reason": "direct inner browser call refuses consumed fixture; advertised full Browser prepares fresh"
+}

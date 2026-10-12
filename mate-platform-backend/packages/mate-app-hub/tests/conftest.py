@@ -43,6 +43,7 @@ def _keycloak_token(
             "aud": "metaplatform-backend",
             "azp": "metaplatform-backend",
             "preferred_username": sub,
+            "sid": "apphub-human-fixture",
             "realm_access": {"roles": resolved},
             "scope": scopes,
             "attributes": {"tenant_id": [tenant_id]},

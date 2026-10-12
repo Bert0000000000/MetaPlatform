@@ -1,0 +1,64 @@
+{
+  "fix_base": "ca01bf738165e2ab6ad11fdd8c9864d797885879",
+  "source_commit": "3e844b844a201731b8170bd40b22580a83103771",
+  "validation_head": "ca01bf738165e2ab6ad11fdd8c9864d797885879",
+  "tested_worktree_overlay": true,
+  "paths": [
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py",
+      "validated_worktree_sha256": "171fb7960cb982bf760c9851aef3e0a7998895962686ee73705bd0782eb82080",
+      "committed_blob_sha256": "c4d57fd541d1b0357fb3b589e296630462b40276f951ec2487b4089828bbedca",
+      "lf_equal": true,
+      "changed_in_residual": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py",
+      "validated_worktree_sha256": "2dbb14eeaeb791e66f85f433ba4f21311b4f6f02ff596d8bc5c904c6c64cd428",
+      "committed_blob_sha256": "abd43d0c8e9f9fd652539bbdf37e2ad035782221b00ccb98ffc3f2bc6c24c2a3",
+      "lf_equal": true,
+      "changed_in_residual": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/test_apphub_publication.py",
+      "validated_worktree_sha256": "772993391a5bd2f5f5acb7decd2c385892b384aab72d040f4c8606163f2eb54e",
+      "committed_blob_sha256": "6aa69e7b021f1baee45e5a27ef7d53af9cec30482b5cdd02eb492cc2a222bece",
+      "lf_equal": true,
+      "changed_in_residual": false
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/in_memory.py",
+      "validated_worktree_sha256": "2afc7dd05e8913944a668b887f9405cc024d6e6fc587b80d049bf48768f5faed",
+      "committed_blob_sha256": "083a3f066fcf641ef3861141c62137d400972f3440c715f0c4e8bed4cd3d2e10",
+      "lf_equal": true,
+      "changed_in_residual": false
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py",
+      "validated_worktree_sha256": "dbc06768e0b6e5c95cfc1306b2c95b501a440f8a2259d460d64275a83581d5f0",
+      "committed_blob_sha256": "d1e24dff9d48dd8f795c5cc291fb66a1b79377badc5e80f0f3dfee69ec2cfeaf",
+      "lf_equal": true,
+      "changed_in_residual": false
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/__init__.py",
+      "validated_worktree_sha256": "c4272220ee0c096146e89f9d540c56aab20d92874d061d41408397096449043a",
+      "committed_blob_sha256": "c4272220ee0c096146e89f9d540c56aab20d92874d061d41408397096449043a",
+      "lf_equal": true,
+      "changed_in_residual": false
+    },
+    {
+      "path": "scripts/acceptance/mp11/manage.py",
+      "validated_worktree_sha256": "ebd69ee00c892dc7cb404b10e2203b03e3b661aea75a4613c5d35e47188efbfa",
+      "committed_blob_sha256": "77266242611681effcd4e02526e79c3d9b6e1a5a81746061d4c488b521e7e6f6",
+      "lf_equal": true,
+      "changed_in_residual": false
+    },
+    {
+      "path": "scripts/acceptance/mp11/candidate.py",
+      "validated_worktree_sha256": "9d99789f1d9876a9c35eb538d208c84d6d34b4a69ec381f3e53a11a5822db747",
+      "committed_blob_sha256": "0e5c867b36e50a5fb1ede84663661b491d40a465354372073b8be9296946f25b",
+      "lf_equal": true,
+      "changed_in_residual": false
+    }
+  ]
+}

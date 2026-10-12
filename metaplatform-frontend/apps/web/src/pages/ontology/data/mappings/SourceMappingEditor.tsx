@@ -110,6 +110,7 @@ export default function SourceMappingEditor({
   const customWatermark =
     !!source?.ts_column && source.ts_column !== 'updated_at';
   const unsupportedKind = form.kind !== 'pg_table';
+  const registeredSource = !!source?.source_id;
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -167,7 +168,7 @@ export default function SourceMappingEditor({
     (rid) => !type.properties.some((p) => p.rid === rid),
   );
   const submit = async () => {
-    if (locked || !identity || customWatermark || unsupportedKind || !canSave)
+    if (locked || !identity || customWatermark || unsupportedKind || registeredSource || !canSave)
       return;
     const seen = new Set<string>();
     for (const property of type.properties) {
@@ -287,6 +288,7 @@ export default function SourceMappingEditor({
               <Input
                 aria-label="连接环境键"
                 value={form.dsnEnv}
+                disabled={registeredSource}
                 onChange={(v) => change('dsnEnv', v)}
               />
             </label>
@@ -347,6 +349,7 @@ export default function SourceMappingEditor({
               当前声明接口仅支持 pg_table；此来源类型不可编辑保存。
             </p>
           )}
+          {registeredSource && <p role="status">此绑定使用注册数据源 {source?.source_id}，请在注册源向导中验证实际字段并编辑映射。</p>}
         </section>
         {sourceFooter}
       </aside>
@@ -479,6 +482,7 @@ export default function SourceMappingEditor({
                 !identity ||
                 customWatermark ||
                 unsupportedKind ||
+                registeredSource ||
                 locked ||
                 !canSave
               }

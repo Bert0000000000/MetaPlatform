@@ -1,0 +1,16 @@
+{
+  "label": "api-reload-attempt-2",
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "-B",
+    "-X",
+    "utf8",
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\final-residual-business.py",
+    "reload"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform",
+  "exit_code": 1,
+  "elapsed_seconds": 87.54,
+  "head": "3e844b844a201731b8170bd40b22580a83103771",
+  "private_script_sha256": "8ef491faf8e6c45ccbda068c51ab5e1d9a754226ced4b8a39e6a0a2c9c6645ba"
+}

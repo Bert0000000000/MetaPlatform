@@ -1,0 +1,14 @@
+{
+  "source_paths": [
+    "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py",
+    "mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py"
+  ],
+  "original15_test_body_and_assertions": "unchanged normalized-byte prefix",
+  "public_resolver_stores_facade": "unchanged; code-only list selection scoped to save_page",
+  "page_revision_cas_and_partial_result": "new3 storage cases and named existing5 pass",
+  "protected_tracked_wip_hashes_unchanged": true,
+  "index_empty_after_source_commit": true,
+  "source_whitespace_check": "PASS with cr-at-eol; raw console logs retained",
+  "no_unresolved_product_fixture_failure": true,
+  "runtime_limit": "dependency responsiveness unresolved; no auth/guard bypass"
+}

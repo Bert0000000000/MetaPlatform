@@ -1,0 +1,20 @@
+[
+  {
+    "service": "apphub",
+    "touched_operations": 38,
+    "metadata_errors": 0,
+    "unresolved_refs": 0,
+    "runtime_paths_operation_ids": "PASS",
+    "request_models": "PASS",
+    "unrelated_operations_unchanged": "PASS"
+  },
+  {
+    "service": "ont",
+    "touched_operations": 9,
+    "metadata_errors": 0,
+    "unresolved_refs": 0,
+    "runtime_paths_operation_ids": "PASS",
+    "request_models": "PASS",
+    "unrelated_operations_unchanged": "PASS"
+  }
+]

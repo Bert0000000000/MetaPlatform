@@ -16,8 +16,11 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 
 import { pgQuery } from '../helpers/pg';
 
+// This suite holds real access/refresh tokens; never retain authentication media.
+test.use({trace:'off',video:'off',screenshot:'off'});
+
 const GW = process.env.E2E_GATEWAY_URL ?? 'http://localhost:8100/api/v1';
-const T = 'tenant-default';
+const T = process.env.E2E_TENANT ?? 'tenant-default';
 const OTHER = 'other-tenant';
 const NS = 'core-e2e';
 
@@ -49,8 +52,8 @@ const h = (extra: Record<string, string> = {}): Record<string, string> => ({
 });
 
 async function login(request: APIRequestContext): Promise<string> {
-  const resp = await request.post(`${GW}/iam/auth/login`, {
-    data: { username: 'admin', password: 'admin123' },
+  const resp = await request.post(process.env.E2E_IAM_LOGIN_URL ?? `${GW}/iam/auth/login`, {
+    data: { username: process.env.E2E_USERNAME ?? 'admin', password: process.env.E2E_PASSWORD ?? 'admin123' },
   });
   expect(resp.ok(), `login failed: ${resp.status()} ${await resp.text()}`).toBeTruthy();
   const body = await resp.json();

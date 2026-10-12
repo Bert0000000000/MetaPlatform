@@ -17,6 +17,8 @@ guard does not reject the calls.
 
 from __future__ import annotations
 
+from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
+
 from collections.abc import Iterator
 
 import pytest
@@ -82,6 +84,7 @@ def test_load_app_runtime_emits_span(
     client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str]
 ) -> None:
     """GET /apps/{app_id}/runtime → apphub.runtime.load span."""
+    _save_runtime_fixture(client, auth_headers)
     response = client.get("/api/v1/apphub/apps/kb/runtime", headers=auth_headers)
     assert response.status_code == 200, response.text
     spans = span_exporter.get_finished_spans()
@@ -98,6 +101,7 @@ def test_execute_action_emits_span(
     K3-4 (RealExecutor) emits a per-action span named after the action
     type. ``submit_form`` → ``apphub.runtime.submit_form``.
     """
+    _save_runtime_fixture(client, auth_headers)
     response = client.post(
         "/api/v1/apphub/apps/kb/runtime/execute",
         headers=auth_headers,

@@ -1,0 +1,27 @@
+[
+  {
+    "url": "http://127.0.0.1:9368/",
+    "http": 200,
+    "elapsed_seconds": 0.1
+  },
+  {
+    "url": "http://127.0.0.1:9368/login",
+    "http": 200,
+    "elapsed_seconds": 0.02
+  },
+  {
+    "url": "http://127.0.0.1:55522/openapi.json",
+    "http": 200,
+    "elapsed_seconds": 0.02
+  },
+  {
+    "url": "http://127.0.0.1:55523/openapi.json",
+    "http": 200,
+    "elapsed_seconds": 0.34
+  },
+  {
+    "url": "http://127.0.0.1:55520/realms/codex-mp11/.well-known/openid-configuration",
+    "error": "ReadTimeout",
+    "elapsed_seconds": 8.03
+  }
+]

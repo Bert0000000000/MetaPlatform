@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaPlatform — 本体驱动的企业 AI 操作平台</title>
+<meta name="description" content="让企业的数据、AI 与业务行动协同起来。MetaPlatform 以业务本体连接数据与知识、Agent 协作和业务应用，让团队在明确权限内决策与行动。">
+<!-- Public standalone destination. Empty means same-origin /home; see metaplatform-website/README.md. -->
+<meta name="metaplatform-platform-url" content="">
+<style>
+:root { color-scheme: dark; --bg:#0a0c0e; --panel:#121619; --text:#f2f4f3; --muted:#aeb9b5; --line:#2d3633; --accent:#b8f3d6; --max:1184px; font-family:ui-sans-serif,system-ui,"PingFang SC","Microsoft YaHei",sans-serif; }
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; scroll-padding-top:100px; }
+body { margin:0; background:var(--bg); color:var(--text); line-height:1.65; -webkit-font-smoothing:antialiased; }
+a { color:inherit; text-decoration:none; }
+a:hover { color:var(--accent); }
+h1,h2,h3,p { margin:0; }
+h1,h2,h3 { line-height:1.25; font-weight:600; }
+:focus-visible { outline:3px solid var(--accent); outline-offset:5px; }
+main:focus { outline:none; }
+.container { width:min(var(--max),calc(100% - 80px)); margin-inline:auto; }
+.skip-link { position:fixed; top:10px; left:12px; z-index:100; transform:translateY(-180%); padding:8px 16px; background:var(--accent); color:var(--bg); }
+.skip-link:focus { transform:none; }
+.nav { position:sticky; top:0; z-index:50; background:#0a0c0ef5; border-bottom:1px solid var(--line); }
+.nav-inner { height:72px; display:flex; gap:24px; align-items:center; justify-content:space-between; }
+.brand { display:flex; gap:10px; align-items:center; font-weight:650; font-size:17px; letter-spacing:-.5px; }
+.brand-mark { display:grid; place-items:center; width:28px; height:28px; background:var(--text); color:var(--bg); border-radius:5px; font-size:17px; font-weight:700; }
+.nav-links { display:flex; gap:25px; font-size:13px; color:var(--muted); }
+.nav-cta { padding:7px 15px; border:1px solid #67776f; border-radius:5px; font-size:13px; white-space:nowrap; }
+.mobile-menu { display:none; }
+.hero { padding:88px 0 80px; border-bottom:1px solid var(--line); background:radial-gradient(ellipse at 85% 30%,#17312755,transparent 50%); }
+.hero-grid { display:grid; grid-template-columns:1.15fr 1fr; align-items:center; gap:64px; }
+.eyebrow { display:block; margin-bottom:22px; font-size:12px; letter-spacing:2px; color:var(--accent); }
+.hero h1 { font-size:clamp(36px,3.6vw,52px); line-height:1.23; letter-spacing:-1.5px; text-wrap:initial; max-width:none; }
+.hero h1 span { display:block; }
+.hero-copy { margin-top:25px; color:var(--muted); font-size:16px; max-width:510px; }
+.actions { display:flex; gap:13px; flex-wrap:wrap; margin-top:30px; }
+.button { display:inline-flex; align-items:center; justify-content:center; padding:11px 23px; border:1px solid #67776f; border-radius:5px; font-size:14px; font-weight:550; }
+.button.primary { background:var(--accent); color:#102319; border-color:var(--accent); }
+.button.primary:hover { background:#d8fce8; }
+.availability { margin-top:24px; color:var(--muted); font-size:12px; }
+.availability span { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:8px; }
+.hero-map { padding:27px; border:1px solid #42544b; border-radius:14px; background:#101815; box-shadow:0 20px 60px #0005; }
+.figure-label { display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:24px; }
+.figure-label strong { color:var(--text); letter-spacing:1px; font-size:13px; }
+.object-network { display:grid; grid-template-columns:1fr 26px 1fr; align-items:center; text-align:center; }
+.object { border:1px solid #475b51; border-radius:7px; padding:17px 10px; background:#1b2822; }
+.object strong { display:block; font-size:17px; }
+.object small { color:var(--muted); font-size:11px; }
+.object.center { grid-column:1 / -1; width:58%; justify-self:center; border-color:var(--accent); background:#223b2e; }
+.connector { color:var(--accent); font-size:20px; }
+.vertical { text-align:center; font-size:11px; color:var(--muted); padding:12px 0; }
+.business-outcome { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.business-outcome div { padding:13px 8px; border-radius:5px; background:#0b100e; text-align:center; font-size:13px; }
+.business-outcome small { display:block; color:var(--muted); font-size:11px; }
+.hero-map figcaption { font-size:11px; color:var(--muted); margin-top:20px; text-align:center; }
+figure { margin:0; }
+.section { padding:86px 0; border-bottom:1px solid var(--line); }
+.section-head { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:end; margin-bottom:40px; }
+h2 { font-size:clamp(28px,2.8vw,38px); letter-spacing:-.7px; text-wrap:balance; }
+.lede { font-size:15px; color:var(--muted); max-width:660px; }
+.section-head .eyebrow { margin-bottom:15px; }
+.values { display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-bottom:48px; }
+.values article { border-top:1px solid #53675b; padding-top:20px; }
+.values .number { color:var(--accent); font-size:12px; }
+.values h3 { margin:12px 0; font-size:19px; }
+.values p,.capability p,.scenario-example p { color:var(--muted); font-size:14px; }
+.platform-map { border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:28px; }
+.platform-map .map-title { font-size:12px; color:var(--muted); margin-bottom:24px; }
+.map-flow { display:grid; grid-template-columns:1fr 28px 1.1fr 28px 1.35fr; align-items:center; gap:10px; }
+.map-node { padding:19px; border:1px solid #47554e; border-radius:7px; background:var(--bg); }
+.map-node h3 { font-size:17px; margin-bottom:8px; }
+.map-node p { font-size:12px; color:var(--muted); }
+.map-node.ontology { border-color:var(--accent); background:#1a2a22; }
+.map-destinations { display:grid; gap:10px; }
+.map-guard { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:12px; }
+.map-guard strong { color:var(--accent); }
+.capability-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.capability { padding:28px; background:var(--panel); }
+.capability .symbol { color:var(--accent); font-size:24px; display:block; margin-bottom:20px; font-family:ui-monospace,monospace; }
+.capability h3 { font-size:19px; margin-bottom:14px; }
+.capability .detail { color:#dbe8e0; margin-top:18px; font-size:12px; }
+.note { margin-top:24px; font-size:12px; color:var(--muted); }
+.note a { color:var(--accent); text-decoration:underline; text-underline-offset:4px; }
+.scenario-feature { display:grid; grid-template-columns:1fr 2fr; gap:36px; padding:32px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+.tag { display:inline-block; border:1px solid #506457; color:var(--accent); font-size:11px; padding:3px 10px; border-radius:99px; margin-bottom:17px; }
+.scenario-feature h3 { font-size:23px; margin-bottom:16px; }
+.scenario-feature p { color:var(--muted); font-size:14px; }
+.journey { display:grid; grid-template-columns:1fr 1fr; gap:22px; padding:0; margin:0; list-style:none; counter-reset:journey; }
+.journey li { border-left:1px solid #506457; padding-left:18px; counter-increment:journey; }
+.journey li::before { content:"0" counter(journey); color:var(--accent); font-size:11px; display:block; margin-bottom:7px; }
+.journey h4 { margin:0 0 8px; font-size:15px; }
+.journey p { font-size:12px; }
+.scenario-examples { display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-top:32px; }
+.scenario-example { padding:24px 0 0; border-top:1px solid var(--line); }
+.scenario-example h3 { font-size:18px; margin-bottom:12px; }
+.scenario-example small { color:var(--accent); font-size:11px; }
+.update-list { display:grid; grid-template-columns:1fr 1fr; gap:0 36px; }
+.update { display:grid; grid-template-columns:88px 1fr; gap:20px; padding:26px 0; border-top:1px solid var(--line); }
+time { color:var(--muted); font-size:11px; }
+.update h3 { font-size:17px; margin:0 0 10px; }
+.update p { font-size:13px; color:var(--muted); }
+.update a { display:inline-block; font-size:12px; color:var(--accent); margin-top:12px; }
+.plan-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.plan-card { padding:28px; border:1px solid var(--line); border-radius:9px; }
+.plan-card.current { background:#17221c; border-color:#657e6d; }
+.plan-card h3 { font-size:19px; margin-bottom:20px; }
+.plan-card p { font-size:14px; margin-bottom:20px; color:var(--muted); }
+.plan-card ul { padding-left:18px; margin:0; color:#d9e0dc; font-size:13px; }
+.plan-card li { margin:10px 0; }
+.plan-boundary { margin-top:26px; padding-left:18px; border-left:2px solid var(--accent); color:var(--muted); font-size:13px; }
+.faq-layout { display:grid; grid-template-columns:1fr 1.6fr; gap:90px; }
+.faq details { border-bottom:1px solid var(--line); padding:19px 0; }
+.faq details:first-child { padding-top:0; }
+.faq summary { cursor:pointer; font-size:15px; }
+.faq p { margin-top:15px; font-size:14px; color:var(--muted); }
+.faq a { color:var(--accent); text-decoration:underline; }
+.final-cta { padding:60px 0; }
+.final-inner { display:flex; align-items:center; justify-content:space-between; gap:30px; }
+.final-cta h2 { font-size:30px; margin-bottom:12px; }
+.final-cta p { font-size:14px; color:var(--muted); }
+footer { border-top:1px solid var(--line); padding:26px 0; color:var(--muted); font-size:11px; }
+.footer-inner { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px; }
+.footer-links { display:flex; gap:24px; }
+.anchor-alias { display:block; scroll-margin-top:100px; }
+@media(max-width:1050px) {
+ .nav-links { gap:16px; } .container { width:calc(100% - 48px); } .hero-grid { gap:32px; } .hero h1 { font-size:42px; } .section-head { gap:32px; } .capability { padding:24px; } .faq-layout { gap:40px; }
+}
+@media(max-width:820px) {
+ .nav-links { display:none; } .mobile-menu { display:block; margin-left:auto; } .mobile-menu summary { padding:8px; font-size:13px; cursor:pointer; }
+ .mobile-links { position:absolute; top:72px; left:0; right:0; padding:20px 24px; background:#121916; border-bottom:1px solid var(--line); display:grid; gap:16px; font-size:14px; }
+ .hero-grid { grid-template-columns:1fr 1fr; gap:24px; } .hero h1 { font-size:35px; } .hero-map { padding:20px; } .hero-copy { font-size:14px; }
+ .section-head { grid-template-columns:1fr; gap:22px; } .capability-grid { grid-template-columns:1fr 1fr; } .plan-grid { grid-template-columns:1fr; } .plan-card { display:grid; grid-template-columns:1fr 1fr; gap:0 28px; } .plan-card h3 { grid-column:1 / -1; } .plan-card p { margin:0; }
+ .scenario-feature { grid-template-columns:1fr; } .update-list { grid-template-columns:1fr; } .faq-layout { grid-template-columns:1fr; }
+}
+@media(max-width:600px) {
+ html { scroll-padding-top:88px; } .container { width:calc(100% - 40px); } .nav-inner { height:64px; gap:10px; } .brand { font-size:14px; gap:7px; } .brand-mark { width:23px; height:23px; font-size:14px; } .nav-cta { padding:6px 10px; font-size:12px; } .mobile-menu summary { padding:5px; font-size:12px; } .mobile-links { top:64px; }
+ .hero { padding:52px 0; } .hero-grid { grid-template-columns:1fr; gap:38px; } .hero h1 { font-size:clamp(32px,9vw,36px); max-width:none; letter-spacing:-.8px; } .hero-copy { font-size:15px; margin-top:21px; } .eyebrow { font-size:11px; letter-spacing:1px; } .availability { margin-top:20px; } .hero-map { padding:23px; } .object.center { width:64%; }
+ .section { padding:56px 0; } .section-head { margin-bottom:30px; } h2 { font-size:29px; } .lede { font-size:14px; } .values { grid-template-columns:1fr; gap:25px; margin-bottom:32px; } .values h3 { margin:8px 0; } .values article { padding-top:16px; }
+ .platform-map { padding:22px; } .map-flow { grid-template-columns:1fr; gap:13px; } .map-flow > .connector { transform:rotate(90deg); text-align:center; } .map-guard { flex-direction:column; }
+ .capability-grid { grid-template-columns:1fr; } .capability { padding:25px; } .capability .symbol { float:right; margin-bottom:0; } .capability h3 { padding-right:40px; }
+ .scenario-feature { padding:24px; gap:27px; } .journey { grid-template-columns:1fr; gap:22px; } .scenario-examples { grid-template-columns:1fr; gap:12px; } .update { grid-template-columns:1fr; gap:10px; padding:24px 0; }
+ .plan-card { display:block; padding:24px; } .plan-card p { margin-bottom:18px; } .faq-layout { gap:28px; } .final-cta { padding:48px 0; } .final-inner { align-items:flex-start; flex-direction:column; gap:24px; } .final-cta h2 { font-size:27px; } .footer-inner { align-items:flex-start; flex-direction:column; }
+}
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">跳过导航</a>
+<nav class="nav" aria-label="主导航"><div class="container nav-inner">
+ <a href="#top" class="brand" aria-label="MetaPlatform 首页"><span class="brand-mark" aria-hidden="true">M</span>MetaPlatform</a>
+ <div class="nav-links"><a href="#platform">平台介绍</a><a href="#capabilities">产品能力</a><a href="#orders">业务场景</a><a href="#updates">产品更新</a><a href="#plan">版本规划</a></div>
+ <details class="mobile-menu"><summary>菜单</summary><div class="mobile-links"><a href="#platform">平台介绍</a><a href="#capabilities">产品能力</a><a href="#orders">业务场景</a><a href="#updates">产品更新</a><a href="#plan">版本规划</a><a href="#faq">常见问题</a></div></details>
+ <a href="/home" data-platform-entry class="nav-cta">进入平台</a>
+</div></nav>
+<main id="main" tabindex="-1">
+<section id="top" class="hero"><div class="container hero-grid">
+ <div><span class="eyebrow">本体驱动的企业 AI 操作平台</span><h1><span>让企业的数据、AI</span> <span>与业务行动协同起来</span></h1><p class="hero-copy">用客户、订单、合同等业务对象，连接分散的数据与知识。让 AI 理解业务上下文，让团队在同一个工作区查看信息、作出决策并采取行动。</p><div class="actions"><a href="/home" data-platform-entry class="button primary">进入平台</a><a href="#platform" class="button">了解平台</a></div><p class="availability"><span aria-hidden="true"></span>产品 1.1.0 · 开发中</p></div>
+ <figure class="hero-map"><div class="figure-label"><strong>以业务对象连接工作</strong><span>概念示意</span></div><div class="object-network"><div class="object"><strong>客户</strong><small>身份 · 历史 · 需求</small></div><span class="connector" aria-hidden="true">↔</span><div class="object"><strong>合同</strong><small>条款 · 约定 · 责任</small></div></div><div class="vertical">↓ 关联业务信息 ↓</div><div class="object-network"><div class="object center"><strong>订单</strong><small>状态 · 金额 · 关联对象 · 可执行动作</small></div></div><div class="vertical">业务上下文 → 建议 → 人工确认</div><div class="business-outcome"><div>Agent 协作<small>理解、分析与提出建议</small></div><div>业务应用<small>查看、决策与执行动作</small></div></div><figcaption>数据有业务含义，行动有权限与记录。</figcaption></figure>
+</div></section>
+<section id="platform" class="section"><div class="container"><span id="chain" class="anchor-alias"></span>
+ <div class="section-head"><div><span class="eyebrow">01 / 平台介绍</span><h2>把业务语言变成协作基础</h2></div><p class="lede">业务团队需要看清问题，数据团队需要统一口径，应用与 AI 团队需要可靠上下文。MetaPlatform 用一层共享的业务语义，把这些工作连接起来。</p></div>
+ <div class="values"><article><span class="number">01</span><h3>看懂同一门业务</h3><p>把不同系统的字段组织成客户、订单与合同，明确对象之间的关系和可执行动作，减少反复解释与口径分歧。</p></article><article><span class="number">02</span><h3>让 AI 带着上下文工作</h3><p>把当前对象、相关知识和授权工具带入任务，让 Agent 的分析与建议有业务依据，便于团队判断与确认。</p></article><article><span class="number">03</span><h3>把建议接到业务行动</h3><p>在应用中承接信息、流程与人工决策，让经授权的动作回到业务对象，留下可查看的结果和操作记录。</p></article></div>
+ <figure class="platform-map"><p class="map-title">平台概览 · 从企业信息到业务行动</p><div class="map-flow"><div class="map-node"><h3>企业数据与知识</h3><p>业务系统、数据表、文件与文档<br>为业务提供事实与依据</p></div><span class="connector" aria-hidden="true">→</span><div class="map-node ontology"><h3>业务本体 Ontology</h3><p>对象 · 属性 · 关系 · 动作<br>统一业务含义与操作方式</p></div><span class="connector" aria-hidden="true">→</span><div class="map-destinations"><div class="map-node"><h3>Agent 协作</h3><p>理解目标、调用授权工具、提出建议</p></div><div class="map-node"><h3>AppHub 业务应用</h3><p>消费业务对象、承接流程与人工决策</p></div></div></div><figcaption class="map-guard"><strong>身份、权限与审计贯穿协作</strong><span>知识、MCP / A2A 连接上下文与外部能力；需要确认的动作由人决策。</span></figcaption></figure>
+</div></section>
+<section id="capabilities" class="section"><div class="container">
+ <div class="section-head"><div><span class="eyebrow">02 / 产品能力</span><h2>从业务理解，到应用与协作</h2></div><p class="lede">围绕企业的真实工作组织能力：先把信息变成可理解的业务对象，再让应用与 AI 使用同一套上下文。</p></div>
+ <div class="capability-grid"><article class="capability"><span class="symbol" aria-hidden="true">◎</span><h3>业务本体</h3><p>定义对象、属性与关系，把订单关联到客户和合同。团队可以创建对象、维护模型、浏览关联信息，并理解模型变化的影响。</p><p class="detail">统一业务语言，让信息可以被共同理解</p></article><article class="capability"><span class="symbol" aria-hidden="true">↳</span><h3>数据与治理</h3><p>连接业务数据，检查结构并映射到业务对象。查看同步状态与异常，修正配置后重试，让数据来源和更新过程可追溯。</p><p class="detail">真实数据接入、结构检查与同步恢复</p></article><article class="capability"><span class="symbol" aria-hidden="true">⌘</span><h3>知识与工具</h3><p>组织企业知识，为任务提供文档与依据。通过 MCP 等工具连接方式，为 Agent 提供受授权的查询与业务能力。</p><p class="detail">把分散的知识与工具带到工作现场</p></article><article class="capability"><span class="symbol" aria-hidden="true">◇</span><h3>AI / Agent 协作</h3><p>围绕目标、页面与对象上下文开展分析，协同数字员工与工具。需要改变业务状态时，先形成建议，由人确认。</p><p class="detail">1.1 持续完善业务动作与回执；新客户端接入见版本规划</p></article><article class="capability"><span class="symbol" aria-hidden="true">▦</span><h3>应用与自动化</h3><p>通过 AppHub 的应用、模板与设计入口，把业务对象和动作组织成工作界面，承接查看、审核与流程协作。</p><p class="detail">订单应用绑定与完整运行链路正在开发中</p></article><article class="capability"><span class="symbol" aria-hidden="true">⊕</span><h3>身份与审计</h3><p>沿用平台身份、工作区与权限边界，让不同人员与 Agent 在授权范围内访问对象、使用工具和执行动作。</p><p class="detail">明确谁能做什么，保留操作与结果记录</p></article></div>
+ <p class="note">功能可用性取决于部署、工作区配置和授权。当前开发进展与下一步目标分别见<a href="#updates">产品更新</a>和<a href="#plan">版本规划</a>。</p>
+</div></section>
+<section id="orders" class="section"><div class="container">
+ <div class="section-head"><div><span class="eyebrow">03 / 业务场景</span><h2>从一笔订单，到一次有依据的决策</h2></div><p class="lede">1.1 优先打通订单审核：让运营与审核人员在一个应用中看清客户、订单及相关依据，再确认下一步动作。</p></div>
+ <div class="scenario-feature"><div><span class="tag">1.1 首条业务链 · 开发中</span><h3>订单审核工作台</h3><p>起点是已有订单与客户数据。目标是交付关联对象、审核界面、可确认的建议，以及执行后的回执。</p><div class="actions"><a href="/home" data-platform-entry class="button">进入平台</a></div></div><ol class="journey"><li><h4>接入数据与建立模型</h4><p>连接数据表或 CSV，将字段映射到订单与客户，定义并建立对象关联。</p></li><li><h4>在应用中查看上下文</h4><p>绑定订单应用，查看同一笔订单、客户信息与相关知识，理解审核依据。</p></li><li><h4>形成建议，由人决策</h4><p>Agent 使用授权工具提出动作建议；业务人员查看影响并作出确认。</p></li><li><h4>执行动作，查看回执</h4><p>经确认的动作更新业务状态，返回结果与记录，便于追踪和后续处理。</p></li></ol></div>
+ <div class="scenario-examples"><article class="scenario-example"><small>场景示例 · 非客户案例</small><h3>合同与客户信息梳理</h3><p>客户团队从分散的合同与客户资料出发，组织关联对象和知识，辅助核对约定、识别待处理事项。</p></article><article class="scenario-example"><small>场景示例 · 非客户案例</small><h3>业务目标与任务协作</h3><p>业务负责人提出目标，Agent 团队结合知识与工具组织分析，将建议和交付物带回人工决策流程。</p></article></div>
+</div></section>
+<section id="updates" class="section"><div class="container">
+ <div class="section-head"><div><span class="eyebrow">04 / 产品更新 · 开发进展</span><h2>正在把产品做得更完整</h2></div><p class="lede">1.1.0 开发中，这里记录已完成的功能改进。版本目标与阶段见下方规划。</p></div>
+ <div class="update-list"><article class="update"><time datetime="2026-10-11">2026-10-11</time><div><h3>关系定义与关联</h3><p>完善关系定义的新建与编辑，支持按对象选择关联，明确类型、方向与数量约束；改善异常后的重试与输入保留。</p><a href="#capabilities">了解业务本体 →</a></div></article><article class="update"><time datetime="2026-10-11">2026-10-11</time><div><h3>对象创建与模型发布</h3><p>完善对象类型创建、草稿与发布流程，在模型变化及冲突时提供比较与确认，让已有对象和关系的变化更清楚。</p><a href="#capabilities">了解模型与对象 →</a></div></article><article class="update"><time datetime="2026-10-11">2026-10-11</time><div><h3>真实数据接入与恢复</h3><p>完善 PostgreSQL 与 CSV 接入、结构检查和字段映射；同步失败时保留真实状态，支持修正后重试与进度恢复。</p><a href="#orders">查看订单业务链 →</a></div></article><article class="update"><time datetime="2026-10-11">2026-10-11</time><div><h3>官网与平台入口</h3><p>重新组织平台介绍、能力与场景，独立呈现产品更新和版本规划。公开官网连接既有平台登录入口，支持手机阅读。</p><a href="#platform">重新认识 MetaPlatform →</a></div></article></div>
+</div></section>
+<section id="plan" class="section"><div class="container">
+ <div class="section-head"><div><span class="eyebrow">05 / 版本规划</span><h2>先完成业务闭环，再扩展连接</h2></div><p class="lede">围绕可理解、可操作、可追溯的企业工作推进。以下是当前方向，后续范围随实际开发与使用反馈调整。</p></div>
+ <div class="plan-grid"><article class="plan-card current"><h3>1.1.0 开发中</h3><p>目标：从真实业务数据走到订单审核与执行回执。</p><ul><li>真实数据接入、对象与关系、模型发布</li><li>绑定订单应用，贯通人工确认与动作回执</li><li>完善 MCP 协议与配置、失败重试及重启恢复</li></ul></article><article class="plan-card"><h3>1.1.1 规划</h3><p>目标：让外部客户端连接与日常使用更可靠。</p><ul><li>dsh / WorkBuddy 真实客户端接入</li><li>授权撤销、重连与插件诊断</li><li>资产管理与图谱使用体验改进</li></ul></article><article class="plan-card"><h3>1.2 研究 / 规划</h3><p>目标：在明确支持范围内连接标准化语义生态。</p><ul><li>OWL / RDF / SHACL 支持子集互操作</li><li>评估导入、导出与约束校验体验</li><li>明确兼容边界与后续扩展方向</li></ul></article></div>
+ <p class="plan-boundary">1.1.0 尚未发布，订单完整业务链仍在开发。正式可用范围将以目标环境验证和用户试用结果为准；1.1.1 与 1.2 尚无承诺发布日期。</p>
+</div></section>
+<section id="faq" class="section"><div class="container faq-layout"><div><span class="eyebrow">06 / 常见问题</span><h2>开始之前</h2></div><div class="faq">
+ <details><summary>什么是业务本体？</summary><p>它是一套团队共享的业务描述。以订单为例，不仅有金额、状态等属性，还有与客户、合同的关系，以及审核等动作。模型映射把数据字段与这些概念连接起来，应用与 Agent 因而可以使用同一套业务含义。</p></details>
+ <details><summary>如何开始使用 MetaPlatform？</summary><p>点击“进入平台”，使用已有平台账号登录工作区，再根据授权使用数据、模型与应用入口。官网公开可读；具体功能与数据需要相应的部署配置和工作区权限。1.1.0 当前仍在开发中。</p></details>
+ <details><summary>Agent 可以直接执行业务动作吗？</summary><p>Agent 的访问和工具调用受身份、租户与授权限制。需要人工确认的动作先形成建议，由业务人员确认后执行；外部客户端的接入与撤销能力会按版本规划继续完善。</p></details>
+ <details><summary>在哪里了解更新与后续版本？</summary><p><a href="#updates">产品更新</a>记录已完成的产品改进；<a href="#plan">版本规划</a>说明当前开发目标和未来方向。开发进展与版本发布分别说明，规划中的能力不会作为已发布功能承诺。</p></details>
+</div></div></section>
+<div class="final-cta"><div class="container final-inner"><div><h2>从你的业务，开始连接</h2><p>进入 MetaPlatform 工作区，把数据、模型与协作带到同一处。</p></div><a href="/home" data-platform-entry class="button primary">进入平台</a></div></div>
+</main>
+<footer><div class="container footer-inner"><span>© 2026 MetaPlatform · 本体驱动的企业 AI 操作平台 · 1.1.0 开发中</span><div class="footer-links"><a href="#updates">产品更新</a><a href="#plan">版本规划</a><a href="#top">返回顶部 ↑</a></div></div></footer>
+<script>
+// A public deployment option, never an authentication or API configuration.
+(function () {
+  const configured = document.querySelector('meta[name="metaplatform-platform-url"]').content.trim();
+  if (!configured) return;
+  try {
+    // Reject scheme-relative destinations, backslashes and control characters.
+    if (/[\\\u0000-\u0020\u007f]/.test(configured)) return;
+    const sameOriginPath = /^\/(?!\/)/.test(configured);
+    const absoluteHttp = /^https?:\/\//i.test(configured);
+    if (!sameOriginPath && !absoluteHttp) return;
+    const destination = new URL(configured, location.origin);
+    if (!['http:', 'https:'].includes(destination.protocol) || destination.username || destination.password) return;
+    if (sameOriginPath && destination.origin !== location.origin) return;
+    document.querySelectorAll('[data-platform-entry]').forEach(link => link.setAttribute('href', configured));
+  } catch (_) { /* Invalid configuration keeps the safe same-origin default. */ }
+})();
+</script>
+<script>
+// Native details/anchors remain available without JavaScript.
+(function () {
+  const menu = document.querySelector('.mobile-menu');
+  menu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => { menu.open = false; }));
+  menu.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { menu.open = false; menu.querySelector('summary').focus(); }
+  });
+})();
+</script>
+</body>
+</html>

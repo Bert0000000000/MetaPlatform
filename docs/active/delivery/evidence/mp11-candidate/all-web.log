@@ -1,0 +1,35 @@
+
+ RUN  v3.2.7 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/metaplatform-frontend/apps/web
+
+ ✓ src/api/agentTeam.test.ts (17 tests) 21ms
+ ✓ src/api/superai/chat.test.ts (7 tests) 9ms
+ ✓ src/pages/superai/agentTeamRunView.test.ts (12 tests) 7ms
+ ✓ src/pages/arch/DataSourcesPage.test.tsx (2 tests) 7ms
+ ✓ src/pages/apphub/AppListPage.test.tsx (7 tests) 13ms
+ ✓ src/components/shell/TopBar.test.tsx (3 tests) 11ms
+ ✓ src/pages/apphub/runtime/OrderReviewRuntime.test.tsx (1 test) 90ms
+ ✓ src/pages/apphub/components/OrderReviewBinding.test.tsx (2 tests) 197ms
+ ✓ src/pages/ontology/hooks/assistantContext.test.ts (7 tests) 7ms
+ ✓ src/components/shell/ontology-navigation-mode.test.tsx (3 tests) 5ms
+ ✓ src/pages/superai/routingDecisionState.test.ts (1 test) 4ms
+ ✓ src/pages/dashboard/components/ProductOnboarding.test.tsx (4 tests) 266ms
+ ✓ src/pages/apphub/runtime/AppRuntimePage.test.tsx (2 tests) 131ms
+ ✓ src/pages/superai/components/RoutingDecisionPanel.test.tsx (4 tests) 149ms
+ ✓ src/pages/mcp/IdeConfigPage.test.tsx (4 tests) 376ms
+   ✓ Agent client preparation > requires actual initialize/list/query; resets on workspace change and retries failures  311ms
+ ✓ src/pages/superai/components/NavigateCard.test.tsx (9 tests) 89ms
+ ✓ src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx (1 test) 288ms
+ ✓ src/pages/wfe/ActionOrchestrationPage.test.tsx (3 tests) 342ms
+ ✓ src/pages/ontology/components/ProposalConfirmDrawer.test.tsx (5 tests) 346ms
+ ✓ src/pages/apphub/components/PublishValidation.test.tsx (1 test) 121ms
+ ✓ src/pages/ontology/components/ObjectTypeEditorV2Drawer.test.tsx (16 tests) 1754ms
+ ✓ src/pages/ontology/model/link-types/LinkTypesPage.test.tsx (12 tests) 3218ms
+   ✓ relationship UI (transport mocked) > creates a definition from endpoint choices and shows it after saving  430ms
+   ✓ relationship UI (transport mocked) > associates C001/O001 and reloads the list and count  340ms
+   ✓ relationship UI (transport mocked) > retains inputs and server conflict for retry  322ms
+   ✓ relationship review regressions (transport mocked) > can return to the previous instance page after the next-page read fails  798ms
+
+ Test Files  22 passed (22)
+      Tests  123 passed (123)
+   Start at  04:15:26
+   Duration  23.15s (transform 23.82s, setup 0ms, collect 116.26s, tests 7.45s, environment 18.32s, prepare 4.70s)

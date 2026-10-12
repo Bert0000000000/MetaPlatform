@@ -32,6 +32,9 @@ import {
 } from '@ant-design/icons';
 import { Search } from 'lucide-react';
 import { getApp, updateApp, deleteApp } from '@/api/apphub/apps';
+import { createOrderReviewPage, OrderPageCreationError, listPages } from '@/api/apphub/pages';
+import { publishApp, checkPublication, type PublicationCheck } from '@/api/apphub/runtime';
+import { ApplicationPublishValidation } from './components/PublishValidation';
 import { createShortlink } from '@/api/apphub/shortlink';
 import { listModules, createModule } from '@/api/apphub/modules';
 import { QRCodeSVG } from 'qrcode.react';
@@ -71,6 +74,8 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
   const navigate = useNavigate();
   const [app, setApp] = useState<AppItem | null>(null);
   const [modules, setModules] = useState<ReadModule[]>([]);
+  const [orderModule, setOrderModule] = useState<string>();
+  const [pages, setPages] = useState<Array<{ id: string; name: string; module_code: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [moduleKeyword, setModuleKeyword] = useState('');
@@ -80,11 +85,16 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
   const [shortlink, setShortlink] = useState<Shortlink | null>(null);
   const [shortlinkLoading, setShortlinkLoading] = useState(false);
   const loadGeneration = useRef(0);
+  const [validationOpen, setValidationOpen] = useState(false);
+  const [validation, setValidation] = useState<PublicationCheck | null>(null);
+  const [validationError, setValidationError] = useState('');
+  const [publishing, setPublishing] = useState(false);
 
   const loadApp = async () => {
     const generation = ++loadGeneration.current;
     setApp(null);
     setModules([]);
+    setPages([]);
     if (!appId) {
       setLoadError(null);
       setLoading(false);
@@ -99,6 +109,9 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
       const res = await listModules(data.code);
       if (generation !== loadGeneration.current) return;
       setModules(res.items);
+      const pageList = await listPages();
+      if (generation !== loadGeneration.current) return;
+      setPages(pageList.items.filter(p => res.items.some(m => m.code === p.module_code)));
     } catch (err) {
       if (generation !== loadGeneration.current) return;
       setLoadError(err instanceof Error ? err.message : '应用读取失败');
@@ -108,6 +121,11 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
   };
 
   useEffect(() => {
+    setOrderModule(undefined);
+    setValidationOpen(false);
+    setValidation(null);
+    setValidationError('');
+    setShortlink(null);
     loadApp();
     return () => { ++loadGeneration.current; };
   }, [appId]);
@@ -125,11 +143,19 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
     }
   };
 
-  const handlePublish = async () => {
+  const handleCheckPublication = async () => {
     if (!appId) return;
-    await updateApp(appId, { status: 'PUBLISHED' });
-    Toast.success('应用已发布');
-    loadApp();
+    setValidationOpen(true); setPublishing(true); setValidationError(''); setValidation(null);
+    try { setValidation(await checkPublication(appId)); }
+    catch (e) { setValidationError(e instanceof Error ? e.message : '发布检查不可用'); }
+    finally { setPublishing(false); }
+  };
+  const handlePublish = async () => {
+    if (!appId || !validation?.can_publish) return;
+    setPublishing(true); setValidationError('');
+    try { await publishApp(appId); Toast.success('应用已发布'); setValidationOpen(false); await loadApp(); }
+    catch (e) { setValidationError(e instanceof Error ? e.message : '发布失败，请修复绑定后重试'); }
+    finally { setPublishing(false); }
   };
 
   const handleOffline = async () => {
@@ -271,23 +297,28 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
         }
         headerExtraContent={
           <Space wrap>
-            <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} onClick={() => navigate(`/s/${app.code}`)}>
+            <button onClick={async () => {
+              try { const page = await createOrderReviewPage(app.code, orderModule); navigate('/apps/mine?app=' + app.appId + '&tab=page&page=' + page.id); }
+              catch (e) { if (e instanceof OrderPageCreationError) setOrderModule(e.moduleCode); Toast.error(e instanceof Error ? e.message : '创建订单审核页面失败'); }
+            }}>添加订单审核页面</button>
+            <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} disabled={app.status !== 'PUBLISHED'} onClick={async () => { try { const sl = await createShortlink(appId!); navigate('/s/' + sl.code); } catch { Toast.error('打开失败，请检查发布状态与权限'); } }}>
               打开应用
             </Button>
             <Button icon={<EditOutlined />} onClick={() => setAppFormOpen(true)}>
               编辑
             </Button>
-            {statusInfo && app.status !== 'PUBLISHED' && (
-              <Button theme="solid" type="primary" icon={<SendOutlined />} onClick={handlePublish}>
-                发布
-              </Button>
-            )}
+            <Button theme="solid" type="primary" icon={<SendOutlined />} onClick={handleCheckPublication}>
+              发布检查
+            </Button>
             <Dropdown trigger="click" position="bottomRight" render={moreMenu}>
               <Button icon={<MoreOutlined />}>更多操作</Button>
             </Dropdown>
           </Space>
         }
       >
+        <p>草稿版本：{app.version || '未知'} · 运行版本：{app.status === 'PUBLISHED' ? app.publishedVersion || '未知' : '未运行'}</p>
+        {validationOpen && <ApplicationPublishValidation result={validation} error={validationError} publishing={publishing}
+          onPublish={() => void handlePublish()} onRetry={() => void handleCheckPublication()} />}
         <Tabs defaultActiveKey="modules">
           <Tabs.TabPane
             tab="模块列表"
@@ -315,6 +346,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                   当前后端未提供模块编辑与删除接口。模块类型或标识未提供时，无法打开设计器。
                 </Typography.Paragraph>
 
+                {pages.map(page => <button key={page.id} onClick={() => navigate('/apps/mine?app=' + app.appId + '&tab=page&page=' + page.id)}>编辑页面：{page.name}</button>)}
                 {filteredModules.length === 0 ? (
                   <Empty description="还没有模块，点击创建第一个模块吧" />
                 ) : (
@@ -341,12 +373,12 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
                         <Card shadows="hover">
                           <div className="mp-flex mp-justify-between mp-items-start" >
                             <Space>
-                              {MODULE_TYPE_ICONS[module.type]}
+                              {module.type ? MODULE_TYPE_ICONS[module.type] : <LayoutOutlined />}
                               <div>
                                 <Typography.Text strong>{module.name}</Typography.Text>
                                 <div>
-                                  <Tag color={MODULE_TYPE_COLORS[module.type] ?? 'grey'}>
-                                    {MODULE_TYPE_LABELS[module.type] ?? '未提供'}
+                                  <Tag color={module.type ? MODULE_TYPE_COLORS[module.type] ?? 'grey' : 'grey'}>
+                                    {module.type ? MODULE_TYPE_LABELS[module.type] ?? '未提供' : '未提供'}
                                   </Tag>
                                 </div>
                               </div>
@@ -403,7 +435,7 @@ export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) 
               app.status === 'PUBLISHED' ? (
                 <div className="mp-app-max-480">
                   <Typography.Paragraph type="tertiary">
-                    为已发布的应用生成短链，便于快速访问与分享。访问短链无需登录鉴权（自决权限）。
+                    为已发布的应用生成短链，便于快速访问与分享。访问者须登录并具备相同租户的访问权限。
                   </Typography.Paragraph>
                   <Space vertical spacing="medium" className="mp-w-full">
                     <Button

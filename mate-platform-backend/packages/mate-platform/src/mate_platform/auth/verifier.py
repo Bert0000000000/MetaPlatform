@@ -30,6 +30,9 @@ class VerifiedClaims:
     expires_at: int
     not_before: int
     jti: str
+    preferred_username: str = ""
+    session_id: str = ""
+    service_account_client_id: str = ""
 
 
 class TokenVerifier:
@@ -78,6 +81,9 @@ class TokenVerifier:
             expires_at=_coerce_int(claims.get("exp")),
             not_before=_coerce_int(claims.get("nbf")),
             jti=_coerce_str(claims.get("jti")) or "",
+            preferred_username=_identity_string(claims.get("preferred_username")),
+            session_id=_identity_string(claims.get("sid")) or _identity_string(claims.get("session_state")),
+            service_account_client_id=_identity_string(claims.get("client_id")) or _identity_string(claims.get("clientId")),
         )
 
     def _verify_with_cache(self, token: str) -> dict[str, Any]:
@@ -191,22 +197,32 @@ def _collect_scopes(claims: dict[str, Any]) -> frozenset[str]:
     return frozenset()
 
 
+def _tenant_value(value: Any, *, allow_list: bool) -> str:
+    """Validate a signed tenant shape without coercion or fallback on corruption."""
+    if isinstance(value, str) and value.strip():
+        return value
+    if allow_list and isinstance(value, list) and value:
+        if all(isinstance(item, str) and item.strip() for item in value):
+            return value[0]
+    raise TokenError("malformed signed tenant")
+
+
 def _extract_tenant_id(claims: dict[str, Any]) -> str:
-    # Top-level tenant_id claim (set by oidc-usermodel-attribute-mapper on the
-    # Keycloak client). This is the primary path for SEC-IAM-01 tokens.
-    top = claims.get("tenant_id")
-    if isinstance(top, str) and top:
-        return top
-    if isinstance(top, list) and top:
-        return str(top[0])
-    attrs = claims.get("attributes")
-    if isinstance(attrs, dict):
-        tenant = attrs.get("tenant_id")
-        if isinstance(tenant, list) and tenant:
-            return str(tenant[0])
-        if isinstance(tenant, str) and tenant:
-            return tenant
-    fallback = claims.get("tenant")
-    if isinstance(fallback, str):
-        return fallback
+    # A present authoritative value must be valid; lower-priority claims cannot
+    # repair it. Keycloak top-level/attribute mappers may issue string lists.
+    if "tenant_id" in claims:
+        return _tenant_value(claims["tenant_id"], allow_list=True)
+    if "attributes" in claims:
+        attrs = claims["attributes"]
+        if not isinstance(attrs, dict):
+            raise TokenError("malformed signed tenant attributes")
+        if "tenant_id" in attrs:
+            return _tenant_value(attrs["tenant_id"], allow_list=True)
+    if "tenant" in claims:
+        return _tenant_value(claims["tenant"], allow_list=False)
     return ""
+
+
+def _identity_string(value: Any) -> str:
+    """Identity metadata must be a nonempty signed string, never coerced objects."""
+    return value.strip() if isinstance(value, str) else ""

@@ -1,0 +1,490 @@
+
+Running 43 tests using 1 worker
+
+  x   1 [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:9:3 › MP11 actual order application › empty tenant explicitly creates its own business group and order page (124ms)
+  x   2 [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:26:3 › MP11 actual order application › actual metadata preview save publish shortlink and human receipt survive reopening (119ms)
+  x   3 [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:107:3 › MP11 actual order application › onboarding resumes selected real artifacts and treats query failures as unknown (15.6s)
+  ok  4 [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:138:1 › anonymous website to signed human home, server logout, relogin and persisted receipt (3.3s)
+  ok  5 [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:27:3 › Ontology IA v2 · 数据映射（IA2-3） › 三个子页有独立 URL 且容器内部 Tab 消亡 (2.7s)
+  ok  6 [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:52:3 › Ontology IA v2 · 数据映射（IA2-3） › 数据映射组子 tab「同步任务」可达（planned → active） (898ms)
+  ok  7 [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:62:3 › Ontology IA v2 · 数据映射（IA2-3） › 资产清单不再是本体路由（容器旧路径 301 到对象映射） (1.2s)
+  x   8 [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:78:3 › MP11 verified PG and CSV ingestion › real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent (70ms)
+  ok  9 [web] › apps\web\tests\e2e\ontology-migration-plan.spec.ts:124:3 › Ontology · 存量适配（ADR-0082） › 评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例 (4.1s)
+  ok 10 [web] › apps\web\tests\e2e\ontology-migration-plan.spec.ts:179:3 › Ontology · 存量适配（ADR-0082） › 无幂等键执行被拒（400）——后端守卫 (1.9s)
+  x  11 [web] › apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication (15.6s)
+  x  12 [web] › apps\web\tests\e2e\ontology-relationship-flow.spec.ts:4:1 › real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries (104ms)
+  ok 13 [web] › apps\web\tests\e2e\website-entry.spec.ts:12:1 › product introduction leads visitors through capabilities, scenarios, development updates and version planning (521ms)
+  ok 14 [web] › apps\web\tests\e2e\website-entry.spec.ts:32:1 › anonymous website directory and index expose real platform links (279ms)
+  ok 15 [web] › apps\web\tests\e2e\website-entry.spec.ts:50:1 › platform entry hands anonymous visitors to existing AuthGuard login (1.1s)
+  ok 16 [web] › apps\web\tests\e2e\website-entry.spec.ts:58:1 › default entry remains available with JavaScript disabled (364ms)
+  ok 17 [web] › apps\web\tests\e2e\website-entry.spec.ts:83:3 › website navigation and layout at 360px (569ms)
+  ok 18 [web] › apps\web\tests\e2e\website-entry.spec.ts:83:3 › website navigation and layout at 390px (566ms)
+  ok 19 [web] › apps\web\tests\e2e\website-entry.spec.ts:83:3 › website navigation and layout at 768px (637ms)
+  ok 20 [web] › apps\web\tests\e2e\website-entry.spec.ts:83:3 › website navigation and layout at 1440px (587ms)
+  ok 21 [web] › apps\web\tests\e2e\website-entry.spec.ts:122:1 › reduced motion removes animated effects (212ms)
+  x  22 [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: javascript:alert(1) (62ms)
+  x  23 [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: data:text/html,unsafe (105ms)
+  x  24 [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: //unsafe.example/home (86ms)
+  x  25 [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://public-user:public-pass@platform.example.com/home (86ms)
+  x  26 [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://platform.example.com/home (90ms)
+  x  27 [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: /workspace/home (101ms)
+  x  28 [web] › apps\web\tests\e2e\website-entry.spec.ts:142:1 › standalone generated links work without JavaScript (63ms)
+  ok 29 [web] › apps\web\tests\e2e\website-entry.spec.ts:154:1 › static generator rejects unsafe credentials without leaking input (61ms)
+  x  30 [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $& (60ms)
+  x  31 [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $` (108ms)
+  x  32 [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $' (60ms)
+  x  33 [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $$ (63ms)
+  x  34 [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $1 (71ms)
+  ok 35 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:86:1 › 建模：ObjectType（含层级）→ LinkType → ActionType，读回一致 (275ms)
+  ok 36 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:135:1 › 数据映射与同步：声明背挂源 → 同步 → 逐字段对账 (287ms)
+  ok 37 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:172:1 › 对象与关系查询：个体列表 + 关系写入 + 一跳遍历 (175ms)
+  ok 38 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:212:1 › Proposal：提议（预检通过）→ 确认 → 执行 → 落库 + 审计可见 (344ms)
+  ok 39 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:247:1 › 违规数据：schema 违规被预检阻断（409）且不落库 (257ms)
+  ok 40 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:274:1 › 重复提交：同 Idempotency-Key 重放不产生第二次效果 (454ms)
+  ok 41 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:307:1 › 失败恢复：失败显式且无副作用，随后有效请求仍成功（含 Action 审计） (564ms)
+  ok 42 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:360:1 › 跨租户拒绝：异租户 rid / 关联写入一律 4xx (18ms)
+  ok 43 [core] › tests\e2e\ontology-loop\ontology-core.spec.ts:392:1 › 前端：本体页面在真实后端下无未捕获错误 (1.5s)
+
+
+  1) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:9:3 › MP11 actual order application › empty tenant explicitly creates its own business group and order page
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    Expected: []
+    Received: undefined
+
+      13 |     const headers = { Authorization: 'Bearer ' + token };
+      14 |     const before = await request.get(api + '/apphub/apps/groups', { headers });
+    > 15 |     expect((await before.json()).items).toEqual([]);
+         |                                         ^
+      16 |     await page.goto('/apps/mine');
+      17 |     await page.getByLabel('订单应用名称', { exact: true }).fill('Empty tenant order app');
+      18 |     await page.getByRole('button', { name: '创建订单审核应用', exact: true }).click();
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\mp11-order-app-flow.spec.ts:15:41
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\mp11-order-app-flow-MP11-a-f77cb-siness-group-and-order-page-web\error-context.md
+
+  2) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:26:3 › MP11 actual order application › actual metadata preview save publish shortlink and human receipt survive reopening
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      37 |         ['ont.' + tenant + '.prop.status']: { value: pendingStatus, type: 'string' } },
+      38 |     } });
+    > 39 |     expect(createdOrder.ok()).toBeTruthy();
+         |                               ^
+      40 |     await injectAuthIntoPage(page, token, { tenantId: tenant });
+      41 |     await page.goto('/apps/mine');
+      42 |     await page.getByLabel('订单应用名称', { exact: true }).fill('Browser Order ' + Date.now());
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\mp11-order-app-flow.spec.ts:39:31
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\mp11-order-app-flow-MP11-a-abfc1-n-receipt-survive-reopening-web\error-context.md
+
+  3) [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:107:3 › MP11 actual order application › onboarding resumes selected real artifacts and treats query failures as unknown
+
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for getByRole('region', { name: '开始使用平台' }).getByRole('button', { name: '接入真实数据', exact: true })
+
+
+      110 |     await page.goto('/');
+      111 |     const guide = page.getByRole('region', { name: '开始使用平台' });
+    > 112 |     await guide.getByRole('button', { name: '接入真实数据', exact: true }).click();
+          |                                                                      ^
+      113 |     await guide.getByLabel('本次数据源', { exact: true }).selectOption(evidence.source_id);
+      114 |     await guide.getByLabel('本次对象模型', { exact: true }).selectOption(`ont.${process.env.MP11_UI_TENANT}.obj.order`);
+      115 |     await guide.getByLabel('本次映射', { exact: true }).selectOption(evidence.mappings[1].rid);
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\mp11-order-app-flow.spec.ts:112:70
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\mp11-order-app-flow-MP11-a-a7558-s-query-failures-as-unknown-web\error-context.md
+
+  4) [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:78:3 › MP11 verified PG and CSV ingestion › real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      83 |     const api = process.env.MP11_API_URL!;
+      84 |     const sources = await request.get(`${api}/data/sources`, { headers });
+    > 85 |     expect(sources.ok()).toBeTruthy();
+         |                          ^
+      86 |     const pgSource = (await sources.json()).items.find((s: { name: string }) => s.name === 'MP11 Verified PostgreSQL');
+      87 |     expect(pgSource).toBeTruthy();
+      88 |     expect(pgSource.connection_config).not.toHaveProperty('password');
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:85:26
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\ontology-ia-v2-data-flow-M-b6542-and-CSV-retry-is-idempotent-web\error-context.md
+
+  5) [web] › apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication
+
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '新建对象类型', exact: true })
+
+
+      12 |   },{token:session.token,tenant:session.tenant});
+      13 |   await page.goto('/ontology/model/object-types');
+    > 14 |   const open=async()=>{await page.getByRole('button',{name:'新建对象类型',exact:true}).click();await expect(page.getByRole('heading',{name:'新建对象类型',exact:true})).toBeVisible();};
+         |                                                                                  ^
+      15 |   const candidates=async()=>{const button=page.getByRole('button',{name:'继续创建',exact:true});if(await button.isVisible())await button.click();};
+      16 |   const fill=async(slug:string,name:string)=>{
+      17 |     await page.getByLabel('业务标识',{exact:true}).fill(slug);
+        at open (D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:14:82)
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:22:9
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\ontology-object-creation-f-70dc9--and-successful-publication-web\error-context.md
+
+  6) [web] › apps\web\tests\e2e\ontology-relationship-flow.spec.ts:4:1 › real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries
+
+    TypeError: (intermediate value).map is not a function
+
+       8 |   const headers = { Authorization: 'Bearer ' + session.token };
+       9 |   const initialTypes = await request.get(base + '/link-types', { headers });
+    > 10 |   expect((await initialTypes.json()).map((r: { rid: string }) => r.rid)).toEqual(['ont.' + session.tenant + '.link.paged_relationship']);
+         |                                      ^
+      11 |   const allEndpoints: string[] = [];
+      12 |   for (let offset = 0; ; offset += 100) {
+      13 |     const endpoints = await request.get(base + '/object-types', { headers, params: { limit: 100, offset } });
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\ontology-relationship-flow.spec.ts:10:38
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\ontology-relationship-flow-003d3-d-and-both-endpoint-queries-web\error-context.md
+
+  7) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: javascript:alert(1)
+
+    Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
+
+      130 |   test(`standalone destination configuration: ${destination}`, async ({ page }) => {
+      131 |     // Represents a static deployment's public HTML configuration; no business API is mocked.
+    > 132 |     const html = readFileSync('public/website/index.html', 'utf8').replace('name="metaplatform-platform-url" content=""', `name="metaplatform-platform-url" content="${destination}"`);
+          |                  ^
+      133 |     await page.route('**/website/index.html', route => route.fulfill({ contentType: 'text/html', body: html }));
+      134 |     await page.goto('/website/index.html');
+      135 |     const allowed = (destination.startsWith('https://') && !destination.includes('@')) || destination.startsWith('/workspace');
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:132:18
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-6c824-uration-javascript-alert-1--web\error-context.md
+
+  8) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: data:text/html,unsafe
+
+    Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
+
+      130 |   test(`standalone destination configuration: ${destination}`, async ({ page }) => {
+      131 |     // Represents a static deployment's public HTML configuration; no business API is mocked.
+    > 132 |     const html = readFileSync('public/website/index.html', 'utf8').replace('name="metaplatform-platform-url" content=""', `name="metaplatform-platform-url" content="${destination}"`);
+          |                  ^
+      133 |     await page.route('**/website/index.html', route => route.fulfill({ contentType: 'text/html', body: html }));
+      134 |     await page.goto('/website/index.html');
+      135 |     const allowed = (destination.startsWith('https://') && !destination.includes('@')) || destination.startsWith('/workspace');
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:132:18
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-69dd8-ation-data-text-html-unsafe-web\error-context.md
+
+  9) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: //unsafe.example/home
+
+    Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
+
+      130 |   test(`standalone destination configuration: ${destination}`, async ({ page }) => {
+      131 |     // Represents a static deployment's public HTML configuration; no business API is mocked.
+    > 132 |     const html = readFileSync('public/website/index.html', 'utf8').replace('name="metaplatform-platform-url" content=""', `name="metaplatform-platform-url" content="${destination}"`);
+          |                  ^
+      133 |     await page.route('**/website/index.html', route => route.fulfill({ contentType: 'text/html', body: html }));
+      134 |     await page.goto('/website/index.html');
+      135 |     const allowed = (destination.startsWith('https://') && !destination.includes('@')) || destination.startsWith('/workspace');
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:132:18
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-faa25-uration-unsafe-example-home-web\error-context.md
+
+  10) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://public-user:public-pass@platform.example.com/home
+
+    Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
+
+      130 |   test(`standalone destination configuration: ${destination}`, async ({ page }) => {
+      131 |     // Represents a static deployment's public HTML configuration; no business API is mocked.
+    > 132 |     const html = readFileSync('public/website/index.html', 'utf8').replace('name="metaplatform-platform-url" content=""', `name="metaplatform-platform-url" content="${destination}"`);
+          |                  ^
+      133 |     await page.route('**/website/index.html', route => route.fulfill({ contentType: 'text/html', body: html }));
+      134 |     await page.goto('/website/index.html');
+      135 |     const allowed = (destination.startsWith('https://') && !destination.includes('@')) || destination.startsWith('/workspace');
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:132:18
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-5acdf-s-platform-example-com-home-web\error-context.md
+
+  11) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://platform.example.com/home
+
+    Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
+
+      130 |   test(`standalone destination configuration: ${destination}`, async ({ page }) => {
+      131 |     // Represents a static deployment's public HTML configuration; no business API is mocked.
+    > 132 |     const html = readFileSync('public/website/index.html', 'utf8').replace('name="metaplatform-platform-url" content=""', `name="metaplatform-platform-url" content="${destination}"`);
+          |                  ^
+      133 |     await page.route('**/website/index.html', route => route.fulfill({ contentType: 'text/html', body: html }));
+      134 |     await page.goto('/website/index.html');
+      135 |     const allowed = (destination.startsWith('https://') && !destination.includes('@')) || destination.startsWith('/workspace');
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:132:18
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-b3fc7-s-platform-example-com-home-web\error-context.md
+
+  12) [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: /workspace/home
+
+    Error: ENOENT: no such file or directory, open 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\public\website\index.html'
+
+      130 |   test(`standalone destination configuration: ${destination}`, async ({ page }) => {
+      131 |     // Represents a static deployment's public HTML configuration; no business API is mocked.
+    > 132 |     const html = readFileSync('public/website/index.html', 'utf8').replace('name="metaplatform-platform-url" content=""', `name="metaplatform-platform-url" content="${destination}"`);
+          |                  ^
+      133 |     await page.route('**/website/index.html', route => route.fulfill({ contentType: 'text/html', body: html }));
+      134 |     await page.goto('/website/index.html');
+      135 |     const allowed = (destination.startsWith('https://') && !destination.includes('@')) || destination.startsWith('/workspace');
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:132:18
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-d-79243-onfiguration-workspace-home-web\error-context.md
+
+  13) [web] › apps\web\tests\e2e\website-entry.spec.ts:142:1 › standalone generated links work without JavaScript
+
+    Error: node:internal/modules/cjs/loader:1522
+      throw err;
+      ^
+
+    Error: Cannot find module 'D:\Hermes\Workspace\metaplatform-website\configure-platform.mjs'
+        at Module._resolveFilename (node:internal/modules/cjs/loader:1519:15)
+        at wrapResolveFilename (node:internal/modules/cjs/loader:1073:27)
+        at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1097:10)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1124:12)
+        at Module._load (node:internal/modules/cjs/loader:1296:5)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+        at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+        at node:internal/main/run_main_module:33:47 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+
+    Node.js v26.3.0
+
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      143 |   const output = testInfo.outputPath('standalone.html');
+      144 |   const generated = spawnSync(process.execPath, [resolve('../../../metaplatform-website/configure-platform.mjs'), '--output', output, '--platform-url', 'https://platform.example.com/home'], { encoding: 'utf8' });
+    > 145 |   expect(generated.status, generated.stderr).toBe(0);
+          |                                              ^
+      146 |   const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+      147 |   const page = await context.newPage();
+      148 |   await page.route('**/standalone.html', route => route.fulfill({ contentType: 'text/html', body: readFileSync(output, 'utf8') }));
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:145:46
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-standalone-g-e08a2-nks-work-without-JavaScript-web\error-context.md
+
+  14) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $&
+
+    Error: node:internal/modules/cjs/loader:1522
+      throw err;
+      ^
+
+    Error: Cannot find module 'D:\Hermes\Workspace\metaplatform-website\configure-platform.mjs'
+        at Module._resolveFilename (node:internal/modules/cjs/loader:1519:15)
+        at wrapResolveFilename (node:internal/modules/cjs/loader:1073:27)
+        at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1097:10)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1124:12)
+        at Module._load (node:internal/modules/cjs/loader:1296:5)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+        at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+        at node:internal/main/run_main_module:33:47 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+
+    Node.js v26.3.0
+
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      166 |     const output = testInfo.outputPath('literal-url.html');
+      167 |     const generated = spawnSync(process.execPath, [resolve('../../../metaplatform-website/configure-platform.mjs'), '--output', output, '--platform-url', destination], { encoding: 'utf8' });
+    > 168 |     expect(generated.status, generated.stderr).toBe(0);
+          |                                                ^
+      169 |     const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+      170 |     const page = await context.newPage();
+      171 |     await page.route('**/literal-url.html', route => route.fulfill({ contentType: 'text/html', body: readFileSync(output, 'utf8') }));
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:168:48
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-eff48--literal-replacement-token--web\error-context.md
+
+  15) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $`
+
+    Error: node:internal/modules/cjs/loader:1522
+      throw err;
+      ^
+
+    Error: Cannot find module 'D:\Hermes\Workspace\metaplatform-website\configure-platform.mjs'
+        at Module._resolveFilename (node:internal/modules/cjs/loader:1519:15)
+        at wrapResolveFilename (node:internal/modules/cjs/loader:1073:27)
+        at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1097:10)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1124:12)
+        at Module._load (node:internal/modules/cjs/loader:1296:5)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+        at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+        at node:internal/main/run_main_module:33:47 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+
+    Node.js v26.3.0
+
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      166 |     const output = testInfo.outputPath('literal-url.html');
+      167 |     const generated = spawnSync(process.execPath, [resolve('../../../metaplatform-website/configure-platform.mjs'), '--output', output, '--platform-url', destination], { encoding: 'utf8' });
+    > 168 |     expect(generated.status, generated.stderr).toBe(0);
+          |                                                ^
+      169 |     const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+      170 |     const page = await context.newPage();
+      171 |     await page.route('**/literal-url.html', route => route.fulfill({ contentType: 'text/html', body: readFileSync(output, 'utf8') }));
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:168:48
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-eff48--literal-replacement-token--web\error-context.md
+
+  16) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $'
+
+    Error: node:internal/modules/cjs/loader:1522
+      throw err;
+      ^
+
+    Error: Cannot find module 'D:\Hermes\Workspace\metaplatform-website\configure-platform.mjs'
+        at Module._resolveFilename (node:internal/modules/cjs/loader:1519:15)
+        at wrapResolveFilename (node:internal/modules/cjs/loader:1073:27)
+        at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1097:10)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1124:12)
+        at Module._load (node:internal/modules/cjs/loader:1296:5)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+        at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+        at node:internal/main/run_main_module:33:47 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+
+    Node.js v26.3.0
+
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      166 |     const output = testInfo.outputPath('literal-url.html');
+      167 |     const generated = spawnSync(process.execPath, [resolve('../../../metaplatform-website/configure-platform.mjs'), '--output', output, '--platform-url', destination], { encoding: 'utf8' });
+    > 168 |     expect(generated.status, generated.stderr).toBe(0);
+          |                                                ^
+      169 |     const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+      170 |     const page = await context.newPage();
+      171 |     await page.route('**/literal-url.html', route => route.fulfill({ contentType: 'text/html', body: readFileSync(output, 'utf8') }));
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:168:48
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-eff48--literal-replacement-token--web\error-context.md
+
+  17) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $$
+
+    Error: node:internal/modules/cjs/loader:1522
+      throw err;
+      ^
+
+    Error: Cannot find module 'D:\Hermes\Workspace\metaplatform-website\configure-platform.mjs'
+        at Module._resolveFilename (node:internal/modules/cjs/loader:1519:15)
+        at wrapResolveFilename (node:internal/modules/cjs/loader:1073:27)
+        at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1097:10)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1124:12)
+        at Module._load (node:internal/modules/cjs/loader:1296:5)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+        at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+        at node:internal/main/run_main_module:33:47 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+
+    Node.js v26.3.0
+
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      166 |     const output = testInfo.outputPath('literal-url.html');
+      167 |     const generated = spawnSync(process.execPath, [resolve('../../../metaplatform-website/configure-platform.mjs'), '--output', output, '--platform-url', destination], { encoding: 'utf8' });
+    > 168 |     expect(generated.status, generated.stderr).toBe(0);
+          |                                                ^
+      169 |     const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+      170 |     const page = await context.newPage();
+      171 |     await page.route('**/literal-url.html', route => route.fulfill({ contentType: 'text/html', body: readFileSync(output, 'utf8') }));
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:168:48
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-eff48--literal-replacement-token--web\error-context.md
+
+  18) [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $1
+
+    Error: node:internal/modules/cjs/loader:1522
+      throw err;
+      ^
+
+    Error: Cannot find module 'D:\Hermes\Workspace\metaplatform-website\configure-platform.mjs'
+        at Module._resolveFilename (node:internal/modules/cjs/loader:1519:15)
+        at wrapResolveFilename (node:internal/modules/cjs/loader:1073:27)
+        at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1097:10)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1124:12)
+        at Module._load (node:internal/modules/cjs/loader:1296:5)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+        at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+        at node:internal/main/run_main_module:33:47 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+
+    Node.js v26.3.0
+
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      166 |     const output = testInfo.outputPath('literal-url.html');
+      167 |     const generated = spawnSync(process.execPath, [resolve('../../../metaplatform-website/configure-platform.mjs'), '--output', output, '--platform-url', destination], { encoding: 'utf8' });
+    > 168 |     expect(generated.status, generated.stderr).toBe(0);
+          |                                                ^
+      169 |     const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+      170 |     const page = await context.newPage();
+      171 |     await page.route('**/literal-url.html', route => route.fulfill({ contentType: 'text/html', body: readFileSync(output, 'utf8') }));
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\website-entry.spec.ts:168:48
+
+    Error Context: ..\.tmp\codex-mp11-candidate\playwright-results\website-entry-generated-st-02184-literal-replacement-token-1-web\error-context.md
+
+  18 failed
+    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:9:3 › MP11 actual order application › empty tenant explicitly creates its own business group and order page
+    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:26:3 › MP11 actual order application › actual metadata preview save publish shortlink and human receipt survive reopening
+    [web] › apps\web\tests\e2e\mp11-order-app-flow.spec.ts:107:3 › MP11 actual order application › onboarding resumes selected real artifacts and treats query failures as unknown
+    [web] › apps\web\tests\e2e\ontology-ia-v2-data-flow.spec.ts:78:3 › MP11 verified PG and CSV ingestion › real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent
+    [web] › apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication
+    [web] › apps\web\tests\e2e\ontology-relationship-flow.spec.ts:4:1 › real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: javascript:alert(1)
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: data:text/html,unsafe
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: //unsafe.example/home
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://public-user:public-pass@platform.example.com/home
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://platform.example.com/home
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: /workspace/home
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:142:1 › standalone generated links work without JavaScript
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $&
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $`
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $'
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $$
+    [web] › apps\web\tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $1
+  25 passed (1.3m)

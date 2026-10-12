@@ -1,0 +1,7 @@
+{
+  "apphub_metadata_errors": 0,
+  "missing_refs": 0,
+  "paths_operations_unchanged": true,
+  "only_schema_delta": "AppHubReleaseTask.completedAt -> endTime",
+  "actual_completed_sample_field_declared": "PASS"
+}

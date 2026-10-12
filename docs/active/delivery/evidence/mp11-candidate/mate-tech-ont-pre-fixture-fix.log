@@ -1,0 +1,132 @@
+........................................................................ [ 10%]
+...............................................................F........ [ 20%]
+........................................................................ [ 31%]
+..............................ssssssss.................................. [ 41%]
+......................ss......s.................s...s................... [ 52%]
+...................................................................F.FFF [ 62%]
+FF...................................................................... [ 72%]
+.......................................................F................ [ 83%]
+........................................................................ [ 93%]
+............................................                             [100%]
+================================== FAILURES ===================================
+___________ TestLinkTypeInterfaceE2E.test_link_type_upsert_list_get ___________
+packages\mate-tech-ont\tests\integration\test_v2_kernel_e2e.py:414: in test_link_type_upsert_list_get
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"src object type not found: ont.acme.obj.employee.v1"}
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+____________ TestS2PgUnified.test_pg_legacy_path_is_compat_marker _____________
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:647: in test_pg_legacy_path_is_compat_marker
+    result = pg_repo.execute_proposal(pid, idempotency_key=f"leg-{pid}")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:7160: in execute_proposal
+    return self._execute_proposal_command(proposal_id, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:7252: in _execute_proposal_command
+    return self._execute_action_kind_proposal(
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:6594: in _execute_action_kind_proposal
+    cur.execute(
+.venv\Lib\site-packages\psycopg2\extras.py:236: in execute
+    return super().execute(query, vars)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "ont_action_audit_pkey"
+E   DETAIL:  Key (audit_id)=(audit-44f31f-1) already exists.
+_________ TestS3ApiDispatch.test_declarative_via_propose_endpoint_e2e _________
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:752: in test_declarative_via_propose_endpoint_e2e
+    assert resp.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+_______ TestS3ApiDispatch.test_propose_edit_set_on_function_only_action _______
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:789: in test_propose_edit_set_on_function_only_action
+    assert resp.status_code == 200, resp.text
+E   AssertionError: {"detail":"platform.write required"}
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+_______________ TestS3ApiDispatch.test_inmemory_revert_restores _______________
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:812: in test_inmemory_revert_restores
+    pid = resp.json()["proposal_id"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'proposal_id'
+___________ TestS3ApiDispatch.test_function_not_registered_maps_422 ___________
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:845: in test_function_not_registered_maps_422
+    assert resp.status_code == 200, resp.text
+E   AssertionError: {"detail":"platform.write required"}
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+___ TestS3ApiDispatch.test_execute_gate_denial_maps_422_with_scoped_header ____
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:874: in test_execute_gate_denial_maps_422_with_scoped_header
+    pid = resp.json()["proposal_id"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'proposal_id'
+___________ TestWebSocketSubscription.test_ws_receives_outbox_event ___________
+packages\mate-tech-ont\tests\test_ont_g23_functions.py:147: in test_ws_receives_outbox_event
+    with client.websocket_connect("/api/v1/ont/v2/ws/object-changes") as ws:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\testclient.py:123: in __enter__
+    self._raise_on_close(message)
+.venv\Lib\site-packages\starlette\testclient.py:152: in _raise_on_close
+    raise WebSocketDisconnect(code=message.get("code", 1000), reason=message.get("reason", ""))
+E   starlette.websockets.WebSocketDisconnect
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+packages\mate-tech-ont\src\mate_tech_ont\main.py:218
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:218: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("startup")  # pyright: ignore[reportDeprecated]
+
+.venv\Lib\site-packages\fastapi\applications.py:4675
+.venv\Lib\site-packages\fastapi\applications.py:4675
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+packages\mate-tech-ont\src\mate_tech_ont\main.py:302
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:302: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("shutdown")  # pyright: ignore[reportDeprecated]
+
+packages/mate-tech-ont/tests/security/test_cypher_tenant_guard.py: 1 warning
+packages/mate-tech-ont/tests/test_mp11_object_type_creation.py: 18 warnings
+packages/mate-tech-ont/tests/test_mp11_relationship_writes.py: 2 warnings
+packages/mate-tech-ont/tests/test_ont_federation.py: 1 warning
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\jwt\api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 11 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:156: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:172: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:197: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:239: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:269: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:291: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:322: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:332: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [2] packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:113: PG supersede publication regression
+SKIPPED [1] packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:169: PG schema-lock regression
+SKIPPED [1] packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:241: SQL conflict race requires PostgreSQL
+SKIPPED [1] packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:300: PG transactional edit-set lock regression
+FAILED packages/mate-tech-ont/tests/integration/test_v2_kernel_e2e.py::TestLinkTypeInterfaceE2E::test_link_type_upsert_list_get - AssertionError: {"detail":"src object type not found: ont.acme.obj.employee...
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS2PgUnified::test_pg_legacy_path_is_compat_marker - psycopg2.errors.UniqueViolation: duplicate key value violates unique constr...
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_declarative_via_propose_endpoint_e2e - assert 403 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_propose_edit_set_on_function_only_action - AssertionError: {"detail":"platform.write required"}
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_inmemory_revert_restores - KeyError: 'proposal_id'
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_function_not_registered_maps_422 - AssertionError: {"detail":"platform.write required"}
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_execute_gate_denial_maps_422_with_scoped_header - KeyError: 'proposal_id'
+FAILED packages/mate-tech-ont/tests/test_ont_g23_functions.py::TestWebSocketSubscription::test_ws_receives_outbox_event - starlette.websockets.WebSocketDisconnect
+8 failed, 671 passed, 13 skipped, 27 warnings in 188.23s (0:03:08)

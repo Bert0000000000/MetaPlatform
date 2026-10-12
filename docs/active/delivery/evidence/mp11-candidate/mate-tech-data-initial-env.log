@@ -1,0 +1,307 @@
+...........FFFFFFFFFFFFFFFFFFFF.FFFFFF..............................FFFF [ 55%]
+FFFFFFFFFFF...........................F.F............F...                [100%]
+================================== FAILURES ===================================
+_____________________________ test_list_cdc_tasks _____________________________
+packages\mate-tech-data\tests\test_app_data.py:17: in test_list_cdc_tasks
+    assert r.status_code == 200, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________________ test_list_cdc_tasks_status_filter ______________________
+packages\mate-tech-data\tests\test_app_data.py:26: in test_list_cdc_tasks_status_filter
+    tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+____________________________ test_create_cdc_task _____________________________
+packages\mate-tech-data\tests\test_app_data.py:52: in test_create_cdc_task
+    assert r.status_code == 200, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________________________ test_get_cdc_task ______________________________
+packages\mate-tech-data\tests\test_app_data.py:64: in test_get_cdc_task
+    tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+____________________________ test_get_cdc_task_404 ____________________________
+packages\mate-tech-data\tests\test_app_data.py:76: in test_get_cdc_task_404
+    assert r.status_code == 404, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________________ test_update_cdc_task _____________________________
+packages\mate-tech-data\tests\test_app_data.py:84: in test_update_cdc_task
+    tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+____________________________ test_delete_cdc_task _____________________________
+packages\mate-tech-data\tests\test_app_data.py:106: in test_delete_cdc_task
+    tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+_____________________________ test_pause_cdc_task _____________________________
+packages\mate-tech-data\tests\test_app_data.py:126: in test_pause_cdc_task
+    tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+____________________________ test_resume_cdc_task _____________________________
+packages\mate-tech-data\tests\test_app_data.py:142: in test_resume_cdc_task
+    tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+____________________________ test_cdc_task_status _____________________________
+packages\mate-tech-data\tests\test_app_data.py:157: in test_cdc_task_status
+    tasks = client.get("/api/v1/data/cdc-tasks", headers=auth_headers_acme).json()["items"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+______________________________ test_list_sources ______________________________
+packages\mate-tech-data\tests\test_app_data.py:172: in test_list_sources
+    assert r.status_code == 200, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________________ test_list_sources_type_filter ________________________
+packages\mate-tech-data\tests\test_app_data.py:181: in test_list_sources_type_filter
+    assert r.status_code == 200, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________________________ test_create_source ______________________________
+packages\mate-tech-data\tests\test_app_data.py:201: in test_create_source
+    assert r.status_code == 200, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________________________ test_get_source _______________________________
+packages\mate-tech-data\tests\test_app_data.py:212: in test_get_source
+    sources = client.get("/api/v1/data/sources", headers=auth_headers_acme).json()["items"]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+_____________________________ test_get_source_404 _____________________________
+packages\mate-tech-data\tests\test_app_data.py:224: in test_get_source_404
+    assert r.status_code == 404, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________________________ test_update_source ______________________________
+packages\mate-tech-data\tests\test_app_data.py:232: in test_update_source
+    sources = client.get("/api/v1/data/sources", headers=auth_headers_acme).json()["items"]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+_____________________________ test_delete_source ______________________________
+packages\mate-tech-data\tests\test_app_data.py:252: in test_delete_source
+    sources = client.get("/api/v1/data/sources", headers=auth_headers_acme).json()["items"]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'items'
+_____________________________ test_source_schema ______________________________
+packages\mate-tech-data\tests\test_app_data.py:268: in test_source_schema
+    assert source.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________________ test_source_schema_404 ____________________________
+packages\mate-tech-data\tests\test_app_data.py:284: in test_source_schema_404
+    assert r.status_code == 404, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_________________________ test_test_source_connection _________________________
+packages\mate-tech-data\tests\test_app_data.py:293: in test_test_source_connection
+    assert source.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________________ test_wrong_tenant_403 ____________________________
+packages\mate-tech-data\tests\test_app_data_tenant_integration.py:72: in test_wrong_tenant_403
+    assert r.status_code == 403, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________________________ test_no_tenant_400 ______________________________
+packages\mate-tech-data\tests\test_app_data_tenant_integration.py:82: in test_no_tenant_400
+    assert r.status_code == 400, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 400
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________________ test_tenant_isolation_cdc_tasks _______________________
+packages\mate-tech-data\tests\test_app_data_tenant_integration.py:98: in test_tenant_isolation_cdc_tasks
+    assert r1.status_code == 200, r1.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________________ test_tenant_isolation_sources ________________________
+packages\mate-tech-data\tests\test_app_data_tenant_integration.py:119: in test_tenant_isolation_sources
+    assert r1.status_code == 200, r1.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________________ test_cross_tenant_cdc_task_404 ________________________
+packages\mate-tech-data\tests\test_app_data_tenant_integration.py:137: in test_cross_tenant_cdc_task_404
+    assert create.status_code == 200, create.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________________ test_cross_tenant_source_404 _________________________
+packages\mate-tech-data\tests\test_app_data_tenant_integration.py:157: in test_cross_tenant_source_404
+    assert create.status_code == 200, create.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________________ test_list_data_products ___________________________
+packages\mate-tech-data\tests\test_data_products.py:25: in test_list_data_products
+    assert r.status_code == 200, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_________________ test_list_data_products_with_status_filter __________________
+packages\mate-tech-data\tests\test_data_products.py:46: in test_list_data_products_with_status_filter
+    assert create.status_code == 200, create.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________ test_list_data_products_with_modality_filter _________________
+packages\mate-tech-data\tests\test_data_products.py:73: in test_list_data_products_with_modality_filter
+    assert create.status_code == 200, create.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________________________ test_create_data_product ___________________________
+packages\mate-tech-data\tests\test_data_products.py:105: in test_create_data_product
+    assert r.status_code == 200, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________________ test_get_data_product ____________________________
+packages\mate-tech-data\tests\test_data_products.py:121: in test_get_data_product
+    products = client.get(
+E   KeyError: 'items'
+__________________________ test_get_data_product_404 __________________________
+packages\mate-tech-data\tests\test_data_products.py:136: in test_get_data_product_404
+    assert r.status_code == 404, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________________________ test_update_data_product ___________________________
+packages\mate-tech-data\tests\test_data_products.py:154: in test_update_data_product
+    assert create.status_code == 200, create.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________________________ test_delete_data_product ___________________________
+packages\mate-tech-data\tests\test_data_products.py:194: in test_delete_data_product
+    assert create.status_code == 200, create.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________ test_publish_data_product_bumps_version ___________________
+packages\mate-tech-data\tests\test_data_products.py:229: in test_publish_data_product_bumps_version
+    pid = create.json()["id"]
+          ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'id'
+_________________________ test_certify_requires_owner _________________________
+packages\mate-tech-data\tests\test_data_products.py:259: in test_certify_requires_owner
+    pid = create.json()["id"]
+          ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'id'
+_____________________ test_certify_with_owner_emits_event _____________________
+packages\mate-tech-data\tests\test_data_products.py:284: in test_certify_with_owner_emits_event
+    pid = create.json()["id"]
+          ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'id'
+__________________________ test_suspend_data_product __________________________
+packages\mate-tech-data\tests\test_data_products.py:315: in test_suspend_data_product
+    pid = create.json()["id"]
+          ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'id'
+__________________ test_data_product_versions_lists_history ___________________
+packages\mate-tech-data\tests\test_data_products.py:343: in test_data_product_versions_lists_history
+    pid = create.json()["id"]
+          ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'id'
+_____________________ test_list_data_products_pagination ______________________
+packages\mate-tech-data\tests\test_data_products.py:374: in test_list_data_products_pagination
+    assert r.status_code == 200, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________________ test_data_product_tenant_isolation ______________________
+packages\mate-tech-data\tests\test_data_products.py:400: in test_data_product_tenant_isolation
+    assert create.status_code == 200, create.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ test_real_pg_discovery_errors_and_http_credentials ______________
+packages\mate-tech-data\tests\test_mp11_connection_schema.py:135: in test_real_pg_discovery_errors_and_http_credentials
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______ test_real_pg_registered_sync_csv_retry_restart_and_relationships _______
+packages\mate-tech-data\tests\test_mp11_connection_schema.py:432: in test_real_pg_registered_sync_csv_retry_restart_and_relationships
+    assert failed_lookup.status_code == 200 and failed_lookup.json()["status"] == "failed"
+E   assert (401 == 200)
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________ test_fix_i1_busy_mapping_and_sync_http409_preserve_state ___________
+packages\mate-tech-data\tests\test_mp11_connection_schema.py:907: in test_fix_i1_busy_mapping_and_sync_http409_preserve_state
+    assert http.post(url, json=c.decl | {"priority": 42}).status_code == 409
+E   AssertionError: assert 401 == 409
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types/ont.mp11-fix-f9f139ca.obj.order/datasources', json=({'tenant_id': 'mp11-fix-f9f139ca', 'class_rid': 'ont.mp11-fix-f9f139ca.obj.order', 'name': 'orders', 'source_id': 'src-41872b23', ...} | {'priority': 42}))
+E    +      where post = <starlette.testclient.TestClient object at 0x00000223C59A2ED0>.post
+E    +      and   {'tenant_id': 'mp11-fix-f9f139ca', 'class_rid': 'ont.mp11-fix-f9f139ca.obj.order', 'name': 'orders', 'source_id': 'src-41872b23', ...} = namespace(pg=<mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x00000223C5DA0680>, source=DataSource(id...tyFormat.INTEGER: 'integer'>, description='', struct_fields=(), array=False, reducer=None, derived=None, shared=False)).decl
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+packages/mate-tech-data/tests/test_app_data.py: 20 warnings
+packages/mate-tech-data/tests/test_app_data_tenant_integration.py: 6 warnings
+packages/mate-tech-data/tests/test_data_products.py: 15 warnings
+packages/mate-tech-data/tests/test_mp11_connection_schema.py: 1 warning
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\jwt\api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 11 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_list_cdc_tasks - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_list_cdc_tasks_status_filter - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_create_cdc_task - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_get_cdc_task - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_get_cdc_task_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_update_cdc_task - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_delete_cdc_task - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_pause_cdc_task - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_resume_cdc_task - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_cdc_task_status - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_list_sources - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_list_sources_type_filter - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_create_source - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_get_source - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_get_source_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_update_source - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_delete_source - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_source_schema - assert 401 == 200
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_source_schema_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data.py::test_test_source_connection - assert 401 == 200
+FAILED packages/mate-tech-data/tests/test_app_data_tenant_integration.py::test_wrong_tenant_403 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data_tenant_integration.py::test_no_tenant_400 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data_tenant_integration.py::test_tenant_isolation_cdc_tasks - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data_tenant_integration.py::test_tenant_isolation_sources - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data_tenant_integration.py::test_cross_tenant_cdc_task_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_app_data_tenant_integration.py::test_cross_tenant_source_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_list_data_products - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_list_data_products_with_status_filter - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_list_data_products_with_modality_filter - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_create_data_product - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_get_data_product - KeyError: 'items'
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_get_data_product_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_update_data_product - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_delete_data_product - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_publish_data_product_bumps_version - KeyError: 'id'
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_certify_requires_owner - KeyError: 'id'
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_certify_with_owner_emits_event - KeyError: 'id'
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_suspend_data_product - KeyError: 'id'
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_data_product_versions_lists_history - KeyError: 'id'
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_list_data_products_pagination - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_data_products.py::test_data_product_tenant_isolation - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-data/tests/test_mp11_connection_schema.py::test_real_pg_discovery_errors_and_http_credentials - assert 401 == 200
+FAILED packages/mate-tech-data/tests/test_mp11_connection_schema.py::test_real_pg_registered_sync_csv_retry_restart_and_relationships - assert (401 == 200)
+FAILED packages/mate-tech-data/tests/test_mp11_connection_schema.py::test_fix_i1_busy_mapping_and_sync_http409_preserve_state - AssertionError: assert 401 == 409
+44 failed, 85 passed, 43 warnings in 16.09s

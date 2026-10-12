@@ -1,0 +1,21 @@
+{
+  "observed_utc": "2026-10-12T10:27:49.805526+00:00",
+  "source_archive_head": "69eb6e95a9c8c43f33b52da9bb5c71690241e278",
+  "plan": "docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md",
+  "exact_plan_scratch_removed": true,
+  "private_backup": ".tmp/codex-mp11-retired-fixtures/2026-10-12-final-scratch",
+  "private_manifest": ".tmp/codex-mp11-retired-fixtures/2026-10-12-final-scratch-manifest.json",
+  "manifest_sha256": "e54453035556658cf212367d8265edb95d560cda6fdc849d8e63d7292bab1768",
+  "all_file_hashes_verified": true,
+  "file_count": 608,
+  "bytes": 26132255,
+  "owner_only_acl_verified_by_native_backup_and_cleanup": true,
+  "ignored": true,
+  "legacy_inputs": "Complete old Task6 scripts/process/listener/start/restart/inputs retained as inactive recovery; original absolute paths require deliberate restoration.",
+  "current_runtime_inputs_outside_scratch": true,
+  "all_original37_running_ids_retained": true,
+  "protected_png_hash_matches": 32,
+  "other_worktrees_specs_prototype_preserved": true,
+  "owned_bytecode_restored": true,
+  "side_effect_scope": "Only exact resolved plan Scratch removed after native per-file SHA/ACL/index/HEAD/reparse guards; no sibling/worktree/container/image/volume/DB/runtime/private-input deletion."
+}

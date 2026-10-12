@@ -1,0 +1,13 @@
+{
+  "label": "web-types",
+  "command": [
+    "pnpm.cmd",
+    "exec",
+    "tsc",
+    "--noEmit"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+  "exit_code": 0,
+  "elapsed_seconds": 17.15,
+  "head": "38ff11900b9d72560afe20db4715d344c1370a23"
+}

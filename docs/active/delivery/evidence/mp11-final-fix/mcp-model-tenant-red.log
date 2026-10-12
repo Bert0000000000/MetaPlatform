@@ -1,0 +1,22 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_____ test_model_proposal_rid_matches_each_bound_caller_and_context_reset _____
+packages\mate-tech-mcp\tests\test_ontology_write_tools.py:556: in test_model_proposal_rid_matches_each_bound_caller_and_context_reset
+    assert observed == [('ont.tenant-one.obj.new.v1', 'tenant-one'),
+E   AssertionError: assert [('ont.__TENA...usted-local')] == [('ont.tenant...usted-local')]
+E     
+E     At index 0 diff: ('ont.__TENANT__.obj.new.v1', 'tenant-one') != ('ont.tenant-one.obj.new.v1', 'tenant-one')
+E     Use -v to get more diff
+_____ test_model_proposal_bound_empty_tenant_never_uses_service_fallback ______
+packages\mate-tech-mcp\tests\test_ontology_write_tools.py:576: in test_model_proposal_bound_empty_tenant_never_uses_service_fallback
+    assert json.loads(route.calls.last.request.content)['type_def']['rid'] == 'ont..obj.new.v1'
+E   AssertionError: assert 'ont.__TENANT__.obj.new.v1' == 'ont..obj.new.v1'
+E     
+E     - ont..obj.new.v1
+E     + ont.__TENANT__.obj.new.v1
+E     ?     ++++++++++
+=========================== short test summary info ===========================
+FAILED packages/mate-tech-mcp/tests/test_ontology_write_tools.py::test_model_proposal_rid_matches_each_bound_caller_and_context_reset
+FAILED packages/mate-tech-mcp/tests/test_ontology_write_tools.py::test_model_proposal_bound_empty_tenant_never_uses_service_fallback
+2 failed, 19 deselected in 0.65s
+

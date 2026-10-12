@@ -1,0 +1,8 @@
+{
+  "before_sha256": "4ba862f407b6b663970e356da26642168dc87e5c7622bbfdadd80658301ba96f",
+  "after_sha256": "2009510f988a047cfba07b8a4d1bbcc2133ea7ff3fb45d93bd9d97e5761ff807",
+  "checkbox_changes": 48,
+  "requirement_text_changes": 0,
+  "spec_changed": false,
+  "scope": "Administrative checkmarks only after task/full/scoped reviews, source mapping, current signed continuity and WIP verification; no executable or requirement edit."
+}

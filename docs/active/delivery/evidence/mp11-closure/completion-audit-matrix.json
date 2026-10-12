@@ -1,0 +1,2413 @@
+{
+  "stage": "Complete local1.1.0 development candidate: all48 original plan acceptances/22 P0, task/full/scoped reviews, current code/signed business, preserved WIP and durable public/private archival/retirement verified. Not GA.",
+  "plan": "docs\\superpowers\\plans\\2026-10-11-metaplatform-product-v1.1-implementation.md",
+  "plan_sha256": "2009510f988a047cfba07b8a4d1bbcc2133ea7ff3fb45d93bd9d97e5761ff807",
+  "spec": "docs\\active\\specs\\2026-10-11-metaplatform-product-v1.1.md",
+  "spec_sha256": "029648c21091b54db26eb2becd13e182ed758f310424bbed2c642ab70c90f98a",
+  "task_requirements": {
+    "1": {
+      "title": "关系写接口校验与持久化一致性",
+      "requirements": [
+        {
+          "id": "T1.1",
+          "plan_line": 65,
+          "requirement": "在新测试中用真实 FastAPI router + InMemoryOntologyRepo 覆盖有效创建和负向写入，先运行失败用例；沿用既有测试身份 fixture，不关闭生产鉴权。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-1-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-rereview-1.md",
+            "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual middleware/HTTP and PG locking, endpoint deletion, cardinality and description roundtrip; fixture identity is distinct from Task8 real issuer proof.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T1.2",
+          "plan_line": 72,
+          "requirement": "补 API 层关系类型两端同租户、存在性和枚举错误归一化；实例写入验证关系类型存在、两端存在且类型正确，保留服务端写权限。HTTP 通过 create_link_instance(li, require_endpoints=True) 在 PG 事务内重验，并通过排序后的 FOR SHARE 与删除前 FOR UPDATE 保证端点生命周期；默认 False 仅保留已有直接 repo 调用兼容。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-1-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-rereview-1.md",
+            "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual middleware/HTTP and PG locking, endpoint deletion, cardinality and description roundtrip; fixture identity is distinct from Task8 real issuer proof.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T1.3",
+          "plan_line": 73,
+          "requirement": "关系已有实例时，阻止直接修改 src/dst/cardinality/directionality，允许名称与说明更新；不静默破坏已有实例。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-1-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-rereview-1.md",
+            "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual middleware/HTTP and PG locking, endpoint deletion, cardinality and description roundtrip; fixture identity is distinct from Task8 real issuer proof.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T1.4",
+          "plan_line": 74,
+          "requirement": "修复 PG upsert 更新分支未保存 description 的缺口；新增真实 PG 回归用例，DSN 只指向独立测试库，覆盖保存→更新→重新读取。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-1-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-rereview-1.md",
+            "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual middleware/HTTP and PG locking, endpoint deletion, cardinality and description roundtrip; fixture identity is distinct from Task8 real issuer proof.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T1.5",
+          "plan_line": 75,
+          "requirement": "运行新套件和邻近关系测试，保存命令/结果与 RED→GREEN 证据；审查后提交本任务文件。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-1-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-1-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual middleware/HTTP and PG locking, endpoint deletion, cardinality and description roundtrip; fixture identity is distinct from Task8 real issuer proof.",
+          "plan_checkbox_checked": true
+        }
+      ],
+      "named_files": [
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "52589555f37a70ced274cff75064afa9254f661792c2e07c39575da6c02ed10d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "e590775ab8348b52166f31df2e6d9ea580bee1faff02d73d925f26aa6bdc369d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/api.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "e0860c88551d5632144cf5fe061988dbf25ec509a008a3ba8c78063463a39901",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/in_memory.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "c0ae8edf38c5867b13a0dc05d32a6e5b5ad00398af2dacf6f6b5f3dbf1137405",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "200a470599528a865d7b394cd12a2d8119f1af8162f4184217b99eaa6d07f2e7",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Test",
+          "path": "mate-platform-backend/packages/mate-kernel/tests/test_ontology_api.py",
+          "exists_now": true,
+          "status": "unchanged_existing_regression_executed_in_Task1",
+          "current_sha256": "df7eaf87cf77e5278ceac1ad1b966d3c813ab13a3b0fb1ac6e74692f2a81fc84",
+          "changed_in_branch": false,
+          "evidence": "docs/active/delivery/evidence/mp11-plan/task-1-report.md#GREEN and self-review"
+        },
+        {
+          "kind": "Contract",
+          "path": "mate-platform-backend/contracts/openapi/services/ont.yaml",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "0ca7a958e0656b05e7054e027738bbcef6203361d38538f50cc4b8f2ac66eb6d",
+          "changed_in_branch": true
+        }
+      ]
+    },
+    "2": {
+      "title": "关系定义和实例关联界面",
+      "requirements": [
+        {
+          "id": "T2.1",
+          "plan_line": 97,
+          "requirement": "用 Vitest/Testing Library 编写行为测试：新建表单→选择 Customer/Order→保存；关联 C001/O001→刷新可见；服务端 409 保留输入；请求失败显示错误而非空列表。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-2-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Mock UI errors/form retention plus real signed API/PG browser relations, 104 types/201 individuals/201 links, same-database tenant read guards.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T2.2",
+          "plan_line": 102,
+          "requirement": "提供名称/标识、源/目标对象类型、基数、方向、两端名称、说明与关系属性；标识由业务名生成可编辑默认值，技术 RID 放高级区域；已有实例的结构字段说明受保护。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-2-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Mock UI errors/form retention plus real signed API/PG browser relations, 104 types/201 individuals/201 links, same-database tenant read guards.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T2.3",
+          "plan_line": 103,
+          "requirement": "严格区分新建和编辑：目录读取未知/失败时有提示与重试，权威创建保护拒绝读取后其他会话抢占的同 RID；旧定义保持不变。类型选项覆盖所有已授权页，后页类型和深链预选均可用；实例选择与真实接口的分页能力一致，失败页可返回上页。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-2-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Mock UI errors/form retention plus real signed API/PG browser relations, 104 types/201 individuals/201 links, same-database tenant read guards.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T2.4",
+          "plan_line": 104,
+          "requirement": "实例抽屉增加“关联对象”，按关系定义限制端点类型，选择实际对象及关系属性；保存期间防重复；成功重拉列表与统计，失败保留表单与重试。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-2-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Mock UI errors/form retention plus real signed API/PG browser relations, 104 types/201 individuals/201 links, same-database tenant read guards.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T2.5",
+          "plan_line": 105,
+          "requirement": "对象详情的“关系定义”增加指向关系页并预选当前对象的入口；显示继承与业务关系的区别，不将普通 customer_id 属性当作关联。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-2-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Mock UI errors/form retention plus real signed API/PG browser relations, 104 types/201 individuals/201 links, same-database tenant read guards.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T2.6",
+          "plan_line": 106,
+          "requirement": "同一独立数据库放入两租户关系，HTTP/PG 列表仅返回当前租户；PG 在请求租户上下文中显式过滤，HTTP 响应守住租户边界，不依赖建库角色的 RLS 行为。无上下文的旧直接 repo 调用保持兼容；不扩建身份系统。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-2-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_reads.py",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Mock UI errors/form retention plus real signed API/PG browser relations, 104 types/201 individuals/201 links, same-database tenant read guards.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T2.7",
+          "plan_line": 107,
+          "requirement": "提供真实 API + 独立 PostgreSQL 的 E2E：创建定义/实例、负向基数、重载、两侧查询；UI Mock 测试单独标注。运行类型检查和构建，审查后提交。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-2-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-2-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Mock UI errors/form retention plus real signed API/PG browser relations, 104 types/201 individuals/201 links, same-database tenant read guards.",
+          "plan_checkbox_checked": true
+        }
+      ],
+      "named_files": [
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "52589555f37a70ced274cff75064afa9254f661792c2e07c39575da6c02ed10d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "e590775ab8348b52166f31df2e6d9ea580bee1faff02d73d925f26aa6bdc369d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_reads.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "1ab3b4d8a3437e7eb0ea582ff41f6fc8d63cb37cddc74d7e9fa9064c1e1d06e6",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "200a470599528a865d7b394cd12a2d8119f1af8162f4184217b99eaa6d07f2e7",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/api.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "e0860c88551d5632144cf5fe061988dbf25ec509a008a3ba8c78063463a39901",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/in_memory.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "c0ae8edf38c5867b13a0dc05d32a6e5b5ad00398af2dacf6f6b5f3dbf1137405",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/contracts/openapi/services/ont.yaml",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "0ca7a958e0656b05e7054e027738bbcef6203361d38538f50cc4b8f2ac66eb6d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/api/ont/kernel.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "33e58cde390b3dfa97e505ef6559efa07be4a248debeacd4b74de8e07fdee976",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/model/link-types/LinkTypesPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "bb07bafbd00db8af06e4cb56b922c7fade34ba5e160065cd41156c288f1de7d0",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/model/link-types/LinkTypeEditor.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "bd64524f3dd4a5b60c119eb16c95947878c12d2e4505803ca4b02c3cc20068af",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/model/link-types/LinkInstanceEditor.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "b610c5e10e19c6fef3c6311328f96d45164b894328bda5b70c5cffb503c76338",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/model/link-types/LinkTypesPage.test.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "a704fb6efe6a7c92b9f8265e7d678ac7fd449e6850c079eb8f2b180671067d62",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-relationship-flow.spec.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "a1dea45ad533c28020ba643468f2cc858c0dcd7543bb5ee27e1e7bb3d1d9f460",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/OntologyModelingPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "ee7dab970f98b95a1f09f51c267fa1165f9e6c8d4a895c4def953ca741630590",
+          "changed_in_branch": true
+        }
+      ]
+    },
+    "3": {
+      "title": "官网进入平台",
+      "requirements": [
+        {
+          "id": "T3.1",
+          "plan_line": 122,
+          "requirement": "写入口测试：未登录可打开官网，CTA 到 /home 后进入现有登录；正式 build 产物含官网。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-3-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-review.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Canonical dev and actual build22/22, configured/no-JS static entries, public screenshots and full product revision; signed anonymous/login/logout/relogin chain in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T3.2",
+          "plan_line": 123,
+          "requirement": "沿用现有静态资源和品牌，展示真实能力、订单场景、数据→本体→应用→Agent 关系图；尚未通过验收的能力标“1.1 规划/验证中”。清除虚构链接、邮箱、不可打开的本地文档链接和历史测试数承诺。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-3-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-review.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Canonical dev and actual build22/22, configured/no-JS static entries, public screenshots and full product revision; signed anonymous/login/logout/relogin chain in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T3.3",
+          "plan_line": 124,
+          "requirement": "开发、构建、生产静态服务使用 frontend public/website/index.html 这一官网内容源；原 metaplatform-website/index.html 作为兼容入口并说明实际部署来源。容器构建上下文为 metaplatform-frontend，不依赖外层宿主文件；既有 dist COPY 已覆盖官网时不做无意义 Dockerfile 修改。平台认证与 API 配置不变。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-3-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-review.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Canonical dev and actual build22/22, configured/no-JS static entries, public screenshots and full product revision; signed anonymous/login/logout/relogin chain in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T3.4",
+          "plan_line": 125,
+          "requirement": "Playwright 验证 360/390/768/1440 宽度、键盘、减少动态效果、导航/按钮和无横向溢出；同源默认入口及独立部署配置后的入口在禁用 JS 时均可用；保存仅公开官网的截图与无凭据请求结果。审查后提交。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-3-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-review.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Canonical dev and actual build22/22, configured/no-JS static entries, public screenshots and full product revision; signed anonymous/login/logout/relogin chain in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T3.5",
+          "plan_line": 131,
+          "requirement": "按 2026-10-11 用户要求重新设计平台定位与介绍，采用业务价值优先的“本体驱动的企业 AI 操作平台”叙事；清楚覆盖面向人群、业务问题、平台概览、能力与场景。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-3-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-review.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Canonical dev and actual build22/22, configured/no-JS static entries, public screenshots and full product revision; signed anonymous/login/logout/relogin chain in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T3.6",
+          "plan_line": 132,
+          "requirement": "增加独立的产品更新和版本规划入口：更新来自真实已完成开发增量，1.1.0/1.1.1/1.2 的当前阶段与未来目标分明；不使用虚构发布史或内部测试统计代替产品介绍。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-3-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-review.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Canonical dev and actual build22/22, configured/no-JS static entries, public screenshots and full product revision; signed anonymous/login/logout/relogin chain in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T3.7",
+          "plan_line": 133,
+          "requirement": "复用上述三项官网文件与入口/URL 配置约束，保留旧锚点；检查最终开发/构建产物、移动/键盘/无 JS 以及桌面和移动视觉效果，经独立审查后恢复 Task 6。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-3-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-3-revision-review.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Canonical dev and actual build22/22, configured/no-JS static entries, public screenshots and full product revision; signed anonymous/login/logout/relogin chain in Task8.",
+          "plan_checkbox_checked": true
+        }
+      ],
+      "named_files": [
+        {
+          "kind": "Modify",
+          "path": "metaplatform-website/index.html",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "5476723d06a0f8e8a80ff829785491953d77888383f8c4b860a8fe803c37b1b9",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/public/website/index.html",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "e5db328bbfa70b034dde079a0c4aab93642293ab93fc19007d17ab79f6130785",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-website/README.md",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "31f62c5c5d432571dfe21cfea392e9f62abc8a0f91d7b69a2d6f97d3b1d06dba",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-website/configure-platform.mjs",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "4e4ab579fe385dbfd55f13a646ffed19dab2e1fffdcd4a7160a36a2a180cbf46",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/vite.config.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "149d3ca9a1ec80e3cc75e7e827602b249294e980e3a0f7162fff616b5a383416",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/Dockerfile",
+          "exists_now": true,
+          "status": "no_change_needed_existing_dist_COPY_covers_canonical_public_website",
+          "current_sha256": "4acf511414494bd599dc8c5eb71b00583b4e84aafbcc97425013b427c592a977",
+          "changed_in_branch": false,
+          "evidence": "docs/active/delivery/evidence/mp11-plan/task-3-review.md#Spec Compliance"
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/tests/e2e/website-entry.spec.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "37a78db66bd1a5132db9365de32ebfb260fd5e8d34d32d9199f1214d1e9fe15e",
+          "changed_in_branch": true
+        }
+      ]
+    },
+    "4": {
+      "title": "对象创建与草稿操作一致性",
+      "requirements": [
+        {
+          "id": "T4.1",
+          "plan_line": 154,
+          "requirement": "编写同 RID 重复新增与并发新增不覆盖、正常编辑仍可更新的回归；新建返回 409 时表单保留并可定位已有类型。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-4-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Atomic create-only/WIP intent, checksum/publish/rollback locks, native navigation, actual discovered fields, same-family migrated relation endpoints; actual app/action impact in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T4.2",
+          "plan_line": 155,
+          "requirement": "将入口文案统一为“新建对象类型”；基础/高级字段渐进显示，名称/主键/属性问题就地提示。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-4-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Atomic create-only/WIP intent, checksum/publish/rollback locks, native navigation, actual discovered fields, same-family migrated relation endpoints; actual app/action impact in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T4.3",
+          "plan_line": 156,
+          "requirement": "修复相似候选后的继续创建、合并和取消路径；未保存源概念不能调用要求源对象存在的 merge，改为复用已有类型或回到表单。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-4-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Atomic create-only/WIP intent, checksum/publish/rollback locks, native navigation, actual discovered fields, same-family migrated relation endpoints; actual app/action impact in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T4.4",
+          "plan_line": 157,
+          "requirement": "对象类型写入口使用既有 platform.write 拒绝只读修改；同租户 ActionType.on 精确引用进入预检。应用反向引用由任务 6 的真实 AppHub 绑定契约补齐，并接入同一影响面板；完整 ONT-03 以任务 8 的已发布应用场景验收。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-4-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log#actual published application and action appear together",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Atomic create-only/WIP intent, checksum/publish/rollback locks, native navigation, actual discovered fields, same-family migrated relation endpoints; actual app/action impact in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T4.5",
+          "plan_line": 158,
+          "requirement": "打通保存草稿、恢复、未保存离开提示、预检与发布；变更影响沿用既有机制，验证乐观并发冲突提示。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-4-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Atomic create-only/WIP intent, checksum/publish/rollback locks, native navigation, actual discovered fields, same-family migrated relation endpoints; actual app/action impact in Task8.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T4.6",
+          "plan_line": 159,
+          "requirement": "测试重复 slug/RID、候选 API 不可用、错误恢复、刷新草稿、发布后真实对象查询；复核同族版本发布/存量实例迁移后已有关系和新关联的类型引用，先确认既有实现再修复断点，避免重建 PR #95。审查后提交。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-4-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-4-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Atomic create-only/WIP intent, checksum/publish/rollback locks, native navigation, actual discovered fields, same-family migrated relation endpoints; actual app/action impact in Task8.",
+          "plan_checkbox_checked": true
+        }
+      ],
+      "named_files": [
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/contracts/openapi/services/ont.yaml",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "0ca7a958e0656b05e7054e027738bbcef6203361d38538f50cc4b8f2ac66eb6d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/model/object-types/ObjectTypesPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "88a1ec467f8c0736472fca66503bd418e8ec3e669a357e6871428bdead68245f",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/components/ObjectTypeEditorV2Drawer.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "44673197d1eaae12c9dc3463a5fcfe573bff2baae09158eefa62c410b73fcdc2",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/OntologyModelingPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "ee7dab970f98b95a1f09f51c267fa1165f9e6c8d4a895c4def953ca741630590",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/api/ont/kernel.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "33e58cde390b3dfa97e505ef6559efa07be4a248debeacd4b74de8e07fdee976",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "52589555f37a70ced274cff75064afa9254f661792c2e07c39575da6c02ed10d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "e590775ab8348b52166f31df2e6d9ea580bee1faff02d73d925f26aa6bdc369d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/api.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "e0860c88551d5632144cf5fe061988dbf25ec509a008a3ba8c78063463a39901",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/in_memory.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "c0ae8edf38c5867b13a0dc05d32a6e5b5ad00398af2dacf6f6b5f3dbf1137405",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "44c73c08952ebbf460b824fd890ba8852be756eb5a054190c4e603e937fdd7dc",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/components/ObjectTypeEditorV2Drawer.test.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "33fab280358734c3d81ba99c33b843578910f6e622f2d0ffe36a00169a84d249",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-object-creation-flow.spec.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "381422e25d96ad0ca4089f4935e536720d4623eace41f3e1fe0810d46ed760b0",
+          "changed_in_branch": true
+        }
+      ]
+    },
+    "5": {
+      "title": "真实数据接入与同步恢复",
+      "requirements": [
+        {
+          "id": "T5.1",
+          "plan_line": 181,
+          "requirement": "用独立 PG 编写错密码/无 schema 权限/不存在表与正常发现的失败回归；错误不得返回 connected=true 或虚构字段。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-5-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL/CSV adapters, credential whitelist and denied probes, discovered column prechecks, time+key cursor, failed/interrupted runs and retries; source deletes do not delete objects; CSV batch/upsert is not CDC.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T5.2",
+          "plan_line": 182,
+          "requirement": "将 /test 与 /schema 接线从 stub 移到真实适配器；数据库凭据仅服务端使用，样例按权限掩码。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-5-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL/CSV adapters, credential whitelist and denied probes, discovered column prechecks, time+key cursor, failed/interrupted runs and retries; source deletes do not delete objects; CSV batch/upsert is not CDC.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T5.3",
+          "plan_line": 183,
+          "requirement": "补齐时间列与增量参数传递/持久化，使用真实列映射 Customer/Order，同步前显示主键、非空、类型冲突；CSV 上传路径明确为批量导入。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-5-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json#/checks/actual_discovered_mapping_negatives",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL/CSV adapters, credential whitelist and denied probes, discovered column prechecks, time+key cursor, failed/interrupted runs and retries; source deletes do not delete objects; CSV batch/upsert is not CDC.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T5.4",
+          "plan_line": 184,
+          "requirement": "同步显示真实运行 ID、计数、游标和错误；取消/失败结束 loading，重试不重复生成订单，删除与全量重建行为明确。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-5-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL/CSV adapters, credential whitelist and denied probes, discovered column prechecks, time+key cursor, failed/interrupted runs and retries; source deletes do not delete objects; CSV batch/upsert is not CDC.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T5.5",
+          "plan_line": 185,
+          "requirement": "数据与治理域提供可见的 /gov/data/sources 数据源配置入口，并连到既有本体映射；不能只更新未挂载的 AssetsInventoryPage。修正实际 source CRUD 请求/响应与 schema 类型，移除探测失败时随机成功和虚构表字段；真实发现结果带 discovered_at/trace_id，表/列列表契约保持兼容。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-5-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL/CSV adapters, credential whitelist and denied probes, discovered column prechecks, time+key cursor, failed/interrupted runs and retries; source deletes do not delete objects; CSV batch/upsert is not CDC.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T5.6",
+          "plan_line": 186,
+          "requirement": "验证首次全量→增量→中断/重试→进程重启→对象及关系查询。审查后提交。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-5-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-5-rereview-1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json#/checks/source_and_task_recovery",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL/CSV adapters, credential whitelist and denied probes, discovered column prechecks, time+key cursor, failed/interrupted runs and retries; source deletes do not delete objects; CSV batch/upsert is not CDC.",
+          "plan_checkbox_checked": true
+        }
+      ],
+      "named_files": [
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "f665410c8e4adc4ae636107a064af14d240d8594b31584d5bb7683475ecaa106",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/__init__.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "66a2675dc38109a3a29fe8ce8f25907ecbc32470f1f454632eb35dd88902db5d",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/in_memory.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "9d9d9d2b4dce3202105de53fc945061dbf79cc10527914aa9568a3921760913b",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/repositories/sql_store.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "1315e85b7897c9981d90e21a3c032ad1d73a50106a9c55146ae1a01e6175bafc",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/api/ontology-bigdata.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "53d138a416f6e875b2a4e83c6ddb53f7d418847d3f94823327cae37c09cee34a",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/types/ontology-bigdata.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "0b003ce6c6b450d88abf1a9047cdfa2b94f4c7759f851687d4c2019ca24c8b2c",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/routes/gov.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "9c3cc4bc8fd28636b0b033cc91364ed7d107cbe7d512b71815b27ae702a7d8fe",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/components/shell/domains.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "510058530a24411fe69f8d924f99abf550bd71daa8b9bb39be44c00930570264",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/arch/DataSourcesPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "7c51a75d0f19484fb3cf772e2cfd05063a6e5608b79ff181b74b59d7ea50d8cc",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/arch/DataSourcesPage.test.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "94c8ea23c7d67b9c617c942e22402d152b765f134974a29cc0fb1285fc869de3",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "dfe546ebeb028171dc3a1ea96886300c77229e596e869b6cf8f8eb11827430ea",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "b9babfa321bd04c9e16fe7af8caa1845e81acf51fdf9b52aaaf01d7ff38e6ba4",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "4fbddeb2f02e3a43ab76d44eeb2473f750aea2f3623063952f48e398e08c1e41",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-ia-v2-data-flow.spec.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "3c568c63016ecd34f9256aa1d2d568488c1f955a0ce3c0842f6a845ce77b8b7d",
+          "changed_in_branch": true
+        }
+      ]
+    },
+    "6": {
+      "title": "应用中心的对象绑定、发布和运行",
+      "requirements": [
+        {
+          "id": "T6.1",
+          "plan_line": 211,
+          "requirement": "编写应用状态和空运行树失败回归；未发布应用不能显示已发布，错误运行树不能自动落到演示数据。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-application/task-6-report.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-review.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview1.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview2.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL metadata/revision CAS/create concurrency and published snapshot binding/history, denied empty trees/dependencies, real human execution and receipt; Task6 fixture identity is superseded by distinct Task8 signed evidence.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T6.2",
+          "plan_line": 212,
+          "requirement": "修正卡片和详情的真实元数据，明确运行/编辑/发布入口；保护未保存变更。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-application/task-6-report.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-review.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview1.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview2.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL metadata/revision CAS/create concurrency and published snapshot binding/history, denied empty trees/dependencies, real human execution and receipt; Task6 fixture identity is superseded by distinct Task8 signed evidence.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T6.3",
+          "plan_line": 213,
+          "requirement": "首页提供“从样例开始 / 接入真实数据 / 打开已有应用”和可恢复任务引导（UX-01）；选择与当前位置按用户/租户隔离保存，完成状态来自实际数据、类型、关系、应用与发布输出，不能用手工勾选或 seed 伪装完成；错误状态可重试。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-application/task-6-report.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-review.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview1.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview2.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log#onboarding resumes selected real artifacts",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL metadata/revision CAS/create concurrency and published snapshot binding/history, denied empty trees/dependencies, real human execution and receipt; Task6 fixture identity is superseded by distinct Task8 signed evidence.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T6.4",
+          "plan_line": 214,
+          "requirement": "用已有模板与组件生成订单审核应用，绑定已发布 Order/ObjectSet、真实字段、Customer 关联和已注册审核 Action。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-application/task-6-report.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-review.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview1.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview2.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL metadata/revision CAS/create concurrency and published snapshot binding/history, denied empty trees/dependencies, real human execution and receipt; Task6 fixture identity is superseded by distinct Task8 signed evidence.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T6.5",
+          "plan_line": 215,
+          "requirement": "基于真实 AppHub 对象/动作绑定提供同租户反向引用清单，接入本体发布影响预览（ONT-03）；动作引用复用 ActionType.on，应用引用显示实际应用 ID/名称/绑定版本/发布状态。接口失败显示未知，禁止把未查询或模糊 RID 字符串扫描当作无引用；任务 8 验证已发布订单应用的模型变更影响。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-application/task-6-report.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-review.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview1.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview2.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log#actual published application and action appear together",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL metadata/revision CAS/create concurrency and published snapshot binding/history, denied empty trees/dependencies, real human execution and receipt; Task6 fixture identity is superseded by distinct Task8 signed evidence.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T6.6",
+          "plan_line": 216,
+          "requirement": "发布前核验缺失对象/字段/权限/动作依赖，预览使用实际绑定；发布版本与运行入口一致。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-application/task-6-report.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-review.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview1.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview2.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL metadata/revision CAS/create concurrency and published snapshot binding/history, denied empty trees/dependencies, real human execution and receipt; Task6 fixture identity is superseded by distinct Task8 signed evidence.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T6.7",
+          "plan_line": 217,
+          "requirement": "验证发布→短链→读取订单→人工确认→执行回执→重新登录仍可追踪；无权/无效短链有明确错误。审查后提交。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-application/task-6-report.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-review.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview1.md",
+            "docs/active/delivery/evidence/mp11-application/task-6-rereview2.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json#/checks/published_app_human_receipt",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-final-continuity.json",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual SQL metadata/revision CAS/create concurrency and published snapshot binding/history, denied empty trees/dependencies, real human execution and receipt; Task6 fixture identity is superseded by distinct Task8 signed evidence.",
+          "plan_checkbox_checked": true
+        }
+      ],
+      "named_files": [
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/contracts/openapi/services/apphub.yaml",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "02d818f788a67594b6c4d36fd12f57aeb42c14352c4bfec0699e26ada91ce28b",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/components/ObjectTypeEditorV2Drawer.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "44673197d1eaae12c9dc3463a5fcfe573bff2baae09158eefa62c410b73fcdc2",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/api/ont/kernel.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "33e58cde390b3dfa97e505ef6559efa07be4a248debeacd4b74de8e07fdee976",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "171fb7960cb982bf760c9851aef3e0a7998895962686ee73705bd0782eb82080",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "dbc06768e0b6e5c95cfc1306b2c95b501a440f8a2259d460d64275a83581d5f0",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/api/apphub/apps.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "df29e09abb993b5f4bb8954ab9b198243a9e713c153f434dfd25f25356f7efb4",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/apphub/AppListPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "75a4202a920d8ee345bdf523fc69960e94273b591ddb88baa90c7ea77e933cb5",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/apphub/AppDetailPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "90df84fec68914574900a501614e79b0bdcab2e72349c6ce57467819c158be49",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/apphub/PageDesignerPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "3ad68472a518a31cdf50b9210e4f60e37e0d3cb61df87b3a325996a50267bda2",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/apphub/components/FormBinding.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "36f7169a7bd82d493230dcd53c19f4fbce7ea801e2541052e72f0b4b53465e3f",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/apphub/components/PublishValidation.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "a86a5bc05820ac98c1ea148d5828f4c49f46b956b1b9044309d8da8f1cd6c235",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/apphub/runtime/AppRuntimePage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "2e5fbac38901b2a3775e13740aa7a42b868a2f468f527cda0e4891c283f72b51",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/dashboard/DashboardPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "83a4a73f446c6240a112ca820ab5702b89b8d7c1b59c81fd57a35b6b11736bd3",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "cc4e9dd08cb9523d2b7f27622a0b5f91b1e3c2001860b7406a3fa601362ef997",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.test.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "ccc06a0028db6433f2cded4fc85c788dc9ddf4da0e2ba0bf81ae96dd97b40a81",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/apphub/AppListPage.test.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "6ed9ed06b1da5e4ac1f6f8c50792bafa34acf9559b18feff3eabbd827e97512c",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/tests/e2e/mp11-order-app-flow.spec.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "65b9968230b7cd4b0466257a17cdd0259b134c7f3f2c1257ae3df69cf3a2e541",
+          "changed_in_branch": true
+        }
+      ]
+    },
+    "7": {
+      "title": "Agent 配置、连接探测和授权范围",
+      "requirements": [
+        {
+          "id": "T7.1",
+          "plan_line": 235,
+          "requirement": "编写配置导出无凭据、只读工具过滤、未授权调用拒绝、跨租户和过期确认的回归。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-agent/task-7-report.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-review.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-final-continuity.json",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json#/checks/actual_security_boundaries",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-signed-final-green.json",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual operation mapping, persisted delegated grant scopes/revocation, caller/tenant/human/deadline restrictions, protocol discovery and same-object query; native clients remain1.1.1.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T7.2",
+          "plan_line": 236,
+          "requirement": "提供工作区/权限选择、配置、发现测试、样例查询；仅实际 initialize/tools-list/query 成功后显示已连接。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-agent/task-7-report.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-review.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-final-continuity.json",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json#/checks/actual_protocol",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual operation mapping, persisted delegated grant scopes/revocation, caller/tenant/human/deadline restrictions, protocol discovery and same-object query; native clients remain1.1.1.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T7.3",
+          "plan_line": 237,
+          "requirement": "对已有工具暴露/调用者/批准者规则做最小修复；不增加提示词式的“权限控制”，不另建身份系统。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-agent/task-7-report.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-review.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-final-continuity.json",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json#/checks/key_issuance",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual operation mapping, persisted delegated grant scopes/revocation, caller/tenant/human/deadline restrictions, protocol discovery and same-object query; native clients remain1.1.1.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T7.4",
+          "plan_line": 238,
+          "requirement": "记录协议测试与真客户端测试分别结果；dsh / WorkBuddy 真客户端验证在 1.1.1 范围，1.1.0 提供可验证协议/配置准备结果及明确边界。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-agent/task-7-report.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-review.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-final-continuity.json",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual operation mapping, persisted delegated grant scopes/revocation, caller/tenant/human/deadline restrictions, protocol discovery and same-object query; native clients remain1.1.1.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T7.5",
+          "plan_line": 239,
+          "requirement": "审查后提交。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-agent/task-7-report.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-review.md",
+            "docs/active/delivery/evidence/mp11-agent/task-7-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-final-continuity.json",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Actual operation mapping, persisted delegated grant scopes/revocation, caller/tenant/human/deadline restrictions, protocol discovery and same-object query; native clients remain1.1.1.",
+          "plan_checkbox_checked": true
+        }
+      ],
+      "named_files": [
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/mcp/IdeConfigPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "176bc67dcd9ed0a8af808693f2f76c010bdb82c81c569d55f43c7f37f31f1d32",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/mcp/McpClientPage.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "00d7ae5c6b737d0aed4aadb729229682a865be30b8e27d8ef15c9ff9389437b4",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/protocol/streamable.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "a09475573d781531cf2a6f751f8333ab01f5930bc645c629c02bf880b7e3bf33",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/server.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "e86c7eff54175ff59d80902dc1bfb04f102d4e2c74e60ea91a5b57863379bb17",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/caller_context.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "eff59549eae0e789820935934d37bf4464d04d254ad934d3ab71465864e1d728",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/security/api_keys.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "b3588b099b5ac9325bcd09f976aaa046ee4277a10e67e768a8ead6840486cb35",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/ontology_proxy.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "3e5834838985cbd839e0457a3204f914a59a6b29641d0b8e5a1bdba2897818d9",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "metaplatform-frontend/apps/web/src/pages/mcp/IdeConfigPage.test.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "1e9ae2739f2ab3a46964c6bd5fe8d54f8fc79a31547e3273375aa6af17ec547c",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "c6641670901390df4a52fce4c30cb421fce83713e3fb4db450ec22612d773102",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "docs/active/delivery/evidence/MP11-AGENT-COMPATIBILITY.md",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "f25e38684128c62e987aa8484a2e95c1112e8257ada323b59ec1231c5ad7b3e6",
+          "changed_in_branch": true
+        }
+      ]
+    },
+    "8": {
+      "title": "候选版集成、升级与恢复验收",
+      "requirements": [
+        {
+          "id": "T8.1",
+          "plan_line": 254,
+          "requirement": "集成新关系、对象创建、数据、应用、官网和 Agent 契约检查，并覆盖现有 ontology-migration-plan.spec.ts。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-8-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/final-validation-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/migration-chains.json",
+            "docs/active/delivery/evidence/mp11-candidate/canonical-structure.json",
+            "docs/active/delivery/evidence/mp11-plan/task-8-original-fresh-migration-receipt.json",
+            "docs/active/delivery/evidence/mp11-plan/controller-current-source-audit.json",
+            "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Full suites plus named covering amendments and two distinct default Browser44/44; actual fresh/0020 upgrade, normal Keycloak/Redis/PG, guarded faults/polling+explicit restart, receipt replay and compensation. Whole-branch and scoped source gates passed; private cleanup exit separately recorded.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T8.2",
+          "plan_line": 255,
+          "requirement": "新库与升级库运行 Customer/Order 样例；重启、同幂等键重放、基数冲突、错列和断连恢复；健康探针辅以实际业务查询。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-8-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/final-validation-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/migration-chains.json",
+            "docs/active/delivery/evidence/mp11-candidate/canonical-structure.json",
+            "docs/active/delivery/evidence/mp11-plan/task-8-original-fresh-migration-receipt.json",
+            "docs/active/delivery/evidence/mp11-plan/controller-current-source-audit.json",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json#/checks/source_and_task_recovery",
+            "docs/active/delivery/evidence/mp11-candidate/acceptance.json#/checks/signed_compensation",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Full suites plus named covering amendments and two distinct default Browser44/44; actual fresh/0020 upgrade, normal Keycloak/Redis/PG, guarded faults/polling+explicit restart, receipt replay and compensation. Whole-branch and scoped source gates passed; private cleanup exit separately recorded.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T8.3",
+          "plan_line": 256,
+          "requirement": "运行前端类型检查/构建、受影响单元和实际 API/PG 集成/E2E；必要故障只注入独立环境。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-8-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/final-validation-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/migration-chains.json",
+            "docs/active/delivery/evidence/mp11-candidate/canonical-structure.json",
+            "docs/active/delivery/evidence/mp11-plan/task-8-original-fresh-migration-receipt.json",
+            "docs/active/delivery/evidence/mp11-plan/controller-current-source-audit.json",
+            "docs/active/delivery/evidence/mp11-candidate/frontend-checks.json",
+            "docs/active/delivery/evidence/mp11-candidate/backend-checks.json",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Full suites plus named covering amendments and two distinct default Browser44/44; actual fresh/0020 upgrade, normal Keycloak/Redis/PG, guarded faults/polling+explicit restart, receipt replay and compensation. Whole-branch and scoped source gates passed; private cleanup exit separately recorded.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T8.4",
+          "plan_line": 257,
+          "requirement": "独立任务审查以及全部任务后的整体审查，修复阻断项；保留用户原 WIP。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-8-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/final-validation-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/migration-chains.json",
+            "docs/active/delivery/evidence/mp11-candidate/canonical-structure.json",
+            "docs/active/delivery/evidence/mp11-plan/task-8-original-fresh-migration-receipt.json",
+            "docs/active/delivery/evidence/mp11-plan/controller-current-source-audit.json",
+            "docs/active/delivery/evidence/mp11-plan/rulings-exhaustive.md",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Full suites plus named covering amendments and two distinct default Browser44/44; actual fresh/0020 upgrade, normal Keycloak/Redis/PG, guarded faults/polling+explicit restart, receipt replay and compensation. Whole-branch and scoped source gates passed; private cleanup exit separately recorded.",
+          "plan_checkbox_checked": true
+        },
+        {
+          "id": "T8.5",
+          "plan_line": 258,
+          "requirement": "输出候选版说明与可启动预览、部署配置、回滚/补偿说明。目标完成仅指本计划 1.1.0 开发候选版通过；正式部署、72 小时 SLO、用户试用及 1.1.1/1.2 项独立列明，不冒称 GA。",
+          "status": "verified_local_candidate",
+          "evidence": [
+            "docs/active/delivery/evidence/mp11-plan/task-8-report.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-review.md",
+            "docs/active/delivery/evidence/mp11-plan/task-8-rereview1.md",
+            "docs/active/delivery/evidence/mp11-candidate/final-validation-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/fix-round-1-coverage.json",
+            "docs/active/delivery/evidence/mp11-candidate/migration-chains.json",
+            "docs/active/delivery/evidence/mp11-candidate/canonical-structure.json",
+            "docs/active/delivery/evidence/mp11-plan/task-8-original-fresh-migration-receipt.json",
+            "docs/active/delivery/evidence/mp11-plan/controller-current-source-audit.json",
+            "scripts/acceptance/mp11/README.md",
+            "docs/active/delivery/evidence/MP11-RELEASE-NOTES.md",
+            "docs/active/delivery/evidence/mp11-closure/final-review.md",
+            "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+            "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+            "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json"
+          ],
+          "evidence_boundary": "Full suites plus named covering amendments and two distinct default Browser44/44; actual fresh/0020 upgrade, normal Keycloak/Redis/PG, guarded faults/polling+explicit restart, receipt replay and compensation. Whole-branch and scoped source gates passed; private cleanup exit separately recorded.",
+          "plan_checkbox_checked": true
+        }
+      ],
+      "named_files": [
+        {
+          "kind": "Create",
+          "path": "scripts/acceptance/run-mp11-acceptance.ps1",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "dde440f62a4348c3239ed3cefa6dfcc3df4423bb3dcb09f9aae52628d4cbeefa",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "docs/active/delivery/evidence/MP11-ACCEPTANCE.md",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "0d7f8e9b8c2b0b5f02588ddc8bd672689af9fec586f1ffbbb5c68ae8705b4e90",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Create",
+          "path": "docs/active/delivery/evidence/MP11-RELEASE-NOTES.md",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "4636a4fdd95d558deb2ec3452ae9734c187099aeaf682f58a34336e5d30f0b03",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": ".github/workflows/ontology-loop.yml",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "d6a1a85d030b5692bd9af47c800ea8ffe72b064ac1bf1dd00274a59264e77a8f",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/src/pages/ontology/components/ProposalConfirmDrawer.test.tsx",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "9900769a7d685e03e5b915486a1ce310c11191b4e93b67098db5f6961bde2e4e",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/tests/e2e/ontology-relationship-flow.spec.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "a1dea45ad533c28020ba643468f2cc858c0dcd7543bb5ee27e1e7bb3d1d9f460",
+          "changed_in_branch": true
+        },
+        {
+          "kind": "Modify",
+          "path": "metaplatform-frontend/apps/web/tests/e2e/mp11-order-app-flow.spec.ts",
+          "exists_now": true,
+          "status": "owned_branch_change_with_task_review_and_evidence",
+          "current_sha256": "65b9968230b7cd4b0466257a17cdd0259b134c7f3f2c1257ae3df69cf3a2e541",
+          "changed_in_branch": true
+        }
+      ]
+    }
+  },
+  "p0_requirements": [
+    {
+      "id": "MP11-WEB-01",
+      "spec_line": 47,
+      "priority": "P0",
+      "requirement": "官网公开入口、真实产品内容、可配置平台地址",
+      "acceptance": "`/website/` 可匿名打开；所有 CTA 指向真实平台；未登录进入登录流程；登录后打开工作台",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T3.1",
+        "T3.2",
+        "T3.3",
+        "T3.5",
+        "T3.6",
+        "T6.7"
+      ]
+    },
+    {
+      "id": "MP11-WEB-02",
+      "spec_line": 48,
+      "priority": "P0",
+      "requirement": "360/390/768/1440 宽度布局、键盘导航、跳过导航、减少动态效果",
+      "acceptance": "无横向溢出；菜单可操作；焦点清晰；禁用 JS 时进入平台链接仍可用",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T3.4",
+        "T3.7"
+      ]
+    },
+    {
+      "id": "MP11-UX-01",
+      "spec_line": 50,
+      "priority": "P0",
+      "requirement": "首次工作台显示“从样例开始/接入真实数据/打开已有应用”，记录任务进度",
+      "acceptance": "每一步有输入、输出与下一步深链；刷新后可恢复已完成阶段",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T6.3"
+      ],
+      "blocking_findings": [
+        "I3"
+      ]
+    },
+    {
+      "id": "MP11-DATA-01",
+      "spec_line": 70,
+      "priority": "P0",
+      "requirement": "真实连接探测与 Schema 发现",
+      "acceptance": "修复 API → stub 的接线；新建真实 PG 源可读 Schema，错密码/无权限/断网分别失败；SQL 存储路径同样正确",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T5.1",
+        "T5.2",
+        "T5.5"
+      ]
+    },
+    {
+      "id": "MP11-DATA-02",
+      "spec_line": 71,
+      "priority": "P0",
+      "requirement": "PG/CSV 六步接入与自动映射建议",
+      "acceptance": "在 DATA-01 上读取实际字段；建议需用户确认；列类型、非空/主键冲突在同步前逐项提示",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T5.3",
+        "T4.6"
+      ],
+      "blocking_findings": [
+        "I3"
+      ]
+    },
+    {
+      "id": "MP11-DATA-03",
+      "spec_line": 72,
+      "priority": "P0",
+      "requirement": "时间列、字段映射和增量参数完整传递",
+      "acceptance": "时间列输入参与请求、持久化和运行；全量/增量行为可区分；未知字段拒绝而不是忽略",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T5.3",
+        "T5.6"
+      ]
+    },
+    {
+      "id": "MP11-DATA-04",
+      "spec_line": 73,
+      "priority": "P0",
+      "requirement": "同步任务详情与恢复",
+      "acceptance": "loading 在成功、失败、取消均结束；按运行 ID 显示行数、耗时、游标、错误、重试；失败重试只补未完成部分",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T5.4",
+        "T5.6"
+      ]
+    },
+    {
+      "id": "MP11-ONT-01",
+      "spec_line": 87,
+      "priority": "P0",
+      "requirement": "新建对象向导、业务名和基础/高级面板",
+      "acceptance": "用户可从真实字段建模；RID 不占据主要表单；字段类型错误在原位置反馈",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T4.2",
+        "T4.6",
+        "T5.3"
+      ]
+    },
+    {
+      "id": "MP11-ONT-02",
+      "spec_line": 88,
+      "priority": "P0",
+      "requirement": "草稿保存、撤销与未保存导航提示",
+      "acceptance": "刷新恢复草稿；离开前明确提示；图/表编辑不相互覆盖",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T4.5",
+        "T4.6"
+      ]
+    },
+    {
+      "id": "MP11-ONT-03",
+      "spec_line": 89,
+      "priority": "P0",
+      "requirement": "可理解的模型校验和变更影响预览",
+      "acceptance": "违反约束定位对象/属性/规则；发布前显示引用应用和动作；乐观锁冲突给出比较与重试",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T4.4",
+        "T4.5",
+        "T6.5"
+      ]
+    },
+    {
+      "id": "MP11-ONT-06",
+      "spec_line": 92,
+      "priority": "P0",
+      "requirement": "关系类型创建与编辑",
+      "acceptance": "选择同租户已有源/目标类型、基数、方向、两端名称和关系属性；已有实例时禁止未经迁移的结构修改；模型图可见",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T1.2",
+        "T1.3",
+        "T1.4",
+        "T2.2",
+        "T2.3",
+        "T2.5"
+      ]
+    },
+    {
+      "id": "MP11-ONT-07",
+      "spec_line": 93,
+      "priority": "P0",
+      "requirement": "关系实例创建与查询",
+      "acceptance": "从有效对象中选择两端；端点不存在/类型不匹配/跨租户明确拒绝；基数约束有效；重载可查询",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T1.2",
+        "T2.4",
+        "T2.6",
+        "T2.7"
+      ]
+    },
+    {
+      "id": "MP11-ONT-08",
+      "spec_line": 94,
+      "priority": "P0",
+      "requirement": "新建、更新、草稿与发布语义一致",
+      "acceptance": "新建同 RID 不覆盖已有类型；相似候选复用/取消可操作；草稿 status 与 WIP 存储明确区别；错误保留输入",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T4.1",
+        "T4.3",
+        "T4.5",
+        "T4.6"
+      ]
+    },
+    {
+      "id": "MP11-APP-01",
+      "spec_line": 110,
+      "priority": "P0",
+      "requirement": "API 元数据字段对齐",
+      "acceptance": "版本、状态、更新时间、模块数各自真实；未提供时显示未知；测试覆盖真实字段与缺失字段",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T6.1",
+        "T6.2"
+      ]
+    },
+    {
+      "id": "MP11-APP-02",
+      "spec_line": 111,
+      "priority": "P0",
+      "requirement": "注册/设计/发布/运行存储路径验证",
+      "acceptance": "同一应用 ID 从创建到 SQL 发布/运行可追踪；进程重启后仍存在；生产不能依赖默认内存 seed",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T6.2",
+        "T6.7",
+        "T8.2"
+      ],
+      "blocking_findings": [
+        "I1"
+      ]
+    },
+    {
+      "id": "MP11-APP-03",
+      "spec_line": 112,
+      "priority": "P0",
+      "requirement": "对象驱动模板和真实运行",
+      "acceptance": "依赖 DATA-02/ONT-03；订单模板可查看真实订单、编辑授权字段、发起确认动作并查看回执",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T6.4",
+        "T6.6",
+        "T6.7"
+      ],
+      "blocking_findings": [
+        "I3"
+      ]
+    },
+    {
+      "id": "MP11-APP-04",
+      "spec_line": 113,
+      "priority": "P0",
+      "requirement": "发布预检与显式演示模式",
+      "acceptance": "空渲染树正式应用不自动替换成 demo；未满足依赖无法发布；错误短链不进入另一个应用",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T6.1",
+        "T6.6",
+        "T6.7"
+      ],
+      "blocking_findings": [
+        "I1"
+      ]
+    },
+    {
+      "id": "MP11-AGENT-01",
+      "spec_line": 133,
+      "priority": "P0",
+      "requirement": "客户端连接向导和配置导出",
+      "acceptance": "选客户端 → 选工作区/工具权限 → 配置/授权 → 测试发现 → 一次样例查询；界面仅在探测成功后显示已连接",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T7.1",
+        "T7.2",
+        "T7.4"
+      ]
+    },
+    {
+      "id": "MP11-AGENT-02",
+      "spec_line": 134,
+      "priority": "P0",
+      "requirement": "只读 scope 与 Proposal 写操作约束",
+      "acceptance": "未授权工具不可见且不可调用；伪造批准者、跨租户、过期确认和重复调用均拒绝或幂等返回",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T7.1",
+        "T7.3",
+        "T8.2"
+      ],
+      "blocking_findings": [
+        "I2"
+      ]
+    },
+    {
+      "id": "MP11-REL-01",
+      "spec_line": 145,
+      "priority": "P0",
+      "requirement": "公共异步操作状态与错误恢复",
+      "acceptance": "连接、同步、发布、执行在成功/失败/取消均收敛；保留错误上下文和 traceId；断网重连不覆盖已编辑草稿",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T2.3",
+        "T4.5",
+        "T5.4",
+        "T6.6",
+        "T7.2"
+      ]
+    },
+    {
+      "id": "MP11-REL-02",
+      "spec_line": 146,
+      "priority": "P0",
+      "requirement": "持久化、迁移和幂等完整链路",
+      "acceptance": "新库/升级库均跑订单链路；重启、重复请求、缺表、冲突和回滚有实际证据；当前历史缺表提示须在目标环境重新复核",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T8.2",
+        "T8.3"
+      ]
+    },
+    {
+      "id": "MP11-REL-03",
+      "spec_line": 147,
+      "priority": "P0",
+      "requirement": "业务探针和隔离故障验证",
+      "acceptance": "除 health 外执行受控只读查询；源断连、工具不可用、消费者延迟、任务中断有降级和恢复；不重置共享数据库",
+      "status": "verified_local_candidate",
+      "task_acceptance_ids": [
+        "T8.2",
+        "T8.3"
+      ],
+      "blocking_findings": [
+        "I4"
+      ]
+    }
+  ],
+  "remaining_gates": [],
+  "release_boundaries": [
+    "Public domain/HTTPS deployment",
+    "72-hour SLO",
+    "First-user study",
+    "True dsh/WorkBuddy clients and1.1.1",
+    "1.2 interoperability"
+  ],
+  "review_base": "2c13952c0ceb2c792b8192fab966a4deed2926f4",
+  "review_head": "38ff11900b9d72560afe20db4715d344c1370a23",
+  "evidence_file_fingerprints": [
+    {
+      "path": "docs/active/delivery/evidence/MP11-RELEASE-NOTES.md",
+      "sha256": "4636a4fdd95d558deb2ec3452ae9734c187099aeaf682f58a34336e5d30f0b03"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-agent/task-7-report.md",
+      "sha256": "b8676a15d223ce71112456d681bb69eff4f9cbefc85570df67c7c0f706cf4236"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-agent/task-7-rereview1.md",
+      "sha256": "3f553858da18e44a61b568d1a667092f83cf32ba0d4c983b7f7f42f3cb47cd60"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-agent/task-7-review.md",
+      "sha256": "0834d9cd52c812b6aca3601df569bf0e4eea42721737384d9774e7ce14930e4f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-report.md",
+      "sha256": "06aedfc6c32a09f0d2541349e328b2d29da3330835e127937ab9ec8559f87e72"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-rereview1.md",
+      "sha256": "d8741f201ad801f3744a8a904ed0c6062157deebb09c2c74ce1b7c155a132111"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-rereview2.md",
+      "sha256": "c4aeea2aa9016459f9be5e2c02517505a5863b13919d6d3f7e3caec5e23eb0cc"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-review.md",
+      "sha256": "3e5b74c7820c36aeddcfc482c665211030666b8841c8b9b6bc5018bea7af227e"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+      "sha256": "6d8619619ff4c6ed54293f1be9ba8b40be8989514469f4c2e210f64b61588949"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/actual-browser-1194b651968c.log",
+      "sha256": "876a8a3c41a81c3badd8d422a8545a8707a696648f3737eeef32576d492a5e92"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/backend-checks.json",
+      "sha256": "a7bbbac5435825e0f3c7abce27c419fc80c69e1a7450900a695ac0a9f9c92e02"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/canonical-structure.json",
+      "sha256": "4836b31196554d6e6e600d40f7423ef654da6f7624bc36b9d4e51aa69b9dfeac"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/final-validation-coverage.json",
+      "sha256": "baf3b0508d35025e8b323defff95d8addafd0177618d00851e86d23e4cd5b198"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-coverage.json",
+      "sha256": "fefbd479208ee4febe8b00919600d852f0930fb7d9d47a6852242eaf8b70ba72"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-final-continuity.json",
+      "sha256": "5883b2e5616c5144f3bba8f552203cc088b4007e7424dc658718c062703036ec"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-signed-final-green.json",
+      "sha256": "f00751a8f01098131cb49fac052a587c62e7f52ba47f12860fab125ae93fd9af"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/frontend-checks.json",
+      "sha256": "761598c27b5c104e8b63ee21525797bbbaad266c49da83f7e6387b7fa5a6b57a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/migration-chains.json",
+      "sha256": "477ee156ea5cf181453e6c511327cff88db3c988a2ca7a07a6158e9263f236b2"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/completion-audit-requirements.json",
+      "sha256": "1f4b8b0aecd908ce3ce815b1576e2fc4de5ba2c1e5bce4f82d243b6e655215ec"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-docker-api-error-categories.json",
+      "sha256": "6d511e69df8778f8306d5b0a8816bf0f6178549c62f879d4527b407f6fbb806b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-docker-api-reconnect.json",
+      "sha256": "eb3bd505161ddc33e05ff6400f888fa34d676fff22bd5050e4e1564b3b71baf6"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-docker-owned-recovery.json",
+      "sha256": "f8d6e8e3d912f2eefa36351757b5231f807aa0ddb6702cc11fbf9b7590ba2319"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-docker-recovery-after-start.json",
+      "sha256": "664b32f12d96079e52baa026824fa90dad2db9027e430100871c643cb8f6111a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-docker-recovery-final-inventory.json",
+      "sha256": "00aa1719f6bbe5d2cd15386cc5d8b6e6576bda1b6cbaff418c7dad58c28805a0"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-final-live-readback.json",
+      "sha256": "c1b277d3011936b6015348bafc2a53beead129932d1d436a45416dcbbe3a672c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-final-source-audit.json",
+      "sha256": "45907d7bf7428cbcb5c5c3a7b8310f11716d8f1fbe19bf6b933913af5d8a7371"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-legacy-retirement.json",
+      "sha256": "1c9ed4121fbf42fd88edbbdedc4d930ef031b7286bcdf62fe685ffa79a489eb4"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-plan-status-change.json",
+      "sha256": "5eb8085f39928db47a039e800c4e28b19753d83bd55aa30e4a40f96eaac3c112"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-wip-final.json",
+      "sha256": "0f71f89ec4a40a57aa9cac66b8204abd01ea0e174d4462ee7868d3f5d2042403"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/controller-wip-precleanup.json",
+      "sha256": "33a20fbd4aa573b6456af3455df15f7d5354e2c8d1c7c631a07a218a76174de0"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-fix-brief.md",
+      "sha256": "885b11d755dfa688dce133d4d0d7e039b6442a5601e7b36aece3dc02ee6699c0"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-fix-report.md",
+      "sha256": "70f1d93d0c82c3ef102db277c6b6e1f09a63b591b46a9f331a35b3c370a3024c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-rereview-package-index.json",
+      "sha256": "6c36e02d8e195e0003f98a6ef9b50cda6ab1175866cde332142bb2ebd5a2c2fe"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-rereview1.md",
+      "sha256": "2e0d4fa3bcee93b2864bb84c309b73ddc7e1185967d4a849eb71f25e60cc8d15"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-residual-brief.md",
+      "sha256": "17f2df2008386702aadf71bed5764a4c6aa6f624042ed6c86dd25bc0e64d9d0b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-residual-report.md",
+      "sha256": "20696fd70c6e38522c554e77ba4f79ccd4a62b93e172ed0776373ecfd30d6b91"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-residual-rereview-package-index.json",
+      "sha256": "271eca8e62ff04b5802c90d0b7ad5da295146736b6a488d109ac854fbe75a0c0"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+      "sha256": "f0da5c2506e0abd74dbc24311659dc2e467e14e9fb39227f804fae2a3e566c6b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/final-review.md",
+      "sha256": "b211112426a48c3cc6851550af11ac1995be679f23468ab89aa9797068de2628"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/global-constraints.md",
+      "sha256": "43c1ee48db8978a789bf866f770f40cfe3d47d38da10c3401028bf878157d5af"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/postcleanup-live-readback.json",
+      "sha256": "a756e25d36e315245c07d76b8dcf8b6efae35d81e65c78b05f0b711326b4e004"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/postcleanup-runtime.json",
+      "sha256": "e22b6dc0cf3df4ccea5a42bb6cd121b54fc84713f8c91d56d8997c0b072531ed"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/progress.md",
+      "sha256": "511a2d77fa8b773a957bdfa3fbea8e3aa47679df41c367bb060974a114213aeb"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/rulings-exhaustive-final.md",
+      "sha256": "5edc8ad291fb368f92a43304c65bc9026a058583b6107b3c85c543efb240837f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-closure/scratch-recovery-retirement.json",
+      "sha256": "f0158d6efcd1d9e9ba81251820bc20131309baec5aee3bd57f073762ab993272"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/controller-current-source-audit.json",
+      "sha256": "0c992fb8f31f2218eb2350228ed6185e296706ef25ba8fca5adb94de0433c7f5"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/rulings-exhaustive.md",
+      "sha256": "b8d74fa36ffaaa6c6910644b3560623210a616bfa31b9c2638241049c1f70aa0"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-1-report.md",
+      "sha256": "4287c57602a51d6f588ade7788af591eb30eaa962a9272d0194be6c8d912a090"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-1-rereview-1.md",
+      "sha256": "8ef79a9c879aaed7fa3389b7854843cb883c4784d51446f625b31301a61c44b0"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-1-review.md",
+      "sha256": "61d11cfd6dc1b165df7465f52dca2dc73c1c25dd824987cf8a8e0e827193c0f9"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-2-report.md",
+      "sha256": "8b6a62d5b639efaff827d95017567e045c163a0d4e5fadc51827cddd7264b084"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-2-rereview-1.md",
+      "sha256": "9f4d90351ac2c9e961f98edee26b64f8407f68e439c04e0d2a8490ca33dc6bb2"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-2-review.md",
+      "sha256": "6acf9d770c43a121bc72cc8feab9f41f96f469e83b747465885d5830dcb3e2eb"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-3-report.md",
+      "sha256": "4434368fba697f7c4318500459e12c830a72dc66ff4dbb7d679fd9b99d72060a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-3-rereview-1.md",
+      "sha256": "bbb6840748468f939ea771dff7afa7ea7b242fb2f9154c03f36e06a9f43a0de6"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-3-revision-report.md",
+      "sha256": "2fe8c3bacc0c35a6c72e3e2b14d4f5c492a1c3b97a2a11b1f8315e7e7ae1c401"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-3-revision-review.md",
+      "sha256": "c43e3296c2062d98a21bbf971e71946a40f2882ab553e84c949823f108da55fe"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-4-report.md",
+      "sha256": "b7096dccaab7ed6352e66ed041d524dac9985016253e55bcdfb83e6e755c0894"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-4-rereview-1.md",
+      "sha256": "b49dc125cb89c91f33483c9dc0fe39ceb7095944224792999e01c30606d25795"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-4-review.md",
+      "sha256": "facb38160f33c24764e93ebfd7e6ee15e189b518dda6a13faedddb7715a036ae"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-5-report.md",
+      "sha256": "1fc890a099b93a5a45276d59f8e729623a7179680b38bf2a2ac095e7d3ed3a7c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-5-rereview-1.md",
+      "sha256": "f180447a95d62acada7f2e6a17f72475c68c9b56db5b07e9579772f59540d138"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-5-review.md",
+      "sha256": "143ca64a8d52bbf6fee7812ea5bdb5eb043ef129ea4a76797da0d42321422cef"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-8-original-fresh-migration-receipt.json",
+      "sha256": "f153d9e20ba7d781198fe9504badf9657080fa92f95d8a6a0f8b3bd4c613339d"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-8-report.md",
+      "sha256": "33f8eedf2466ae89194d81a0b0878572f9c99b27d542a3b1d866882454cf6efb"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-8-rereview1.md",
+      "sha256": "0d1e9ce92b1f0c4b7dbf39df817373bfdb6d8048cd4e2cf5270afcbbb423d9e8"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-8-review.md",
+      "sha256": "e77451f944b9d8bfb92d3963cbaa199070930b13629a9ab182a8863b49b59370"
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-data/tests/test_mp11_connection_schema.py",
+      "sha256": "b9babfa321bd04c9e16fe7af8caa1845e81acf51fdf9b52aaaf01d7ff38e6ba4"
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_reads.py",
+      "sha256": "1ab3b4d8a3437e7eb0ea582ff41f6fc8d63cb37cddc74d7e9fa9064c1e1d06e6"
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py",
+      "sha256": "200a470599528a865d7b394cd12a2d8119f1af8162f4184217b99eaa6d07f2e7"
+    },
+    {
+      "path": "scripts/acceptance/mp11/README.md",
+      "sha256": "428fc885897e7a9ccd07f3644a10c4e4d71960545a8599a89fe8c2619c42f259"
+    }
+  ],
+  "truthful_limits": [
+    "Fresh first-DDL evidence retains only original eight-tail INFO lines plus final revision/signed chain, not a complete first migration log",
+    "Eight privileged-role RLS cases NOT_EXERCISED; five memory parameters have executed PG counterparts",
+    "No remote CI run, native dsh/WorkBuddy/browser-header gateway/client delivery, public deploy,72-hourSLO or user study claim",
+    "Bounded outbox polling and explicit exact-owned API restart, not automatic LISTEN reconnect",
+    "Direct API JWT remains usable until expiry after provider refresh revocation",
+    "Full suites plus covering amendments, two separate44-case Browser runs and final47-case Browser run retain their own source scope; residual18+5 are additional focused proofs, not one aggregate rerun.",
+    "Preserved WIP evidence is branch exclusion plus current fingerprints; no reconstructed initial byte hash"
+  ],
+  "blocking_final_findings": [],
+  "nonblocking_final_triage": [
+    "M1 inherited warning/performance maintenance deferred with costs; M2 actual sample documentation reconciled"
+  ],
+  "current_scoped_review": {
+    "path": "docs/active/delivery/evidence/mp11-closure/final-residual-rereview.md",
+    "reviewed_head": "94277b97199f1823354fccbda07e772ef19081e8",
+    "approved": true,
+    "critical": 0,
+    "important": 0,
+    "minor_new": 0,
+    "open": [],
+    "deferred": [
+      "M1"
+    ]
+  },
+  "current_source_head": "94277b97199f1823354fccbda07e772ef19081e8",
+  "final_review_chain": {
+    "whole_branch": "2c13952c..38ff1190: C0/I4/M2",
+    "first_scoped": "38ff1190..ca01bf73: I2/I3/I4/M2 addressed; I1 residual open",
+    "residual_scoped": "ca01bf73..94277b97: I1 addressed, newC0/I0/M0; explicit Ruling43 exception on same seats"
+  },
+  "administrative_plan_status": {
+    "before_sha256": "4ba862f407b6b663970e356da26642168dc87e5c7622bbfdadd80658301ba96f",
+    "after_sha256": "2009510f988a047cfba07b8a4d1bbcc2133ea7ff3fb45d93bd9d97e5761ff807",
+    "checkbox_changes": 48,
+    "requirement_text_changes": 0,
+    "spec_changed": false,
+    "scope": "Administrative checkmarks only after task/full/scoped reviews, source mapping, current signed continuity and WIP verification; no executable or requirement edit."
+  },
+  "postclosure_documentation_head": "69eb6e95a9c8c43f33b52da9bb5c71690241e278",
+  "administrative_exit": {
+    "scratch_retired": true,
+    "whole_private_backup_verified": true,
+    "protected_wip_preserved": true,
+    "postcleanup_signed_business": true,
+    "postcleanup_runtime": true
+  }
+}

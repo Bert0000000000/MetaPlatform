@@ -1,0 +1,61 @@
+{
+  "base": "2f869020a50707857fb5e42151ddd5dcbef03f8c",
+  "interpretation": "Full runs plus covering amendments; not one all-green monolithic run",
+  "frontend": {
+    "files": 22,
+    "passed": 123,
+    "types_exit": 0,
+    "build_exit": 0,
+    "shared_login_passed": 3
+  },
+  "backend": {
+    "platform": {
+      "passed": 325
+    },
+    "data": {
+      "passed": 129
+    },
+    "mcp": {
+      "passed": 277
+    },
+    "auth": {
+      "passed": 14
+    },
+    "kernel": {
+      "full_passed": 733,
+      "full_failed": 1,
+      "cover_passed": 15,
+      "cover_log": "kernel-uuid-cover.log"
+    },
+    "apphub": {
+      "full_passed": 216,
+      "full_failed": 1,
+      "cover_passed": 1,
+      "cover_log": "apphub-human-cover.log"
+    },
+    "ont": {
+      "full_passed": 678,
+      "full_failed": 1,
+      "skipped": 13,
+      "cover_passed": 14,
+      "cover_log": "ont-ws-cover.log"
+    }
+  },
+  "browser": {
+    "full_passed": 42,
+    "full_failed": 1,
+    "full_total": 43,
+    "full_log": "actual-browser.log",
+    "amended_object_passed": 1,
+    "object_log": "actual-browser-object.log",
+    "added_impact_passed": 1,
+    "impact_log": "actual-browser-impact.log",
+    "initial_failed_config_log": "actual-browser-initial-config.log"
+  },
+  "not_exercised": [
+    "nonprivileged PostgreSQL RLS enforcement (8 existing skips)",
+    "formal deployment",
+    "72-hour SLO",
+    "external dsh/WorkBuddy client integration"
+  ]
+}

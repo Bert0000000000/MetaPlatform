@@ -1,0 +1,102 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_____ test_actual_pg_proposal_embedding_unavailable_extension_falls_back ______
+
+owned_embedding_repo = (<mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x00000286E2A72E40>, 'postgresql://[REDACTED]', 'mp11-vector-fix', 'ont.mp11-vector-fix.obj.case-1669d13911', ['id 65a3932aac67455084a769acf83d5eb8', 'status new'])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000286E2A022D0>
+
+    def test_actual_pg_proposal_embedding_unavailable_extension_falls_back(owned_embedding_repo, monkeypatch):
+        """Real failed CREATE EXTENSION aborts PG, not a Python-only mock error."""
+        import uuid, psycopg2
+        from psycopg2.extensions import TRANSACTION_STATUS_INERROR
+        repo, dsn, tenant, rid, embeddings = owned_embedding_repo
+        original_cursor = repo._cursor
+        failures = []
+        class ExtensionUnavailableCursor:
+            def __init__(self, cursor): self.cursor = cursor
+            def __enter__(self): self.cursor.__enter__(); return self
+            def __exit__(self, *args): return self.cursor.__exit__(*args)
+            def __getattr__(self, name): return getattr(self.cursor, name)
+            def execute(self, statement, params=None):
+                if statement == 'CREATE EXTENSION IF NOT EXISTS vector':
+                    try:
+                        self.cursor.execute('CREATE EXTENSION codex_mp11_unavailable_vector')
+                    except psycopg2.Error as exc:
+                        failures.append((exc.pgcode, self.cursor.connection.get_transaction_status()))
+                        raise
+                return self.cursor.execute(statement, params)
+        monkeypatch.setattr(repo, '_cursor', lambda conn: ExtensionUnavailableCursor(original_cursor(conn)))
+        repo._pgvector_ready = False
+        repo._pgvector_dim = 0
+        repo._try_pgvector_upgrade()  # Prove genuine unavailable extension on owned PG.
+        assert failures == [('0A000', TRANSACTION_STATUS_INERROR)]
+        proposal = repo.propose_create_instance(rid, {'id': uuid.uuid4().hex, 'status': 'new'}, 'Fix1 JSONB fallback')
+        repo.confirm_proposal(proposal.proposal_id, 'human')
+        key = uuid.uuid4().hex
+>       receipt = repo.execute_proposal(proposal.proposal_id, 'human', key)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+mate-platform-backend\packages\mate-tech-mcp\tests\test_mp11_client_contract.py:406:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:7167: in execute_proposal
+    result = self._execute_proposal_command(proposal_id, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:7301: in _execute_proposal_command
+    self._persist_proposal_transition(
+mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:6300: in _persist_proposal_transition
+    cur.execute(
+mate-platform-backend\packages\mate-tech-mcp\tests\test_mp11_client_contract.py:397: in execute
+    return self.cursor.execute(statement, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <cursor object at 0x00000286E2978D70; closed: -1>
+query = "\n                    UPDATE ont_proposal\n                    SET status = %s, confirmed_by = %s, confirmed_at = %s,...uted' THEN now() ELSE applied_at END\n                    WHERE proposal_id = %s AND status = %s\n                    "
+vars = ('executed', 'human', datetime.datetime(2026, 10, 11, 18, 57, 54, 253950, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 10, 11, 19, 12, 54, 253950, tzinfo=datetime.timezone.utc), 'executed', 'prop-9cf157c6', ...)
+
+    def execute(self, query, vars=None):
+        self.column_mapping = []
+        self._query_executed = True
+>       return super().execute(query, vars)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       psycopg2.errors.InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction block
+
+mate-platform-backend\.venv\Lib\site-packages\psycopg2\extras.py:236: InFailedSqlTransaction
+------------------------------ Captured log call ------------------------------
+WARNING  mate_tech_ont.v2_kernel.pg_repo:pg_repo.py:4429 object_embedding_index_failed
+__ test_actual_pg_proposal_embedding_receipt_rollback_keeps_readiness_honest __
+
+owned_embedding_repo = (<mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x00000286E2ABB260>, 'postgresql://[REDACTED]', 'mp11-vector-fix', 'ont.mp11-vector-fix.obj.case-982ee32a15', ['id ddb469c3a90d49e292e08c99c7bc9bee', 'status new'])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000286E2ABA9F0>
+
+    def test_actual_pg_proposal_embedding_receipt_rollback_keeps_readiness_honest(owned_embedding_repo, monkeypatch):
+        import uuid, psycopg2
+        repo, dsn, tenant, rid, embeddings = owned_embedding_repo
+        # Isolated Fix1 DB only: make the optional vector column genuinely absent.
+        with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+            cur.execute('ALTER TABLE ont_object_embedding DROP COLUMN IF EXISTS embedding_vec')
+        repo._pgvector_ready = False
+        repo._pgvector_dim = 0
+        proposal = repo.propose_create_instance(rid, {'id': uuid.uuid4().hex, 'status': 'new'}, 'Fix1 receipt rollback')
+        repo.confirm_proposal(proposal.proposal_id, 'human')
+        original = repo._persist_proposal_transition
+        def fail(*args, **kwargs): raise RuntimeError('injected post-embedding receipt failure')
+        monkeypatch.setattr(repo, '_persist_proposal_transition', fail)
+        key = uuid.uuid4().hex
+        with pytest.raises(RuntimeError, match='post-embedding'):
+            repo.execute_proposal(proposal.proposal_id, 'human', key)
+        assert embeddings
+        iid = 'ont.'+tenant+'.ind.'+rid.split('.')[-1]+'.'+proposal.parameters['props']['id']
+        with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+            cur.execute('SELECT 1 FROM ont_individual WHERE rid=%s', (iid,)); assert cur.fetchone() is None
+            cur.execute('SELECT 1 FROM ont_object_embedding WHERE individual_rid=%s', (iid,)); assert cur.fetchone() is None
+            cur.execute("SELECT 1 FROM pg_attribute WHERE attrelid='ont_object_embedding'::regclass AND attname='embedding_vec' AND NOT attisdropped")
+            assert cur.fetchone() is None
+>       assert repo._pgvector_ready is False and repo._pgvector_dim == 0
+E       assert (True is False)
+E        +  where True = <mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x00000286E2ABB260>._pgvector_ready
+
+mate-platform-backend\packages\mate-tech-mcp\tests\test_mp11_client_contract.py:449: AssertionError
+=========================== short test summary info ===========================
+FAILED mate-platform-backend\packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_actual_pg_proposal_embedding_unavailable_extension_falls_back
+FAILED mate-platform-backend\packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_actual_pg_proposal_embedding_receipt_rollback_keeps_readiness_honest

@@ -1,0 +1,305 @@
+{
+  "tested_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c",
+  "identity": "normal signed Keycloak; bypass flags false",
+  "checks": {
+    "signed_grants": {
+      "writer": {
+        "tenant": "mp11-candidate",
+        "human": true,
+        "scope": [
+          "ont.read",
+          "ont.write",
+          "platform.read",
+          "platform.write"
+        ],
+        "session_present": true
+      },
+      "readonly": {
+        "tenant": "mp11-candidate",
+        "human": true,
+        "scope": [
+          "ont.read",
+          "platform.read"
+        ],
+        "session_present": true
+      },
+      "neighbor": {
+        "tenant": "mp11-neighbor",
+        "human": true,
+        "scope": [
+          "ont.read",
+          "ont.write",
+          "platform.read",
+          "platform.write"
+        ],
+        "session_present": true
+      },
+      "service": {
+        "tenant": "mp11-candidate",
+        "human": false,
+        "scope": [
+          "ont.read",
+          "ont.write",
+          "platform.read",
+          "platform.write"
+        ],
+        "session_present": false
+      }
+    },
+    "key_issuance": "actual signed USER read keys; readonly overgrant/service/API_KEY creator denied",
+    "discovery_draft_publish_sync": [
+      {
+        "object": "ont.mp11-candidate.obj.customer",
+        "columns": [
+          "id",
+          "name"
+        ],
+        "run_id": "703c509747dd434d81d399019cf8e03c",
+        "synced": 2
+      },
+      {
+        "object": "ont.mp11-candidate.obj.order",
+        "columns": [
+          "id",
+          "total",
+          "status"
+        ],
+        "run_id": "57fee949d319417fa5190d213eca8789",
+        "synced": 8
+      }
+    ],
+    "published_app_human_receipt": {
+      "app_id": "app-5214d2501e8f5c76b706dea3f69670af",
+      "page_id": "page-4bcefec97ed752278f3525d149e69264",
+      "short_code": "ynRa6rKH",
+      "proposal_id": "prop-47f32dc6",
+      "receipt": {
+        "kind": "edit_set",
+        "individual_rid": null,
+        "type_rid": null,
+        "action_rid": "ont.mp11-candidate.act.review",
+        "target_iid": "ont.mp11-candidate.ind.order.1",
+        "audit_id": "audit-8ddd8e3a590b",
+        "outbox_event_ids": [],
+        "side_effects_emitted": [],
+        "source_rid": null,
+        "target_rid": null,
+        "affected_individuals": null,
+        "affected_links": null,
+        "postflight": {
+          "checked": false,
+          "blocked": false,
+          "summary": "\u8be5 kind \u4e0d\u9002\u7528\u540e\u9a8c\uff08action \u540e\u7f6e\u6001\u7531 apply \u4e8b\u52a1\u5185\u6821\u9a8c\u515c\u5e95\uff09",
+          "action_taken": "none"
+        }
+      },
+      "approval_expires_at": "2026-10-11T21:01:46.980474+00:00",
+      "confirmed_by": "56093853-128e-4771-8742-4af5c0f788f8",
+      "version": {
+        "app_id": "app-5214d2501e8f5c76b706dea3f69670af",
+        "status": "PUBLISHED",
+        "version": "1.0.0",
+        "version_id": "ver-ad5edf1f07054feaa2dfd3632b0236cf"
+      },
+      "same_key_replay_equal": true
+    },
+    "actual_protocol": {
+      "writer": {
+        "initialize": true,
+        "tools": [
+          "ont_agent_metrics",
+          "ont_inspect_class",
+          "ont_list_classes",
+          "ont_list_individuals",
+          "ont_list_interfaces",
+          "ont_merge_objects",
+          "ont_object_query",
+          "ont_preview_proposal",
+          "ont_propose_instance",
+          "ont_propose_model_type",
+          "ont_search_objects",
+          "ont_validate_preflight"
+        ],
+        "query_rows": 13,
+        "human_tool_denied": true
+      },
+      "readonly": {
+        "initialize": true,
+        "tools": [
+          "ont_agent_metrics",
+          "ont_inspect_class",
+          "ont_list_classes",
+          "ont_list_individuals",
+          "ont_list_interfaces",
+          "ont_object_query",
+          "ont_preview_proposal",
+          "ont_search_objects"
+        ],
+        "query_rows": 13,
+        "human_tool_denied": true
+      },
+      "writer_key": {
+        "initialize": true,
+        "tools": [
+          "ont_agent_metrics",
+          "ont_inspect_class",
+          "ont_list_classes",
+          "ont_list_individuals",
+          "ont_list_interfaces",
+          "ont_object_query",
+          "ont_preview_proposal",
+          "ont_search_objects"
+        ],
+        "query_rows": 13,
+        "human_tool_denied": true
+      }
+    },
+    "browser_fixtures": {
+      "run_id": "1194b651968c",
+      "relationship_tenant": "mp11-rel-1194b651968c",
+      "empty_tenant": "mp11-empty-1194b651968c",
+      "object_types": 104,
+      "customers": 201,
+      "orders": 201,
+      "paged_links": 201,
+      "signed_grants": true,
+      "prior_inputs_retained": true
+    },
+    "ws_notification": {
+      "signed_header_auth": true,
+      "anonymous_denied": true,
+      "tenant_mismatch_denied": true,
+      "latency_seconds": 0.282,
+      "actual_event_ids": [
+        "evt-0ab8e8ee564e"
+      ]
+    },
+    "source_and_task_recovery": {
+      "source_database": "codex_mp11_candidate_source_20261012",
+      "connection_denied_run": "3e30a03a3d8840159a2a833f30408761",
+      "recovered_run": "6e3d6567c925496b97c1ddd30036c0a1",
+      "interrupted_run": "e6373a2af2ce4e7ea011369b04f7d2b9",
+      "retry_run": "e0479d9189af44c0894fcc7967d4a404",
+      "wrong_column_denied": true,
+      "concurrent_sync_denied": true,
+      "new_process_rows": 3,
+      "same_timestamp_cursor_replay_zero": true,
+      "mcp_endpoint_down_observed": true,
+      "original_receipt_replay_equal": true,
+      "original_audit_count": 1
+    },
+    "fresh_upgrade_chains": {
+      "fresh": {
+        "database": "codex_mp11_candidate_fresh_20261012",
+        "revision": "0022_mcp_key_scopes",
+        "signed_receipt": true
+      },
+      "upgrade": {
+        "database": "codex_mp11_candidate_upgrade_20261012",
+        "revision": "0022_mcp_key_scopes",
+        "signed_receipt": true
+      }
+    },
+    "actual_security_boundaries": {
+      "unknown_signed_human_metadata_denied": true,
+      "issuer_client_restored": true,
+      "signed_ws_expiry_close": 4401,
+      "normal_redis_first50": 200,
+      "normal_redis_51st": 429,
+      "approval_id": "prop-c074043c",
+      "actual_deadline": "2026-10-11T20:46:34.379629+00:00",
+      "expired_execution": 409
+    },
+    "issuer_lifetime_recovery": {
+      "initial_restore_omitted_attributes_retained2second_override": true,
+      "explicit_null_attribute_restore_verified": true
+    },
+    "consumer_polling_recovery": {
+      "terminated_exact_listeners": [
+        {
+          "pid": 10904,
+          "backend_start": "2026-10-11T20:22:46.317081+00:00",
+          "database": "codex_mp11_candidate_20261012",
+          "query": "LISTEN ont_changes"
+        }
+      ],
+      "actual_event_ids": [
+        "evt-3c5cc37d73da"
+      ],
+      "latency_seconds": 1.172,
+      "neighbor_has_no_writer_event": true,
+      "recovery": "bounded durable outbox polling; explicit API restart required to restore LISTEN",
+      "original_receipt_replay_equal": true
+    },
+    "signed_compensation": {
+      "proposal_id": "prop-50d9b45f",
+      "individual_rid": "ont.mp11-candidate.ind.order.1791751418345",
+      "revert": {
+        "proposal_id": "prop-50d9b45f",
+        "status": "reverted",
+        "kind": "create_instance",
+        "equivalence": "equivalent",
+        "compensation": {
+          "deleted_individual": "ont.mp11-candidate.ind.order.1791751418345",
+          "rows": 1
+        }
+      },
+      "readonly_service_denied": true,
+      "actual_instance_absent": true
+    },
+    "actual_pg_multiple_action_services": {
+      "audit_ids": [
+        "audit-01e3cd94e378443b99beded3d2be6fe3",
+        "audit-29ea10d53bd34f4fb64478e6f29b84d8"
+      ],
+      "persisted_audits": 2,
+      "function_calls": 2,
+      "same_key_replays_equal": true,
+      "scope": "actual PG local deterministic registered function; not external exactly-once proof"
+    },
+    "actual_discovered_mapping_negatives": {
+      "missing-primary-key": 422,
+      "invalid-time-type": 422,
+      "wrong-column-type": 422,
+      "missing-non-null": 422
+    },
+    "effective_client_targets": {
+      "targets": {
+        "apphub_to_ontology": "http://127.0.0.1:55522",
+        "mcp_to_ontology": [
+          "http://127.0.0.1:55522"
+        ],
+        "ontology_to_apphub": "http://127.0.0.1:55522"
+      },
+      "method": "normal installed middleware verified real Keycloak request; real factory clients and unchanged real HTTP, constructor observer records only base URL"
+    }
+  },
+  "complete": false,
+  "writer_key_id": "key-1335082e25f679a5",
+  "readonly_key_id": "key-b62c7af172c00bbf",
+  "source_id": "src-136a98b8",
+  "mappings": [
+    {
+      "rid": "ont.mp11-candidate.bds.obj-Candidate customer"
+    },
+    {
+      "rid": "ont.mp11-candidate.bds.obj-Candidate order"
+    }
+  ],
+  "runs": [
+    {
+      "run_id": "703c509747dd434d81d399019cf8e03c"
+    },
+    {
+      "run_id": "57fee949d319417fa5190d213eca8789"
+    }
+  ],
+  "app": {
+    "id": "app-5214d2501e8f5c76b706dea3f69670af"
+  },
+  "historical_initial_failures": {
+    "failure": "actual WS notification missed fast path; polling latency 2.203",
+    "failure_category": "TokenError"
+  },
+  "status": "implementation verification complete; independent task and whole-branch reviews pending"
+}

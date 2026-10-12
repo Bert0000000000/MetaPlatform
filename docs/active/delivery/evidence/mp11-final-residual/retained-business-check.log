@@ -1,0 +1,26 @@
+
+Traceback (most recent call last):
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-residual-business.py", line 63, in <module>
+    a=verify.Acceptance();a.login()
+      ^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\scripts\acceptance\mp11\verify.py", line 24, in __init__
+    os.environ.update(manage.environment())
+                      ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\scripts\acceptance\mp11\manage.py", line 67, in environment
+    REDIS_URL='[REDACTED_DSN]',MATE_DB_URL=pg_dsn(active_database()),ONT_SOURCE_DSN=pg_dsn(active_database()),ONT_APPROVAL_TTL_SECONDS='60',
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\scripts\acceptance\mp11\manage.py", line 38, in pg_dsn
+    data=json.loads(command(['docker','inspect',PG_NAME]))[0]
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\scripts\acceptance\mp11\manage.py", line 19, in command
+    result = subprocess.run(args,capture_output=True,text=True,encoding='utf-8',errors='replace',cwd=ROOT,timeout=20)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\subprocess.py", line 1630, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['docker', 'inspect', 'codex-mp11-relationship-pg']' timed out after 20 seconds

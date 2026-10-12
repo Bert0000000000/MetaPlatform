@@ -13,6 +13,8 @@ Covers:
 
 from __future__ import annotations
 
+from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
+
 import asyncio
 
 import pytest
@@ -364,10 +366,11 @@ def test_check_shortlink_access_role_match() -> None:
 def test_get_runtime_endpoint_returns_200(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
+    actual_id = _save_runtime_fixture(client, auth_headers_acme)
     r = client.get("/api/v1/apphub/apps/kb/runtime", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["app_id"] == "kb"
+    assert body["app_id"] == actual_id
     assert "modules" in body
     assert "render_tree" in body
     assert len(body["modules"]) >= 1
@@ -400,6 +403,7 @@ def test_get_runtime_endpoint_cross_tenant_404(
 def test_execute_endpoint_submit_form(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
+    _save_runtime_fixture(client, auth_headers_acme)
     r = client.post(
         "/api/v1/apphub/apps/kb/runtime/execute",
         json={
@@ -419,6 +423,7 @@ def test_execute_endpoint_submit_form(
 def test_publish_endpoint_returns_published(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
+    actual_id = _save_runtime_fixture(client, auth_headers_acme, publish=False)
     r = client.post(
         "/api/v1/apphub/apps/kb/publish",
         headers=auth_headers_acme,
@@ -427,12 +432,13 @@ def test_publish_endpoint_returns_published(
     body = r.json()
     assert body["status"] == "PUBLISHED"
     assert body["version"] == "1.0.0"
-    assert body["app_id"] == "kb"
+    assert body["app_id"] == actual_id
 
 
 def test_publish_endpoint_emits_outbox(
     client: TestClient, auth_headers_acme: dict[str, str], outbox: InMemoryOutboxWriter
 ) -> None:
+    _save_runtime_fixture(client, auth_headers_acme, publish=False)
     client.post(
         "/api/v1/apphub/apps/kb/publish",
         headers=auth_headers_acme,

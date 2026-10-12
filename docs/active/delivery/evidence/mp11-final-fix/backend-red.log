@@ -1,0 +1,213 @@
+FFFFFFFFFFFF......FFFFFFFFFF..                                           [100%]
+================================== FAILURES ===================================
+______ test_storage_and_loader_resolve_exact_id_then_local_code[memory] _______
+packages\mate-app-hub\tests\test_mp11_app_identity.py:62: in test_storage_and_loader_resolve_exact_id_then_local_code
+    assert repo.get_app(tenant, key).id == exact.id
+E   AssertionError: assert 'other-2f3ad0...dbd5e86b09493' == 'collision-4e...de9dd389f08e2'
+E     
+E     - collision-4ee688ea191b4c928cade9dd389f08e2
+E     + other-2f3ad06268974f28b25dbd5e86b09493
+______ test_storage_and_loader_resolve_exact_id_then_local_code[sqlite] _______
+packages\mate-app-hub\tests\test_mp11_app_identity.py:62: in test_storage_and_loader_resolve_exact_id_then_local_code
+    assert repo.get_app(tenant, key).id == exact.id
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-app-hub\src\mate_app_hub\repositories\__init__.py:86: in operation
+    return getattr(store, name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-app-hub\src\mate_app_hub\repositories\sql_store.py:184: in get_app
+    ).scalar_one_or_none()
+      ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:1541: in scalar_one_or_none
+    return self._only_one_row(
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:852: in _only_one_row
+    raise exc.MultipleResultsFound(
+E   sqlalchemy.exc.MultipleResultsFound: Multiple rows were found when one or none was required
+________ test_storage_and_loader_resolve_exact_id_then_local_code[pg] _________
+packages\mate-app-hub\tests\test_mp11_app_identity.py:62: in test_storage_and_loader_resolve_exact_id_then_local_code
+    assert repo.get_app(tenant, key).id == exact.id
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-app-hub\src\mate_app_hub\repositories\__init__.py:86: in operation
+    return getattr(store, name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-app-hub\src\mate_app_hub\repositories\sql_store.py:184: in get_app
+    ).scalar_one_or_none()
+      ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:1541: in scalar_one_or_none
+    return self._only_one_row(
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:852: in _only_one_row
+    raise exc.MultipleResultsFound(
+E   sqlalchemy.exc.MultipleResultsFound: Multiple rows were found when one or none was required
+____ test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory] _____
+packages\mate-app-hub\tests\test_mp11_app_identity.py:89: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert detail.json()['id'] == exact.id
+E   AssertionError: assert 'other-009d4a...bdabf150e6776' == 'collision-30...adf1dfbffbdc5'
+E     
+E     - collision-30a386816b2041dbb99adf1dfbffbdc5
+E     + other-009d4aa9987549a1a04bdabf150e6776
+____ test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite] _____
+packages\mate-app-hub\tests\test_mp11_app_identity.py:89: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert detail.json()['id'] == exact.id
+E   AssertionError: assert 'other-ec1e3b...52897cb3f932b' == 'collision-94...a417900b9d19d'
+E     
+E     - collision-94462f76afac4d8ba27a417900b9d19d
+E     + other-ec1e3b8dc30b4d9ab2e52897cb3f932b
+______ test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg] _______
+packages\mate-app-hub\tests\test_mp11_app_identity.py:89: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert detail.json()['id'] == exact.id
+E   AssertionError: assert 'other-5b5b2e...e363addfba305' == 'collision-e1...32be05376cbe7'
+E     
+E     - collision-e1b9e2bc694e4c7c92132be05376cbe7
+E     + other-5b5b2ef2121f444993de363addfba305
+__ test_readonly_direct_proposal_denied_without_persistence[memory-instance] __
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:67: in test_readonly_direct_proposal_denied_without_persistence
+    assert response.status_code == 403
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-10-12 15:58:23 [info     ] ont.proposal.propose           actor_id=writer class_rid=ont.mp11-proposal-70ca9d16088a4583950eb8b58ca3e251.obj.source proposal_kind=create_instance tenant_id=mp11-proposal-70ca9d16088a4583950eb8b58ca3e251
+___ test_readonly_direct_proposal_denied_without_persistence[memory-model] ____
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:67: in test_readonly_direct_proposal_denied_without_persistence
+    assert response.status_code == 403
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+___ test_readonly_direct_proposal_denied_without_persistence[memory-merge] ____
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:67: in test_readonly_direct_proposal_denied_without_persistence
+    assert response.status_code == 403
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+____ test_readonly_direct_proposal_denied_without_persistence[pg-instance] ____
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:67: in test_readonly_direct_proposal_denied_without_persistence
+    assert response.status_code == 403
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-10-12 15:58:24 [info     ] ont.proposal.propose           actor_id=writer class_rid=ont.mp11-proposal-b313f3978f734f489948fb3a3f193996.obj.source proposal_kind=create_instance tenant_id=mp11-proposal-b313f3978f734f489948fb3a3f193996
+_____ test_readonly_direct_proposal_denied_without_persistence[pg-model] ______
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:67: in test_readonly_direct_proposal_denied_without_persistence
+    assert response.status_code == 403
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+_____ test_readonly_direct_proposal_denied_without_persistence[pg-merge] ______
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:67: in test_readonly_direct_proposal_denied_without_persistence
+    assert response.status_code == 403
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-False-instance] _
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:79: in test_scoped_user_and_service_can_propose_but_only_human_can_confirm
+    with (repo.tenant_scope(tenant) if hasattr(repo, 'tenant_scope') else nullcontext()): assert len(repo.list_proposals()) == 1
+                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 6 == 1
+E    +  where 6 = len([ActionProposal(proposal_id='prop-a95d0a34', action_rid='ont.mp11-proposal-247291765bc34d0fb77df381c5017cd5.obj.source...approval_expires_at=datetime.datetime(2026, 10, 11, 21, 1, 43, 397111, tzinfo=datetime.timezone.utc), provenance=None)])
+E    +    where [ActionProposal(proposal_id='prop-a95d0a34', action_rid='ont.mp11-proposal-247291765bc34d0fb77df381c5017cd5.obj.source...approval_expires_at=datetime.datetime(2026, 10, 11, 21, 1, 43, 397111, tzinfo=datetime.timezone.utc), provenance=None)] = list_proposals()
+E    +      where list_proposals = <mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x0000021939E8AF60>.list_proposals
+---------------------------- Captured stdout call -----------------------------
+2026-10-12 15:58:26 [info     ] ont.proposal.propose           actor_id=writer class_rid=ont.mp11-proposal-247291765bc34d0fb77df381c5017cd5.obj.source proposal_kind=create_instance tenant_id=mp11-proposal-247291765bc34d0fb77df381c5017cd5
+_ test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-False-model] _
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:79: in test_scoped_user_and_service_can_propose_but_only_human_can_confirm
+    with (repo.tenant_scope(tenant) if hasattr(repo, 'tenant_scope') else nullcontext()): assert len(repo.list_proposals()) == 1
+                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 7 == 1
+E    +  where 7 = len([ActionProposal(proposal_id='prop-271297fb', action_rid='ont.mp11-proposal-c73863530bd94fcfb4f5cd9d51243383.obj.new', ...val_expires_at=datetime.datetime(2026, 10, 11, 21, 1, 53, 905442, tzinfo=datetime.timezone.utc), provenance=None), ...])
+E    +    where [ActionProposal(proposal_id='prop-271297fb', action_rid='ont.mp11-proposal-c73863530bd94fcfb4f5cd9d51243383.obj.new', ...val_expires_at=datetime.datetime(2026, 10, 11, 21, 1, 53, 905442, tzinfo=datetime.timezone.utc), provenance=None), ...] = list_proposals()
+E    +      where list_proposals = <mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x000002193959AF60>.list_proposals
+_ test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-False-merge] _
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:79: in test_scoped_user_and_service_can_propose_but_only_human_can_confirm
+    with (repo.tenant_scope(tenant) if hasattr(repo, 'tenant_scope') else nullcontext()): assert len(repo.list_proposals()) == 1
+                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 8 == 1
+E    +  where 8 = len([ActionProposal(proposal_id='prop-996fb154', action_rid='ont.mp11-proposal-6b37226a2f7c483e9be7a7dea46f103d.obj.target...ate_instance', expected_diff={}, confirmed_by=None, confirmed_at=None, approval_expires_at=None, provenance=None), ...])
+E    +    where [ActionProposal(proposal_id='prop-996fb154', action_rid='ont.mp11-proposal-6b37226a2f7c483e9be7a7dea46f103d.obj.target...ate_instance', expected_diff={}, confirmed_by=None, confirmed_at=None, approval_expires_at=None, provenance=None), ...] = list_proposals()
+E    +      where list_proposals = <mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x00000219395CAF60>.list_proposals
+_ test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-True-instance] _
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:79: in test_scoped_user_and_service_can_propose_but_only_human_can_confirm
+    with (repo.tenant_scope(tenant) if hasattr(repo, 'tenant_scope') else nullcontext()): assert len(repo.list_proposals()) == 1
+                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 9 == 1
+E    +  where 9 = len([ActionProposal(proposal_id='prop-5157d134', action_rid='ont.mp11-proposal-53ebafccd0df47be9b967fc318301b43.obj.source...e4c9ea5ec094f10159779.obj.new'}, confirmed_by=None, confirmed_at=None, approval_expires_at=None, provenance=None), ...])
+E    +    where [ActionProposal(proposal_id='prop-5157d134', action_rid='ont.mp11-proposal-53ebafccd0df47be9b967fc318301b43.obj.source...e4c9ea5ec094f10159779.obj.new'}, confirmed_by=None, confirmed_at=None, approval_expires_at=None, provenance=None), ...] = list_proposals()
+E    +      where list_proposals = <mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x00000219392BD3D0>.list_proposals
+---------------------------- Captured stdout call -----------------------------
+2026-10-12 15:58:27 [info     ] ont.proposal.propose           actor_id=service-account-test class_rid=ont.mp11-proposal-53ebafccd0df47be9b967fc318301b43.obj.source proposal_kind=create_instance tenant_id=mp11-proposal-53ebafccd0df47be9b967fc318301b43
+_ test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-True-model] _
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:79: in test_scoped_user_and_service_can_propose_but_only_human_can_confirm
+    with (repo.tenant_scope(tenant) if hasattr(repo, 'tenant_scope') else nullcontext()): assert len(repo.list_proposals()) == 1
+                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 10 == 1
+E    +  where 10 = len([ActionProposal(proposal_id='prop-41856be7', action_rid='ont.mp11-proposal-6a03ef5f7b3548258cca2806843a7852.obj.new', ...f95b1d16b3f640fb0.obj.source']}, confirmed_by=None, confirmed_at=None, approval_expires_at=None, provenance=None), ...])
+E    +    where [ActionProposal(proposal_id='prop-41856be7', action_rid='ont.mp11-proposal-6a03ef5f7b3548258cca2806843a7852.obj.new', ...f95b1d16b3f640fb0.obj.source']}, confirmed_by=None, confirmed_at=None, approval_expires_at=None, provenance=None), ...] = list_proposals()
+E    +      where list_proposals = <mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x00000219392D4050>.list_proposals
+_ test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-True-merge] _
+packages\mate-tech-ont\tests\test_mp11_proposal_scopes.py:79: in test_scoped_user_and_service_can_propose_but_only_human_can_confirm
+    with (repo.tenant_scope(tenant) if hasattr(repo, 'tenant_scope') else nullcontext()): assert len(repo.list_proposals()) == 1
+                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 11 == 1
+E    +  where 11 = len([ActionProposal(proposal_id='prop-4af47400', action_rid='ont.mp11-proposal-324b6c9043c046518f4be310f19638cb.obj.target...ate_instance', expected_diff={}, confirmed_by=None, confirmed_at=None, approval_expires_at=None, provenance=None), ...])
+E    +    where [ActionProposal(proposal_id='prop-4af47400', action_rid='ont.mp11-proposal-324b6c9043c046518f4be310f19638cb.obj.target...ate_instance', expected_diff={}, confirmed_by=None, confirmed_at=None, approval_expires_at=None, provenance=None), ...] = list_proposals()
+E    +      where list_proposals = <mate_tech_ont.v2_kernel.pg_repo.PgOntologyRepository object at 0x000002193A3C2F60>.list_proposals
+__ test_stop_rechecks_identity_immediately_before_termination[CreationTicks] __
+..\scripts\acceptance\mp11\tests\test_manage_stop.py:49: in test_stop_rechecks_identity_immediately_before_termination
+    with pytest.raises(RuntimeError): manage.stop('api')
+                                      ^^^^^^^^^^^^^^^^^^
+..\scripts\acceptance\mp11\manage.py:249: in stop
+    command(['powershell.exe','-NoProfile','-Command',script])
+..\scripts\acceptance\mp11\tests\test_manage_stop.py:42: in harmless_command
+    assert result['stops'] == (1 if changed == 'unchanged' else 0)
+E   assert 1 == 0
+_ test_stop_rechecks_identity_immediately_before_termination[ExecutablePath] __
+..\scripts\acceptance\mp11\tests\test_manage_stop.py:49: in test_stop_rechecks_identity_immediately_before_termination
+    with pytest.raises(RuntimeError): manage.stop('api')
+                                      ^^^^^^^^^^^^^^^^^^
+..\scripts\acceptance\mp11\manage.py:249: in stop
+    command(['powershell.exe','-NoProfile','-Command',script])
+..\scripts\acceptance\mp11\tests\test_manage_stop.py:42: in harmless_command
+    assert result['stops'] == (1 if changed == 'unchanged' else 0)
+E   assert 1 == 0
+___ test_stop_rechecks_identity_immediately_before_termination[CommandLine] ___
+..\scripts\acceptance\mp11\tests\test_manage_stop.py:49: in test_stop_rechecks_identity_immediately_before_termination
+    with pytest.raises(RuntimeError): manage.stop('api')
+                                      ^^^^^^^^^^^^^^^^^^
+..\scripts\acceptance\mp11\manage.py:249: in stop
+    command(['powershell.exe','-NoProfile','-Command',script])
+..\scripts\acceptance\mp11\tests\test_manage_stop.py:42: in harmless_command
+    assert result['stops'] == (1 if changed == 'unchanged' else 0)
+E   assert 1 == 0
+____ test_stop_rechecks_identity_immediately_before_termination[ProcessId] ____
+..\scripts\acceptance\mp11\tests\test_manage_stop.py:49: in test_stop_rechecks_identity_immediately_before_termination
+    with pytest.raises(RuntimeError): manage.stop('api')
+                                      ^^^^^^^^^^^^^^^^^^
+..\scripts\acceptance\mp11\manage.py:249: in stop
+    command(['powershell.exe','-NoProfile','-Command',script])
+..\scripts\acceptance\mp11\tests\test_manage_stop.py:42: in harmless_command
+    assert result['stops'] == (1 if changed == 'unchanged' else 0)
+E   assert 1 == 0
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_storage_and_loader_resolve_exact_id_then_local_code[memory]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_storage_and_loader_resolve_exact_id_then_local_code[sqlite]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_storage_and_loader_resolve_exact_id_then_local_code[pg]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_readonly_direct_proposal_denied_without_persistence[memory-instance]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_readonly_direct_proposal_denied_without_persistence[memory-model]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_readonly_direct_proposal_denied_without_persistence[memory-merge]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_readonly_direct_proposal_denied_without_persistence[pg-instance]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_readonly_direct_proposal_denied_without_persistence[pg-model]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_readonly_direct_proposal_denied_without_persistence[pg-merge]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-False-instance]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-False-model]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-False-merge]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-True-instance]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-True-model]
+FAILED packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py::test_scoped_user_and_service_can_propose_but_only_human_can_confirm[pg-True-merge]
+FAILED ::test_stop_rechecks_identity_immediately_before_termination[CreationTicks]
+FAILED ::test_stop_rechecks_identity_immediately_before_termination[ExecutablePath]
+FAILED ::test_stop_rechecks_identity_immediately_before_termination[CommandLine]
+FAILED ::test_stop_rechecks_identity_immediately_before_termination[ProcessId]
+22 failed, 8 passed, 1 warning in 16.15s
+

@@ -11,7 +11,7 @@ import '../../ontology.css';
  * 正式路由 /ontology/model/object-types。
  *
  * <p>原样承载完整建模工作台（OntologyModelingPage：领域树 / 概念表 / 详情 /
- * V2 编辑器 / 相似合并）——只移动不重写。「新建本体」按钮与创建抽屉状态
+ * V2 编辑器 / 相似合并）——只移动不重写。「新建对象类型」按钮与创建抽屉状态
  * 随本页收编（其他基元页没有真实编辑器，不放创建入口——ADR-0069 §2.4）。
  */
 export default function ObjectTypesPage() {
@@ -30,7 +30,7 @@ export default function ObjectTypesPage() {
             icon={<Plus size={15} strokeWidth={1.5} />}
             onClick={() => setCreateOpen(true)}
           >
-            新建本体
+            新建对象类型
           </Button>
         }
       />

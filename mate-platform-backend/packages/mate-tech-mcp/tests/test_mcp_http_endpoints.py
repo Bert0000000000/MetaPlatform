@@ -53,37 +53,15 @@ class TestMcpHttpEndpointsWired:
 
     @pytest.fixture(scope="class")
     def app_with_mocked_auth(self):
-        """Build a fresh app with install_auth patched out so the
-        TestClient doesn't need a real Keycloak. We import main
-        AFTER patching so install_auth(app) is a no-op.
-        """
+        """Exercise normal auth middleware using isolated package JWT fixtures."""
+        from fastapi import FastAPI
         from fastapi.testclient import TestClient
-
-        with patch("mate_platform.auth.install_auth", return_value=None):
-            # Force a clean import so install_auth is mocked before
-            # the module top-level `install_auth(app)` runs. Only
-            # evict mcp modules to avoid breaking cached imports
-            # of mate_platform (BearerAuth etc.).
-            for m in list(sys.modules):
-                if m == "mate_tech_mcp.main" or m.startswith("mate_tech_mcp."):
-                    sys.modules.pop(m, None)
-            from fastapi import FastAPI
-
-            from mate_tech_mcp import main as _main_mod
-            from mate_tech_mcp.api.origin_routes import router as origin_router
-
-            _test_app = FastAPI(title="mate-tech-mcp-test")
-            # Bind mcp_server + rate_limiter onto app.state so the
-            # origin router handlers can resolve them.
-            _test_app.state.mcp_server = _main_mod.mcp_server
-            _test_app.state.rate_limiter = _main_mod._rate_limiter
-            _test_app.include_router(origin_router)
-            _original_app = _main_mod.app
-            _main_mod.app = _test_app
-            try:
-                yield TestClient(_test_app)
-            finally:
-                _main_mod.app = _original_app
+        from mate_platform.auth import install_auth
+        from mate_tech_mcp.server import create_server
+        from mate_tech_mcp.api.origin_routes import router
+        app=FastAPI();app.state.mcp_server=create_server('http-wiring-test')
+        app.state.rate_limiter=AsyncMock();app.include_router(router);install_auth(app)
+        yield TestClient(app)
 
     @pytest.mark.parametrize(
         "method,path",
@@ -96,7 +74,8 @@ class TestMcpHttpEndpointsWired:
     def test_list_endpoints_reachable(
         self, app_with_mocked_auth: TestClient, method: str, path: str
     ) -> None:
-        r = app_with_mocked_auth.request(method, path)
+        from helpers import auth_header
+        r = app_with_mocked_auth.request(method, path, headers=auth_header())
         # List endpoints must not 404 (the regression we're guarding
         # against) and must not 500.
         assert r.status_code not in (404, 500), (
@@ -130,24 +109,19 @@ class TestMcpMainIsImportable:
 
     def test_main_imports_without_error(self) -> None:
         # Just importing is enough — Python parses the file on import.
-        with patch("mate_platform.auth.install_auth", return_value=None):
-            for m in list(sys.modules):
-                if m == "mate_tech_mcp.main" or m.startswith("mate_tech_mcp."):
-                    sys.modules.pop(m, None)
-            from mate_tech_mcp import main as main_mod
+        from mate_tech_mcp import main as main_mod
 
-            mounted_paths = {route.path for route in main_mod.app.routes if hasattr(route, "path")}
-            assert "/api/v1/mcp/protocol" in mounted_paths
-            assert "/mcp-protocol" not in mounted_paths
-            protocol_mount = next(
-                route
-                for route in main_mod.app.routes
-                if getattr(route, "path", None) == "/api/v1/mcp/protocol"
-            )
-            assert any(
-                getattr(route, "path", None) == "/mcp" for route in protocol_mount.app.routes
-            )
-
+        mounted_paths = {route.path for route in main_mod.app.routes if hasattr(route, "path")}
+        assert "/api/v1/mcp/protocol" in mounted_paths
+        assert "/mcp-protocol" not in mounted_paths
+        protocol_mount = next(
+            route
+            for route in main_mod.app.routes
+            if getattr(route, "path", None) == "/api/v1/mcp/protocol"
+        )
+        assert any(
+            getattr(route, "path", None) == "/mcp" for route in protocol_mount.app.routes
+        )
 
 # ---------------------------------------------------------------------------
 # P3-W10 Fix-1: 5 origin endpoint router e2e tests
@@ -161,33 +135,19 @@ class TestMcpOriginRoutes:
 
     @pytest.fixture
     def origin_client(self):
-        """Bare app with the origin router; mcp_server + a mocked
-        rate_limiter bound to app.state (the Fix-1 wiring contract).
-        The rate limiter is mocked because the test environment has no
-        Redis — only the router wiring is under test here.
-        """
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
-
-        with patch("mate_platform.auth.install_auth", return_value=None):
-            for m in list(sys.modules):
-                if m == "mate_tech_mcp.main" or m.startswith("mate_tech_mcp."):
-                    sys.modules.pop(m, None)
-            from mate_tech_mcp import main as _main_mod
-            from mate_tech_mcp.api.origin_routes import router as origin_router
-
-            app = FastAPI(title="mate-tech-mcp-origin-test")
-            app.state.mcp_server = _main_mod.mcp_server
-            # Mock rate limiter so tool invocation doesn't need Redis.
-            app.state.rate_limiter = AsyncMock()
-            app.include_router(origin_router)
-            yield TestClient(app)
+        from mate_platform.auth import install_auth
+        from mate_tech_mcp.server import create_server
+        from mate_tech_mcp.api.origin_routes import router
+        app=FastAPI();app.state.mcp_server=create_server('origin-wiring-test')
+        app.state.rate_limiter=AsyncMock();app.include_router(router);install_auth(app)
+        yield TestClient(app)
 
     @staticmethod
     def _bearer() -> dict[str, str]:
-        from mate_tech_mcp.auth import make_test_token
-
-        return {"Authorization": f"Bearer {make_test_token()}"}
+        from helpers import auth_header
+        return auth_header()
 
     def test_origin_list_tools_returns_200(self, origin_client) -> None:
         r = origin_client.get("/api/v1/mcp/tools", headers=self._bearer())
@@ -215,22 +175,21 @@ class TestMcpOriginRoutes:
         assert body["name"] == "summarize_doc"
         assert "rendered" in body
 
-    def test_origin_invoke_tool_returns_200_or_404(self, origin_client) -> None:
-        # kb_search is registered at startup → expect 200 or a tool-level
-        # error (500); a non-existent tool → 404. Either 200 or 404 passes.
+    def test_origin_invocation_denies_unknown_capability(self, origin_client) -> None:
+        # Metadata-less and unknown tools fail closed for external callers.
         r = origin_client.post(
             "/api/v1/mcp/tools/kb_search",
             json={"arguments": {"query": "test"}},
             headers=self._bearer(),
         )
-        assert r.status_code in (200, 404, 500), r.text
-        # Non-existent tool must be 404.
+        assert r.status_code == 403, r.text
+        # Unknown tool likewise has no verified capability.
         r2 = origin_client.post(
             "/api/v1/mcp/tools/nonexistent_tool",
             json={"arguments": {}},
             headers=self._bearer(),
         )
-        assert r2.status_code == 404, r2.text
+        assert r2.status_code == 403, r2.text
 
 
 # ---------------------------------------------------------------------------
