@@ -4,13 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, codex/**]
-    paths:
-      - ".github/workflows/ga-acceptance.yml"
-      - "infra/helm/**"
-      - "infra/tests/**"
-      - "mate-platform-backend/**"
-      - "scripts/ci/**"
-      - ".pre-commit-config.yaml"
+    # Also run for frontend/infra-only main releases; CD must not reuse old GA results.
   pull_request:
     branches: [main, codex/**]
     # **刻意不加 `paths:` 过滤**（A-5 收紧 required 的前提，同 1.7 对
