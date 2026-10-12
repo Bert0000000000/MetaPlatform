@@ -2,7 +2,9 @@
 
 import json
 import time
+from typing import Literal, Protocol
 
+import httpx
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -13,8 +15,14 @@ from mate_platform.auth.config import AuthConfig
 from mate_platform.auth.middleware import install_auth
 
 
+class SignedIdentityClient(Protocol):
+    def get(
+        self, extra: dict[str, object], headers: dict[str, str] | None = None
+    ) -> httpx.Response: ...
+
+
 @pytest.fixture
-def signed_client():
+def signed_client(monkeypatch: pytest.MonkeyPatch) -> SignedIdentityClient:
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     cfg = AuthConfig(
         "https://issuer.invalid",
@@ -29,12 +37,21 @@ def signed_client():
         False,
     )
     app = FastAPI()
-    verifier = install_auth(app, config=cfg)
-    jwk = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key()))
-    verifier._cache._by_kid = {"mp11-test": jwk}
+    jwk: dict[str, object] = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key()))
+    jwk.update({"kid": "mp11-test", "alg": "RS256", "use": "sig"})
+    actual_client = httpx.Client
 
-    @app.get("/identity")
-    def identity(request: Request):
+    def jwks_handler(request: httpx.Request) -> httpx.Response:
+        assert str(request.url) == cfg.jwks_uri
+        return httpx.Response(200, json={"keys": [jwk]})
+
+    def jwks_client(*, timeout: float | httpx.Timeout | None = 5.0) -> httpx.Client:
+        return actual_client(timeout=timeout, transport=httpx.MockTransport(jwks_handler))
+
+    monkeypatch.setattr(httpx, "Client", jwks_client)
+    install_auth(app, config=cfg)
+
+    def identity(request: Request) -> dict[str, object]:
         ctx = request.state.ctx
         return {
             "method": ctx.auth_method.value,
@@ -42,13 +59,17 @@ def signed_client():
             "scopes": sorted(ctx.scopes),
         }
 
+    app.add_api_route("/identity", identity, methods=["GET"])
+
     class SignedClient:
-        def __repr__(self):
+        def __repr__(self) -> str:
             return "<SignedIdentityClient>"
 
-        def get(self, extra, headers=None):
+        def get(
+            self, extra: dict[str, object], headers: dict[str, str] | None = None
+        ) -> httpx.Response:
             now = int(time.time())
-            claims = {
+            claims: dict[str, object] = {
                 "iss": cfg.issuer,
                 "aud": cfg.audience,
                 "sub": "user-1",
@@ -93,19 +114,25 @@ def signed_client():
         ({"sub": "", "preferred_username": "writer", "sid": "session"}, "service"),
     ],
 )
-def test_signed_identity_requires_human_session(signed_client, metadata, expected):
+def test_signed_identity_requires_human_session(
+    signed_client: SignedIdentityClient,
+    metadata: dict[str, object],
+    expected: Literal["user", "service"],
+) -> None:
     response = signed_client.get(metadata)
     assert response.status_code == 200
     assert response.json()["method"] == expected
 
 
-def test_headers_cannot_supply_human_identity_or_tenant(signed_client):
+def test_headers_cannot_supply_human_identity_or_tenant(
+    signed_client: SignedIdentityClient,
+) -> None:
     response = signed_client.get({}, {"preferred_username": "writer", "sid": "session"})
     assert response.json()["method"] == "service"
     assert signed_client.get({}, {"X-Tenant-ID": "tenant-b"}).status_code == 403
 
 
-def test_expired_signed_identity_is_rejected(signed_client):
+def test_expired_signed_identity_is_rejected(signed_client: SignedIdentityClient) -> None:
     assert signed_client.get({"exp": int(time.time()) - 1}).status_code == 401
 
 
@@ -113,7 +140,11 @@ def test_expired_signed_identity_is_rejected(signed_client):
     "value", [None, {}, [], [None], [{}], "   ", [""], ["   "], ["valid", None], 42]
 )
 @pytest.mark.parametrize("location", ["top", "attributes", "fallback"])
-def test_malformed_signed_tenant_fails_closed(signed_client, location, value):
+def test_malformed_signed_tenant_fails_closed(
+    signed_client: SignedIdentityClient,
+    location: Literal["top", "attributes", "fallback"],
+    value: object,
+) -> None:
     metadata = (
         {
             "tenant_id": value,
@@ -140,7 +171,9 @@ def test_malformed_signed_tenant_fails_closed(signed_client, location, value):
         {"attributes": {}, "tenant": "tenant-a"},
     ],
 )
-def test_supported_signed_tenant_shapes(signed_client, metadata):
+def test_supported_signed_tenant_shapes(
+    signed_client: SignedIdentityClient, metadata: dict[str, object]
+) -> None:
     response = signed_client.get(metadata)
     assert response.status_code == 200
     assert response.json()["tenant"] == "tenant-a"
@@ -157,7 +190,9 @@ def test_supported_signed_tenant_shapes(signed_client, metadata):
         {"forged_signature": True},
     ],
 )
-def test_signed_tenant_identity_guards(signed_client, metadata):
+def test_signed_tenant_identity_guards(
+    signed_client: SignedIdentityClient, metadata: dict[str, object]
+) -> None:
     response = signed_client.get(metadata)
     assert response.status_code == 401
 
@@ -169,7 +204,9 @@ def test_signed_tenant_identity_guards(signed_client, metadata):
         {"attributes": {"tenant_id": "tenant-a"}, "tenant": None},
     ],
 )
-def test_valid_authoritative_signed_tenant_precedence(signed_client, metadata):
+def test_valid_authoritative_signed_tenant_precedence(
+    signed_client: SignedIdentityClient, metadata: dict[str, object]
+) -> None:
     response = signed_client.get(metadata)
     assert response.status_code == 200
     assert response.json()["tenant"] == "tenant-a"

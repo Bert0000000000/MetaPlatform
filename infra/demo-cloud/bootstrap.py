@@ -5,6 +5,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+import configure_auth
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 COMPOSE = [
@@ -22,6 +24,21 @@ COMPOSE = [
 
 
 def main() -> None:
+    configure_auth.configure_auth(COMPOSE, cwd=ROOT)
+    subprocess.run(
+        [
+            *COMPOSE,
+            "exec",
+            "-T",
+            "mate-app-hub",
+            "python",
+            "/app/demo/run_service.py",
+            "python",
+            "/app/demo/configure_schema.py",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
     # Empty default tenant keeps unscoped maintenance/restart connections fail-closed.
     subprocess.run(
         [

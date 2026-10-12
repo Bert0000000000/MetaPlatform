@@ -109,7 +109,29 @@ jobs:
               f"ALTER DEFAULT PRIVILEGES FOR ROLE meta IN SCHEMA public GRANT SELECT ON TABLES TO {role};\n",
               encoding='utf-8',
           )
+          # Exercise migration of an existing pre-1.1 realm; do not re-import or
+          # replace users, passwords, secrets or unrelated mappers after boot.
+          realm = json.loads(Path('infra/keycloak/realm-mate.json').read_text(encoding='utf-8'))
+          platform_scopes = {'platform.read', 'platform.write'}
+          realm['clientScopes'] = [scope for scope in realm.get('clientScopes', []) if scope['name'] not in platform_scopes]
+          realm['scopeMappings'] = [mapping for mapping in realm.get('scopeMappings', []) if mapping.get('clientScope') not in platform_scopes]
+          client = next(client for client in realm['clients'] if client['clientId'] == 'metaplatform-backend')
+          for field in ('defaultClientScopes', 'optionalClientScopes'):
+              if field in client:
+                  client[field] = [name for name in client[field] if name not in platform_scopes]
+          username_mapper = next(mapper for mapper in client['protocolMappers'] if mapper.get('config', {}).get('claim.name') == 'preferred_username')
+          client['protocolMappers'] = [mapper for mapper in client.get('protocolMappers', []) if mapper.get('config', {}).get('claim.name') != 'preferred_username']
+          # A role-restricted legacy profile cannot supply ordinary users' identity.
+          # Preserve it and require a compatible direct mapper instead.
+          legacy_profile = 'mp11-legacy-restricted-profile'
+          legacy_role = 'MP11_LEGACY_PROFILE_ONLY'
+          realm['roles']['realm'].append({'name': legacy_role})
+          realm['clientScopes'].append({'name': legacy_profile, 'protocol': 'openid-connect', 'protocolMappers': [username_mapper]})
+          realm['scopeMappings'].append({'clientScope': legacy_profile, 'roles': [legacy_role]})
+          client.setdefault('defaultClientScopes', []).append(legacy_profile)
+          (root / 'ontology-core-keycloak-before-upgrade.json').write_text(json.dumps(realm), encoding='utf-8')
           (root / 'ontology-core-ci.compose.json').write_text(json.dumps({'services': {
+              'keycloak': {'volumes': ['./.tmp/ontology-core-keycloak-before-upgrade.json:/opt/keycloak/data/import/realm-mate.json:ro']},
               'postgres': {'volumes': ['./.tmp/ontology-core-app.sql:/docker-entrypoint-initdb.d/99-ontology-core-app.sql:ro']},
               'mate-tech-ont': {'environment': {
                   'KERNEL_PG_DSN': dsn, 'PG_DSN': dsn, 'ONT_MODELING_SOURCE_DSN': dsn,
@@ -119,6 +141,50 @@ jobs:
 
       - name: Boot ontology-core stack + wait healthy
         run: bash scripts/ci/ontology-core-e2e.sh up && bash scripts/ci/ontology-core-e2e.sh wait
+
+      - name: Upgrade existing Keycloak scopes and verify idempotency
+        run: |
+          mkdir -p .ci
+          for attempt in 1 2; do
+            python3 infra/demo-cloud/configure_auth.py --no-sudo \
+              --compose-file docker-compose.yml --compose-file docker-compose.override.yml \
+              --compose-file .tmp/ontology-core-ci.compose.json \
+              --journal .ci/mp11-auth-scope-migration.jsonl > ".ci/mp11-auth-upgrade-${attempt}.json"
+          done
+          python3 - <<'PY'
+          import base64
+          import json
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          first = json.loads(Path('.ci/mp11-auth-upgrade-1.json').read_text())
+          second = json.loads(Path('.ci/mp11-auth-upgrade-2.json').read_text())
+          assert first['status'] == second['status'] == 'success'
+          assert {change['name'] for change in first['changes'] if change['action'] == 'create_scope'} == {'platform.read', 'platform.write'}
+          assert any(change['action'] == 'create_username_mapper' for change in first['changes'])
+          assert second['changes'] == [], 'Repeated upgrade must have zero changes'
+          realm = json.loads(Path('infra/keycloak/realm-mate.json').read_text())
+          for username, can_write in [('admin', True), ('metaplatform', False)]:
+              user = next(user for user in realm['users'] if user['username'] == username)
+              password = next(credential['value'] for credential in user['credentials'] if credential['type'] == 'password')
+              request = Request('http://127.0.0.1:8100/api/v1/iam/auth/login',
+                                data=json.dumps({'username': username, 'password': password}).encode(),
+                                headers={'Content-Type': 'application/json'}, method='POST')
+              with urlopen(request, timeout=30) as response:
+                  body = json.load(response)
+              token = body.get('accessToken') or body.get('token')
+              assert isinstance(token, str)
+              parts = token.split('.')
+              assert len(parts) == 3
+              header, claims = [json.loads(base64.urlsafe_b64decode(part + '=' * (-len(part) % 4))) for part in parts[:2]]
+              scopes = set(claims.get('scope', '').split())
+              assert header.get('alg') == 'RS256'
+              assert claims.get('preferred_username') == username and claims.get('sid')
+              assert claims.get('tenant_id') == 'tenant-default'
+              assert 'platform.read' in scopes
+              assert ('platform.write' in scopes) is can_write
+          print('Existing realm upgraded twice; real admin is a human writer, ordinary user is read-only; credentials not printed.')
+          PY
 
       - name: Verify packaged source dependencies and restricted database identity
         run: |

@@ -101,6 +101,15 @@ test('real Ont + own PG: editor WIP, five-step publication, saved source sync an
   await editor.getByPlaceholder('例如：客户').fill(name);
   const domain = await editor.locator('select').first().inputValue();
   const rid = `ont.${auth.tenantId}.obj.${domain}.${slug}.v1`;
+  const checkedName = page.waitForResponse(r => pathOf(r.url()) === '/api/v1/ont/v2/object-types/precheck' && r.request().method() === 'POST');
+  await editor.getByPlaceholder('例如：客户').press('Tab');
+  expect((await checkedName).status(), 'Real name similarity precheck HTTP status').toBe(200);
+  const similarConcepts = page.getByRole('dialog', { name: '检测到相似概念' });
+  await expect(similarConcepts).toBeVisible();
+  await similarConcepts.getByRole('button', { name: '继续创建', exact: true }).click();
+  await expect(similarConcepts).toHaveCount(0);
+  await expect(editor.getByPlaceholder('例如：customer')).toHaveValue(slug);
+  await expect(editor.getByPlaceholder('例如：客户')).toHaveValue(name);
   const savedWip = page.waitForResponse(r => pathOf(r.url()) === '/api/v1/ont/v2/object-types/wip' && r.request().method() === 'POST');
   await editor.getByRole('button', { name: '保存草稿', exact: true }).click();
   const wipResponse = await savedWip;

@@ -2,7 +2,7 @@ import httpx
 import pytest
 
 
-def test_forwarded_user_auth_overrides_callsite_identity_headers():
+def test_forwarded_user_auth_overrides_callsite_identity_headers() -> None:
     from mate_clients.security.outgoing import ForwardedUserAuth
 
     auth = ForwardedUserAuth("Bearer verified-user", tenant_id="verified-tenant")
@@ -20,7 +20,7 @@ def test_forwarded_user_auth_overrides_callsite_identity_headers():
     "authorization,tenant",
     [("", "tenant"), ("Bearer ", "tenant"), ("Basic token", "tenant"), ("Bearer user", "")],
 )
-def test_forwarded_user_auth_rejects_incomplete_identity(authorization, tenant):
+def test_forwarded_user_auth_rejects_incomplete_identity(authorization: str, tenant: str) -> None:
     from mate_clients.security.outgoing import ForwardedUserAuth
 
     with pytest.raises(ValueError):
@@ -28,13 +28,15 @@ def test_forwarded_user_auth_rejects_incomplete_identity(authorization, tenant):
 
 
 @pytest.mark.asyncio
-async def test_user_client_preserves_verified_identity_for_relative_internal_requests(monkeypatch):
+async def test_user_client_preserves_verified_identity_for_relative_internal_requests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from mate_clients.security.outgoing import user_async_client
 
     actual_client = httpx.AsyncClient
-    observed = []
+    observed: list[tuple[str, str, str]] = []
 
-    def handler(request):
+    def handler(request: httpx.Request) -> httpx.Response:
         observed.append(
             (str(request.url), request.headers["Authorization"], request.headers["X-Tenant-Id"])
         )

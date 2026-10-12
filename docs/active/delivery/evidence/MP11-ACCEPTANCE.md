@@ -68,3 +68,17 @@ Canonical structural proof remains official OpenAPI3.1 errors0, exact moved-bloc
 历史源清单或归档清单中若记录了 Markdown 文件摘要，该摘要仍指向格式修订前的原始字节。原文可从 `d3539e85a58973a5531ae0585965c77bc5151619` 的对应 Git blob 只读获取并复核，例如 `git show d3539e85a58973a5531ae0585965c77bc5151619:docs/active/delivery/evidence/mp11-plan/task-1-report.md`。修订后的 Markdown 哈希不能冒充旧收据哈希；无需改写原始清单来掩盖格式变化。
 
 本轮文档复核命令与 CI 一致：使用 Python 3.12 和 `pymarkdownlnt==0.9.40` 执行 `python -m pymarkdown -d md013,md041 scan <本轮变更的 MD 文件清单>`，以及 `python scripts/ci/check_prd_skeleton.py --prd-dir docs/active/specs --evidence-dir docs/active/delivery/evidence --strict --files <同一清单>`。上述本地检查仅验证文档格式和骨架；PR103 的失败 job 仍以提交后的实际 CI 复跑为准。
+
+### a2d0aa8 PR CI 与云升级准备
+
+Commit：`a2d0aa8695ebf2fd67aa8c6ddcf3e703a8a32c98`；[ga CI](https://github.com/Bert0000000000/MetaPlatform/actions/runs/38281529990)、[browser CI](https://github.com/Bert0000000000/MetaPlatform/actions/runs/38281530051)。这是追加的整合快照，不改写上节 d3539e85 的历史结果。
+
+- ga format、gitleaks、必需 native PostgreSQL 和非特权 RLS job 成功。Native required job 完整执行六组 123 条及 modeling 52 条、0 skipped。
+- MP11 product job 实际执行 Data 31、AppHub 59、MCP 26、order-review 3，共 119 条、0 skipped；所有 pytest 步骤和 XML 检查成功，但精确 XML artifact 上传因隐藏目录未包含而失败。本轮修复只为指定 XML 开启隐藏文件上传。计数含内存/SQLite 与 PG 变体，不能称为 119 条纯 PostgreSQL 用例。
+- 浏览器中的迁移 2/2、Excel modeling 7/7 成功；核心确认 403 与 Builder 20/21 的相似概念交互失败尚需新提交实际复跑。新增源码修复不能把旧 CI 改为通过。
+- ga tests 和 ontology broad 收集时缺 signature crypto。本轮在 mate-platform 声明真实运行依赖 `pyjwt[crypto]`，并在 mate-tech-db 声明升级所需 Alembic；冻结锁的既有 230 个包版本未变，只有成员依赖元数据追加。
+- 本地云升级逻辑与启动边界 43/43；真实 RSA/JWKS 身份与转发客户端 62/62，测试 nodeid 集合未变，两文件 Pyright 0。命令：`python -m unittest discover -s infra/demo-cloud/tests`；后端 Python 3.12 执行两个对应 pytest 文件。只有逻辑/HTTP fixture 证据，不能替代真实 Keycloak、PG 或云端验收。
+- 实际 Docker Compose CLI（config，未启动容器）核对两个 metadata 消费服务的真实 command 与批准数据库目标。本轮 CI 将启动旧 realm，含受角色限制的旧 profile，连续迁移两次并验证管理员/普通用户实际 token；全部 schema 用例在独立 PostgreSQL job 完整运行并核对零跳过。
+- 原始证据在 a2d0aa8 的纯文本格式规范及对应原始字节保存见 [MP11-INTEGRATION-FORMAT](MP11-INTEGRATION-FORMAT.md)。上节“原始 JSON/log 不修改”描述的是 d3539e85 文档修订阶段；不能拿规范后的文件摘要冒充原收据。
+
+OpenAPI 原始固定比较仍为 270 ERR、37 WARN；精确审核材料见 ADR-0084。自动审批拒绝了持久接入这些例外，用户明确批准前清单保持 pending，ga-001 与 breaking-change 原入口保持失败。没有修改 Goal Board、Accepted 或 GA 状态，没有合并 #103、没有部署本轮腾讯云版本。新提交的 PR、main 与部署验收需分别追加实际结果。

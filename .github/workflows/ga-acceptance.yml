@@ -339,6 +339,7 @@ jobs:
         if: always()
         with:
           name: ontology-broad-results
+          include-hidden-files: true
           path: .ci/ontology-broad.xml
           if-no-files-found: error
           retention-days: 14
@@ -529,6 +530,9 @@ jobs:
       - name: Execute application identity and order binding acceptance
         working-directory: mate-platform-backend
         run: .venv/bin/python -m pytest packages/mate-app-hub/tests/test_mp11_app_identity.py packages/mate-app-hub/tests/test_apphub_order_binding.py packages/mate-app-hub/tests/test_mp11_read_scope.py -q --junitxml=../.ci/mp11-apphub-postgres.xml
+      - name: Execute additive demo schema upgrade on SQLite and real PostgreSQL
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-app-hub/tests/test_demo_schema_upgrade.py -q --junitxml=../.ci/mp11-demo-schema-postgres.xml
       - name: Execute MCP business client acceptance
         working-directory: mate-platform-backend
         run: .venv/bin/python -m pytest packages/mate-tech-mcp/tests/test_mp11_client_contract.py -q --junitxml=../.ci/mp11-mcp-postgres.xml
@@ -539,7 +543,7 @@ jobs:
         run: |
           python - <<'PY'
           from xml.etree import ElementTree as ET
-          for suite in ('data', 'apphub', 'mcp', 'order-review'):
+          for suite in ('data', 'apphub', 'demo-schema', 'mcp', 'order-review'):
               cases = list(ET.parse(f'.ci/mp11-{suite}-postgres.xml').getroot().iter('testcase'))
               assert cases, f'{suite}: no executed tests'
               assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error')), f'{suite}: every case must execute and pass'
@@ -549,6 +553,7 @@ jobs:
         if: always()
         with:
           name: mp11-product-postgres-results
+          include-hidden-files: true
           path: .ci/mp11-*-postgres.xml
           if-no-files-found: error
           retention-days: 14

@@ -2525,6 +2525,7 @@ dependencies = [
     { name = "pybreaker" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "redis" },
     { name = "sqlalchemy" },
     { name = "temporalio" },
@@ -2543,6 +2544,7 @@ requires-dist = [
     { name = "pybreaker", specifier = ">=1.2.0" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings", specifier = ">=2.0" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.13.0" },
     { name = "redis", specifier = ">=5.2.0" },
     { name = "sqlalchemy", specifier = ">=2.0.0" },
     { name = "temporalio", specifier = ">=1.16.0" },
@@ -2833,12 +2835,14 @@ name = "mate-tech-db"
 version = "0.1.0"
 source = { editable = "packages/mate-tech-db" }
 dependencies = [
+    { name = "alembic" },
     { name = "pydantic" },
     { name = "sqlalchemy" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "alembic", specifier = ">=1.14" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "sqlalchemy", specifier = ">=2.0" },
 ]
