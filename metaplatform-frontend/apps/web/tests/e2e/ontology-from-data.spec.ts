@@ -48,7 +48,18 @@ async function syncReviewedData(page: Page, repeat = false) {
   const response = await synced;
   expect(response.ok()).toBeTruthy();
   const result = await response.json();
-  expect(result.sync.status, result.sync.error ?? 'Sync must finish successfully').toBe('succeeded');
+  const authorization = response.request().headers()['authorization'];
+  expect(authorization).toBeTruthy();
+  await expect.poll(async () => {
+    const latest = await page.request.get(response.url().replace(/\/sync$/, ''), {
+      headers: { Authorization: authorization },
+    });
+    expect(latest.ok()).toBeTruthy();
+    const current = await latest.json();
+    const sync = current.sync;
+    if (Date.parse(sync.startedAt) < Date.parse(result.sync.startedAt)) return 'previous sync';
+    return sync.status === 'failed' ? `failed: ${sync.error}` : sync.status;
+  }, { timeout: 60_000, intervals: [250, 500, 1000], message: 'The newly requested sync must complete successfully' }).toBe('succeeded');
   await expect(page.getByRole('heading', { name: '同步结果 · 已完成', exact: true })).toBeVisible({ timeout: 60_000 });
 }
 
@@ -162,7 +173,10 @@ test('真实来源 → 人工候选审核 → 原生发布 → 重复同步 → 
   await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   const graph = page.getByLabel('候选本体图谱', { exact: true });
   await expect(graph.getByRole('button', { name: `查看本体类 物料-${prefix}` })).toBeVisible();
-  await expect(graph.getByText('库存所属物料 · N:1', { exact: true })).toBeVisible();
+  const stockRelation = graph.getByRole('button', { name: '查看关系 库存所属物料 · N:1', exact: true });
+  await stockRelation.press('Enter');
+  await expect(stockRelation.locator('text')).toHaveText('库存所属物料 · N:1');
+  await expect(stockRelation.locator('text')).toBeVisible();
   await graph.getByRole('button', { name: `查看本体类 库存-${prefix}` }).click();
   await expect(graph.getByLabel('候选模型详情')).toContainText('一个物料在一个仓库的库存余额');
   await graph.getByRole('button', { name: '适应本体图' }).click();
