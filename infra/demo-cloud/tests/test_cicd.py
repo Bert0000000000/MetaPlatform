@@ -6,6 +6,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import sys
 import tarfile
 import tempfile
@@ -111,6 +112,23 @@ def archive_bytes(name="docker-compose.yml", kind=None):
 
 
 class ArchiveTests(unittest.TestCase):
+    def test_source_remains_readable_by_the_non_root_runtime_under_strict_umask(self):
+        server = load("ci_server")
+        data = archive_bytes("mate-platform-backend/packages/probe/src/probe.py")
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "source"
+            previous = os.umask(0o077)
+            try:
+                server.unpack(io.BytesIO(data), target, hashlib.sha256(data).hexdigest())
+            finally:
+                os.umask(previous)
+            source = target / "mate-platform-backend/packages/probe/src/probe.py"
+            for parent in source.parents:
+                if parent == target:
+                    break
+                self.assertEqual(parent.stat().st_mode & 0o055, 0o055)
+            self.assertEqual(source.stat().st_mode & 0o044, 0o044)
+
     def test_retrying_a_release_cannot_overwrite_an_earlier_release_directory(self):
         server = load("ci_server")
         self.assertTrue(hasattr(server, "stage_source"), "Safe release retries are not implemented")
