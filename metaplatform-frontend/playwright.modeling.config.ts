@@ -6,6 +6,7 @@ const webPort = new URL(webBaseUrl).port || '9350';
 export default defineConfig({
   testDir: './apps/web/tests/e2e', testMatch: 'ontology-from-data.spec.ts',
   timeout: 180000, fullyParallel: false, workers: 1, retries: 0,
+  expect: { timeout: 15_000 },
   forbidOnly: !!process.env.CI,
   reporter: [['list'], ['junit', { outputFile: 'test-results/modeling.xml' }]],
   outputDir: 'test-results/modeling-artifacts',
