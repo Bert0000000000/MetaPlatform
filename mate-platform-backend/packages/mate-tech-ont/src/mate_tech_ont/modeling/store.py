@@ -145,13 +145,17 @@ class ModelingStore:
         with self.connection() as cur:
             if candidate is not None:
                 # Concurrent requests converge on the first complete baseline.
-                cur.execute("""INSERT INTO ont_modeling_generation_cache (tenant_id,fingerprint,document)
+                cur.execute(
+                    """INSERT INTO ont_modeling_generation_cache (tenant_id,fingerprint,document)
                     VALUES (%s,%s,%s::jsonb) ON CONFLICT DO NOTHING""",
-                            (self.tenant, fingerprint, json.dumps(candidate, ensure_ascii=False)))
-            cur.execute("SELECT document FROM ont_modeling_generation_cache WHERE tenant_id=%s AND fingerprint=%s",
-                        (self.tenant, fingerprint))
+                    (self.tenant, fingerprint, json.dumps(candidate, ensure_ascii=False)),
+                )
+            cur.execute(
+                "SELECT document FROM ont_modeling_generation_cache WHERE tenant_id=%s AND fingerprint=%s",
+                (self.tenant, fingerprint),
+            )
             row = cur.fetchone()
-            return row['document'] if row else None
+            return row["document"] if row else None
 
     def update(self, ident, revision, changes, *, increment=True):
         with self.connection() as cur:
@@ -192,7 +196,7 @@ class ModelingStore:
                 for field in ("job", "publication", "sync", "dataRepair"):
                     if (row["document"].get(field) or {}).get("status") != "running":
                         continue
-                    kind = "modeling-job" if field in {'job', 'dataRepair'} else "modeling"
+                    kind = "modeling-job" if field in {"job", "dataRepair"} else "modeling"
                     key = self.tenant + ":" + kind + ":" + row["id"]
                     cur.execute(
                         "SELECT pg_try_advisory_lock(hashtextextended(%s,0)) AS acquired", (key,)

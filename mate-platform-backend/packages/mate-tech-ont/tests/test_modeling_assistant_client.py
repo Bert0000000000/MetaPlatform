@@ -7,75 +7,111 @@ from .test_modeling_core import draft
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('terminal', ['result', 'missing', 'error'])
-async def test_generation_stream_forwards_progress_and_requires_terminal_result(monkeypatch, terminal):
-    import httpx
+@pytest.mark.parametrize("terminal", ["result", "missing", "error"])
+async def test_generation_stream_forwards_progress_and_requires_terminal_result(
+    monkeypatch, terminal
+):
     import json
+
+    import httpx
+
     original = httpx.AsyncClient
-    events = [{'type':'progress','progress':{'stage':'mapping','batch':1,'totalBatches':2}}]
-    if terminal == 'result':
-        events.append({'type':'result','result':{'draft':{}}})
-    elif terminal == 'error':
-        events.append({'type':'error','status':502,'detail':'unexpected-secret-provider-response'})
+    events = [{"type": "progress", "progress": {"stage": "mapping", "batch": 1, "totalBatches": 2}}]
+    if terminal == "result":
+        events.append({"type": "result", "result": {"draft": {}}})
+    elif terminal == "error":
+        events.append(
+            {"type": "error", "status": 502, "detail": "unexpected-secret-provider-response"}
+        )
 
     def handler(request):
-        assert request.headers['Accept'] == 'text/event-stream'
-        return httpx.Response(200, headers={'content-type':'text/event-stream'}, text=''.join('data: ' + json.dumps(event) + '\n\n' for event in events))
+        assert request.headers["Accept"] == "text/event-stream"
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            text="".join("data: " + json.dumps(event) + "\n\n" for event in events),
+        )
 
-    monkeypatch.setattr(assistant_client.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
+    monkeypatch.setattr(
+        assistant_client.httpx,
+        "AsyncClient",
+        lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
+    )
     seen = []
+
     async def progress(value):
         seen.append(value)
+
     token = assistant_client.generation_progress.set(progress)
     try:
-        if terminal == 'result':
-            assert await assistant_client._post('generate', {}, 'Bearer user', 'tenant') == {'draft':{}}
+        if terminal == "result":
+            assert await assistant_client._post("generate", {}, "Bearer user", "tenant") == {
+                "draft": {}
+            }
         else:
             with pytest.raises(HTTPException) as caught:
-                await assistant_client._post('generate', {}, 'Bearer user', 'tenant')
-            assert '草稿未修改' in caught.value.detail
-            assert 'secret' not in caught.value.detail
-        assert seen == [events[0]['progress']]
+                await assistant_client._post("generate", {}, "Bearer user", "tenant")
+            assert "草稿未修改" in caught.value.detail
+            assert "secret" not in caught.value.detail
+        assert seen == [events[0]["progress"]]
     finally:
         assistant_client.generation_progress.reset(token)
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('operation,sheets,expected', [('generate', 1, 600), ('generate', 25, 2040), ('review', 25, 600)])
-async def test_multi_batch_generation_gets_a_bounded_read_budget(monkeypatch, operation, sheets, expected):
+@pytest.mark.parametrize(
+    "operation,sheets,expected", [("generate", 1, 600), ("generate", 25, 2040), ("review", 25, 600)]
+)
+async def test_multi_batch_generation_gets_a_bounded_read_budget(
+    monkeypatch, operation, sheets, expected
+):
     import httpx
+
     original = httpx.AsyncClient
     observed = []
 
     def client(**kwargs):
-        observed.append(kwargs['timeout'])
-        return original(transport=httpx.MockTransport(lambda request: httpx.Response(200, json={})), **kwargs)
+        observed.append(kwargs["timeout"])
+        return original(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json={})), **kwargs
+        )
 
-    monkeypatch.setattr(assistant_client.httpx, 'AsyncClient', client)
-    await assistant_client._post(operation, {'profile':{'sheets':[{}] * sheets}}, 'Bearer user', 'tenant')
+    monkeypatch.setattr(assistant_client.httpx, "AsyncClient", client)
+    await assistant_client._post(
+        operation, {"profile": {"sheets": [{}] * sheets}}, "Bearer user", "tenant"
+    )
     assert observed[0].read == expected
     assert observed[0].connect == 15
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('failure,expected', [('timeout', '等待超时'), ('connect', '无法连接'), ('invalid', '无效响应')])
-async def test_service_transport_failures_have_distinct_safe_messages(monkeypatch, failure, expected, caplog):
+@pytest.mark.parametrize(
+    "failure,expected", [("timeout", "等待超时"), ("connect", "无法连接"), ("invalid", "无效响应")]
+)
+async def test_service_transport_failures_have_distinct_safe_messages(
+    monkeypatch, failure, expected, caplog
+):
     import httpx
+
     original = httpx.AsyncClient
 
     def handler(request):
-        if failure == 'timeout':
-            raise httpx.ReadTimeout('secret-url', request=request)
-        if failure == 'connect':
-            raise httpx.ConnectError('secret-url', request=request)
-        return httpx.Response(200, text='secret-body')
+        if failure == "timeout":
+            raise httpx.ReadTimeout("secret-url", request=request)
+        if failure == "connect":
+            raise httpx.ConnectError("secret-url", request=request)
+        return httpx.Response(200, text="secret-body")
 
-    monkeypatch.setattr(assistant_client.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
+    monkeypatch.setattr(
+        assistant_client.httpx,
+        "AsyncClient",
+        lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
+    )
     with pytest.raises(HTTPException) as caught:
-        await assistant_client._post('generate', {}, 'Bearer user', 'tenant')
+        await assistant_client._post("generate", {}, "Bearer user", "tenant")
     assert expected in caught.value.detail
-    assert '草稿未修改' in caught.value.detail
-    assert 'secret' not in caught.value.detail + caplog.text
+    assert "草稿未修改" in caught.value.detail
+    assert "secret" not in caught.value.detail + caplog.text
 
 
 @pytest.mark.asyncio
@@ -242,8 +278,14 @@ async def test_malformed_provider_output_has_safe_field_diagnostics(monkeypatch)
         ("AI 建模结果不符合结构或跨表概念约束，草稿未修改", True),
         ("无法连接 AI 模型服务，自动重试后仍失败，请检查服务地址和网络；草稿未修改", True),
         ("AI 模型服务响应超时，请稍后重试；草稿未修改", True),
-        ("AI 建模结果不符合结构或跨表概念约束，草稿未修改（mapping_unknown_class：映射引用了全局候选中不存在的对象类型）", True),
-        ("AI 建模结果不符合结构或跨表概念约束，草稿未修改（mapping_unknown_class：secret-value）", False),
+        (
+            "AI 建模结果不符合结构或跨表概念约束，草稿未修改（mapping_unknown_class：映射引用了全局候选中不存在的对象类型）",
+            True,
+        ),
+        (
+            "AI 建模结果不符合结构或跨表概念约束，草稿未修改（mapping_unknown_class：secret-value）",
+            False,
+        ),
         ("unexpected-secret-provider-response", False),
     ],
 )

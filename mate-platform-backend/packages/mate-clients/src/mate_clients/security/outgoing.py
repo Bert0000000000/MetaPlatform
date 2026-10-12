@@ -2,9 +2,36 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 import httpx
 
 from .bearer import BearerAuth
+
+
+class ForwardedUserAuth(httpx.Auth):
+    """Forward an already verified user token with its authenticated tenant."""
+
+    def __init__(self, authorization: str, *, tenant_id: str) -> None:
+        scheme, _, token = authorization.strip().partition(" ")
+        if scheme.lower() != "bearer" or not token.strip() or not tenant_id:
+            raise ValueError("A verified user bearer token and tenant are required")
+        self._authorization = "Bearer " + token.strip()
+        self._tenant_id = tenant_id
+
+    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
+        request.headers["Authorization"] = self._authorization
+        request.headers["X-Tenant-Id"] = self._tenant_id
+        yield request
+
+
+def user_async_client(
+    authorization: str, *, tenant_id: str, timeout: httpx.Timeout | float
+) -> httpx.AsyncClient:
+    """Construct the ACL transport for user-delegated internal service calls."""
+    return httpx.AsyncClient(
+        auth=ForwardedUserAuth(authorization, tenant_id=tenant_id), timeout=timeout
+    )
 
 
 class OutgoingAuthMiddleware:

@@ -1677,8 +1677,14 @@ async def apply_schema_wip(
     if confirm_name:
         payload["confirm_name"] = confirm_name
     dto = ObjectTypeDTO(**payload)
-    if expected_payload_checksum and definition_checksum(_ot_to_row(_dto_to_ot(dto))) != expected_payload_checksum:
-        raise HTTPException(status_code=409, detail="WIP payload changed after review; reopen the draft before publishing")
+    if (
+        expected_payload_checksum
+        and definition_checksum(_ot_to_row(_dto_to_ot(dto))) != expected_payload_checksum
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="WIP payload changed after review; reopen the draft before publishing",
+        )
     # 显式 expected_checksum 优先；否则用草稿基线（自动发现"我编辑期间别人已改过"）
     declared = expected_checksum or str(wip.get("base_checksum") or "")
     if declared:

@@ -64,7 +64,9 @@ class Class(Strict):
     parentClassId: Slug | None = None
     inheritanceReason: str = Field(default="", max_length=1000)
     grain: str = Field(default="", max_length=500)
-    identityStatus: Literal["legacy", "proposed", "confirmed", "unresolved", "source-record"] = "legacy"
+    identityStatus: Literal["legacy", "proposed", "confirmed", "unresolved", "source-record"] = (
+        "legacy"
+    )
     identityCandidate: list[Slug] = Field(default_factory=list, max_length=4)
     identityReason: str = Field(default="", max_length=1000)
     uniqueKeys: list[UniqueKey] = Field(default_factory=list, max_length=4)
@@ -651,7 +653,8 @@ def _apply_instance_edits(model, entities, classes, report, isolate_conflicts=Fa
             report.issue(
                 "error",
                 entity["key"],
-                "同身份实例非空属性冲突：" + "、".join(sorted(entity["conflicts"]))
+                "同身份实例非空属性冲突："
+                + "、".join(sorted(entity["conflicts"]))
                 + f"；对象 {cls.name}，粒度：{cls.grain or '未说明'}；来源行：{locations or '手工维护'}。"
                 + "请核对数据错误、版本或粒度差异后处理，不应直接覆盖冲突值。",
             )
@@ -786,11 +789,15 @@ def validate_ontology(value, require_review=True):
         report.config_hash = digest(model.model_dump())
         from .scope import publication_scope
 
-        model = model.model_copy(update={
-            "classes": [c for c in model.classes if c.included],
-            "relationships": [r for r in model.relationships if r.included],
-            "semantics": ModelingSemantics.model_validate(publication_scope(model.model_dump()).get("semantics", {})),
-        })
+        model = model.model_copy(
+            update={
+                "classes": [c for c in model.classes if c.included],
+                "relationships": [r for r in model.relationships if r.included],
+                "semantics": ModelingSemantics.model_validate(
+                    publication_scope(model.model_dump()).get("semantics", {})
+                ),
+            }
+        )
         if not model.classes:
             report.issue("error", "draft", "请至少选择一个对象类型用于本次发布")
         report.class_counts = {c.id: 0 for c in model.classes}
@@ -835,9 +842,18 @@ def _evaluate(value, rows, require_review, quarantine=None):
         return report.finish()
     entities = {}
     invalid_keys = set()
+
     def defer(kind, item, reason, sources=(), **extra):
-        quarantine.append({'kind': kind, 'item': item, 'reason': reason,
-                           'sources': [{'sheet': r['sheet'], 'row': r['row']} for r in sources], **extra})
+        quarantine.append(
+            {
+                "kind": kind,
+                "item": item,
+                "reason": reason,
+                "sources": [{"sheet": r["sheet"], "row": r["row"]} for r in sources],
+                **extra,
+            }
+        )
+
     for mapping in model.mappings:
         cls = classes[mapping.classId]
         for row in grouped.get(mapping.sheet, []):
@@ -853,7 +869,7 @@ def _evaluate(value, rows, require_review, quarantine=None):
                 if quarantine is None:
                     report.issue("error", mapping.id, "identity 身份属性存在空值")
                 else:
-                    defer('row', mapping.id, 'identity 身份属性存在空值', [row], classId=cls.id)
+                    defer("row", mapping.id, "identity 身份属性存在空值", [row], classId=cls.id)
                 continue
             key = (
                 f"entity:{cls.id}:" + digest(identity)[:24]
@@ -863,7 +879,13 @@ def _evaluate(value, rows, require_review, quarantine=None):
             source_id = (row["sheet"], row["row"])
             if quarantine is not None and row_report.errors:
                 invalid_keys.add(key)
-                defer('row', mapping.id, '；'.join(i['message'] for i in row_report.issues), [row], classId=cls.id)
+                defer(
+                    "row",
+                    mapping.id,
+                    "；".join(i["message"] for i in row_report.issues),
+                    [row],
+                    classId=cls.id,
+                )
                 continue
             if key not in entities:
                 entities[key] = {
@@ -898,11 +920,22 @@ def _evaluate(value, rows, require_review, quarantine=None):
         # Invalid edit references or identity edits remain configuration blockers.
         _apply_instance_edits(model, entities, classes, report, isolate_conflicts=True)
         for key, entity in entities.items():
-            if entity['conflicts'] or key in invalid_keys:
-                reason = '同身份实例非空属性冲突：' + '、'.join(sorted(entity['conflicts'])) if entity['conflicts'] else '同身份的其他来源记录存在类型错误，整个身份组暂缓'
-                defer('entity', key, reason, entity['sources'], classId=entity['classId'],
-                      conflicts=sorted(entity['conflicts']), identity=entity['identity'])
-                entity['excluded'] = True
+            if entity["conflicts"] or key in invalid_keys:
+                reason = (
+                    "同身份实例非空属性冲突：" + "、".join(sorted(entity["conflicts"]))
+                    if entity["conflicts"]
+                    else "同身份的其他来源记录存在类型错误，整个身份组暂缓"
+                )
+                defer(
+                    "entity",
+                    key,
+                    reason,
+                    entity["sources"],
+                    classId=entity["classId"],
+                    conflicts=sorted(entity["conflicts"]),
+                    identity=entity["identity"],
+                )
+                entity["excluded"] = True
     link_edits = _check_link_edits(model, entities, report)
     if report.errors:
         return report.finish()
@@ -916,8 +949,14 @@ def _evaluate(value, rows, require_review, quarantine=None):
         invalid_unique = check_unique_values(model, active, unique_report)
         for key, entity in list(active.items()):
             if key in invalid_unique:
-                defer('entity', key, '已确认替代唯一键为空或重复，相关身份组暂缓', entity['sources'], classId=entity['classId'])
-                entity['excluded'] = True
+                defer(
+                    "entity",
+                    key,
+                    "已确认替代唯一键为空或重复，相关身份组暂缓",
+                    entity["sources"],
+                    classId=entity["classId"],
+                )
+                entity["excluded"] = True
                 del active[key]
     if len(active) != len(entities):
         report.issue("warning", "instanceEdits", "已排除实例，其关联边自动移除")
@@ -934,23 +973,36 @@ def _evaluate(value, rows, require_review, quarantine=None):
             if (ancestor, digest(entity["identity"])) in identity_index:
                 reason = f"同一业务身份同时生成父类 {ancestor} 和子类 {cls.id} 实例；请只映射到最具体的类"
                 if quarantine is None:
-                    report.issue('error', entity['key'], reason)
+                    report.issue("error", entity["key"], reason)
                 else:
-                    duplicate_keys.update([entity['key'], identity_index[(ancestor, digest(entity['identity']))]['key']])
+                    duplicate_keys.update(
+                        [
+                            entity["key"],
+                            identity_index[(ancestor, digest(entity["identity"]))]["key"],
+                        ]
+                    )
             ancestor = classes[ancestor].parentClassId
     if report.errors:
         return report.finish()
     for key in sorted(duplicate_keys):
         entity = active.pop(key)
-        defer('entity', key, '父子类重复生成同一身份，相关身份组暂缓', entity['sources'], classId=entity['classId'])
-        entity['excluded'] = True
+        defer(
+            "entity",
+            key,
+            "父子类重复生成同一身份，相关身份组暂缓",
+            entity["sources"],
+            classId=entity["classId"],
+        )
+        entity["excluded"] = True
     if quarantine is not None:
         # Remove manual links to every deferred endpoint, even after unique/inheritance checks.
         for link in model.links:
             if not link.excluded and (link.source not in active or link.target not in active):
-                defer('relationship', link.relationId, '人工连线端点暂缓，不写入该连线', count=1)
-        link_edits = {rid: [link for link in links if link.source in active and link.target in active]
-                      for rid, links in link_edits.items()}
+                defer("relationship", link.relationId, "人工连线端点暂缓，不写入该连线", count=1)
+        link_edits = {
+            rid: [link for link in links if link.source in active and link.target in active]
+            for rid, links in link_edits.items()
+        }
     edges = _compile_relations(model, active, link_edits, report)
     from .rules import check_edge_cardinality
 
@@ -959,14 +1011,19 @@ def _evaluate(value, rows, require_review, quarantine=None):
     else:
         edge_report = _Report()
         check_edge_cardinality(model, edges, edge_report)
-        bad_relations = {i['item'] for i in edge_report.issues if i['severity'] == 'error'}
+        bad_relations = {i["item"] for i in edge_report.issues if i["severity"] == "error"}
         for rid in sorted(bad_relations):
-            count = sum(e['relationId'] == rid for e in edges)
-            defer('relationship', rid, '实际连线违反已确认基数，本次暂缓该关系', count=count)
-        edges = [e for e in edges if e['relationId'] not in bad_relations]
+            count = sum(e["relationId"] == rid for e in edges)
+            defer("relationship", rid, "实际连线违反已确认基数，本次暂缓该关系", count=count)
+        edges = [e for e in edges if e["relationId"] not in bad_relations]
         for metric in report.metrics:
-            if metric['total'] > metric['matched']:
-                defer('relationship', metric['id'], '缺少可用目标或关联字段为空，不写入对应连线', count=metric['total'] - metric['matched'])
+            if metric["total"] > metric["matched"]:
+                defer(
+                    "relationship",
+                    metric["id"],
+                    "缺少可用目标或关联字段为空，不写入对应连线",
+                    count=metric["total"] - metric["matched"],
+                )
     if report.errors:
         return report.finish()
     nodes = [

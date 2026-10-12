@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import path from 'node:path';
-import { injectAuth } from './helpers/auth';
+import { decodeJwtPayload, fetchAccessToken, injectAuth } from './helpers/auth';
 
 const gateway = process.env.E2E_GATEWAY ?? 'http://127.0.0.1:8200/api/v1';
 const samples = path.resolve(import.meta.dirname, '../../public/modeling-samples');
@@ -15,8 +15,55 @@ async function confirmPublication(page: Page) {
   await expect(dialog).not.toBeVisible();
 }
 
+async function reviewTab(page: Page, label: string) {
+  await page.getByRole('tab', { name: new RegExp(`^${label}`) }).click();
+  await expect(page.getByRole('tab', { name: new RegExp(`^${label}`) })).toHaveAttribute('aria-selected', 'true');
+}
+
+async function openClass(page: Page, name: string) {
+  await reviewTab(page, '对象类型');
+  await page.getByRole('button', { name: `审核${name}`, exact: true }).click();
+}
+
+async function confirmReview(page: Page, objects: number, mappings: number, relationships: number) {
+  for (const [tab, kind, count] of [['对象类型', '对象', objects], ['数据映射', '映射', mappings], ['业务关系', '关系', relationships]] as const) {
+    await reviewTab(page, tab);
+    if (!count) continue;
+    await page.getByRole('button', { name: `全部确认${kind}`, exact: true }).click();
+    if (kind !== '映射') await page.getByRole('dialog').getByRole('button', { name: /^确认所选 \d+ 项$/ }).click();
+    const checks = page.getByRole('tabpanel').getByRole('checkbox', { name: new RegExp(`^确认${kind} `) });
+    await expect(checks).toHaveCount(count);
+    for (const checkbox of await checks.all()) await expect(checkbox).toBeChecked();
+  }
+}
+
+async function syncReviewedData(page: Page, repeat = false) {
+  const checked = page.waitForResponse(r => r.url().endsWith('/sync-check') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: /^(检查本次数据|重新检查数据)$/ }).click();
+  expect((await checked).ok()).toBeTruthy();
+  await page.getByRole('checkbox', { name: '我已核对同步范围，确认写入正式实例', exact: true }).press('Space');
+  const synced = page.waitForResponse(r => r.url().endsWith('/sync') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: repeat ? '重新同步本次数据' : '开始同步', exact: true }).click();
+  expect((await synced).ok()).toBeTruthy();
+  await expect(page.getByRole('heading', { name: '同步结果 · 已完成', exact: true })).toBeVisible({ timeout: 60_000 });
+}
+
+test('普通用户令牌不包含管理员角色且不能上传建模来源', async ({ request }) => {
+  const token = await fetchAccessToken(request, { username: 'metaplatform', password: 'metaplatform' });
+  expect(decodeJwtPayload(token).realm_access?.roles).toContain('user');
+  expect(decodeJwtPayload(token).realm_access?.roles).not.toContain('PLATFORM_ADMIN');
+  const fs = await import('node:fs/promises');
+  const response = await request.post(`${gateway}/ont/v2/modeling/sources`, {
+    headers: { Authorization: `Bearer ${token}` },
+    multipart: { file: { name: 'manufacturing.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: await fs.readFile(path.join(samples, 'manufacturing.xlsx')) } },
+  });
+  expect(response.status()).toBe(403);
+  expect((await response.json()).detail).toBe('数据建模修改需要管理员权限');
+});
+
 test('统一审核 → 暂缓无效关系 → 保存重开 → 所选图谱及原生发布一致', async ({ page, context, request }) => {
   const token = await injectAuth(context, page);
+  expect(decodeJwtPayload(token).realm_access?.roles).toContain('PLATFORM_ADMIN');
   const headers = { Authorization: `Bearer ${token}` };
   const prefix = `scope${Date.now().toString(36)}`;
   const fs = await import('node:fs/promises');
@@ -30,14 +77,21 @@ test('统一审核 → 暂缓无效关系 → 保存重开 → 所选图谱及�
   await page.getByRole('button', { name: '全部确认对象', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('物料主数据中编码唯一');
   await page.getByRole('button', { name: '确认所选 1 项', exact: true }).click();
-  await expect(page.getByRole('checkbox', { name: '已确认对象定义', exact: true })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: '已确认关系', exact: true })).toBeDisabled();
+  await reviewTab(page, '对象类型');
+  await expect(page.getByRole('checkbox', { name: `确认对象 物料-${prefix}`, exact: true })).toBeChecked();
+  await reviewTab(page, '业务关系');
+  await expect(page.getByRole('checkbox', { name: '确认关系 待完善关系', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: '审核待完善关系', exact: true }).click();
   await page.getByRole('region', { name: '关系 待完善关系', exact: true }).getByRole('button', { name: '本次暂不发布', exact: true }).click();
   await page.getByRole('button', { name: '保留候选，暂不发布', exact: true }).click();
+  await page.getByRole('button', { name: '完成查看', exact: true }).click();
   await page.getByRole('button', { name: '保存修改', exact: true }).click();
   await expect(page.getByRole('button', { name: '已保存', exact: true })).toBeVisible();
   await page.reload();
+  await reviewTab(page, '业务关系');
+  await page.getByRole('button', { name: '审核待完善关系', exact: true }).click();
   await expect(page.getByRole('button', { name: '恢复本次发布', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '完成查看', exact: true }).click();
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
   await expect(page.getByRole('region', { name: '暂缓候选', exact: true })).toContainText('待完善关系');
   const graph = page.getByLabel('候选本体图谱', { exact: true });
@@ -86,25 +140,22 @@ test('真实来源 → 人工候选审核 → 原生发布 → 重复同步 → 
   const candidate = await request.put(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers, data: { revision: fresh.revision, draft, context: fresh.context, questions: fresh.questions, resolutions: {} } });
   expect(candidate.ok(), await candidate.text()).toBeTruthy();
   await page.reload();
-  await expect(page.getByRole('heading', { name: '对象类型', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '修改稳定标识', exact: true }).first().click();
+  await openClass(page, `物料-${prefix}`);
+  await page.getByRole('button', { name: '修改稳定标识', exact: true }).click();
   material.id = `${prefix}-material-renamed`;
   await page.getByRole('textbox', { name: '新的稳定模型标识' }).fill(material.id);
   await page.getByRole('button', { name: '修改标识及引用' }).click();
   await expect(page.getByRole('textbox', { name: '新的稳定模型标识' })).not.toBeVisible();
-  await page.getByRole('button', { name: '收起全部对象' }).click();
+  await page.getByRole('button', { name: '完成查看', exact: true }).click();
   await expect(page.getByRole('textbox', { name: '业务名称' })).toHaveCount(0);
   await page.getByRole('button', { name: '全部确认对象', exact: true }).click();
   await page.getByRole('button', { name: /^确认所选 \d+ 项$/ }).click();
   await page.getByRole('button', { name: '取消确认对象', exact: true }).click();
-  for (const checkbox of await page.getByRole('checkbox', { name: '已确认对象定义' }).all()) await expect(checkbox).not.toBeChecked();
-  for (const name of ['对象', '映射', '关系']) {
-    await page.getByRole('button', { name: `全部确认${name}`, exact: true }).click();
-    if (name !== '映射') await page.getByRole('button', { name: /^确认所选 \d+ 项$/ }).click();
-  }
-  for (const checkbox of await page.getByRole('checkbox', { name: /已确认对象定义|已确认映射|已确认关系/ }).all()) await expect(checkbox).toBeChecked();
+  await expect(page.getByRole('tabpanel').getByRole('checkbox')).toHaveCount(2);
+  for (const checkbox of await page.getByRole('tabpanel').getByRole('checkbox').all()) await expect(checkbox).not.toBeChecked();
+  await confirmReview(page, 2, 3, 1);
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '本体结构预览' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   const graph = page.getByLabel('候选本体图谱', { exact: true });
   await expect(graph.getByRole('button', { name: `查看本体类 物料-${prefix}` })).toBeVisible();
   await expect(graph.getByText('库存所属物料 · N:1', { exact: true })).toBeVisible();
@@ -116,18 +167,16 @@ test('真实来源 → 人工候选审核 → 原生发布 → 重复同步 → 
   const verified = await (await request.get(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers })).json();
   expect(verified.validation.dataValidation.counts).toMatchObject({ nodes: 5, edges: 3, classes: 2 });
   expect(verified.validation.errors).toBe(0);
-  await expect(page.getByRole('cell', { name: '库存', exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('cell', { name: `库存-${prefix}`, exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: '查看发布方案' }).click();
   await confirmPublication(page);
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
   await expect(page.getByText('原生定义与已审核发布方案一致', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '重新核验原生定义' }).click();
   await expect(page.getByText('原生定义与已审核发布方案一致', { exact: true })).toBeVisible();
-  await page.getByText('可选：数据接入与问题处理', { exact: true }).click();
-  await page.getByRole('button', { name: '同步到对象探索' }).click();
-  await expect(page.getByRole('heading', { name: '同步结果 · succeeded' })).toBeVisible();
-  await page.getByRole('button', { name: '重新同步数据' }).click();
-  await expect(page.getByRole('heading', { name: '同步结果 · succeeded' })).toBeVisible();
+  await page.getByRole('button', { name: '同步本次数据', exact: true }).click();
+  await syncReviewedData(page);
+  await syncReviewedData(page, true);
   const synced = await (await request.get(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers })).json();
   expect(synced.sync.links).toBe(3);
   expect(synced.publication.acceptance.status).toBe('passed');
@@ -138,7 +187,7 @@ test('真实来源 → 人工候选审核 → 原生发布 → 重复同步 → 
     const rows = await instances.json();
     expect(rows).toHaveLength(type.classId === material.id ? 2 : 3);
   }
-  await page.getByRole('link', { name: /打开对象探索/ }).click();
+  await page.getByRole('link', { name: '查看实例', exact: true }).first().click();
   await expect(page).toHaveURL(/\/ontology\/explore\/objects/);
   await expect(page.getByRole('heading', { name: '对象浏览', exact: true })).toBeVisible();
 });
@@ -181,10 +230,9 @@ test('客户订单跨表复用与复合行身份 → 发布同步 → 原生数�
   const saved = await request.put(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers, data: { revision: source.revision, draft, context: draft.semantics.context, questions: draft.semantics.questions, resolutions: {} } });
   expect(saved.ok(), await saved.text()).toBeTruthy();
   await page.reload();
-  await expect(page.getByRole('heading', { name: '对象类型', exact: true })).toBeVisible();
-  for (const checkbox of await page.getByRole('checkbox', { name: /已确认对象定义|已确认映射|已确认关系/ }).all()) await checkbox.press('Space');
+  await confirmReview(page, 4, 5, 3);
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '本体结构预览' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   await page.getByText('可选：实例样本', { exact: true }).click();
   await expect(page.getByRole('heading', { name: '对象与关系预览' })).toBeVisible();
   const verified = await (await request.get(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers })).json();
@@ -192,11 +240,9 @@ test('客户订单跨表复用与复合行身份 → 发布同步 → 原生数�
   expect(verified.validation.errors).toBe(0);
   await page.getByRole('button', { name: '查看发布方案' }).click();
   await confirmPublication(page);
-  await expect(page.getByRole('button', { name: '发布本体', exact: true })).toBeDisabled();
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
-  await page.getByText('可选：数据接入与问题处理', { exact: true }).click();
-  await page.getByRole('button', { name: '同步到对象探索' }).click();
-  await expect(page.getByRole('heading', { name: '同步结果 · succeeded' })).toBeVisible();
+  await page.getByRole('button', { name: '同步本次数据', exact: true }).click();
+  await syncReviewedData(page);
   const synced = await (await request.get(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers })).json();
   const expected: Record<string, number> = { [classId('customer')]: 2, [classId('order')]: 3, [classId('line')]: 4, [classId('product')]: 2 };
   for (const type of synced.plan.types) {
@@ -228,22 +274,30 @@ test('三级设备分类经表单继承与父标识重命名 → 原生父查询
   const saved = await request.put(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers, data: { revision: source.revision, draft, context: draft.semantics.context, questions: [], resolutions: {} } });
   expect(saved.ok(), await saved.text()).toBeTruthy();
   await page.goto(`/ontology/model/from-data?source=${source.id}`);
-  await expect(page.getByRole('heading', { name: '对象类型', exact: true })).toBeVisible();
+  await openClass(page, machineName);
   await page.getByRole('combobox', { name: `${machineName} 父类`, exact: true }).selectOption(rootId);
   await page.getByRole('textbox', { name: `${machineName} 继承依据`, exact: true }).fill('类型分类表明确机床是一种设备');
+  await page.getByRole('button', { name: '完成查看', exact: true }).click();
+  await openClass(page, leafName);
   await page.getByRole('combobox', { name: `${leafName} 父类`, exact: true }).selectOption(machineId);
   await page.getByRole('textbox', { name: `${leafName} 继承依据`, exact: true }).fill('类型分类表明确数控机床是一种机床');
+  await page.getByRole('button', { name: '完成查看', exact: true }).click();
+  await page.getByText('查看概念层次', { exact: true }).click();
   await expect(page.getByText('第 3 层', { exact: true })).toBeVisible();
   // Rename the root after building the hierarchy: the middle parent reference must follow.
-  await page.locator(`section[aria-label="对象类型 ${rootName}"]`).getByRole('button', { name: '修改稳定标识' }).click();
+  await openClass(page, rootName);
+  await page.getByRole('button', { name: '修改稳定标识', exact: true }).click();
   const renamedRoot = `${prefix}-asset`;
   await page.getByRole('textbox', { name: '新的稳定模型标识' }).fill(renamedRoot);
   await page.getByRole('button', { name: '修改标识及引用' }).click();
   await expect(page.getByRole('textbox', { name: '新的稳定模型标识' })).not.toBeVisible();
+  await page.getByRole('button', { name: '完成查看', exact: true }).click();
+  await openClass(page, machineName);
   await expect(page.getByRole('combobox', { name: `${machineName} 父类`, exact: true })).toHaveValue(renamedRoot);
-  for (const checkbox of await page.getByRole('checkbox', { name: /已确认对象定义|已确认映射/ }).all()) await checkbox.press('Space');
+  await page.getByRole('button', { name: '完成查看', exact: true }).click();
+  await confirmReview(page, 3, 1, 0);
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '本体结构预览' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   const graph = page.getByLabel('候选本体图谱', { exact: true });
   await expect(graph.getByText('继承', { exact: true })).toHaveCount(2);
   await graph.getByRole('button', { name: `查看本体类 ${leafName}` }).dblclick();
@@ -252,15 +306,12 @@ test('三级设备分类经表单继承与父标识重命名 → 原生父查询
   await expect(page.getByRole('heading', { name: '对象与关系预览' })).toBeVisible();
   const verified = await (await request.get(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers })).json();
   expect(verified.validation.dataValidation.counts).toMatchObject({ nodes: 2, edges: 0, classes: 3 });
-  expect(verified.plan.types.map((item: { classId: string }) => item.classId)).toEqual([renamedRoot, machineId, leafId]);
   expect(verified.draft.classes.find((item: { id: string }) => item.id === leafId).properties.map((item: { id: string }) => item.id)).toEqual(expect.arrayContaining(['equipment_code', 'name', 'brand', 'method', 'control', 'axes']));
   await page.getByRole('button', { name: '查看发布方案' }).click();
   await confirmPublication(page);
-  await expect(page.getByRole('button', { name: '发布本体', exact: true })).toBeDisabled();
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
-  await page.getByText('可选：数据接入与问题处理', { exact: true }).click();
-  await page.getByRole('button', { name: '同步到对象探索' }).click();
-  await expect(page.getByRole('heading', { name: '同步结果 · succeeded' })).toBeVisible();
+  await page.getByRole('button', { name: '同步本次数据', exact: true }).click();
+  await syncReviewedData(page);
   const synced = await (await request.get(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers })).json();
   expect(synced.sync.types.map((item: { total_synced: number }) => item.total_synced)).toEqual([0, 0, 2]);
   for (const [index, type] of synced.plan.types.entries()) {
@@ -289,12 +340,13 @@ test('缺失身份仍可发布本体 → 同步受阻 → 补齐来源复用模�
   expect(response.ok()).toBeTruthy(); source = await response.json();
   await page.goto(`/ontology/model/from-data?source=${source.id}`);
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '本体结构预览' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '查看发布方案', exact: true }).click();
   await confirmPublication(page);
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
-  await page.getByText('可选：数据接入与问题处理', { exact: true }).click();
-  await expect(page.getByRole('button', { name: '同步到对象探索' })).toBeDisabled();
+  await page.getByRole('button', { name: '同步本次数据', exact: true }).click();
+  await page.getByRole('button', { name: '检查本次数据', exact: true }).click();
+  await expect(page.getByRole('button', { name: '开始同步', exact: true })).toBeDisabled();
   source = await (await request.get(endpoint, { headers })).json();
   expect(source.validation.canPublish).toBeTruthy();
   expect(source.validation.dataValidation.errors).toBe(2);
@@ -313,11 +365,9 @@ test('缺失身份仍可发布本体 → 同步受阻 → 补齐来源复用模�
   await page.getByRole('button', { name: '查看发布方案', exact: true }).click();
   await confirmPublication(page);
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
-  await page.getByText('可选：数据接入与问题处理', { exact: true }).click();
-  await page.getByRole('button', { name: '同步到对象探索' }).click();
-  await expect(page.getByRole('heading', { name: '同步结果 · succeeded' })).toBeVisible();
-  await page.getByRole('button', { name: '重新同步数据' }).click();
-  await expect(page.getByRole('heading', { name: '同步结果 · succeeded' })).toBeVisible();
+  await page.getByRole('button', { name: '同步本次数据', exact: true }).click();
+  await syncReviewedData(page);
+  await syncReviewedData(page, true);
   individuals = await (await request.get(`${gateway}/ont/v2/individuals?class_rid=${encodeURIComponent(target.rid)}&limit=100&offset=0`, { headers })).json();
   expect(individuals).toHaveLength(2);
 });

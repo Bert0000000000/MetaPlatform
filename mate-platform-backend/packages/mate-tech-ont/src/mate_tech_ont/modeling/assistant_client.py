@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import os
-import logging
 import json
+import logging
+import os
 from contextvars import ContextVar
 
 import httpx
 from fastapi import HTTPException
 from pydantic import ValidationError
+
+from mate_clients.security.outgoing import user_async_client
 
 from .core import Draft
 from .quality import validate_review
@@ -37,12 +39,20 @@ async def _post(operation, payload, authorization, tenant):
         sheet_count = len(payload.get("profile", {}).get("sheets", []))
         batches = (min(sheet_count, 40) + 2) // 3 if operation == "generate" else 1
         read_timeout = 600 + 180 * max(0, batches - 1)
-        async with httpx.AsyncClient(timeout=httpx.Timeout(read_timeout, connect=15)) as client:
+        async with user_async_client(
+            headers["Authorization"],
+            tenant_id=tenant,
+            timeout=httpx.Timeout(read_timeout, connect=15),
+        ) as client:
             callback = generation_progress.get() if operation == "generate" else None
             url = base.rstrip("/") + "/api/v1/copilot/modeling/" + operation
             if callback:
-                async with client.stream("POST", url, headers={**headers, "Accept": "text/event-stream"}, json=payload) as streamed:
-                    if streamed.status_code == 200 and "text/event-stream" in streamed.headers.get("content-type", ""):
+                async with client.stream(
+                    "POST", url, headers={**headers, "Accept": "text/event-stream"}, json=payload
+                ) as streamed:
+                    if streamed.status_code == 200 and "text/event-stream" in streamed.headers.get(
+                        "content-type", ""
+                    ):
                         response = None
                         async for line in streamed.aiter_lines():
                             if not line.startswith("data:"):
@@ -55,7 +65,9 @@ async def _post(operation, payload, authorization, tenant):
                                     raise ValueError("invalid result")
                                 return event["result"]
                             elif event.get("type") == "error":
-                                response = httpx.Response(event.get("status", 502), json={"detail": event.get("detail")})
+                                response = httpx.Response(
+                                    event.get("status", 502), json={"detail": event.get("detail")}
+                                )
                                 break
                         if response is None:
                             raise ValueError("incomplete progress stream")
@@ -89,7 +101,9 @@ async def _post(operation, payload, authorization, tenant):
                 "mapping_unknown_column": "映射引用了工作表中不存在的字段",
                 "mapping_limit": "映射数量超过支持上限",
             }.items():
-                safe_messages.add(f"AI 建模结果不符合结构或跨表概念约束，草稿未修改（{code}：{explanation}）")
+                safe_messages.add(
+                    f"AI 建模结果不符合结构或跨表概念约束，草稿未修改（{code}：{explanation}）"
+                )
             message = (
                 detail
                 if isinstance(detail, str) and detail in safe_messages
@@ -101,13 +115,25 @@ async def _post(operation, payload, authorization, tenant):
             raise ValueError("invalid response")
         return result
     except httpx.TimeoutException:
-        logger.warning("modeling service request failed: operation=%s error_type=timeout", operation)
-        raise HTTPException(502, "AI 建模任务等待超时，草稿未修改；请检查任务状态后再重试") from None
+        logger.warning(
+            "modeling service request failed: operation=%s error_type=timeout", operation
+        )
+        raise HTTPException(
+            502, "AI 建模任务等待超时，草稿未修改；请检查任务状态后再重试"
+        ) from None
     except httpx.HTTPError as exc:
-        logger.warning("modeling service request failed: operation=%s error_type=%s", operation, type(exc).__name__)
-        raise HTTPException(502, "无法连接 AI 建模服务，草稿未修改；请检查建模服务运行状态") from None
+        logger.warning(
+            "modeling service request failed: operation=%s error_type=%s",
+            operation,
+            type(exc).__name__,
+        )
+        raise HTTPException(
+            502, "无法连接 AI 建模服务，草稿未修改；请检查建模服务运行状态"
+        ) from None
     except ValueError:
-        logger.warning("modeling service request failed: operation=%s error_type=invalid_response", operation)
+        logger.warning(
+            "modeling service request failed: operation=%s error_type=invalid_response", operation
+        )
         raise HTTPException(502, "AI 建模服务返回了无效响应；草稿未修改") from None
 
 
@@ -150,6 +176,7 @@ async def generate(profile, context, questions, existing_types, authorization, t
         for definition in draft["semantics"]["definitions"]:
             definition["confirmed"] = False
         from .rules import relationship_field_problem
+
         model = Draft.model_validate(draft)
         classes = {c.id: c for c in model.classes}
         pending = []
@@ -158,7 +185,12 @@ async def generate(profile, context, questions, existing_types, authorization, t
             if problem:
                 pending.append(f"「{relation.name}」：{problem}")
         if pending and len(model.notes) < 30:
-            model.notes.append(("关系待完善（请在候选审核中处理，不会自动确认或移出发布范围）：" + "；".join(pending))[:1000])
+            model.notes.append(
+                (
+                    "关系待完善（请在候选审核中处理，不会自动确认或移出发布范围）："
+                    + "；".join(pending)
+                )[:1000]
+            )
         return Draft.model_validate(model.model_dump()).model_dump()
     except ValidationError as exc:
         # Locations and machine error codes only; never expose provider values or raw output.
