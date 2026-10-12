@@ -423,6 +423,7 @@ jobs:
           mate-platform-backend/.venv/bin/python - <<'PY'
           import os
           import secrets
+          import tomllib
           from pathlib import Path
           import psycopg2
           from psycopg2 import sql
@@ -447,6 +448,12 @@ jobs:
               identity = cursor.fetchone()
               assert identity == (database, False, False, False, False), identity
           with Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8') as env:
+              # Child Python workers need the same workspace imports as pytest.
+              backend = Path('mate-platform-backend').resolve()
+              with (backend / 'pyproject.toml').open('rb') as config_file:
+                  config = tomllib.load(config_file)
+              source_paths = [str((backend / path).resolve()) for path in config['tool']['pytest']['ini_options']['pythonpath']]
+              env.write(f'PYTHONPATH={os.pathsep.join(source_paths)}\n')
               for name in ('MP11_SOURCE_PG_DSN', 'MP11_APPHUB_PG_DSN', 'MP11_APP_ID_PG_DSN'):
                   env.write(f'{name}={dsn}\n')
               env.write(f'MP11_SOURCE_ADMIN_DSN={admin_dsn}\nMP11_OWNED_PG_DATABASE={database}\n')

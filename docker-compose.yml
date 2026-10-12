@@ -935,8 +935,8 @@ services:
       ONT_SYNC_INTERVAL_SECONDS: ${ONT_SYNC_INTERVAL_SECONDS:-300}
       # 真实源库 DSN（dev = 同实例 PG；生产换业务源库）
       ONT_SOURCE_DSN: ${ONT_SOURCE_DSN:-postgresql://meta:meta@postgres:5432/metaplatform_ont}
-      # Excel staging must use the platform database with the nonprivileged app role.
-      ONT_MODELING_SOURCE_DSN: ${ONT_MODELING_SOURCE_DSN:-postgresql://${ONT_APP_USER:-mate_app}:${ONT_APP_PASSWORD:-mate_app}@postgres:5432/metaplatform_ont}
+      # Explicit nonprivileged reader for Excel staging in the active kernel database.
+      ONT_MODELING_SOURCE_DSN: ${ONT_MODELING_SOURCE_DSN:-}
       LLMGW_EMBED_URL: http://mate-tech-llmgw:8008/api/v1/llmgw/embeddings
       LLMGW_EMBED_MODEL: ${LLMGW_EMBED_MODEL:-doubao-embedding-vision}
       ONT_VECTOR_DIM: ${ONT_VECTOR_DIM:-2048}

@@ -19,6 +19,7 @@ async function confirmPublication(page: Page) {
 }
 
 async function reviewTab(page: Page, label: string) {
+  await page.getByRole('navigation', { name: '逆向发现本体流程', exact: true }).getByRole('button', { name: /候选匹配与合并确认/ }).click();
   await page.getByRole('tab', { name: new RegExp(`^${label}`) }).click();
   await expect(page.getByRole('tab', { name: new RegExp(`^${label}`) })).toHaveAttribute('aria-selected', 'true');
 }
@@ -47,7 +48,21 @@ async function syncReviewedData(page: Page, repeat = false) {
   await page.getByRole('checkbox', { name: '我已核对同步范围，确认写入正式实例', exact: true }).press('Space');
   const synced = page.waitForResponse(r => r.url().endsWith('/sync') && r.request().method() === 'POST');
   await page.getByRole('button', { name: repeat ? '重新同步本次数据' : '开始同步', exact: true }).click();
-  expect((await synced).ok()).toBeTruthy();
+  const response = await synced;
+  expect(response.ok()).toBeTruthy();
+  const result = await response.json();
+  const authorization = response.request().headers()['authorization'];
+  expect(authorization).toBeTruthy();
+  await expect.poll(async () => {
+    const latest = await page.request.get(response.url().replace(/\/sync$/, ''), {
+      headers: { Authorization: authorization },
+    });
+    expect(latest.ok()).toBeTruthy();
+    const current = await latest.json();
+    const sync = current.sync;
+    if (Date.parse(sync.startedAt) < Date.parse(result.sync.startedAt)) return 'previous sync';
+    return sync.status === 'failed' ? `failed: ${sync.error}` : sync.status;
+  }, { timeout: 60_000, intervals: [250, 500, 1000], message: 'The newly requested sync must complete successfully' }).toBe('succeeded');
   await expect(page.getByRole('heading', { name: '同步结果 · 已完成', exact: true })).toBeVisible({ timeout: 60_000 });
 }
 
@@ -165,7 +180,10 @@ test('真实来源 → 人工候选审核 → 原生发布 → 重复同步 → 
   await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   const graph = page.getByLabel('候选本体图谱', { exact: true });
   await expect(graph.getByRole('button', { name: `查看本体类 物料-${prefix}` })).toBeVisible();
-  await expect(graph.getByText('库存所属物料 · N:1', { exact: true })).toBeVisible();
+  const stockRelation = graph.getByRole('button', { name: '查看关系 库存所属物料 · N:1', exact: true });
+  await stockRelation.press('Enter');
+  await expect(stockRelation.locator('text')).toHaveText('库存所属物料 · N:1');
+  await expect(stockRelation.locator('text')).toBeVisible();
   await graph.getByRole('button', { name: `查看本体类 库存-${prefix}` }).click();
   await expect(graph.getByLabel('候选模型详情')).toContainText('一个物料在一个仓库的库存余额');
   await graph.getByRole('button', { name: '适应本体图' }).click();
@@ -346,28 +364,41 @@ test('缺失身份仍可发布本体 → 同步受阻 → 补齐来源复用模�
   let response = await request.put(endpoint, { headers, data: { revision: source.revision, draft, context: '', questions: [], resolutions: {} } });
   expect(response.ok()).toBeTruthy(); source = await response.json();
   await page.goto(`/ontology/model/from-data?source=${source.id}`);
+  await reviewTab(page, '对象类型');
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
   await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '查看发布方案', exact: true }).click();
   await confirmPublication(page);
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '同步本次数据', exact: true }).click();
+  const blockedCheck = page.waitForResponse(r => r.url().endsWith('/sync-check') && r.request().method() === 'POST');
   await page.getByRole('button', { name: '检查本次数据', exact: true }).click();
-  await expect(page.getByRole('button', { name: '开始同步', exact: true })).toBeDisabled();
+  const checkedResponse = await blockedCheck;
+  expect(checkedResponse.ok()).toBeTruthy();
+  const blockedReport = (await checkedResponse.json()).syncCheck;
+  expect(blockedReport.canSync).toBe(false);
+  expect(blockedReport.report.errors).toBe(2);
+  await expect(page.getByRole('checkbox', { name: '我已核对暂缓范围，确认仅写入合格实例及关系', exact: true })).not.toBeChecked();
+  await expect(page.getByRole('button', { name: '同步合格数据', exact: true })).toBeDisabled();
   source = await (await request.get(endpoint, { headers })).json();
   expect(source.validation.canPublish).toBeTruthy();
   expect(source.validation.dataValidation.errors).toBe(2);
-  expect((await request.post(endpoint + '/sync', { headers, data: { revision: source.revision } })).status()).toBe(422);
+  const deniedSync = await request.post(endpoint + '/sync', { headers, data: { revision: source.revision } });
+  expect(deniedSync.status()).toBe(422);
+  expect((await deniedSync.json()).detail).toContain('数据校验尚未通过');
   const target = source.plan.types[0];
   let individuals = await (await request.get(`${gateway}/ont/v2/individuals?class_rid=${encodeURIComponent(target.rid)}&limit=100&offset=0`, { headers })).json();
   expect(individuals).toHaveLength(0);
   await page.reload();
+  await expect(page.getByRole('navigation', { name: '逆向发现本体流程', exact: true }).getByRole('button', { name: /数据同步（可选）/ })).toHaveAttribute('aria-current', 'step');
+  await page.getByRole('button', { name: '返回发布结果', exact: true }).click();
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
 
   source = await upload('modeling-repaired-identity.xlsx'); endpoint = `${gateway}/ont/v2/modeling/sources/${source.id}`;
   response = await request.put(endpoint, { headers, data: { revision: source.revision, draft, context: '', questions: [], resolutions: { [cid]: { mode: 'reuse', targetRid: target.rid, propertyMap: target.propertyMap } } } });
   expect(response.ok()).toBeTruthy(); source = await response.json();
   await page.goto(`/ontology/model/from-data?source=${source.id}`);
+  await reviewTab(page, '对象类型');
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
   await page.getByRole('button', { name: '查看发布方案', exact: true }).click();
   await confirmPublication(page);

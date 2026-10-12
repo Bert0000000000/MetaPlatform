@@ -212,6 +212,11 @@ class DockerOperations:
         return [
             "sudo",
             "-n",
+            # sudo clears the caller's environment; forward only these public settings.
+            "env",
+            "DEMO_BACKEND_IMAGE=" + release["backend"],
+            "DEMO_FRONTEND_IMAGE=" + release["frontend"],
+            "COMPOSE_PROFILES=",
             "docker",
             "compose",
             "-p",
@@ -336,6 +341,10 @@ class DockerOperations:
             for item in actual.values()
         ):
             raise DeploymentFailure("The complete demo stack is not healthy")
+        for name in APPS:
+            expected_image = release["frontend"] if name == "demo-web" else release["backend"]
+            if actual[name].get("Image") != expected_image:
+                raise DeploymentFailure("An application is not running the expected release image")
 
 
 def worker(base: Path, config: dict, revision: str, rollback: bool = False) -> None:

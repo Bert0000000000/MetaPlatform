@@ -13,6 +13,7 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 KIT = Path(__file__).resolve().parents[1]
 SHA = "a" * 40
@@ -117,6 +118,67 @@ class TransferTests(unittest.TestCase):
             self.assertEqual(response["bytes"], source.stat().st_size)
             with self.assertRaises(subprocess.TimeoutExpired):
                 client.invoke([sys.executable, str(helper)], "status")
+
+
+class DockerRuntimeTests(unittest.TestCase):
+    def test_compose_keeps_only_explicit_release_variables_after_sudo_environment_reset(self):
+        server = load("ci_server")
+        release = dict(path="source", backend="backend:" + SHA, frontend="web:" + SHA)
+        ops = server.DockerOperations(Path("ci"), dict(project="demo", private="private"))
+        with tempfile.TemporaryDirectory() as directory:
+            helper = Path(directory) / "sudo_reset.py"
+            helper.write_text(
+                "import json,sys\n"
+                "args=sys.argv[1:]; assert args.pop(0)=='-n'\n"
+                "clean={}\n"
+                "if args[0]=='env':\n"
+                "    args.pop(0)\n"
+                "    while '=' in args[0]:\n"
+                "        key,value=args.pop(0).split('=',1); clean[key]=value\n"
+                "print(json.dumps(clean))\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(helper), *ops.compose(release)[1:]],
+                env=ops.environment(release),
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            forwarded = json.loads(result.stdout)
+            self.assertEqual(forwarded.get("DEMO_BACKEND_IMAGE"), release["backend"])
+            self.assertEqual(forwarded.get("DEMO_FRONTEND_IMAGE"), release["frontend"])
+            self.assertEqual(forwarded.get("COMPOSE_PROFILES"), "")
+            self.assertEqual(
+                set(forwarded), {"DEMO_BACKEND_IMAGE", "DEMO_FRONTEND_IMAGE", "COMPOSE_PROFILES"}
+            )
+
+    def test_healthy_containers_with_wrong_application_images_cannot_pass_acceptance(self):
+        server = load("ci_server")
+        release = dict(path="source", backend="backend:" + SHA, frontend="web:" + SHA)
+        fixture = [
+            dict(
+                Service=name,
+                State="running",
+                Health="healthy",
+                Image=release["frontend"] if name == "demo-web" else release["backend"],
+            )
+            for name in server.APPS + server.INFRA
+        ]
+
+        class Runtime(server.DockerOperations):
+            def run(self, release, arguments, **kwargs):
+                return SimpleNamespace(stdout=json.dumps(fixture))
+
+        ops = Runtime(Path("ci"), dict(project="demo", private="private", url="http://loopback"))
+        ops.verify(release)
+        for name in ("mate-api-gateway", "demo-web"):
+            item = next(row for row in fixture if row["Service"] == name)
+            original = item["Image"]
+            item["Image"] = "old:version"
+            with self.subTest(service=name), self.assertRaises(server.DeploymentFailure):
+                ops.verify(release)
+            item["Image"] = original
 
 
 def archive_bytes(name="docker-compose.yml", kind=None):
