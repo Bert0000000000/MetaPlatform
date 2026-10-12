@@ -16,7 +16,7 @@ COPY packages/ /tmp/build/packages/
 # structlog 已经在 api-gateway 的 system site-packages 里
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
 RUN pip install --no-cache-dir \
-        neo4j owlready2 rdflib sqlalchemy sqlmodel psycopg2-binary pydantic pydantic-settings httpx "pyjwt[crypto]"
+        neo4j owlready2 rdflib sqlalchemy sqlmodel psycopg2-binary pydantic pydantic-settings httpx "pyjwt[crypto]" openpyxl python-multipart
 
 # 把 ont / kernel / common / platform 源码拷到 gate 镜像的 system site-packages。
 # 运行时由 docker-compose.yml 挂载 ./mate-platform-backend/packages 到 /app/packages 并加

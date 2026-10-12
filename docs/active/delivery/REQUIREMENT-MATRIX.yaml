@@ -3881,3 +3881,35 @@ requirements:
     - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+
+  FR-ONT-DATA-MODELING-PHASE1:
+    prd: docs/active/decisions/ADR-0083-data-driven-modeling-phase1.md
+    service: ont
+    operationIds:
+      - copilotProposeModelingDataRepair
+      - copilotRefineModelingCandidate
+      - generate_model_api_v1_copilot_modeling_generate_post
+      - ontCheckModelingDataSync
+      - ontCompareModelingNativeType
+      - ontConfirmModelingCompletion
+      - ontConfirmModelingDataRepair
+      - ontCreateModelingSource
+      - ontExportModelingQuarantine
+      - ontGenerateModelingCandidate
+      - ontGetModelingSource
+      - ontListModelingSources
+      - ontPrepareModelingCompletion
+      - ontProposeModelingDataRepair
+      - ontPublishModelingCandidate
+      - ontReviewModelingCandidate
+      - ontSaveModelingSource
+      - ontSyncModelingSource
+      - ontValidateModelingCandidate
+      - ontVerifyModelingPublication
+      - review_model_api_v1_copilot_modeling_review_post
+    handler: mate_tech_ont.modeling.api:router + mate_app_copilot.modeling_router:router
+    tests:
+      - mate-platform-backend/packages/mate-tech-ont/tests/test_modeling_integration.py
+      - mate-platform-backend/packages/mate-app-copilot/tests/test_modeling_generation.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted

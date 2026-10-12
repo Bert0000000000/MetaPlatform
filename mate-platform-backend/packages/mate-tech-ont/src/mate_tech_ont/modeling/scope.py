@@ -14,21 +14,30 @@ def publication_scope(draft):
     # Keep selected dangling references so validation rejects incomplete dependencies.
     for key in ("mappings", "instances"):
         result[key] = [m for m in result.get(key, []) if m["classId"] not in deferred_classes]
-    result["links"] = [r for r in result.get("links", []) if r["relationId"] not in deferred_relations]
+    result["links"] = [
+        r for r in result.get("links", []) if r["relationId"] not in deferred_relations
+    ]
     result["instanceEdits"] = [
-        e for e in result.get("instanceEdits", [])
+        e
+        for e in result.get("instanceEdits", [])
         if not any(e["key"].startswith(f"entity:{cid}:") for cid in deferred_classes)
     ]
     mappings = {m["id"] for m in result["mappings"]}
     deferred_targets = {
         f"{kind}:{item['id']}"
-        for kind, key in (("class", "classes"), ("relationship", "relationships"), ("mapping", "mappings"))
+        for kind, key in (
+            ("class", "classes"),
+            ("relationship", "relationships"),
+            ("mapping", "mappings"),
+        )
         for item in draft.get(key, [])
-        if item["id"] not in {"class": classes, "relationship": relations, "mapping": mappings}[kind]
+        if item["id"]
+        not in {"class": classes, "relationship": relations, "mapping": mappings}[kind]
     }
     if "semantics" in result:
         result["semantics"]["definitions"] = [
-            d for d in result["semantics"].get("definitions", [])
+            d
+            for d in result["semantics"].get("definitions", [])
             if d["target"] not in deferred_targets
             and not any(d["target"].startswith(f"property:{cid}:") for cid in deferred_classes)
         ]

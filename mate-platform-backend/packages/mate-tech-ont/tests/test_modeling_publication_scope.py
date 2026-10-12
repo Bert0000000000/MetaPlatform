@@ -95,11 +95,21 @@ async def test_native_conflicts_are_reported_for_all_candidates(monkeypatch):
 
 def test_deferred_candidate_is_preserved_but_not_validated_or_compiled():
     from mate_tech_ont.modeling.core import compile_graph
+
     value = draft()
     deferred = deepcopy(value["classes"][0])
     deferred.update(id="later", accepted=False, identityStatus="proposed", included=False)
     value["classes"].append(deferred)
-    value["relationships"] = [{"id": "later_link", "name": "稍后关联", "source": "product", "target": "later", "joins": [{"sourceProperty": "code", "targetProperty": "code"}], "included": False}]
+    value["relationships"] = [
+        {
+            "id": "later_link",
+            "name": "稍后关联",
+            "source": "product",
+            "target": "later",
+            "joins": [{"sourceProperty": "code", "targetProperty": "code"}],
+            "included": False,
+        }
+    ]
     before = deepcopy(value)
     report = validate_ontology(value)
     assert report["canPublish"], report
@@ -118,21 +128,36 @@ def test_selected_dependencies_and_empty_scope_are_blocked():
     value["classes"].append(other)
     assert any("父类" in i["message"] for i in validate_ontology(value)["issues"])
     other.pop("parentClassId")
-    value["relationships"] = [{"id": "r", "name": "关联", "source": "child", "target": "product", "joins": [{"sourceProperty": "code", "targetProperty": "code"}], "accepted": True}]
+    value["relationships"] = [
+        {
+            "id": "r",
+            "name": "关联",
+            "source": "child",
+            "target": "product",
+            "joins": [{"sourceProperty": "code", "targetProperty": "code"}],
+            "accepted": True,
+        }
+    ]
     assert any("关系引用" in i["message"] for i in validate_ontology(value)["issues"])
 
 
 @pytest.mark.asyncio
 async def test_deferred_types_do_not_create_native_conflicts(monkeypatch):
     from types import SimpleNamespace
+
     from mate_tech_ont.modeling import publication
+
     value = draft()
     other = deepcopy(value["classes"][0])
     other.update(id="later", included=False)
     value["classes"].append(other)
-    monkeypatch.setattr(publication.native, "_ctx", lambda request: SimpleNamespace(tenant_id="test"))
+    monkeypatch.setattr(
+        publication.native, "_ctx", lambda request: SimpleNamespace(tenant_id="test")
+    )
+
     async def existing(request, rid):
         return {"rid": rid}
+
     monkeypatch.setattr(publication, "current_type", existing)
     issues = await publication.new_type_conflicts(None, {"draft": value, "resolutions": {}})
     assert [issue["item"] for issue in issues] == ["product"]

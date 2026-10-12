@@ -262,10 +262,17 @@ async def prepare(request, source):
                 "parentClassId": parent_id,
                 "inheritanceReason": cls.get("inheritanceReason", ""),
                 "changes": {
-                    "addedProperties": [p["rid"] for p in body["properties"] if p["rid"] not in existing_props],
-                    "retainedProperties": [p["rid"] for p in body["properties"] if p["rid"] in existing_props],
+                    "addedProperties": [
+                        p["rid"] for p in body["properties"] if p["rid"] not in existing_props
+                    ],
+                    "retainedProperties": [
+                        p["rid"] for p in body["properties"] if p["rid"] in existing_props
+                    ],
                     "identityChanged": bool(existing and pk != list(existing["primary_key"])),
-                    "parentChanged": bool(existing and body.get("parent_class", "") != existing.get("parent_class", "")),
+                    "parentChanged": bool(
+                        existing
+                        and body.get("parent_class", "") != existing.get("parent_class", "")
+                    ),
                 },
             }
         )
@@ -292,12 +299,19 @@ async def prepare(request, source):
         ):
             raise ValueError("已有关系定义冲突，需在原生关系编辑器审核")
         relationships.append(
-            {"relationId": rel["id"], "rid": rid, "payload": body, "baseline": existing_rel,
-             "cardinalityStatus": rel.get("cardinalityStatus", "legacy"),
-             "targetSelection": rel.get("targetSelection", "legacy")}
+            {
+                "relationId": rel["id"],
+                "rid": rid,
+                "payload": body,
+                "baseline": existing_rel,
+                "cardinalityStatus": rel.get("cardinalityStatus", "legacy"),
+                "targetSelection": rel.get("targetSelection", "legacy"),
+            }
         )
         if rel.get("cardinalityStatus", "legacy") == "legacy":
-            warnings.append(f"{rel['name']} 为旧版候选，未记录基数业务审核；当前 {body['cardinality']} 不能视为规则已确认")
+            warnings.append(
+                f"{rel['name']} 为旧版候选，未记录基数业务审核；当前 {body['cardinality']} 不能视为规则已确认"
+            )
     plan = {
         "types": types,
         "relationships": relationships,

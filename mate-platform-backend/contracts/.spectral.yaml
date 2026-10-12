@@ -1,5 +1,19 @@
 extends: [spectral:oas]
 rules:
+  # The inherited selector dereferences null defaults emitted by Pydantic.
+  # Keep the original enum checks and severity; guard only the traversal.
+  duplicated-entry-in-enum:
+    description: Enum values must not have duplicate entry.
+    severity: warn
+    message: "{{error}}"
+    given: "$..[?(@property !== 'properties' && @ && @.enum && @.enum.constructor.name === 'Array')]"
+    then:
+      field: enum
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          uniqueItems: true
   operation-operationId: error
   operation-description: warn
   operation-tags: error

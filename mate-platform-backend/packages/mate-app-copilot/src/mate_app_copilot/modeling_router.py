@@ -1,12 +1,12 @@
 """Authenticated, bounded AI recommendations. No native ontology write access."""
 
-import json
 import asyncio
+import json
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, ConfigDict, Field, model_validator
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .api.app import _get_client, _request_bearer_token, _tid
 from .modeling_proposal import generate, refine, repair_data
@@ -60,28 +60,45 @@ def identity(request):
 async def generate_model(body: ModelingRequest, request: Request):
     tenant, token = identity(request)
     if "text/event-stream" in request.headers.get("accept", ""):
+
         async def events():
             queue = asyncio.Queue()
 
             async def run():
                 try:
                     result = await generate(
-                        _get_client(request), tenant, token, body.profile, body.context,
-                        body.questions, body.existingTypes, body.outputSchema,
-                        on_progress=lambda value: queue.put_nowait({"type": "progress", "progress": value}),
+                        _get_client(request),
+                        tenant,
+                        token,
+                        body.profile,
+                        body.context,
+                        body.questions,
+                        body.existingTypes,
+                        body.outputSchema,
+                        on_progress=lambda value: queue.put_nowait(
+                            {"type": "progress", "progress": value}
+                        ),
                     )
                     queue.put_nowait({"type": "result", "result": result})
                 except HTTPException as exc:
-                    queue.put_nowait({"type": "error", "status": exc.status_code, "detail": exc.detail})
+                    queue.put_nowait(
+                        {"type": "error", "status": exc.status_code, "detail": exc.detail}
+                    )
                 except Exception:
-                    queue.put_nowait({"type": "error", "status": 502, "detail": "AI 建模结果不符合结构或跨表概念约束，草稿未修改"})
+                    queue.put_nowait(
+                        {
+                            "type": "error",
+                            "status": 502,
+                            "detail": "AI 建模结果不符合结构或跨表概念约束，草稿未修改",
+                        }
+                    )
 
             task = asyncio.create_task(run())
             try:
                 while True:
                     try:
                         event = await asyncio.wait_for(queue.get(), timeout=15)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         yield ": keep-alive\n\n"
                         continue
                     yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
@@ -91,7 +108,11 @@ async def generate_model(body: ModelingRequest, request: Request):
                 task.cancel()
                 await asyncio.gather(task, return_exceptions=True)
 
-        return StreamingResponse(events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+        return StreamingResponse(
+            events(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
     return await generate(
         _get_client(request),
         tenant,
@@ -114,18 +135,27 @@ async def review_model(body: ModelingRequest, request: Request):
     )
 
 
-@router.post('/refine', operation_id='copilotRefineModelingCandidate')
+@router.post("/refine", operation_id="copilotRefineModelingCandidate")
 async def refine_model(body: ModelingRequest, request: Request):
     tenant, token = identity(request)
     if body.draft is None or body.validation is None or body.outputSchema is None:
-        raise HTTPException(422, '需要候选、全量预检与补丁 Schema')
-    return await refine(_get_client(request), tenant, token, body.profile, body.draft,
-                        body.validation, body.outputSchema)
+        raise HTTPException(422, "需要候选、全量预检与补丁 Schema")
+    return await refine(
+        _get_client(request),
+        tenant,
+        token,
+        body.profile,
+        body.draft,
+        body.validation,
+        body.outputSchema,
+    )
 
 
-@router.post('/data-repair', operation_id='copilotProposeModelingDataRepair')
+@router.post("/data-repair", operation_id="copilotProposeModelingDataRepair")
 async def propose_data_repair(body: ModelingRequest, request: Request):
     tenant, token = identity(request)
     if body.validation is None or body.outputSchema is None:
-        raise HTTPException(422, '需要冲突依据和修复 Schema')
-    return await repair_data(_get_client(request), tenant, token, body.context, body.validation, body.outputSchema)
+        raise HTTPException(422, "需要冲突依据和修复 Schema")
+    return await repair_data(
+        _get_client(request), tenant, token, body.context, body.validation, body.outputSchema
+    )

@@ -33,11 +33,11 @@ from .federation import router as federation_router
 from .inference.api import router as inference_router
 from .inference.shacl_api import router as shacl_router
 from .instances.api import router as instances_router
+from .modeling.api import router as modeling_router
 from .repos.neo4j_repo import create_neo4j_repository
 from .sparql.api import router as sparql_router
 from .sparql.explain import router as explain_router
 from .v2_kernel.api import router as v2_kernel_router
-from .modeling.api import router as modeling_router
 from .versioning.api import router as versioning_router
 
 # v1 router prefixes that emit Deprecation/Sunset headers.

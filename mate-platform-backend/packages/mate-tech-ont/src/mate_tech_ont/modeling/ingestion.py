@@ -11,7 +11,7 @@ from psycopg2 import sql
 from mate_kernel.ontology.identity import ClassRef
 
 from ..v2_kernel import api as native
-from .core import compile_graph, digest
+from .core import digest
 from .publication import current_link, current_type
 from .store import now
 
@@ -36,12 +36,15 @@ def stage(store, source, nodes):
     for item in plan["types"]:
         cls, rid = draft[item["classId"]], item["rid"]
         table = "ont_excel_" + digest([store.tenant, rid])[:24]
-        if not any(n['objectType'] == item['classId'] for n in nodes):
+        if not any(n["objectType"] == item["classId"] for n in nodes):
             with store.connection() as cur:
-                cur.execute('SELECT to_regclass(%s) AS relation', (table,))
-                if cur.fetchone()['relation']:
-                    cur.execute(sql.SQL('DELETE FROM {} WHERE tenant_id=%s').format(sql.Identifier(table)), (store.tenant,))
-            result.append({'classId':item['classId'], 'rid':rid, 'count':0, 'skipped':True})
+                cur.execute("SELECT to_regclass(%s) AS relation", (table,))
+                if cur.fetchone()["relation"]:
+                    cur.execute(
+                        sql.SQL("DELETE FROM {} WHERE tenant_id=%s").format(sql.Identifier(table)),
+                        (store.tenant,),
+                    )
+            result.append({"classId": item["classId"], "rid": rid, "count": 0, "skipped": True})
             continue  # Never trigger a backing-source sync for a wholly deferred/empty type.
         parts = rid.split(".")
         native_slug = parts[4] if len(parts) >= 6 else parts[3]
@@ -106,7 +109,10 @@ def stage(store, source, nodes):
             # This table is an execution snapshot, not the instance store. Remove
             # stale staging from earlier/failed runs so deferred rows cannot enter
             # through the native full scan. Native delete_missing remains false.
-            cur.execute(sql.SQL('DELETE FROM {} WHERE tenant_id=%s').format(sql.Identifier(table)), (store.tenant,))
+            cur.execute(
+                sql.SQL("DELETE FROM {} WHERE tenant_id=%s").format(sql.Identifier(table)),
+                (store.tenant,),
+            )
             count = 0
             for node in nodes:
                 if node["objectType"] != item["classId"]:
@@ -183,17 +189,27 @@ async def verify_baseline(request, source):
         if not live or live["checksum"] != published.get(item["rid"]):
             raise ValueError("原生模型发布后已变化，请通过版本或迁移流程核对后重新验证发布")
         table = "ont_excel_" + digest([native._ctx(request).tenant_id, item["rid"]])[:24]
-        expected = {p: "p_" + digest(p)[:16] for p in set(item["propertyMap"].values()) | set(item["payload"]["primary_key"])}
+        expected = {
+            p: "p_" + digest(p)[:16]
+            for p in set(item["propertyMap"].values()) | set(item["payload"]["primary_key"])
+        }
         for declaration in await native.list_backing_datasources(item["rid"], request):
             if declaration["name"] != "excel-modeling":
-                raise ValueError("该类型还绑定了其他数据来源，请在原生数据映射页核对并同步，避免本次操作触发其他来源")
+                raise ValueError(
+                    "该类型还绑定了其他数据来源，请在原生数据映射页核对并同步，避免本次操作触发其他来源"
+                )
             if declaration["name"] == "excel-modeling" and (
                 declaration["table_name"] != table
                 or declaration["dsn_env"] != "ONT_MODELING_SOURCE_DSN"
                 or declaration["pk_column"] != "business_key"
-                or any(expected.get(key) != value for key, value in declaration["field_mapping"].items())
+                or any(
+                    expected.get(key) != value
+                    for key, value in declaration["field_mapping"].items()
+                )
             ):
-                raise ValueError("原生来源映射已被修改，请先在数据映射页核对；本次同步不会覆盖该配置")
+                raise ValueError(
+                    "原生来源映射已被修改，请先在数据映射页核对；本次同步不会覆盖该配置"
+                )
     for item in source["plan"]["relationships"]:
         if await current_link(request, item["rid"]) != item["payload"]:
             raise ValueError("原生关系发布后已变化，请重新验证发布")
@@ -231,18 +247,31 @@ async def _sync(request, source, rows, store, allow_partial=False, check_hash=No
     store.update(source["id"], revision, {"sync": state}, increment=False)
     try:
         from .data_treatment import prepare
+
         report, nodes, edges, _ = prepare(source, rows, allow_partial)
-        if not report['canSync'] or (allow_partial and check_hash != report['checkHash']):
-            raise ValueError('数据范围校验未通过或确认已过期，请重新检查')
-        state.update(allowPartial=allow_partial, checkHash=report['checkHash'], quarantine=report['quarantine'],
-                     eligible={'nodes':len(nodes),'edges':len(edges)})
+        if not report["canSync"] or (allow_partial and check_hash != report["checkHash"]):
+            raise ValueError("数据范围校验未通过或确认已过期，请重新检查")
+        state.update(
+            allowPartial=allow_partial,
+            checkHash=report["checkHash"],
+            quarantine=report["quarantine"],
+            eligible={"nodes": len(nodes), "edges": len(edges)},
+        )
         staged, identities = stage(store, source, nodes)
         state.update(stage="objects", totalTypes=len(staged), totalLinks=len(edges))
         store.update(source["id"], revision, {"sync": state}, increment=False)
         for item in staged:
-            if item.get('skipped'):
-                state['types'].append({'classId':item['classId'],'rid':item['rid'],'total_synced':0,'total_failed':0,'skipped':True})
-                store.update(source['id'], revision, {'sync':state}, increment=False)
+            if item.get("skipped"):
+                state["types"].append(
+                    {
+                        "classId": item["classId"],
+                        "rid": item["rid"],
+                        "total_synced": 0,
+                        "total_failed": 0,
+                        "skipped": True,
+                    }
+                )
+                store.update(source["id"], revision, {"sync": state}, increment=False)
                 continue
             for declaration in await native.list_backing_datasources(item["rid"], request):
                 if declaration["name"] == "excel-modeling" and (
@@ -263,7 +292,14 @@ async def _sync(request, source, rows, store, allow_partial=False, check_hash=No
                 request,
             )
             report = await native.sync_backing_datasources(item["rid"], request, incremental=False)
-            state["types"].append({"classId": item["classId"], "rid": item["rid"], "sourceRef": declaration["rid"], **report})
+            state["types"].append(
+                {
+                    "classId": item["classId"],
+                    "rid": item["rid"],
+                    "sourceRef": declaration["rid"],
+                    **report,
+                }
+            )
             store.update(source["id"], revision, {"sync": state}, increment=False)
             if not report.get("ok"):
                 raise ValueError("原生数据同步存在失败行，请检查批次报告")
@@ -297,9 +333,12 @@ def ingestion_lock(store):
         connection, _ = store.repo._connect()
     try:
         with connection.cursor() as cursor:
-            cursor.execute('SELECT pg_try_advisory_lock(hashtextextended(%s,0))', (store.tenant + ':excel-ingestion',))
+            cursor.execute(
+                "SELECT pg_try_advisory_lock(hashtextextended(%s,0))",
+                (store.tenant + ":excel-ingestion",),
+            )
             if not cursor.fetchone()[0]:
-                raise ValueError('该租户已有 Excel 数据同步正在执行，请稍后重试')
+                raise ValueError("该租户已有 Excel 数据同步正在执行，请稍后重试")
         yield
     finally:
         connection.close()

@@ -321,6 +321,14 @@ paths:
     $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1generate~1review-code
   /api/v1/copilot/knowledge-bases:
     $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1knowledge-bases
+  /api/v1/copilot/modeling/data-repair:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1modeling~1data-repair
+  /api/v1/copilot/modeling/generate:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1modeling~1generate
+  /api/v1/copilot/modeling/refine:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1modeling~1refine
+  /api/v1/copilot/modeling/review:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1modeling~1review
   /api/v1/copilot/models/multimodal:
     $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1models~1multimodal
   /api/v1/copilot/ontology/concepts/search:
@@ -627,6 +635,36 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1link-types
   /api/v1/ont/v2/link-types/{rid}:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1link-types~1{rid}
+  /api/v1/ont/v2/modeling/sources:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources
+  /api/v1/ont/v2/modeling/sources/{ident}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}
+  /api/v1/ont/v2/modeling/sources/{ident}/acceptance:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1acceptance
+  /api/v1/ont/v2/modeling/sources/{ident}/comparison:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1comparison
+  /api/v1/ont/v2/modeling/sources/{ident}/completion-confirm:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1completion-confirm
+  /api/v1/ont/v2/modeling/sources/{ident}/completion-plan:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1completion-plan
+  /api/v1/ont/v2/modeling/sources/{ident}/data-repair:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1data-repair
+  /api/v1/ont/v2/modeling/sources/{ident}/data-repair-confirm:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1data-repair-confirm
+  /api/v1/ont/v2/modeling/sources/{ident}/generate:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1generate
+  /api/v1/ont/v2/modeling/sources/{ident}/publish:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1publish
+  /api/v1/ont/v2/modeling/sources/{ident}/quarantine:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1quarantine
+  /api/v1/ont/v2/modeling/sources/{ident}/review:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1review
+  /api/v1/ont/v2/modeling/sources/{ident}/sync:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1sync
+  /api/v1/ont/v2/modeling/sources/{ident}/sync-check:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1sync-check
+  /api/v1/ont/v2/modeling/sources/{ident}/validate:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1modeling~1sources~1{ident}~1validate
   /api/v1/ont/v2/object-query:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-query
   /api/v1/ont/v2/object-search:

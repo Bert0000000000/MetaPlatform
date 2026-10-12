@@ -7,94 +7,153 @@ from mate_app_copilot import modeling_proposal as proposal
 
 
 @pytest.mark.asyncio
-async def test_data_repair_uses_authenticated_bounded_route_and_observed_value_contract(monkeypatch):
+async def test_data_repair_uses_authenticated_bounded_route_and_observed_value_contract(
+    monkeypatch,
+):
     from fastapi import FastAPI
     from mate_app_copilot import modeling_router
-    app=FastAPI();app.include_router(modeling_router.router)
-    monkeypatch.setattr(modeling_router,'identity',lambda request:('tenant','token'))
-    monkeypatch.setattr(modeling_router,'_get_client',lambda request:None)
-    async def config(*args):return {}
-    captured=[]
-    async def complete(cfg,system,payload):captured.append((system,payload));return {'repairs':[]}
-    monkeypatch.setattr(proposal,'provider_config',config)
-    monkeypatch.setattr(proposal,'complete',complete)
-    body={'profile':{'sheets':[]},'context':'费用按单据明细定位','validation':{'candidates':[]},'outputSchema':{'type':'object'}}
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
-        result=await client.post('/api/v1/copilot/modeling/data-repair',json=body)
-        assert result.status_code==200 and result.json()=={'repairs':[]}
-        assert (await client.post('/api/v1/copilot/modeling/data-repair',json={'profile':{'sheets':[]}})).status_code==422
-    assert captured[0][1]['businessContext']==body['context']
-    assert 'never invent' in captured[0][0] and 'Human confirmation' in captured[0][0]
+
+    app = FastAPI()
+    app.include_router(modeling_router.router)
+    monkeypatch.setattr(modeling_router, "identity", lambda request: ("tenant", "token"))
+    monkeypatch.setattr(modeling_router, "_get_client", lambda request: None)
+
+    async def config(*args):
+        return {}
+
+    captured = []
+
+    async def complete(cfg, system, payload):
+        captured.append((system, payload))
+        return {"repairs": []}
+
+    monkeypatch.setattr(proposal, "provider_config", config)
+    monkeypatch.setattr(proposal, "complete", complete)
+    body = {
+        "profile": {"sheets": []},
+        "context": "费用按单据明细定位",
+        "validation": {"candidates": []},
+        "outputSchema": {"type": "object"},
+    }
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        result = await client.post("/api/v1/copilot/modeling/data-repair", json=body)
+        assert result.status_code == 200 and result.json() == {"repairs": []}
+        assert (
+            await client.post(
+                "/api/v1/copilot/modeling/data-repair", json={"profile": {"sheets": []}}
+            )
+        ).status_code == 422
+    assert captured[0][1]["businessContext"] == body["context"]
+    assert "never invent" in captured[0][0] and "Human confirmation" in captured[0][0]
 
 
 @pytest.mark.asyncio
-async def test_refinement_is_authenticated_bounded_and_receives_platform_and_full_data_evidence(monkeypatch):
+async def test_refinement_is_authenticated_bounded_and_receives_platform_and_full_data_evidence(
+    monkeypatch,
+):
     from fastapi import FastAPI
     from mate_app_copilot import modeling_router
-    app = FastAPI(); app.include_router(modeling_router.router)
-    monkeypatch.setattr(modeling_router,'identity',lambda request:('tenant','token'))
-    monkeypatch.setattr(modeling_router,'_get_client',lambda request:None)
-    async def config(*args): return {}
-    captured=[]
-    async def complete(cfg,system,payload):
-        captured.append((system,payload));return {'repairs':[]}
-    monkeypatch.setattr(proposal,'provider_config',config)
-    monkeypatch.setattr(proposal,'complete',complete)
-    payload={'profile':{'sheets':[],'platformCapabilities':{'propertyTypes':['text','number','date']}},'draft':{'classes':[]},'validation':{'identities':[]},'outputSchema':{'type':'object'}}
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
-        response=await client.post('/api/v1/copilot/modeling/refine',json=payload)
-        assert response.status_code == 200 and response.json() == {'repairs':[]}
-        assert (await client.post('/api/v1/copilot/modeling/refine',json={'profile':{'sheets':[]}})).status_code == 422
-    assert captured[0][1]['diagnostics'] == {'identities':[]}
-    assert 'Never rename' in captured[0][0] and 'statistically unique' in captured[0][0]
+
+    app = FastAPI()
+    app.include_router(modeling_router.router)
+    monkeypatch.setattr(modeling_router, "identity", lambda request: ("tenant", "token"))
+    monkeypatch.setattr(modeling_router, "_get_client", lambda request: None)
+
+    async def config(*args):
+        return {}
+
+    captured = []
+
+    async def complete(cfg, system, payload):
+        captured.append((system, payload))
+        return {"repairs": []}
+
+    monkeypatch.setattr(proposal, "provider_config", config)
+    monkeypatch.setattr(proposal, "complete", complete)
+    payload = {
+        "profile": {
+            "sheets": [],
+            "platformCapabilities": {"propertyTypes": ["text", "number", "date"]},
+        },
+        "draft": {"classes": []},
+        "validation": {"identities": []},
+        "outputSchema": {"type": "object"},
+    }
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post("/api/v1/copilot/modeling/refine", json=payload)
+        assert response.status_code == 200 and response.json() == {"repairs": []}
+        assert (
+            await client.post("/api/v1/copilot/modeling/refine", json={"profile": {"sheets": []}})
+        ).status_code == 422
+    assert captured[0][1]["diagnostics"] == {"identities": []}
+    assert "Never rename" in captured[0][0] and "statistically unique" in captured[0][0]
 
 
 @pytest.mark.asyncio
 async def test_generation_progress_stream_has_real_stages_and_terminal_result(monkeypatch):
     from fastapi import FastAPI
     from mate_app_copilot import modeling_router
+
     app = FastAPI()
     app.include_router(modeling_router.router)
-    monkeypatch.setattr(modeling_router, 'identity', lambda request: ('tenant', 'token'))
-    monkeypatch.setattr(modeling_router, '_get_client', lambda request: None)
+    monkeypatch.setattr(modeling_router, "identity", lambda request: ("tenant", "token"))
+    monkeypatch.setattr(modeling_router, "_get_client", lambda request: None)
 
     async def generate(*args, on_progress=None):
-        on_progress({'stage':'concepts'})
-        on_progress({'stage':'mapping','batch':2,'totalBatches':3})
-        return {'draft':{'classes':[]}}
+        on_progress({"stage": "concepts"})
+        on_progress({"stage": "mapping", "batch": 2, "totalBatches": 3})
+        return {"draft": {"classes": []}}
 
-    monkeypatch.setattr(modeling_router, 'generate', generate)
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
-        response = await client.post('/api/v1/copilot/modeling/generate', headers={'Accept':'text/event-stream'}, json={'profile':{'sheets':[]}})
+    monkeypatch.setattr(modeling_router, "generate", generate)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/api/v1/copilot/modeling/generate",
+            headers={"Accept": "text/event-stream"},
+            json={"profile": {"sheets": []}},
+        )
     assert response.status_code == 200
-    events = [json.loads(line[5:]) for line in response.text.splitlines() if line.startswith('data:')]
-    assert [event['type'] for event in events] == ['progress','progress','result']
-    assert events[1]['progress'] == {'stage':'mapping','batch':2,'totalBatches':3}
-    assert events[-1]['result'] == {'draft':{'classes':[]}}
+    events = [
+        json.loads(line[5:]) for line in response.text.splitlines() if line.startswith("data:")
+    ]
+    assert [event["type"] for event in events] == ["progress", "progress", "result"]
+    assert events[1]["progress"] == {"stage": "mapping", "batch": 2, "totalBatches": 3}
+    assert events[-1]["result"] == {"draft": {"classes": []}}
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('finish', ['stop', 'length', None])
+@pytest.mark.parametrize("finish", ["stop", "length", None])
 async def test_stream_requires_complete_valid_output(monkeypatch, finish):
     original = httpx.AsyncClient
 
     def handler(request):
-        assert json.loads(request.content)['stream'] is True
+        assert json.loads(request.content)["stream"] is True
         chunks = [
-            {'choices': [{'delta': {'content': '{"ok":'}, 'finish_reason': None}]},
-            {'choices': [{'delta': {'content': 'true}'}, 'finish_reason': finish}]},
+            {"choices": [{"delta": {"content": '{"ok":'}, "finish_reason": None}]},
+            {"choices": [{"delta": {"content": "true}"}, "finish_reason": finish}]},
         ]
-        body = ''.join('data: ' + json.dumps(chunk) + '\n\n' for chunk in chunks) + 'data: [DONE]\n\n'
-        return httpx.Response(200, headers={'content-type': 'text/event-stream'}, text=body)
+        body = (
+            "".join("data: " + json.dumps(chunk) + "\n\n" for chunk in chunks) + "data: [DONE]\n\n"
+        )
+        return httpx.Response(200, headers={"content-type": "text/event-stream"}, text=body)
 
-    monkeypatch.setattr(proposal.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
-    cfg = {'base_url': 'https://model.example/v1', 'api_key': 'key', 'default_model': 'model'}
-    if finish == 'stop':
-        assert await proposal.complete(cfg, 'system', {}) == {'ok': True}
+    monkeypatch.setattr(
+        proposal.httpx,
+        "AsyncClient",
+        lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    cfg = {"base_url": "https://model.example/v1", "api_key": "key", "default_model": "model"}
+    if finish == "stop":
+        assert await proposal.complete(cfg, "system", {}) == {"ok": True}
     else:
         with pytest.raises(HTTPException) as caught:
-            await proposal.complete(cfg, 'system', {})
-        assert '草稿未修改' in caught.value.detail
+            await proposal.complete(cfg, "system", {})
+        assert "草稿未修改" in caught.value.detail
 
 
 @pytest.mark.asyncio
@@ -104,36 +163,54 @@ async def test_provider_gateway_timeout_has_specific_message(monkeypatch):
 
     def handler(request):
         calls.append(request)
-        return httpx.Response(504, text='private-upstream-body')
+        return httpx.Response(504, text="private-upstream-body")
 
-    monkeypatch.setattr(proposal.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
+    monkeypatch.setattr(
+        proposal.httpx,
+        "AsyncClient",
+        lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
+    )
     with pytest.raises(HTTPException) as caught:
-        await proposal.complete({'base_url': 'https://model.example/v1', 'api_key': 'key', 'default_model': 'model'}, 'system', {})
-    assert '网关超时' in caught.value.detail
-    assert 'private' not in caught.value.detail
+        await proposal.complete(
+            {"base_url": "https://model.example/v1", "api_key": "key", "default_model": "model"},
+            "system",
+            {},
+        )
+    assert "网关超时" in caught.value.detail
+    assert "private" not in caught.value.detail
     assert len(calls) == 3
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('failure', ['connect', 'timeout', 'unauthorized', 'rate_limit'])
+@pytest.mark.parametrize("failure", ["connect", "timeout", "unauthorized", "rate_limit"])
 async def test_transport_errors_are_not_reported_as_invalid_json(monkeypatch, failure):
     original = httpx.AsyncClient
     calls = []
 
     def handler(request):
         calls.append(request)
-        if failure == 'connect':
-            raise httpx.ConnectError('sensitive-host-secret', request=request)
-        if failure == 'timeout':
-            raise httpx.ReadTimeout('sensitive-host-secret', request=request)
-        return httpx.Response(401 if failure == 'unauthorized' else 429, text='secret-provider-body')
+        if failure == "connect":
+            raise httpx.ConnectError("sensitive-host-secret", request=request)
+        if failure == "timeout":
+            raise httpx.ReadTimeout("sensitive-host-secret", request=request)
+        return httpx.Response(
+            401 if failure == "unauthorized" else 429, text="secret-provider-body"
+        )
 
-    monkeypatch.setattr(proposal.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
+    monkeypatch.setattr(
+        proposal.httpx,
+        "AsyncClient",
+        lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
+    )
     with pytest.raises(HTTPException) as caught:
-        await proposal.complete({'base_url': 'https://model.example/v1', 'api_key': 'key', 'default_model': 'model'}, 'system', {})
-    assert 'JSON' not in caught.value.detail
-    assert 'secret' not in caught.value.detail
-    assert len(calls) == (3 if failure in {'connect', 'rate_limit'} else 1)
+        await proposal.complete(
+            {"base_url": "https://model.example/v1", "api_key": "key", "default_model": "model"},
+            "system",
+            {},
+        )
+    assert "JSON" not in caught.value.detail
+    assert "secret" not in caught.value.detail
+    assert len(calls) == (3 if failure in {"connect", "rate_limit"} else 1)
 
 
 @pytest.mark.asyncio
@@ -144,12 +221,25 @@ async def test_transient_connection_failure_retries_and_preserves_request(monkey
     def handler(request):
         bodies.append(request.content)
         if len(bodies) < 3:
-            raise httpx.ConnectError('temporary', request=request)
-        return httpx.Response(200, json={'choices': [{'finish_reason': 'stop', 'message': {'content': '{"mappings": []}'}}]})
+            raise httpx.ConnectError("temporary", request=request)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"finish_reason": "stop", "message": {"content": '{"mappings": []}'}}]
+            },
+        )
 
-    monkeypatch.setattr(proposal.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
-    result = await proposal.complete({'base_url': 'https://model.example/v1', 'api_key': 'key', 'default_model': 'model'}, 'system', {'batchIndex': 2})
-    assert result == {'mappings': []}
+    monkeypatch.setattr(
+        proposal.httpx,
+        "AsyncClient",
+        lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    result = await proposal.complete(
+        {"base_url": "https://model.example/v1", "api_key": "key", "default_model": "model"},
+        "system",
+        {"batchIndex": 2},
+    )
+    assert result == {"mappings": []}
     assert len(bodies) == 3 and len(set(bodies)) == 1
 
 
@@ -159,21 +249,55 @@ async def test_mapping_schema_and_evidence_do_not_mix_source_batches(monkeypatch
         return {}
 
     calls = []
-    async def complete(cfg, system, payload):
-        if 'classes' not in payload:
-            return {'name': '业务', 'classes': [{'id': 'product', 'evidence': [{'kind': 'source', 'sheet': 'Other', 'columns': ['Code'], 'detail': '证据'}]}]}
-        calls.append(payload)
-        return {'mappings': []}
 
-    monkeypatch.setattr(proposal, 'provider_config', config)
-    monkeypatch.setattr(proposal, 'complete', complete)
-    schema = {'properties': {'mappings': {'type': 'array', 'items': {'$ref': '#/$defs/Mapping'}}}, '$defs': {'Mapping': {'properties': {'sheet': {'type': 'string'}, 'classId': {'type': 'string'}}}}}
-    result = await proposal.generate(None, 'tenant', 'token', {'sheets': [{'name': name} for name in ['Rows', 'Rows2', 'Rows3', 'Other']]}, '', [], [], schema)
-    assert calls[0]['outputSchema']['$defs']['Mapping']['properties']['sheet']['enum'] == ['Rows', 'Rows2', 'Rows3']
-    assert calls[1]['outputSchema']['$defs']['Mapping']['properties']['sheet']['enum'] == ['Other']
-    assert calls[0]['classes'][0]['evidence'] == []
-    assert result['draft']['classes'][0]['evidence'][0]['sheet'] == 'Other'
-    assert 'enum' not in schema['$defs']['Mapping']['properties']['sheet']
+    async def complete(cfg, system, payload):
+        if "classes" not in payload:
+            return {
+                "name": "业务",
+                "classes": [
+                    {
+                        "id": "product",
+                        "evidence": [
+                            {
+                                "kind": "source",
+                                "sheet": "Other",
+                                "columns": ["Code"],
+                                "detail": "证据",
+                            }
+                        ],
+                    }
+                ],
+            }
+        calls.append(payload)
+        return {"mappings": []}
+
+    monkeypatch.setattr(proposal, "provider_config", config)
+    monkeypatch.setattr(proposal, "complete", complete)
+    schema = {
+        "properties": {"mappings": {"type": "array", "items": {"$ref": "#/$defs/Mapping"}}},
+        "$defs": {
+            "Mapping": {"properties": {"sheet": {"type": "string"}, "classId": {"type": "string"}}}
+        },
+    }
+    result = await proposal.generate(
+        None,
+        "tenant",
+        "token",
+        {"sheets": [{"name": name} for name in ["Rows", "Rows2", "Rows3", "Other"]]},
+        "",
+        [],
+        [],
+        schema,
+    )
+    assert calls[0]["outputSchema"]["$defs"]["Mapping"]["properties"]["sheet"]["enum"] == [
+        "Rows",
+        "Rows2",
+        "Rows3",
+    ]
+    assert calls[1]["outputSchema"]["$defs"]["Mapping"]["properties"]["sheet"]["enum"] == ["Other"]
+    assert calls[0]["classes"][0]["evidence"] == []
+    assert result["draft"]["classes"][0]["evidence"][0]["sheet"] == "Other"
+    assert "enum" not in schema["$defs"]["Mapping"]["properties"]["sheet"]
 
 
 @pytest.mark.asyncio
@@ -182,15 +306,30 @@ async def test_mapping_batch_ids_are_namespaced_without_changing_business_refere
         return {}
 
     async def complete(cfg, system, payload):
-        if 'classes' not in payload:
-            return {'name': '业务', 'classes': [{'id': 'product'}]}
-        return {'mappings': [{'id': 'product_map', 'classId': 'product', 'sheet': payload['profile']['sheets'][0]['name'], 'bindings': {'code': '编码'}}]}
+        if "classes" not in payload:
+            return {"name": "业务", "classes": [{"id": "product"}]}
+        return {
+            "mappings": [
+                {
+                    "id": "product_map",
+                    "classId": "product",
+                    "sheet": payload["profile"]["sheets"][0]["name"],
+                    "bindings": {"code": "编码"},
+                }
+            ]
+        }
 
-    monkeypatch.setattr(proposal, 'provider_config', config)
-    monkeypatch.setattr(proposal, 'complete', complete)
-    result = (await proposal.generate(None, 'tenant', 'token', {'sheets': [{'name': str(i)} for i in range(7)]}, '', [], []))['draft']
-    assert len({m['id'] for m in result['mappings']}) == 3
-    assert all(m['classId'] == 'product' and m['bindings'] == {'code': '编码'} for m in result['mappings'])
+    monkeypatch.setattr(proposal, "provider_config", config)
+    monkeypatch.setattr(proposal, "complete", complete)
+    result = (
+        await proposal.generate(
+            None, "tenant", "token", {"sheets": [{"name": str(i)} for i in range(7)]}, "", [], []
+        )
+    )["draft"]
+    assert len({m["id"] for m in result["mappings"]}) == 3
+    assert all(
+        m["classId"] == "product" and m["bindings"] == {"code": "编码"} for m in result["mappings"]
+    )
 
 
 @pytest.mark.asyncio
@@ -202,18 +341,18 @@ async def test_out_of_scope_mapping_gets_one_bounded_repair_then_fails_closed(mo
 
     async def complete(cfg, system, payload):
         calls.append(payload)
-        if 'classes' not in payload:
-            return {'name': '业务', 'classes': [{'id': 'product'}]}
-        return {'mappings': [{'id': 'map', 'classId': 'invented', 'sheet': 'Rows', 'bindings': {}}]}
+        if "classes" not in payload:
+            return {"name": "业务", "classes": [{"id": "product"}]}
+        return {"mappings": [{"id": "map", "classId": "invented", "sheet": "Rows", "bindings": {}}]}
 
-    monkeypatch.setattr(proposal, 'provider_config', config)
-    monkeypatch.setattr(proposal, 'complete', complete)
+    monkeypatch.setattr(proposal, "provider_config", config)
+    monkeypatch.setattr(proposal, "complete", complete)
     with pytest.raises(HTTPException) as caught:
-        await proposal.generate(None, 'tenant', 'token', {'sheets': [{'name': 'Rows'}]}, '', [], [])
+        await proposal.generate(None, "tenant", "token", {"sheets": [{"name": "Rows"}]}, "", [], [])
     assert len(calls) == 3
-    assert calls[-1]['repair']['code'] == 'mapping_unknown_class'
-    assert 'mapping_unknown_class' in caught.value.detail
-    assert 'invented' not in caught.value.detail
+    assert calls[-1]["repair"]["code"] == "mapping_unknown_class"
+    assert "mapping_unknown_class" in caught.value.detail
+    assert "invented" not in caught.value.detail
 
 
 @pytest.mark.asyncio
@@ -225,23 +364,54 @@ async def test_mapping_repair_corrects_reference_without_repeating_global_concep
 
     async def complete(cfg, system, payload):
         calls.append(payload)
-        if 'classes' not in payload:
-            return {'name': '业务', 'classes': [{'id': 'product', 'properties': [{'id': 'code'}]}]}
-        return {'mappings': [{'id': 'map', 'classId': 'product', 'sheet': 'Rows' if 'repair' in payload else 'Other', 'bindings': {'code': '编码'}}]}
+        if "classes" not in payload:
+            return {"name": "业务", "classes": [{"id": "product", "properties": [{"id": "code"}]}]}
+        return {
+            "mappings": [
+                {
+                    "id": "map",
+                    "classId": "product",
+                    "sheet": "Rows" if "repair" in payload else "Other",
+                    "bindings": {"code": "编码"},
+                }
+            ]
+        }
 
-    monkeypatch.setattr(proposal, 'provider_config', config)
-    monkeypatch.setattr(proposal, 'complete', complete)
-    result = await proposal.generate(None, 'tenant', 'token', {'sheets': [{'name': 'Rows', 'columns': [{'name': '编码'}]}]}, '', [], [])
+    monkeypatch.setattr(proposal, "provider_config", config)
+    monkeypatch.setattr(proposal, "complete", complete)
+    result = await proposal.generate(
+        None,
+        "tenant",
+        "token",
+        {"sheets": [{"name": "Rows", "columns": [{"name": "编码"}]}]},
+        "",
+        [],
+        [],
+    )
     assert len(calls) == 3
-    assert calls[-1]['repair']['code'] == 'mapping_outside_group'
-    assert result['draft']['mappings'][0]['sheet'] == 'Rows'
-    assert not result['draft']['mappings'][0]['accepted']
+    assert calls[-1]["repair"]["code"] == "mapping_outside_group"
+    assert result["draft"]["mappings"][0]["sheet"] == "Rows"
+    assert not result["draft"]["mappings"][0]["accepted"]
 
 
-@pytest.mark.parametrize('bindings,code', [({'unknown': '编码'}, 'mapping_unknown_property'), ({'code': '猜测字段'}, 'mapping_unknown_column')])
+@pytest.mark.parametrize(
+    "bindings,code",
+    [
+        ({"unknown": "编码"}, "mapping_unknown_property"),
+        ({"code": "猜测字段"}, "mapping_unknown_column"),
+    ],
+)
 def test_mapping_fields_must_be_exact_source_and_class_references(bindings, code):
     with pytest.raises(proposal.MappingShapeError) as caught:
-        proposal.check_mapping_batch({'mappings': [{'id': 'map', 'classId': 'product', 'sheet': 'Rows', 'bindings': bindings}]}, [{'id': 'product', 'properties': [{'id': 'code'}]}], [{'name': 'Rows', 'columns': [{'name': '编码'}]}])
+        proposal.check_mapping_batch(
+            {
+                "mappings": [
+                    {"id": "map", "classId": "product", "sheet": "Rows", "bindings": bindings}
+                ]
+            },
+            [{"id": "product", "properties": [{"id": "code"}]}],
+            [{"name": "Rows", "columns": [{"name": "编码"}]}],
+        )
     assert caught.value.code == code
 
 
