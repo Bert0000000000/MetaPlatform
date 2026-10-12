@@ -1,12 +1,26 @@
 import { expect, test } from '@playwright/test';
 import path from 'node:path';
-import { injectAuth } from './helpers/auth';
+import { decodeJwtPayload, fetchAccessToken, injectAuth } from './helpers/auth';
 
 const gateway = process.env.E2E_GATEWAY ?? 'http://127.0.0.1:8200/api/v1';
 const samples = path.resolve(import.meta.dirname, '../../public/modeling-samples');
 
+test('普通用户令牌不包含管理员角色且不能上传建模来源', async ({ request }) => {
+  const token = await fetchAccessToken(request, { username: 'metaplatform', password: 'metaplatform' });
+  expect(decodeJwtPayload(token).realm_access?.roles).toContain('user');
+  expect(decodeJwtPayload(token).realm_access?.roles).not.toContain('PLATFORM_ADMIN');
+  const fs = await import('node:fs/promises');
+  const response = await request.post(`${gateway}/ont/v2/modeling/sources`, {
+    headers: { Authorization: `Bearer ${token}` },
+    multipart: { file: { name: 'manufacturing.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: await fs.readFile(path.join(samples, 'manufacturing.xlsx')) } },
+  });
+  expect(response.status()).toBe(403);
+  expect((await response.json()).detail).toBe('数据建模修改需要管理员权限');
+});
+
 test('统一审核 → 暂缓无效关系 → 保存重开 → 所选图谱及原生发布一致', async ({ page, context, request }) => {
   const token = await injectAuth(context, page);
+  expect(decodeJwtPayload(token).realm_access?.roles).toContain('PLATFORM_ADMIN');
   const headers = { Authorization: `Bearer ${token}` };
   const prefix = `scope${Date.now().toString(36)}`;
   const fs = await import('node:fs/promises');
