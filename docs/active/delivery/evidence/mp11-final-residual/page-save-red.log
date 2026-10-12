@@ -35,4 +35,3 @@ FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_signed_page_s
 FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas[sqlite]
 FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas[pg]
 3 failed, 1 warning in 4.50s
-

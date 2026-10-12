@@ -15,7 +15,7 @@ from dataclasses import asdict, replace
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -390,7 +390,6 @@ def get_template(tenant_id: str, template_id: str) -> ApphubTemplate | None:
 # Write API — apps
 # ---------------------------------------------------------------------------
 def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> ApphubApp:
-    from sqlalchemy import text
     from sqlalchemy.exc import IntegrityError
 
     if not tenant_id or app.tenant_id != tenant_id:
@@ -401,8 +400,11 @@ def put_app(tenant_id: str, app: ApphubApp, *, insert_only: bool = False) -> App
             # Serialize same-code registration across processes, including legacy random IDs.
             if s.bind.dialect.name == "postgresql":
                 s.execute(
-                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
-                    {"key": f"apphub-create:{tenant_id}:{app.code}"},
+                    select(
+                        func.pg_advisory_xact_lock(
+                            func.hashtextextended(f"apphub-create:{tenant_id}:{app.code}", 0)
+                        )
+                    ),
                 )
             duplicate = s.execute(
                 select(models.ApphubAppORM.id)

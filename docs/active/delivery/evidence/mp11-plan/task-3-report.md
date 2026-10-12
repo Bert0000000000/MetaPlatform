@@ -31,6 +31,7 @@ Result: 1 failed, exit 1. Generator executable did not exist (MODULE_NOT_FOUND);
 GREEN after generator implementation: 16/16 passed, exit 0.
 
 Final covering validation after source visual review:
+
 - `$env:E2E_BASE_URL='http://127.0.0.1:9361'; $env:MP11_ARTIFACT_MODE='dev'; pnpm --dir metaplatform-frontend/apps/web exec playwright test tests/e2e/website-entry.spec.ts --project=web --reporter=list` → 16 passed (6.0 s), exit 0.
 - `pnpm --dir metaplatform-frontend --filter @mate/web build` → tsc -b + Vite, 11126 modules transformed, built in 19.65 s, exit 0. Existing large SPA chunk warning remains; no type errors. No production source changes after this final build.
 - Same complete focused Playwright command using E2E_BASE_URL=http://127.0.0.1:9362 and MP11_ARTIFACT_MODE=build → 16 passed (5.3 s), exit 0.
@@ -40,13 +41,14 @@ Final covering validation after source visual review:
 ## Actual entry / static / accessibility evidence
 
 Real dev and built preview requests:
+
 - /website/ → 200, correct H1, all four /home anchors.
 - /website/index.html → 200, same content and anchors.
 - Browser request receipts contain only the two website document paths; no /api/ calls on public page. Test asserts no business requests.
 - Anonymous CTA really loads the existing SPA /home; AuthGuard routes to /login and existing username textbox is visible. No token injected, no IAM login submitted, no credentials entered, no business API mocked. This proves anonymous login entry only, not authenticated workspace success.
 - Existing dev login has preset development fields/hint. Final tests turn off trace/video/automatic screenshot and do not capture login. Only public website screenshots retained; any early failed-run artifacts were replaced by final clean runs.
 - Public screenshots at 360, 390, 768, 1440: scrollWidth <= viewport width; keyboard Tab reaches skip link, Enter focuses main; mobile summary is operated with keyboard Enter; order navigation works. Reduced-motion animation is none and scroll behavior auto. Native FAQ/details remain accessible without JS.
-- Default JS-disabled CTA navigates to /home. Generated standalone HTML has all four hrefs set to https://platform.example.com/home even with JS disabled (synthetic public URL used for navigation configuration testing, not a deployed platform claim).
+- Default JS-disabled CTA navigates to /home. Generated standalone HTML has all four hrefs set to <https://platform.example.com/home> even with JS disabled (synthetic public URL used for navigation configuration testing, not a deployed platform claim).
 - javascript:, data:, scheme-relative and synthetic userinfo URLs retain /home. Valid HTTPS and same-origin path override all four links. Generator rejects userinfo without output/leaking supplied fixture.
 
 Evidence is preserved under `.superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/task-3-evidence/`:
@@ -67,7 +69,7 @@ No auth, API, Dockerfile, backend, historic accepted documentation or release/Ga
 
 ## Resource ownership / limits
 
-- Vite dev: PID 58796, http://127.0.0.1:9361/website/. Started only after 9361 was verified free. Controller asked to retain this user-facing preview for Task 8 handoff; it remains owned by this task and is transferred to controller. When no longer needed, confirm its command line includes vite + 9361, then Stop-Process -Id 58796. Do not kill by default port or stop 9200.
+- Vite dev: PID 58796, <http://127.0.0.1:9361/website/>. Started only after 9361 was verified free. Controller asked to retain this user-facing preview for Task 8 handoff; it remains owned by this task and is transferred to controller. When no longer needed, confirm its command line includes vite + 9361, then Stop-Process -Id 58796. Do not kill by default port or stop 9200.
 - Built Vite preview: PID 13996, port 9362; stopped after final validation after checking its command line. No other services/containers/databases were restarted or stopped.
 - Isolated dev uses the unchanged default API target 8100; provider/settings discovery on login can report ECONNREFUSED when that target is absent. This does not affect the public website and is not evidence of usable authenticated backend.
 - No real deployed standalone/public address supplied. DNS, public release, actual account login, business-chain acceptance, user trials and long-running observations remain outside this Task 3 evidence.
@@ -79,6 +81,7 @@ Commit: 1894f18c — feat(website): add canonical public platform entry. Only th
 Independent review found configure-platform.mjs:30,33 used replacement strings containing the escaped public URL. Confirmed against current source and reproduced browser behavior: JavaScript interprets dollar replacement tokens in string replacement arguments, so HTML escaping alone did not preserve destination fidelity.
 
 Changes limited to configure-platform.mjs and website-entry.spec.ts:
+
 - Both href and meta replacements now use callbacks returning literal attribute strings.
 - Added five generated-artifact regressions for $&, dollar-backtick, dollar-apostrophe, $$ and $1. Each runs the actual generator, loads its publishing copy with JavaScript disabled, asserts exactly four entry links, verifies every href matches the original URL and verifies meta content matches the same URL.
 - Protocol/userinfo validation, exclusive output creation and fixed diagnostics are unchanged; existing security/default-link checks remain in the full focused suite.

@@ -58,9 +58,10 @@ Inherited warnings: Starlette/httpx test-client deprecation and existing short-H
 Command:
 pwsh -NoProfile -File metaplatform-frontend/apps/web/tests/e2e/helpers/run-mp11-relationship.ps1
 
-Runner launches the actual v2 router, install_auth middleware and PgOntologyRepository on a guarded loopback test API; launches a separate Vite/cache; creates one fresh codex_mp11_ui_<UUID> database in the dedicated PG container. Two tenants are seeded in the SAME per-run DB, including neighbor object types and a neighbor relationship.
+Runner launches the actual v2 router, install_auth middleware and PgOntologyRepository on a guarded loopback test API; launches a separate Vite/cache; creates one fresh `codex_mp11_ui_<UUID>` database in the dedicated PG container. Two tenants are seeded in the SAME per-run DB, including neighbor object types and a neighbor relationship.
 
 Successful result: 1 passed (7.0s total; scenario 6.2s), verifying:
+
 - Own relationship catalog initially empty; neighbor relationship excluded; only authorized own object types; neighbor absent from UI options.
 - Preselected Customer; relationship definition and attribute created by actual HTTP 200.
 - C001/O001 association with persisted property created by actual HTTP 200.
@@ -86,8 +87,9 @@ pnpm --dir metaplatform-frontend --filter @mate/web test:unit --maxWorkers=1 --m
 Result: 71 passed / 1 failed (11 files, 72 tests). Failure is unchanged ProposalConfirmDrawer.test.tsx: only reports success after authoritative confirmation/execution states, then shows audit evidence.
 
 Systematic-debugging baseline evidence:
+
 - Current focused ProposalConfirmDrawer test: 1 failed / 2 passed, missing executeProposal invocation.
-- Exact ProposalConfirmDrawer.tsx, its test and OntologyStagingPreview.tsx obtained using git show 02b42e8a840d3da320158eede66808c3f5bc979b:<path> into ignored test scratch. Current source not modified.
+- Exact ProposalConfirmDrawer.tsx, its test and OntologyStagingPreview.tsx obtained using `git show 02b42e8a840d3da320158eede66808c3f5bc979b:<path>` into ignored test scratch. Current source not modified.
 - Isolated Vitest config explicitly includes ONLY the snapshot test; result 1 failed / 2 passed, identical failure.
 - Command: pnpm --dir metaplatform-frontend/apps/web exec vitest run --config tests/e2e/.artifacts/codex-mp11-baseline-unit/vitest.config.ts --maxWorkers=1 --minWorkers=1
 - Snapshot test Git blob equals baseline: 7db49768780f8f198ad5e18722613e668114b0be. Current drawer/test diff versus base is empty.
@@ -101,6 +103,7 @@ Self-review verified N:N and all three directionality enums, corrected response 
 Dedicated PostgreSQL remains codex-mp11-relationship-pg on 127.0.0.1:55497. Original codex_mp11_relationship DB preserved. Read regressions use unique test tenants there.
 
 Successful UI resources:
+
 - API 127.0.0.1:55498 (launcher PID 47744); Vite 127.0.0.1:55499 (PID 25748).
 - DB codex_mp11_ui_a530eecd67c64dba9fc053d2eeeb7306; main tenant mp11-ui-257bb070aa1c4eedba1d0f0278c4b521 plus neighbor.
 - Runner terminated only its own process trees and dropped only its generated regex-checked DB. Follow-up catalog count for this DB was 0; 55498/55499 had no listeners.
@@ -110,6 +113,7 @@ Successful UI resources:
 Remaining concern: full frontend suite remains 71/72 because of independently reproduced baseline proposal fixture failure. Owned UI/read tests and real API/PG E2E have no remaining failures. No formal release or live identity acceptance is claimed.
 
 Owned committed files:
+
 - mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py
 - mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py
 - mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_reads.py
@@ -135,6 +139,7 @@ Status: fixes implemented and verified; ready for scoped rereview. This appendix
 ### Changes / findings addressed
 
 I1:
+
 - Create UI now explicitly distinguishes an unknown/failed directory from a successfully loaded directory. New save is disabled until success; failed directory has retained form inputs and retry feedback.
 - New forms send POST /link-types?create_only=true. Editing/default callers preserve upsert compatibility.
 - Added keyword-only create_only=False to the existing repository protocol and implementations. InMemory relationship writes check-and-write under one RLock (not a claim that its entire repository is thread-safe).
@@ -143,16 +148,19 @@ I1:
 - Tests cover duplicate strict creates, all original DTO content remaining unchanged, Memory/PG competing writers with one winner, a RID claimed after catalog loading, and unchanged default edit semantics.
 
 I2:
+
 - listObjectTypes wrapper accepts the real limit/offset parameters without changing old callers' default behavior.
 - Definition editor loads all authorized pages in chunks of 100, deduplicates RID, stops on the final short page, rejects a non-progressing pagination response, and retains later-page source deep links. Partial/failed loading still blocks save and exposes existing retry feedback.
 - UI fixture has 102 types; real PG UI fixture has 104 owned types plus neighbor-tenant types. Order and z_customer source are after the first page and both usable.
 
 M1:
+
 - Removed unsupported offset/limit progression and fake load-more controls from instance endpoint editor. It reads the actual full authorized class list, as the current individuals API contract specifies.
 - UI boundary cases 200/201 individuals verify all are selectable without fake pagination. Real E2E has 201 actual customers and selects from that full response.
 - Large individual lists still use the current full-response/native-select contract; implementing actual API pagination remains outside this fix.
 
 M2:
+
 - A failed next-page instance request retains its error and enables previous-page navigation. Returning triggers an actual previous-page request; failed rows are not shown as successful or empty.
 - Covered in UI test and real HTTP/PG harness using explicit fixture-only transient 503 injection.
 - Real pointer interaction exposed directory retry at the top of the sheet being intercepted by existing app tabs. Moved directory status/retry next to save controls; final E2E uses normal click (no force-click bypass).
@@ -191,6 +199,7 @@ pwsh -NoProfile -File metaplatform-frontend/apps/web/tests/e2e/helpers/run-mp11-
 
 Final result: 1 passed (scenario 9.4s, total 10.2s). Log: task-2-fix1-e2e.log.
 Scenario retains original positive/negative tenant/association/cardinality/reload/both-side/read-only/edit chain and additionally verifies:
+
 - 104 actual owned type definitions, neighbor excluded, later-page target and source deep link;
 - 201 actual individuals and no fake load-more;
 - strict-create query sent, actual second session claims RID after browser snapshot, browser receives actual 409 and retains description, winner description remains, duplicate strict create actual 409;

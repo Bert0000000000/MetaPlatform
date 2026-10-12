@@ -20,4 +20,3 @@ packages/mate-app-hub/tests/test_apphub_shortlink_01.py: 5 warnings
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 232 passed, 79 warnings in 178.51s (0:02:58)
-

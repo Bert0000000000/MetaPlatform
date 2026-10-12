@@ -1,6 +1,6 @@
 # Task6 Fix round2 scoped re-review
 
-### Finding Verdicts
+## Finding Verdicts
 
 - **N1 — Important — 历史查询遗漏已验证归属的 edit-set 别名回执 — ADDRESSED。** `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py:4593` 按持久化 proposal kind 选择唯一路径：`edit_set` 读取 `parameters.parameters.provenance`，`action` 读取 `parameters.provenance`，其他 kind 为 NULL。不会用另一种形状补全或覆盖归属。限定包外只读了这一个具体存储形状风险的 cutoff `_propose_edit_set_pg`：`:6717` 实际落库 kind=`edit_set`，`:6724` 保存 `{edits: ..., parameters: dict(parameters)}`，因此修复路径与已有存储一致。原 `action` 路径保持不变。
 - **N1 过滤与覆盖 — ADDRESSED。** 同文件 `:4580` 保留 Action 条件；`:4583`–`:4589` 要求完整 app/page/snapshot 归属与当前 tenant，按 proposal_id+tenant 联结 audit/proposal；`:4595`–`:4603` 全部归属条件位于 ORDER BY/LIMIT 之前，`:4605` 保留 finally 关闭连接。`tests/test_apphub_order_binding.py:182`–`:226` 将原实际 PG 测试参数化为 action/edit_set，各自真实确认/执行后插入更新的 other-app/page/version/无归属记录，再用 LIMIT1 找回第一条 audit；`:205`–`:215` 加入另一形状的伪归属，证明不被 coalesce；`:216` 验证跨租户为空，`:218`–`:226` 验证独立 Python 子进程找回相同 audit。该测试没有生成不同 Action 的竞争回执；Action 隔离结论来自仍在 LIMIT 前的明确 SQL 条件及原已接受授权边界，并未把测试数当作额外分支覆盖。

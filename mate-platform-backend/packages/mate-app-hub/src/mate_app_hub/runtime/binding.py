@@ -61,6 +61,8 @@ from urllib.parse import quote
 import httpx
 from fastapi import HTTPException, Request
 
+from mate_clients.security.outgoing import user_async_client
+
 
 def ontology_client(request: Request) -> httpx.AsyncClient:
     ctx = request.state.ctx
@@ -71,11 +73,12 @@ def ontology_client(request: Request) -> httpx.AsyncClient:
         or not authorization.startswith("Bearer ")
     ):
         raise HTTPException(status_code=403, detail="Verified reader bearer required")
-    return httpx.AsyncClient(
+    return user_async_client(
+        authorization,
+        tenant_id=str(ctx.tenant_id),
         base_url=(
             os.getenv("TECH_ONT_URL") or os.getenv("ONTOLOGY_URL") or "http://localhost:8100"
         ).rstrip("/"),
-        headers={"Authorization": authorization},
         timeout=20,
     )
 

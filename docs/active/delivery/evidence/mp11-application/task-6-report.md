@@ -1,4 +1,5 @@
 > 历史执行记录：任务6已在提交0f68c3d8通过第二轮限定复审，当前结论见../MP11-APPLICATION.md。中间检查点、旧PID和早期pending清单只代表当时状态，最新结果位于末尾Fix round2段；Fix1关于endTime声明的错误已在Fix2明确纠正。命令中忽略目录里的旧fixture脚本属于历史验证环境，不是当前候选版启动入口。此处真实HTTP/PG证据使用signature-bypass USER fixture；正式签名身份和完整候选由任务8验收。
+
 # Task6 implementation and fix-round report
 
 > Latest result: fix round1 complete locally, pending controller independent re-review; see final fix section below. Fix BASE ae9ab8ffb4a5692506b0bde0b6ae804564a9761d.
@@ -111,6 +112,7 @@ All Python commands use `mate-platform-backend/.venv/Scripts/python.exe`, byteco
 ## TDD commands/evidence
 
 From mate-platform-backend using .venv/Scripts/python.exe -m pytest and -p no:cacheprovider:
+
 1. test_apphub_publication.py initially RED3: no status, no page definition, cross-tenant overwrite DID NOT RAISE. GREEN3 after implementation.
 2. Added facade/page HTTP/unpublished runtime/readonly tests: RED seed list vs [] and app404; fixed conftest import collision, observed empty publish200 vs422. Full focused file GREEN6.
 3. Shortlink test RED SQL lookup None; GREEN -k shortlink: 1 passed.
@@ -133,7 +135,6 @@ Warnings: existing Starlette/httpx deprecation and existing auth fixture HMAC le
 - Real PG fresh+0020 upgrade+new-process durability, actual Order/Customer/ObjectSet/LinkInstance/Action Proposal human confirmation/execution/receipt/idempotency/expiry/denial.
 - Real UI/API E2E; final related regression + tsc/build; self-review and owned-only commit.
 - Before service start announce ports/PID ledger. Dedicated PG loopback55497, write only codex_mp11_ DB. Protect9200PID52012/9361PID58796/sharedIAM. Task8 owns real issuer/login integration.
-
 
 ## Checkpoint 2026-10-11 (resumed after context compaction)
 
@@ -186,9 +187,10 @@ Warnings: existing Starlette/httpx deprecation and existing auth fixture HMAC le
 - OFFLINE reference UI final self-review correction now displays 已下线; this small frontend change prompted final tsc/build repeat (both0;build20.20s), not another unrelated suite. Browser3 result preceded only Ruling23 creation hardening and this label; actual finalAPI creation/recovery checks cover the backend delta. No claim of fresh real-issuer identity acceptance.
 - No new controller dependency is pending. Independent review should compare fixed BASE to this commit, including the approved0017 and PG declarative helper changes. Final resources intentionally retained with exact ownership ledgers; no unknown process/database deletion performed.
 
-
 ## Fix round 1 checkpoint — 2026-10-12 00:56
+
 Base ae9ab8ffb4a5692506b0bde0b6ae804564a9761d. All I1–I6 accepted; M1 in scope, M2 remains Task8. No fix commit yet.
+
 - I1/I2: Memory+SQLite RED4 (false-success ID deletion / missing insert_only) → GREEN4. Deletion uses resolved code and checks actual result; tenant+code UUID5 registration uses atomic create-only, PG advisory transaction same-code lock, legacy ID/code rejection without overwrite/cleanup. Memory ID lookup aligned with SQL. Actual PG two-process same-code test PASS; existing duplicate legacy rows retained and creation refused.
 - I5: RED missing published_version → GREEN. App DTO now distinguishes draft version from published snapshot version; PATCH→publish→rollback regression PASS; cards/detail show draft/running explicitly.
 - I4: RED absent publication-check → GREEN. Server checks saved components, bindings, reference fingerprints, caller read/write, registered Action target/human decision rule, runtime tree and actual data queries. AppDetail renders six real pass/fail/unknown results and review/confirm step. Final publication recomputes checks; dependency failure retains saved definitions. Publication focused suite33 PASS. No approval-expiry claim.
@@ -197,7 +199,6 @@ Base ae9ab8ffb4a5692506b0bde0b6ae804564a9761d. All I1–I6 accepted; M1 in scope
 - Frontend targeted3 files9 PASS. One initial PublishValidation test collection hit existing Semi/lottie canvas dependency; scoped UI-library mock fixed test environment, no production suppression.
 - Docker was unavailable, controller restored existing engine and verified dedicated PG55497. No shared container changes by implementer. Actual PG resumed only after controller confirmed owned target. API/Vite not restarted yet this round.
 Remaining: canonical new operations/precise release array DTO samples; browser filtered order→receipt reopen, provenance-load race regression, actual API fresh process, amended full suite and frontend tsc/build, self-review and owned commit. Prior migration fresh/upgrade evidence remains baseline; no schema/migration changes this round. Boundary: legacy receipt without complete page/version provenance is not guessed into history; Task7 Proposal expiry and Task8 signed USER classification/full candidate acceptance remain pending.
-
 
 ## Fix round 1 final — 2026-10-12 01:19
 
@@ -263,7 +264,6 @@ Self-review checked current pointer vs loaded snapshot race, direct-provenance a
 
 Fix-round 1 owned commit: **e6eb1564565ca6df0efa9fd263505809eec9f09a** (parent/base ae9ab8ffb4a5692506b0bde0b6ae804564a9761d). Post-commit verification: exactly the approved 27 files; index empty; no owned source changes remaining. Controller documents, user WIP, screenshots and tracked bytecode remain uncommitted and untouched by staging. Implementation is ready for controller-led independent re-review; no overall Task6/Goal approval is claimed.
 
-
 ## Fix round2 — 2026-10-12 01:44
 
 BASE: `e6eb1564565ca6df0efa9fd263505809eec9f09a`. Read full `task-6-fix-round2.md`, brief and Fix1 final report. Scope only N1 and eligible M1. Original I1–I6 accepted by independent review; M2 stays Task8. No extra dependency, migration, frontend change or architecture request.
@@ -277,6 +277,7 @@ Existing actual-PG regression is parametrized for action/edit_set. Both execute 
 The approved existing `task-6-fix1-provenance-check.py` now executes both legal HTTP aliases against the actual saved filtered Browser Order publication. `propose-edit-set` creates pending, real USER fixture confirms and executes; `apply-edit-set` uses its existing authorized human immediate-confirm path. For each, a newly created order is present in the actual ObjectSet before execution and absent afterward; app history contains the precise returned audit_id, whose persisted Proposal has the matching target/action and kind=edit_set. Reopening via a fresh API process recovers both same audits. Forged top/nested app/page/version and both aliases' forged attribution/custom edits still reject. No client service-identity fallback or custom edits substitution was added.
 
 Exact actual persisted receipts (see `task-6-fix2-provenance-evidence.json`):
+
 - propose-edit-set: `prop-44e84e655718` / `audit-ab1b8291ac8d`.
 - apply-edit-set: `prop-b30f296f9da3` / `audit-071ebc1b5bda`.
 - Shared validated app `app-e1598b1298475cdf91c87b5bf7ecca26`, page `page-f5329031a0285d1d9d4fb07a9eae7409`, publication `ver-f1d4394ba9b146b7a9002bb0090f1cf1`.
@@ -305,6 +306,7 @@ Before any execution/restart, verified dedicated container `d259c84a755a19ea18a1
 Fixture identity still bypasses signature; this is real handler/tenant/USER-scope/PG execution proof, not Task8 signed issuer login. Attribution means validated actual binding association, not proof of browser origin. Task7 approval expiry, Task8 real USER/SERVICE issuer classification and M2 inherited warnings remain pending. Historical provenance-free receipts remain excluded; unrelated kinds cannot acquire application history from arbitrary parameters. No need for controller dependency adjudication emerged. Independent re-review is still required, not overall Task6/Goal approval.
 
 Source commit contains only:
+
 - `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py`
 - `mate-platform-backend/packages/mate-app-hub/tests/test_apphub_order_binding.py`
 - `mate-platform-backend/contracts/openapi/services/apphub.yaml`

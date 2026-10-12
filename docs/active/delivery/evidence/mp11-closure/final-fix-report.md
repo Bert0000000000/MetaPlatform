@@ -22,7 +22,7 @@ Only the three named non-action proposal handlers now check runtime platform.wri
 
 Eighteen new normal RSA-signed cases exercise memory and **actual PG**: readonly direct denial leaves the fresh tenant's stored proposal count unchanged; scoped USER/SERVICE creation succeeds; service human confirmation and wrong-tenant creation remain denied. Existing Ontology package and real Browser action/replay flows cover the untouched execution boundaries.
 
-The required **actual** MCP probe exposed a pre-existing consumer defect: ont_propose_model_type always sent an ont.__TENANT__ RID, so the correct upstream tenant guard returned403 and the REST MCP bridge surfaced500. This was preserved in actual-mcp-model-forwarding-failure.json. Controller Ruling41 authorized exactly OntProposeModelTypeTool RID assembly/comment and focused test_ontology_write_tools.py regressions. The RID now uses existing current_caller().tenant_id whenever context exists, and existing self._tenant only when context is None. A bound empty tenant cannot fall back. No client tenant argument, token decoding, scope/HITL widening, downstream guard change or origin-error refactor.
+The required **actual** MCP probe exposed a pre-existing consumer defect: ont_propose_model_type always sent an `ont.__TENANT__` RID, so the correct upstream tenant guard returned403 and the REST MCP bridge surfaced500. This was preserved in actual-mcp-model-forwarding-failure.json. Controller Ruling41 authorized exactly OntProposeModelTypeTool RID assembly/comment and focused test_ontology_write_tools.py regressions. The RID now uses existing current_caller().tenant_id whenever context exists, and existing self._tenant only when context is None. A bound empty tenant cannot fall back. No client tenant argument, token decoding, scope/HITL widening, downstream guard change or origin-error refactor.
 
 Actual-proposal-scopes-da9c5eef585a.json records normal signed Keycloak writer/service/readonly identities, direct three-kind readonly403 with PG counts56/56,58/58,60/60, USER/SERVICE positives and service human denial. All three MCP proposal tools then forward for USER, SERVICE and a newly issued key scoped to platform.read/platform.write/ont.read/ont.write. Every returned proposal is read back as pending through the real API. Readonly tool calls add no proposal. The new key is revoked; subsequent use returns401. Earlier failed-proof key was also exactly identified and revoked; models/pending proposals remain retained.
 
@@ -37,6 +37,7 @@ Nine focused consumer cases use the **real catalog client reader** with controll
 Actual signed Browser fixture fd816e17f27b creates a separate additive mp11-catalog-fd816e17f27b tenant,101 fillers plus Late Customer and Late Order (103 total). A real API proof establishes100 first-page records and three later-page records, with both business models absent from the first page. The original relationship fixture remains exactly104 types and its old assertions are unchanged.
 
 New mp11-catalog-pagination.spec.ts provides three real current API/PG/UI receipts:
+
 - catalog-mapping-fd816e17f27b.json: Late Order chosen; Late Customer is available; actual registered PG schema/columns discovered; confirmed mapping saved/read back; two rows synchronized.
 - catalog-binding-fd816e17f27b.json: both late models, actual total field, registered relation/action selected; application page saved and reopened with both model selections retained.
 - catalog-onboarding-fd816e17f27b.json: real signed subject/tenant selects the late model; reload and explicit revalidation retain it, with no error.
@@ -91,6 +92,7 @@ Initial actual proposal fixture422 (invalid new underscore object/property slugs
 Only source API55522 was reloaded, twice within this same wave: first for I1/I2 handlers, then for the precise necessary MCP extension. Every stop used fresh listener ancestry plus full recorded identity and the fixed immediate termination guard. First shorthand image-name guard failed closed before Stop; verified actual image is pgvector/pgvector:pg16, not the brief's shorthand pgvector:pg16.
 
 Current exact identities from resources-after-api-reload-mcp.json / runtime-handoff.json:
+
 - API listener69576 / launcher68220, full executable/command/CreationTicks recorded.
 - Auth listener45364 / launcher40756; Web9368 PID22216: exact original records unchanged.
 - Goal PG ID d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa, image sha256:9b05db12a35460fff0587e009f9326e414a53e9484555547f96d214a2ba98ef7, loopback55497.
@@ -111,7 +113,6 @@ Exactly24 source/test/documentation paths are owned by ee52a200; listed below. E
 Read the full owned backend/UI/runner/new test diff and file contents, including segments re-read after truncated output. Confirmed one shared app lookup, ID passing for already-resolved publication/shortlink calls, exactly three new write checks, shared authorized catalog paging, no partial-success/no-progress behavior, tenant-aware MCP RID and immediate full stop guard. Corrected only the documented new fixture assumptions, preserved original assertions and inherited line ending convention. Explicit staging was verified against the24-path allowlist; source commit left index empty. Final evidence staging is also checked explicitly; no protected WIP included.
 
 Large existing api.py/ontology_proxy.py/verify.py files and the pre-existing long PowerShell assembly are kept focused, not restructured. No remaining implementation correctness uncertainty was found in self-review. M1 maintenance,13 inherited skip boundaries, nonprivileged RLS, external dsh/WorkBuddy/native clients, public rollout/domain/HTTPS, direct-JWT immediate logout revocation, browser WS gateway,72-hour SLO/user measurement and final controller approval remain distinct. This report does not mark any global gate/Goal/Task8 complete.
-
 
 ### Explicit owned source paths
 
@@ -142,12 +143,12 @@ Large existing api.py/ontology_proxy.py/verify.py files and the pre-existing lon
 
 ### Exact execution commands and working directories
 
-
 **backend-red-3** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
 
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-app-hub/tests/test_mp11_app_identity.py packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py ../scripts/acceptance/mp11/tests/test_manage_stop.py -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-1040ce3c
 ```
+
 Exit 1; elapsed 15.86s. Full output: docs\active\delivery\evidence\mp11-final-fix\backend-red-3.log
 
 **backend-focused-green** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -155,6 +156,7 @@ Exit 1; elapsed 15.86s. Full output: docs\active\delivery\evidence\mp11-final-fi
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-app-hub/tests/test_mp11_app_identity.py packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py ../scripts/acceptance/mp11/tests/test_manage_stop.py -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-2b692f69
 ```
+
 Exit 0; elapsed 16.63s. Full output: docs\active\delivery\evidence\mp11-final-fix\backend-focused-green.log
 
 **frontend-red-4** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web
@@ -162,6 +164,7 @@ Exit 0; elapsed 16.63s. Full output: docs\active\delivery\evidence\mp11-final-fi
 ```text
 pnpm.cmd exec vitest run src/api/ont/catalog-consumers.test.tsx
 ```
+
 Exit 1; elapsed 11.24s. Full output: docs\active\delivery\evidence\mp11-final-fix\frontend-red-4.log
 
 **frontend-focused-green-2** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web
@@ -169,6 +172,7 @@ Exit 1; elapsed 11.24s. Full output: docs\active\delivery\evidence\mp11-final-fi
 ```text
 pnpm.cmd exec vitest run src/api/ont/catalog-consumers.test.tsx src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx src/pages/apphub/components/OrderReviewBinding.test.tsx src/pages/dashboard/components/ProductOnboarding.test.tsx
 ```
+
 Exit 0; elapsed 2.87s. Full output: docs\active\delivery\evidence\mp11-final-fix\frontend-focused-green-2.log
 
 **app-identity-complete-red-2** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -176,6 +180,7 @@ Exit 0; elapsed 2.87s. Full output: docs\active\delivery\evidence\mp11-final-fix
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-app-hub/tests/test_mp11_app_identity.py -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-34802312 -o pythonpath=
 ```
+
 Exit 1; elapsed 36.2s. Full output: docs\active\delivery\evidence\mp11-final-fix\app-identity-complete-red-2.log
 
 **apphub-package** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -183,6 +188,7 @@ Exit 1; elapsed 36.2s. Full output: docs\active\delivery\evidence\mp11-final-fix
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-app-hub/tests -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-3db27133
 ```
+
 Exit 1; elapsed 149.63s. Full output: docs\active\delivery\evidence\mp11-final-fix\apphub-package.log
 
 **apphub-package-final** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -190,6 +196,7 @@ Exit 1; elapsed 149.63s. Full output: docs\active\delivery\evidence\mp11-final-f
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-app-hub/tests -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-53408772
 ```
+
 Exit 0; elapsed 181.08s. Full output: docs\active\delivery\evidence\mp11-final-fix\apphub-package-final.log
 
 **ont-package** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -197,6 +204,7 @@ Exit 0; elapsed 181.08s. Full output: docs\active\delivery\evidence\mp11-final-f
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-tech-ont/tests -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-003c5772
 ```
+
 Exit 0; elapsed 284.41s. Full output: docs\active\delivery\evidence\mp11-final-fix\ont-package.log
 
 **strict-signed-tenant-cover** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -204,6 +212,7 @@ Exit 0; elapsed 284.41s. Full output: docs\active\delivery\evidence\mp11-final-f
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-platform/tests/test_mp11_signed_identity.py -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-61e2f4e8
 ```
+
 Exit 0; elapsed 5.14s. Full output: docs\active\delivery\evidence\mp11-final-fix\strict-signed-tenant-cover.log
 
 **mcp-model-tenant-red** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -211,6 +220,7 @@ Exit 0; elapsed 5.14s. Full output: docs\active\delivery\evidence\mp11-final-fix
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-tech-mcp/tests/test_ontology_write_tools.py -k model_proposal -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-46f79f39
 ```
+
 Exit 1; elapsed 2.13s. Full output: docs\active\delivery\evidence\mp11-final-fix\mcp-model-tenant-red.log
 
 **mcp-write-tools-green** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -218,6 +228,7 @@ Exit 1; elapsed 2.13s. Full output: docs\active\delivery\evidence\mp11-final-fix
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-tech-mcp/tests/test_ontology_write_tools.py -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-367f1215
 ```
+
 Exit 0; elapsed 2.94s. Full output: docs\active\delivery\evidence\mp11-final-fix\mcp-write-tools-green.log
 
 **mcp-package** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend
@@ -225,6 +236,7 @@ Exit 0; elapsed 2.94s. Full output: docs\active\delivery\evidence\mp11-final-fix
 ```text
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Scripts\python.exe -m pytest -c pyproject.toml packages/mate-tech-mcp/tests -q --tb=short -p no:cacheprovider --basetemp=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-fix-pytest-4cc12c54
 ```
+
 Exit 0; elapsed 70.32s. Full output: docs\active\delivery\evidence\mp11-final-fix\mcp-package.log
 
 **web-types** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web
@@ -232,6 +244,7 @@ Exit 0; elapsed 70.32s. Full output: docs\active\delivery\evidence\mp11-final-fi
 ```text
 pnpm.cmd exec tsc --noEmit
 ```
+
 Exit 0; elapsed 17.15s. Full output: docs\active\delivery\evidence\mp11-final-fix\web-types.log
 
 **web-build** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web
@@ -239,6 +252,7 @@ Exit 0; elapsed 17.15s. Full output: docs\active\delivery\evidence\mp11-final-fi
 ```text
 pnpm.cmd run build
 ```
+
 Exit 0; elapsed 41.95s. Full output: docs\active\delivery\evidence\mp11-final-fix\web-build.log
 
 **actual-browser-fd816e17f27b** — cwd: D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web
@@ -246,6 +260,7 @@ Exit 0; elapsed 41.95s. Full output: docs\active\delivery\evidence\mp11-final-fi
 ```text
 pnpm.cmd exec playwright test --config D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/scripts/acceptance/mp11/playwright.config.ts
 ```
+
 Exit 0; elapsed 83.83s. Full output: docs\active\delivery\evidence\mp11-final-fix\actual-browser-fd816e17f27b.log
 
 Actual orchestration commands (repository root; private inputs remain outside Scratch):

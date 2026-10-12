@@ -1,0 +1,1497 @@
+{
+  "historical_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+  "purpose": "Satisfy existing formatting gates without excluding evidence. Original Git blobs and a local byte-for-byte backup remain available. Historical runtime results are not refreshed or promoted.",
+  "original_local_backup": ".ci/evidence-original-d353.zip",
+  "files": [
+    {
+      "path": "docs/active/delivery/evidence/MP11-AGENT-COMPATIBILITY.md",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "90749d3f40e5f82d68cb22c0525ea1ab626dd63e47ebb70ca46b6e64b872bb23",
+      "working_bytes_before_sha256": "db3a18254ff75d44a2ba2a9061d625b30c31f76deae3308feeab8abd4203e468",
+      "working_bytes_after_sha256": "7bed97538096ae47edbeed4bea2c2ba10d0669830db746ed2770e783e3253a57",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "17e72a9fa0553279bbd9a96b86fe60236de97dfb4ca08389bdadc7dd90f46660"
+    },
+    {
+      "path": "docs/active/delivery/evidence/MP11-APPLICATION.md",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "d441cddcab47606795adb4772bd2f0fea53531c9b213c92ef0055fda1c1c08cb",
+      "working_bytes_before_sha256": "96c265b7fece9b39b5af52609f99a7a0496330ee8915779e23b12012881ce0c3",
+      "working_bytes_after_sha256": "ba073566d2d8dba6a370244c6202ebcaa03afa8018d63d7639e0e8493aba6b7e",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "406bc5e534f964123afe6aad29637392cbcf9b8d1d2b6e5b5d80c48bb8a850f6"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-canonical-evidence.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "b229489ac965af21619f6a516f93c46b3fc5f9fb3364285eae10949485be5728",
+      "working_bytes_before_sha256": "4350695d0eff915bb483205caa4628673d85b441333a8b795aa0b26f012b3d2a",
+      "working_bytes_after_sha256": "9a802e98b1641e5680aebabe200983fd85663b0eede2aaf0814ca9e81f2fc11d",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "834026477e6599ce6a92f41c3db8b66c48eacb222b20b62dfc84e0b1cd65bd3c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-fix1-api-evidence.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "1399e38b7a943bfdddc54621e0a1d6bf3267fc0eb3d38b3663cc959973082801",
+      "working_bytes_before_sha256": "92a4e3efcd17281888fa382f01b2f0ca2441db2162bb6f3ec1dccb95075075e0",
+      "working_bytes_after_sha256": "8383ea27b8067df19ec7e9add15150f3d8dfcc811891601fe6e2584d59a259c6",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "11648e62382df49b1ad24f03535167668df537f8811328eb5b601382595e1a90"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-fix1-provenance-evidence.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7b1f7b7627460cc0d6a38326df62211323af9278dd70f5e09702a47f3c9f6d77",
+      "working_bytes_before_sha256": "b99188ffa3e7f956f9d53b3669a06888acb01ed4cf56f493e6e57279177de671",
+      "working_bytes_after_sha256": "62f494bac5035744b69d686998b0cc331695881a8413597abfbb4f67226d1dae",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "fe4122cbbd154fbcf919d91f815d708e6063b44a085e8d81921c5824bf562154"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-fix2-canonical-evidence.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "e416ebb6e7a46a175c0cc69f98736e85486a820c401bb6680b557d02d0ddc6a0",
+      "working_bytes_before_sha256": "ac04e74521a0bfc141142f7f03fd6b6d75a0c51d56a83a0dc13c32f4f7bacee1",
+      "working_bytes_after_sha256": "d122fe0a06878ca6e89ab929a08327588a92470d7a1a029d2df36def1d42bf74",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "5d93894a95c73b5628addcb0ce0088d0328453ae64061b88c0139c17577c5068"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-fix2-provenance-evidence.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "a04c2e7b2d21ef389c62d03e1b94369e11716d41dbbdc80ad19cbeddb6ff32ad",
+      "working_bytes_before_sha256": "f14d148289c5769bb7e5b75e7dd6b9abdc1bc8c8c6b42497d4c77ad3ece748c1",
+      "working_bytes_after_sha256": "9c19b47b3b2fa097b1efeb07fb16bcb4ed303246c600590c4f423e6b387006f6",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "85d241df8b2eb7f85cc52951697360b0dd9d271dc8cfc4364bd903b49dee6efe"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-application/task-6-migration-evidence.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "575c7806190d87ce036986738b7552a2263c240b6005d2b82aee95a9638eed95",
+      "working_bytes_before_sha256": "a668f28dd756411a44b3f89e75f114074d5f524b502040a84820e971f4af3b82",
+      "working_bytes_after_sha256": "13288d534595e27479e74ee9db7d7fc5e0760f1b35e91970df301fc68a78e393",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "a7808c2a34d116b254a6224a20a9a961676561166d4678a7c585aa8088e202a9"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/acceptance.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ff8cc9de65c7e936d6c54742f5abb8c7064e3da669fa0b93ca7524207407f0ce",
+      "working_bytes_before_sha256": "6d8619619ff4c6ed54293f1be9ba8b40be8989514469f4c2e210f64b61588949",
+      "working_bytes_after_sha256": "229f1e81c755f5516c277fab37b81ca1139f4b9a8f757f1ec0410f6f5ae8ecbd",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "37b37b0d6266502d27e024f13d2274261e73e22430cabee1f1248254797e1c6a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/backend-checks-initial-env.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "b145fdf7b6d68dc7f6c88b7e9ba94dfa681a7c0807f85070426ded66cfc95520",
+      "working_bytes_before_sha256": "8e033f9840a0d567d74d803c49c67a52f2b43f05cc51344d4c642b20b726de3c",
+      "working_bytes_after_sha256": "8ec73158a05333d8dcdf7a2b56dfbce35749c2c2f5c2a8cad85500995dbadecf",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "c353da1bebab7576829f55154acb6c383f96e1975bd70a74a4f57b242fa84505"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/backend-checks.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ecc1738effaab4f4c456972960583bfb1f72bb669fadf2574e11038462d6b93a",
+      "working_bytes_before_sha256": "a7bbbac5435825e0f3c7abce27c419fc80c69e1a7450900a695ac0a9f9c92e02",
+      "working_bytes_after_sha256": "0b4d61289b235b315705c9e5dc806d667ef2208a1ff3e30c49616a7ef9e98801",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "99dcd42e829acfec483f88d1f122208c1a800954beccfedc03c6884866a73ee2"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/backend-targets.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "962fe28dcece340ee63216c8b96fb3713157cac53d5ee3c032a978ffb8f2494a",
+      "working_bytes_before_sha256": "262a9b90f02a97fcc365ffde44989f0e669d522f4c31a18c25ece474d0d359d8",
+      "working_bytes_after_sha256": "ca5ffc5a1472117e1fa2d659437b911dc8d949bfc516b95baa91caf0e2c62ca6",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "5f9492d497a296631f2a464e00a2ad0262970c807d2d23a89ecd3d1e1b79a4f1"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/browser-checks-1194b651968c.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "2df19735ee372f2c44da17a052b615ee43c397c0b3f2ecced99ab3415f2e1bc2",
+      "working_bytes_before_sha256": "1f2439603d87421f5e29fceb658a8ec3698aa1ac12588282946641e5851a4902",
+      "working_bytes_after_sha256": "0dee6497a4ce6e482d0dd593ac488f9446d7e11d947c5e2b4989faa1abbd5e6a",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "6fb9bcfeffc11fde69ba0da73bb7f50c8f5c5576fa867a2df67d5d8ed221a4dc"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/browser-checks-bf7ce3d0ff0d.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "33888ee56b2563a7a693af1f738bb5183db9240156c362a704ef38abca39f9fb",
+      "working_bytes_before_sha256": "574ba1d45d112fe273ae6e563928962f2ac5867b6ff770d77224feafccee20f3",
+      "working_bytes_after_sha256": "eff5ff4036cc854b2a216fa19639a3ba56ed11f441480cac60b7e0c79303c3d4",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "d3fd1ca37264375ae5ad20150bbb53d0d1a8ec1d923cd37ed08d75ff71ce7f4a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/browser-checks.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ae6394bfc10653c08db03316e16069fcb7b116dbd39a5ed4f55816a97be8e9cc",
+      "working_bytes_before_sha256": "5c662ed1ce272a689e48c940ba7f600cd4fddb1e41b68ce5d7758b3e17c08c68",
+      "working_bytes_after_sha256": "b557d53a6d2724b9dd30acf816c3bd3761eaa459c78a2caaed7917773a797468",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "24aef80c01223fc3bcef53346f349773442715df6e47525775b14c3ceebb225c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/browser-fixtures-1194b651968c.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "277cfe80ead25253397698a5cec5481073ab6ef2d8c3950b6da2f7ffb9c30184",
+      "working_bytes_before_sha256": "1fc305d7bdfbbad09ec7b4a906e7957e4410e9836046f7f30dc6aa85e4d4613c",
+      "working_bytes_after_sha256": "44176e94f202136eb18eb5886bfe122edc0df63ca0cfc9381676658c21b08701",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "f2a107ba7c13a74cc64d4748c3272520aa2cff68f8ab3c75b37d5705128e5ae2"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/browser-fixtures-bf7ce3d0ff0d.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7b8a85f211c79355540ad39351bcccb2248db40727067f74f3b09beffdb60341",
+      "working_bytes_before_sha256": "a154b43decea6b4ab557adee35d501f7ff6a9c01cf4b1fc28ba407266b287b8c",
+      "working_bytes_after_sha256": "ae64167947af08da67e3430f55164d02a9be5bb435edaab1a152a564807fbf9e",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "51510688f2c084bcd11691ebfaee48167566160122ff7a8fcc9e6fbaebc13b8c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/browser-fixtures-fd816e17f27b.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "4de11ce377e0998710eb4e488dd8e533f4f3e93c45d4bd3f635c3dfddf8bc82a",
+      "working_bytes_before_sha256": "563ec9e92b02055f88b56881b3eb391a69bdc5065ff94911ec33bbb12a7e9950",
+      "working_bytes_after_sha256": "7416164ae037d09edd09c25185ebbf0aecae6cfafb2e7b8a6669af8bee28ff85",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "357c595be31f906e7fb240d4cd1367dd83ac665b779cfff27f4d4022b0a67d7b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/canonical-handlers-initial.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "4797d9f913e304506e357476fbb76ba89d83aff4095a305501cb681082395d0c",
+      "working_bytes_before_sha256": "c1070f213fc07c45b02dea242efdac5c4df389518c9e457710b5b7f35aac8d9d",
+      "working_bytes_after_sha256": "af23ad77c3aab53075adf9d4b88e692dd77f10da3c3db4e098df7dbe656d6e4b",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "e0241190eede46611c128834c124f807409990679446f7249e636e4ec065b593"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/canonical-handlers.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "634551680dafb35dde070e764de267c9a1b443bef291ad4034988d3d0260caac",
+      "working_bytes_before_sha256": "7a196f12094b7675cae52bb42bd896b1d34e6a15214f2a7b77b899fddab283f1",
+      "working_bytes_after_sha256": "ad67d3353ebe92efc22c24ee512056abb4ffd8df117ef7ce2e690c7d0e6917cf",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "f391abc63043849b248b9244e1a3dc1681017d1fd15ecff612663d2c5107b160"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/canonical-reference-and-equality.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "c2900358793226149bfc75119708f656cf0a786e2f81057f9084d5cb4f746b03",
+      "working_bytes_before_sha256": "1022687e4e192e154ede6c3ea1def6940fda8b7091ed7450c564b63b62457eac",
+      "working_bytes_after_sha256": "948b194d4a14fe97d4887d005bb920d59baf7632da84c7cc6c2cee52568533ad",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "8d61169a1d435ee851d8c31cc1291c5edcee4d6b6a72a9d46118640390e76df9"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/canonical-structure.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "f0d0b216ba4bdbcd4ec61a0264dfd7b4e4803532b150c84931cc670fb33acbe1",
+      "working_bytes_before_sha256": "4836b31196554d6e6e600d40f7423ef654da6f7624bc36b9d4e51aa69b9dfeac",
+      "working_bytes_after_sha256": "46fd08611bd5662dd8b4e6aa9ce8b500493271d358705285750d7c20eaef585a",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "30502f3ae6e6bf99a12d251e1e35f69c7ea821a73caba79d3aa18d043c27f559"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/commit-mapping.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "fbbc8f643d933257c86cd661dd8d4beac7b510b2bbf18b4206c75ceb1fcec716",
+      "working_bytes_before_sha256": "39cd1acf4be484727f662ae2bb783d7c78a1abcfdb269483d2e7924e9f4d9723",
+      "working_bytes_after_sha256": "f87f3e885af03e87f58b7f2f8eb83e06a0c990cb71e76e6176afd5e9fd2b7a42",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "d76f74ef4265716a76b2daad10f0a55405ab5bb33ea86d4024e363de7c048c84"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/data-metadata-amendment.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "bdade918ff6d3290795b39ab4f200b79f222d9c01f79b389dba8dd78221cbc0e",
+      "working_bytes_before_sha256": "8be3359d85e3aba6083ecdbcac9732ab709b3e2e6d91c03144cd9601049f9f10",
+      "working_bytes_after_sha256": "709f99c29b28317371925ea9311e6e7bd9aea8586d1542d9590249569674c73a",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "eff5f757aa7bcd50908d48871e75293a6d213f4f71131c5ed38241131e92f0d8"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/final-public-health.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "fc97375ee9be2d89d37b1bebea8c26600e151f131e1073d39189137935c15176",
+      "working_bytes_before_sha256": "037d0887640a5d77f3a881b9b273ddb2a26f2a9ce08f7d9fc5d72982b22a0ff0",
+      "working_bytes_after_sha256": "18db1235a3e6e627f6bbcf4dbf463d0bb6ffff3052e03c0546c6a70304682ddc",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "5e22e5baec24ae0904f41fff805db9ba60c0975636665e5eae56ec0b29c202b4"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/final-validation-coverage.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "49a1655b505fcdaf660aee73c263f2c337f74773fc289f2b7e6cb2555de363eb",
+      "working_bytes_before_sha256": "baf3b0508d35025e8b323defff95d8addafd0177618d00851e86d23e4cd5b198",
+      "working_bytes_after_sha256": "579f258cd30c55e8a82a72a67c718d20de3077841d792e980bc44e7e2fd4a388",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "4b540be4e9bc31bf38fe5910e868e3270e1959660f740075ac3c80983c7795f3"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-acceptance-before.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "a80730797daa69c3b32d3ca5fe25fa2278085bd09e3a1d2e8f3c9c9b627247bf",
+      "working_bytes_before_sha256": "94e7ab39703e662ee50254596376305ca21d2e0169878e6d8875d88547518145",
+      "working_bytes_after_sha256": "c0eedfe9eceb2a0a96aa70bef9ec8cd8d74572ab4dfcd2a2c997b22565be2da3",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "8784dcce387daf4ac5dfed14e6d74faccda2bb3958fcf0cd4a483126d890d44a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-commit-mapping.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "a1e726182991850b1f282390ffd8f2dd6e6f12b47f0e5fc91c1c7306a66ec3ab",
+      "working_bytes_before_sha256": "6c6d225ed140d80a92c432d9550304822d62aa3ab2aa7e9219df6e859f3cf926",
+      "working_bytes_after_sha256": "2ae588329b1f9d85898907894bfe0038a2e74774a6570ac20b2b310d6f8952c9",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "4c54fa79879deaa6660f7361b262cdaaeb16ef754947a6db34717a8eb2b79bbc"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-consumed-refusal.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "5af4bdc347f3d3e1a6479edcd2bd82529a2987f2833cd8e6c8f03c04d325c578",
+      "working_bytes_before_sha256": "9e8a075893a2a81e8f2417e26a26f605f91fbccd91bba8c1b4db449b21abefd5",
+      "working_bytes_after_sha256": "3e627f450c94fd4e14bcaffd93cbca356d0b122aa8f6dc3341a4d1caac4b59b9",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "42c8b608e34c1a41527ba1e6c4e7903ae5a720ef7a33739694f52d16b8fdf797"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-coverage.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "729c7b804be4b688925a806edabdeb452ec5a4b01c28e83faf6ab16a0d58f5a2",
+      "working_bytes_before_sha256": "fefbd479208ee4febe8b00919600d852f0930fb7d9d47a6852242eaf8b70ba72",
+      "working_bytes_after_sha256": "ed9ed1a97de45a0c8a043c465e6d7c64b0501f92bd8d186f4e63ab643c9ff9cd",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "ec02764d143169cf3932f7338ecfb55b291343f0825ff48ea5c4b7a974aa779d"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-evidence-scan.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "28612c4a5c75555577c9107b176cde0a3957a51c16ac2fbf38dac8309a073297",
+      "working_bytes_before_sha256": "06bf0b2b857884b8de0dfc19eb0c96fc2628abf4573a07fe298ce9359aa62b36",
+      "working_bytes_after_sha256": "3e5ffeae15db7c45a1ad332c495f51c6c8b3cf749fce19f715fa6d333d2e94b8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "d5444d119fcaa76327514df00069512382342df44aebe6a433c99b1ef3115a1f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-final-continuity.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "6aa4677c89ac147169a6e92a09b4a9856475a6e38fa93d602e6c78e2dd885b9a",
+      "working_bytes_before_sha256": "5883b2e5616c5144f3bba8f552203cc088b4007e7424dc658718c062703036ec",
+      "working_bytes_after_sha256": "c663774fee63fdc56aed504ea4f4dc6516e93091c63f890c7dd63c1254371f44",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "c4360cdf038db7bd8ec1bab6c03cf6a162739b5a529f46044c75e7a161b1c44f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-postfix-readback.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "cdf77be9784f28f08733ab605b8d9f0be6302d7bdf0d7498eae9a4c9ecc582e4",
+      "working_bytes_before_sha256": "3aa0418682947a20675bf01b79a7573f5348bc5ab442975a7cb0f66372f8be5a",
+      "working_bytes_after_sha256": "99782a37d07edf72cbe376d6ee8f5cb09347c2a76720798e7645eec0a668ac8e",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "f4b932b4ed9d17f98652868c17bcd6018ba82ec1d138a5f900f27a680502349f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-runner-preflight.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "24ea65e542b472379ea8a9c90780c05bd6e17a25bdf2b600932c6bf689c56126",
+      "working_bytes_before_sha256": "8ae2395ab8d3196b1162afd17861a229f089108a14fc929f6adaed1d639dc936",
+      "working_bytes_after_sha256": "39dda21c17619a66efaffe9117ee0a85da9775480f81bcc078593712790c19aa",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "a7dedf08104704ea570da73feab34898145e8f08c67c681ed3d9c4d706feb405"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-runtime-before.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7b652a774dcd6f00dfc245e9fd85ac3067404265c99b613cf710ac8a74c54465",
+      "working_bytes_before_sha256": "d9ab84e86cb7a106e92583a3d10bf51cce0b85ffeb75d9cb974427057c772a3e",
+      "working_bytes_after_sha256": "fd384679f9b24048611685a84f10253af76dba5ce7fda338d7636e86837d2922",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "44b137be4d7cfe466df62ed400e9dc531ae08e89e041c7c379d859e7b60a8fbd"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-signed-final-green.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "cb24eea3c361a07283c921cee067c52af7eafb1014da794dac9f6c838e41bc4a",
+      "working_bytes_before_sha256": "f00751a8f01098131cb49fac052a587c62e7f52ba47f12860fab125ae93fd9af",
+      "working_bytes_after_sha256": "c2dfd981b615b88d8cab40ccb044e2eb4f1bf9835d1cc2d0945ff5cd75472c0c",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "4ebe5281a11a7bab7668a044736db4c40cc86d56ff64253ad98d237ddac957ae"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-signed-green.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "27a10138d9b05a59be2cdd290e8e802b3ee899eabfdf0f9121e8c5e26bd6d5f8",
+      "working_bytes_before_sha256": "02f2f98ffc3d9a011f86c3366c86b8de2ea571b11c2b8d322749bead6eb62a8a",
+      "working_bytes_after_sha256": "d7093e5d89d069cf8b3029a47c96f30b65e8431dfd13b9cfc03e7b5042d0a4ec",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "cdfddc19afb3c5cafb810c42e42d36920f01fa8c0f6bbcd01be7f69b360902f7"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-signed-red.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "4e4fbea6c588d5753eb5ac28d0884c4c660b86e89fe8af9458bd20b321dd6ebe",
+      "working_bytes_before_sha256": "54104c10fad0a708cac2b6257762f9fb95fca4834de097a81baef756f58d2acf",
+      "working_bytes_after_sha256": "bed2573135c2390fe8a084065e71ce85217bb810e28a19a7f71b434104f60ec4",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "15a8b7128eae467d7fc037139f7e2ee3f6cfd9e59fac804f4dc3f84aa533be91"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/fix-round-1-source-manifest.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ac32afc5ec74c80e371b0eae53a1469b5d72cc38162dd166956d641007ce7e5d",
+      "working_bytes_before_sha256": "bd61e77fc02a9b4ac9eba354352d8102cedc88c0fdc11fe61860d26632ed082d",
+      "working_bytes_after_sha256": "f38696e28ab41dfc1b5e25e372de34b773a351569ffb3325f74f3fa3d9e11b83",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "bcf814cfeb843a36ee9c3acc6ec255b2ea964ee569d2efeea5175c1a2195d5bf"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/frontend-checks.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "b44a6cfbf6322a282829a4133e5584bb38248761c78bb6c7ff02b56ada12d762",
+      "working_bytes_before_sha256": "761598c27b5c104e8b63ee21525797bbbaad266c49da83f7e6387b7fa5a6b57a",
+      "working_bytes_after_sha256": "5944e3a78281d4c1fdcb25d313f4e8dde8b45c61c4b056eed3c07563493d66fb",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "133655316e5c551a3c365e25a10f7113a120c726e4960bebc6de0f7e489270cb"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/g23-profile-boundaries.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "3636588566d186a9c528b8c893e750c6f394f1a198aafcd602c8ae738c9cf3e9",
+      "working_bytes_before_sha256": "082ef03c455f3e1c29e58061cdf56c782b9c6d677a762c17441d63e13cf8e9e9",
+      "working_bytes_after_sha256": "303cfe3c1ca0c6bc7cef470745634217734ae7b1b43a77f6cdf1941bae840a9f",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "448898b4c4e50ed2896ac1da7477545040f5c46b763b7c9abeed26099b8a33b2"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/legacy-fixture-handoff.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "58e5ee01fbe8d1d3912a93603d9ba8a72af20e3acbc5d26ef8024bb1c8af072a",
+      "working_bytes_before_sha256": "2ca268d42043d3778985e0fc68ba1a8b16ed1410732e7cf6fe735c4c8f9044e0",
+      "working_bytes_after_sha256": "6c9eadfa599464d5247f980afc9a1545335b487fad86739230637eadbb39fb77",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "536ad08bc7b0ab954ab07c7f50723623e63a45d33368588bbf949716b5c2a420"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/migration-chains.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "f22719d9dd391f3afa6651ccdc7650023f259824dfb668a1a8ea0db602e870ca",
+      "working_bytes_before_sha256": "477ee156ea5cf181453e6c511327cff88db3c988a2ca7a07a6158e9263f236b2",
+      "working_bytes_after_sha256": "884848f6bd5d181a00f7d523693957e451ced7316ad641e6f09224fa16d8596f",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "f03eaf3f576927ef07310a84119fb6eb6b3d98e28e2f2e82e7d9360a83ce8576"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/openapi31-schema.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7ad7fc83ae6582e8dacae2e121c8c4dc300957b56a8373aa643911b0229bfd4a",
+      "working_bytes_before_sha256": "46cded506b682f7cedbcd87cccd38446f0d930f3eaf8998eb5be0c9c33a76808",
+      "working_bytes_after_sha256": "6539199621fb2df10a146f733abe1ced6b85edbf7f09a572fc65f6b84dbf2277",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "da01ba28852cac0de53893797cb8d1942bc3b05084f526dcc216717dec314ed0"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/runtime-handoff.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "b8ae1e9beb497e89f4d1c1e40ed85957f447416baa4634d9994bed0aaeb3cd91",
+      "working_bytes_before_sha256": "c0b6e1ead039cf8274b0ba470a284a32ade0625e6d3d882cc1dcdfa9ea99049d",
+      "working_bytes_after_sha256": "cb902d458e7b7828db06f171b49450aeb1cbfae0d776bd46b4c06f560aa31bf5",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "40b725e233ebc897c37a1b40ac5fc0411b7757d4d6afff0ae5b4f725ac648452"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/skips.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "0b65f9c75756bdb5c9ae3736371428c1d7f7f5158d3583e831e8504d9df5a4e3",
+      "working_bytes_before_sha256": "31d1b0e6ee990bd8fa6b11f16887ff7c9af7edb5e406c8b3b5766859cf05d460",
+      "working_bytes_after_sha256": "2b3bed7993e956dd9424c01a68a072c5f20b530cff14f5d477064f03e8b61923",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "8f3c6b572deb557e20f229f819fb143cdbfe0554fdb57ed7ae8e0d1fc505ab7a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-candidate/source-manifest.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "de1b3d17f3cc4231a10419eb31d116ce8e562354c64837ad3a79e1f2be22f9da",
+      "working_bytes_before_sha256": "9ac3c80631bb519464ee2af030eb777a194b6f7e14d24f00490e5197eba85540",
+      "working_bytes_after_sha256": "b2f8119c58a6d0076b81ba5bf0a116f4e703f891b5d4e64b46f80fbff2d2d553",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "4a555ac73ee7d85556bfbd733f405c1d4dddef4005bbc0f1a279febb2f5646ef"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/actual-browser-fd816e17f27b.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "502d2166982bceff898ebc730e7df69a798bc374be91dbe71b28940f84f20625",
+      "working_bytes_before_sha256": "4f3fabd641facbb059796f196a0c953ca6d2c620dbe03808ae8f7a9290802588",
+      "working_bytes_after_sha256": "039302b2c4264a0561c1476a93419a9c7269446c2e53cebcd040e29a0b2e46ac",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "086b4e6cb623f430a5bbbf6d698311abe4f80a543c1d60bcfc45a214223ee27e"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/actual-browser-fd816e17f27b.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "2563efa185644ba6cc66e969090ed2f2b0b7c86a9efdf809f49f3930f62bb53a",
+      "working_bytes_before_sha256": "54a0a758276273f05ff9a86a49dc7f9b65d67c588699a832b52d1d8255a849c5",
+      "working_bytes_after_sha256": "ff38ea3eea409b32d1a0da9419f5e420bca5062b358d42874aee0ef8cb7143f0",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "5914fbef9e1a1d2a6335aa8c5280f1449a0bc6f4bcd67204a92e6b5a6f3dfedf"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/actual-mcp-model-forwarding-failure.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "653712ced5c4cf9fecba298139174ec574b22b4320fc660192de170c8273b58b",
+      "working_bytes_before_sha256": "0987e6bb7aaeec47cf408f79c244c2b97aac0f5431166268c54a7fcae35a68bb",
+      "working_bytes_after_sha256": "b8b91d179875a95a99870b5d72c9ea8f89b9991d84168e14a7da03c16d93c95c",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "300078afceb4bb9147ec45c6e51083e9b4c511aee23800c22350baa509879e0f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/actual-proposal-scopes-da9c5eef585a.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "92e737659f4a281eee879d07a2919fe8cee61e44801eec50319f766b6ae78d58",
+      "working_bytes_before_sha256": "714a17d2e9930453aa32af77c6254d2593ff210bea2537fda3f7823fcb55859d",
+      "working_bytes_after_sha256": "70fc698aae1d0ec3239bfd9634b8003a6814268b1f4f58b0c7ae6e917d837a52",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "9a8b18b302ff0e62b3e0b0d389bab790814bfd743fc47a131c0d82be94c6f186"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red-2.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "e800196ebb58155197078c58a9bc626003e6410892665d76f061668927798edd",
+      "working_bytes_before_sha256": "df26c145bdcb1ffc3873e8f83f8b584ac106b09e9a5818933811c99647eaf027",
+      "working_bytes_after_sha256": "49df2f11cc317fe91f941c405f0c2eef814ac705e56ef4f854350f3dd8b112c9",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "7b95c6c26edd0dcd298e6d35dc9059f142c5bb1294791f8e9797c46daf82bbb7"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red-2.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7111e8f0756994a05330679200171d75dc35b2a0a2ce64e829b9c6e0fe43330d",
+      "working_bytes_before_sha256": "a61a890ec13c35605e26b5fcfc784682628e8f66fae79b26d55a5de39b7e7015",
+      "working_bytes_after_sha256": "6bfd95ee500da5b71ea6b89ec453cdfa356414316a223e0ab1b15fd3afce7ecc",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "08b6928ebc06ae2ce6d64a2685e19a18766934e109c9abdd8a306f885dec6006"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "73c645e7a5453d4f79af434867c567808f6ebd4afb6897196f0b1885335e2521",
+      "working_bytes_before_sha256": "999187294afa5ebb45af80267ce0b0e7f3c07af17353cb6ce8c67b2502f79715",
+      "working_bytes_after_sha256": "1b35f8b0b3ed371c70d10c78fdc29bbf6f7e376fdc909386b4d103ad3f422ec9",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "f35153de4bd89b4539885bed8651665480d5e439e2490ea0ab0ea8d090a1466f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/app-identity-complete-red.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "6a8ab97d644e96d0dc92a8214ddd70d567b267e2731147ce082d92f85e07aa26",
+      "working_bytes_before_sha256": "13ed275756c164b616dc04774a28539071b9602288c21eccb10d86ec7cd5dccd",
+      "working_bytes_after_sha256": "04165c9e6f55281cf6e7caf1444713b5e6ff2660ff69b986c9cbd68ac4447d8e",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "89e24ab8f0331b9fe1f394ef5745715575089d4dae1abb66f212c009f8a7b700"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/apphub-package-final.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "4e68a2c02198d5e654598fc12ba7c8343faade2f977962b0a56dc133228470fe",
+      "working_bytes_before_sha256": "86fd79df36afd9291d161696ff868a36075a6978207e10ea003007a8f2cbaf43",
+      "working_bytes_after_sha256": "9fb34eb3f16250dd6cee39b68abf9a2d0c8f7c899b4b49eb19b2eb14a6d22588",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "f462325b4942ea986cd93ae26f3fbc4dbec70020cffcfa0f11a308be397d5cf2"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/apphub-package-final.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "e666e6c68c223a9b92e5722272c68631fe37e8c962d463c11d44a7c82ff87c53",
+      "working_bytes_before_sha256": "3547d4961a9b23c9f57cd5c37e9c0b6dd23dbbe4fa622f46c3b5312e97029d45",
+      "working_bytes_after_sha256": "956f74b8866de0375f4bcc29818c326ae63271ceb22175af5914892cebf93e27",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "6196e2714f6c5f76c764ca55aac0ed2f955abe3808b88db83eb3c56e4afb868d"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/apphub-package.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "1407eaa04f9d2219092df8080f78ec19fda0f9d71798cba756513750e6160b7a",
+      "working_bytes_before_sha256": "5190e4d1bcfe3dc8d23ca66ff0a81c6ba3a3ae17fa97705bf92ac0c34b24e673",
+      "working_bytes_after_sha256": "e291174fa8bf7d7f6fafd868ed2247691e26a632fa2bb9106f22747253609d37",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "846d73bffdf11a3d43c2022689b9728e9188fb366a22bb4de5efb5c2312c6d80"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/apphub-package.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "03f6e3c78443a494176173c26e9d9d2f97321713b38c166cf33a82b51f1c67e5",
+      "working_bytes_before_sha256": "948f2ba69b5f186d8d23128393bd6223c076274e3a44c4ec1215f0cb29373c5d",
+      "working_bytes_after_sha256": "a0dd0790c61687f85788d8093c2928c992801742dd190816540c71aadadd3172",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "fd346b7d782ff65595711bf93e6c1230e25062dce9e8723c33e46411cc589254"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/backend-focused-green.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "596dc07f5ab4842ffc99d6f8723e515a74b1fcd2f39f1d65ae83bc0161e7f10c",
+      "working_bytes_before_sha256": "7cc60800a29bfda60d74d796243f79727990faa952835db58ecf207da56a8837",
+      "working_bytes_after_sha256": "2451cd5b2eaf5cd6260141f82bfe5cba4337efa9d0a8340a1fd348297ee39b0a",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "ef0a5fa6f65526d9b72663e47f65a47ca0d06f1ed6c49757bad8ed4f4801db61"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/backend-focused-green.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7e339e176dbc9fff687c4adef140776cb7d3e0a4b724d417d2a41f79628cabe6",
+      "working_bytes_before_sha256": "44a96f30ecb327b79484eead9bb9a6d2c3119951732e06c81e94ca09be38d9c6",
+      "working_bytes_after_sha256": "483a43e76f814fd5fac038af8f8125854462770e7f5bded8ec070ad0f8cb135d",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "9fae70304191c660fc5f536491bcaacf2c94fed3aac29190499cc096d83deaf2"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/backend-red-2.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "515d46ec303f516d011d29a52ea3cb71dd249d62146eafa9baa6d4a92f15191d",
+      "working_bytes_before_sha256": "d43eb94bcc65e65e2fc075dc77e2eaecfc0183148d7da9312c1a95cdfcb0882c",
+      "working_bytes_after_sha256": "2dc6023a5ac11a72c78169ee64354629b0554047567fb73e9796d2982759bec2",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "deb9276d99011e59e68a8ee30c88c48688543167ded23ea084bcd5eb7a9539b5"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/backend-red-2.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "4971a76eee74d7fead39aa8383ae1037eae99d748799ba50740eaa18bba1e0bc",
+      "working_bytes_before_sha256": "88081770b1b125ac0038aad385c05df5a3bbe9af398acffefaeee7a1ebe91170",
+      "working_bytes_after_sha256": "58824efb393eb2b9215b89abfcea66b74418cf7e483f87f9a61084a4228a0a92",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "946581825684a577bd16e236f049d231412c3672f15bf66c7f2d94f3e16c08a5"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/backend-red-3.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "f5c2767f8f15569d5b8ac69e8de31660eed58ce173bcd67622ca0852fc2958f4",
+      "working_bytes_before_sha256": "0c3a7885c5e74595489f4682002ce5555410687bfc68644cebe93d210f81a4c0",
+      "working_bytes_after_sha256": "42d10a4c8a8276b7bde4cde5c6fa1671f3b625afd73573bc170926ae8150b3b8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "a0104afd4ad6997441e135a9822f26ae77638abb3ff92c9c6e6ecbfa3e09aae8"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/backend-red-3.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ea50759fc465c03b0243ee1822d355ca918affa43880672230d83b4ffb3cbe45",
+      "working_bytes_before_sha256": "5cecc52a40b0f7d33a6cefc736c8c9ddc31bb096741fb26d07a8067df6a7522d",
+      "working_bytes_after_sha256": "aacc4e6a66fe5d8a0d0da27a73461742a943df9601317a9b187a8de19e81dfdb",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "700a82e88004f509e0a42bbc89feaad800f4b76beec2fd156a48862ac358ee2a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/backend-red.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ac7ec76ec28f0751fceca2fa9588d428c4a787c82bd2f5729d10a52915f67f15",
+      "working_bytes_before_sha256": "4b5d4c50d4cdd62af483b78b3f600080a70120e2b7978776df44c4d2dff846d3",
+      "working_bytes_after_sha256": "6a685980943efe3874eb826053282d8da8c43b71a3c4fd56e8990a23483394bf",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "cf640252aa9bdfb5fb65c4bbf479854285be06227235579a3cbdd5837d9cad07"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/backend-red.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "cd5530dd6550b31a0ac055ae12b20269f68a9a53955cb7e7d408e4b24c262311",
+      "working_bytes_before_sha256": "871f9c76854bc27d0aec9ffd5cd7a85446e07dd66d68e79ccaacccc2748e2d95",
+      "working_bytes_after_sha256": "241a0d1b442791bd033966ee4ab8bf13e030b62aae39ef1e273196cf959cf814",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "560ba80a9624ac2c8dc553efc44150ad60bf033fa87040fe53c3fb13973b8150"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/browser-run-preparation-fd816e17f27b.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "a17b61dff3e303268bd2dcc8aebad3ef88b2a17dcbfb516f0a2d5845437f2a47",
+      "working_bytes_before_sha256": "f31e42192da210c82f4da3dcaaa01811718661e20d184b3f3fec1dcaf66fc4ce",
+      "working_bytes_after_sha256": "a04c1c369f37caaf44e4b3bf4c700780b7ad88c9b5914a90e68ce732cb5ad300",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "c69bb8640d28cbc3a2d979b5b84c91b59b6276afdec5faa4ef1739b385c3bf68"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/catalog-binding-fd816e17f27b.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "10a2836efd7f82b98c1a9675fff749140351c369e61b2dd26f4bd69e4a006698",
+      "working_bytes_before_sha256": "05078151caab42d5fcf272136a3b344335d0ad3b1e731ddd4b9b569158da5833",
+      "working_bytes_after_sha256": "85bf04ab1840e506c1afc8671b3f125f929c8b2a5e0cd6c2eca7346cbd39930f",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "571f1c0bd32bb7536234e2cbcfc95bf4c1bba58dce950676d38222fe4faf30a7"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/catalog-fixture-fd816e17f27b.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "28be288106214a7f55d980c4744edf3fb9c47d5889506472f843cc4d5b7af338",
+      "working_bytes_before_sha256": "bae36399a8f66f1bf12ace096164d241701c79ff65574e9d52624d238e1c7c6d",
+      "working_bytes_after_sha256": "b479f695a3b45051b3e5b917a9a9ee0922aad7b3f02c6d21275ed4d1968fb5e5",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "ccbe280f7899774dd7e1b32bc5326246dfced9b72cac69da734db0ffe0785361"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/catalog-mapping-fd816e17f27b.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "567719fb4363efdeeea2723502cf1dd13c2903060cdd9469beb03e7a1b93b1c9",
+      "working_bytes_before_sha256": "dfbaacc5fa0fcedf0512e10e109fae9d3999d59013c60f505fc0948784d8fe2c",
+      "working_bytes_after_sha256": "edd1ca62713b43204a4b4b934376ddfdc2710e4a6d9b865c1cd0864f3ff3b5aa",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "842eb0d2741c9e4b9fb57122a40f46e0c1dd27d6e159f29792b724b4b78b6ee6"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/catalog-onboarding-fd816e17f27b.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "896395e910030d9e4552352b3ae64c28ae5069c8ebe4a72b12b9168db31a8297",
+      "working_bytes_before_sha256": "95ee25c6c958f337d5edb0331a9bcd594f140abe553afa1b665850daf7459b80",
+      "working_bytes_after_sha256": "64a197347aff402bfbb56e4c7ce5ed2628a5a5f2fff4302e8c628e461d20e653",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "8322c58e2e8bdd09bbfaf4309feb4600724130100c0d3734f5190ec33108208c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/fixture-repairs.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "073b8880c89355173031889e13cded2348757b17ad65d468fdfb960889a2c6ee",
+      "working_bytes_before_sha256": "1e901bb2cdf7e217d061605b9a58454d462328dc3d02673662649bd874a918d8",
+      "working_bytes_after_sha256": "57a9e640768eda2d0f406d24da28762ad885098756b1bfa22d7d2c7c9ee36bb2",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "a35999488746d596c83d3845bb7f459a01e610cf51992b5b50c22372b484ae62"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green-2.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "c5dccc78b1a7f7be19d63bebc9e74699ffbdf83c08789709442ab029e5606e4a",
+      "working_bytes_before_sha256": "db37f4f45620add8a8decbf4ffe493ce15d56a66390f1d900a4c82be499ba4f3",
+      "working_bytes_after_sha256": "252d41c86381318a70f2562637b8e653cfe096d80847293216607c7d81b0f691",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "256a6f93341377b9000be2a6106178d8c6f327b02c24b5ec739a2ce371da4a85"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green-2.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "5782462929000e9c9a691716afed9fc7768a24ea9825614719656730df9f726f",
+      "working_bytes_before_sha256": "ce71e8af1d557efa2aa565642b984c7fe4d984a1a1671cd4a8628e731e9d086a",
+      "working_bytes_after_sha256": "926c76ac9e453ba302db08a42f12952970ddc4174782607f7540a36895d855f8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "2b5e7551bd80a1073dd61107bd4a4e4b38c394618a8e7b8d52f97a315c5b0db9"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "342965e74c117c2b09e4ba29cfcdced8f461954b435b12cbd62f8e9555090822",
+      "working_bytes_before_sha256": "0547e0d884ba3ed6817f3518ba0c3f38d2419496e74a71d74c205e6eba252bb1",
+      "working_bytes_after_sha256": "e60788db13e8efa19acb42bfbb12eadaaa1d397d79a39cb661dfacfacbc6a0f8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "57366705c8bf139cd8648a1baa1838d1a6617fb760677e1615ed27a86059a0e6"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-focused-green.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "2ea9d0ee5c4ea58f52fdcd3ff5baffd755778bb687eba0d927e8a6e52e160331",
+      "working_bytes_before_sha256": "5f57bb668272f7d0a7609cf8307e6d998631f25f20f004e835bcb18be6bb7fde",
+      "working_bytes_after_sha256": "e25ed8c7b0345e8d8c0653cf823d04a83a5894f7173c17737f10533a6803c37c",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "3fa16748f8ef63d312c01069029b8a53ffbf13847191e14e8d440e02feeb6535"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-red-2.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "cca2730135d06c83972e2cb896404a73a6c54232e7c3e6bd89402292c9ebc97e",
+      "working_bytes_before_sha256": "3a3340b3a4f296ffc8dc79c3aa635c39c15f90e8f0d7bb348df29b64501fbb33",
+      "working_bytes_after_sha256": "37145631412f07c90b41bfc59bd2c4a993721f39eea018f6898b7f5e666972c7",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "2aca3b8973fefe6557ebca2b2dbb91568af946dd11f26f097964417312371b66"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-red-2.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7ae2190d4b5cfcf6bb7de5c8bac92d96efcb6cb0a01480a59a4e227fd8b1f809",
+      "working_bytes_before_sha256": "c477f90debc485628208aa2b20b335d6343787aee04f2914b9678bd8744946b8",
+      "working_bytes_after_sha256": "935c98ca26e278a4a4da1829bb583a1fc386add60ce32cda03c09d0ad411be04",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "fe358e6cfeccaf6fc2308100ed86b162e944cf7f04fded1e4e33a14e5bb7fd77"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-red-3.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "22632560fee53c14fc954a743e5f91aeecf3cb67e9b974a8fc756646453d9cdd",
+      "working_bytes_before_sha256": "cede3119d566f70a2196e6cd56e50659620402e2931fe3962f5e0fd71e290642",
+      "working_bytes_after_sha256": "fd71900a674c28f91f7ff65e154de74f863a64199f437e599396344380c447c8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "57ea4e10503e4454b2386b51ab73a9bebae546cce5d4f3403a58d8f13637719b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-red-3.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "5ea4fd33b742e063cde5ecefb3b12a2482d96f0b2fb96b80a2f21e95c085499d",
+      "working_bytes_before_sha256": "1a4bf4d0ac393fb6970e5db0974e1c8477f3f1be3b3af5d9e95d2985443a7ac1",
+      "working_bytes_after_sha256": "8f67fc4a961633a450bd67b526eebe371e0ceda087436646be45a806f0edb86b",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "bc50044ea461311aa24ddf968166e1feadfa0fb1246daf07e4d91dc9425ba4fc"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-red-4.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "389c73f001ec591177895b2e532772b615bfed197a3720e22768e328b082c511",
+      "working_bytes_before_sha256": "19e2c5c50fa77d80c0d6b04d91c39b90355fa7d3983fdb1bfedbbb686902d20e",
+      "working_bytes_after_sha256": "357f3188b92dd918b944946f8bbdae3480bc087e528c7bd068e3a064e5702e64",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "16c6e198dbd97be64b440bdf85854b7cc95119d8c8c13c6ace21528485485430"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-red-4.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "e084eacb9ac37dccfa2ee407db00b7723c1c1f7e53cf677a458df9ebf1341f16",
+      "working_bytes_before_sha256": "d88b3a2fabca7d6b1d484f2e2a43222e7c04b298755c78559a25a9b4ac9c7cea",
+      "working_bytes_after_sha256": "85ea35634c3b66dcfcb8d942ac7ea925927c40761ef7c53d3339043d2893075f",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "fef10dc02e3be8ab4f3557643d1c4fa7901753e6f342bedac5ba9073714e67e3"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-red.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "77be43a2f65cc863ba9efaad3e7bb76aa9656d26f0a2181bbe851406fa874761",
+      "working_bytes_before_sha256": "5d1e8160c0a14d14973623c8a1b5136dfd4e95d6ae99a4a743ae7e3a308a73a1",
+      "working_bytes_after_sha256": "0e2f164bb01844cce70a05cee3efa811eaf988b1d7aa87d4aae00f536962c59c",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "d297bac730277ba9e873b80a4476e4b990caff936bd9d5934d78fa5bc48e58be"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/frontend-red.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "5dff5630fe5f14a4edf3c8075a26d7a8dc60f46d2df58d3ed64bf3f36887b8cb",
+      "working_bytes_before_sha256": "cb89be50304f5211abfa5c2a5e035dec0681b5d4a983ce115e03462923d43e8f",
+      "working_bytes_after_sha256": "48aaeeeb58cc491fe219d2ceb7a6ec012cd797a49a8a44e28a9bf240006306a9",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "ac5edb23eed2d5c941644582d2e492fa2f8d23ffffad18ff715f2d6633abc456"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/mcp-model-tenant-red.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "a450743dba7579cf57dbdc6216932ea5b610cb10cbf80d5a87f90ab4e708ecd4",
+      "working_bytes_before_sha256": "60c974608fb56098a20aff972ac3d8f7bcf3d2ace05a50f481e60d0c96889261",
+      "working_bytes_after_sha256": "25e193610ceff635e78d9ef8c4cc4ab5f6b1ab2140d675f0049dce24ce82a0b5",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "fdaac5ebdae5745ca9359c5f31a259d7b0300365b5cf8bfafd1d43553d06fbfa"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/mcp-model-tenant-red.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "2a45e7c9f0689d798c40e3d2838077fa20afe069ac45cb26a951f04056f4c49e",
+      "working_bytes_before_sha256": "218d6a463c95ceb050eb99ddbde4df6708b0a7fea5ee67fcc5520d56012f6dcd",
+      "working_bytes_after_sha256": "852088cfedc4741012188ea63b4f136aa57bef2329391ff8d8e8c38f40c156aa",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "574c41d749657e1660aded56502271247cea51183969713cd2aa24e1455337f4"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/mcp-package.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "0f3deaa3c354e711b006e3d7b753e53b94d8ac6ba3cf4c28efe871ab1e68b82c",
+      "working_bytes_before_sha256": "3c8e75b49a17cf2a31acf0a607288c041a020b7ae1371a8337ce30ccb71f0379",
+      "working_bytes_after_sha256": "c63958781b1962e0d22fed7ed5dbebdf562c2707853e29eddadc3c045045539b",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "4d7238051752392f1293b43949dbc73c035f2538c5b2ea548d399b24e0e621af"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/mcp-package.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "8da0094351cd0ad6d79f399232ab8c9ef244a3fe862f471002724c112bb9c6ef",
+      "working_bytes_before_sha256": "dfb1699ef0dc6f7bfe05157cf242a1432c921a75d77994b98164b6499828a2f8",
+      "working_bytes_after_sha256": "1ca1028206df1cef0bad4c47544fca53fe6f1877d410628c3ab9c6e2a5f33127",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "c708747af77bcb805c2df1d70d629b6047adcaf4a2cab9cd7fa96f2446d97ebf"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/mcp-write-tools-green.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "bbaa5fb1d40b877bc71fea17e93567471fb8e9f3538af08a15dc8a46c7bcfd8b",
+      "working_bytes_before_sha256": "b827096e02aac402b7bb4f6e1c6e9fcd7a46687fb9c60e1b432cac044a605f14",
+      "working_bytes_after_sha256": "c069558ef79fab02a55a6b06ffe73ace2d020435ccb1d667476e67d29511fec8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "fb5f1203b7e17c4f0a1bad518a8354295beefaa88aaf82f84f827186518ba4a5"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/mcp-write-tools-green.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7b8447fe1d408ce5c40f24ade9a5b9e3d2613994f333bf2be714f496bc82b349",
+      "working_bytes_before_sha256": "94c419795754192eb41e3674a35bf175cad8758cd045676f77221c0a282d44c2",
+      "working_bytes_after_sha256": "fd973d95586788dcb85943427c9b4e4fc8b78786d01cc5b786c62f22cd755712",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "f0aae3936e30027ebb7e3d6561689a7f9dd60a0799b09bd1550144742f95e142"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/ont-package.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ea01376785d34a154ba799520cee7bdffc67db4daf71a8fb81fb718a41f963a0",
+      "working_bytes_before_sha256": "a608e0c25022c73343e60c618dc5880ce6fafd6231be8541d22a0ab9bdcaace7",
+      "working_bytes_after_sha256": "c8a4f7ab6c9afc8b6660160fc9db128037a091edfd1d75af14f5fab2a9c60099",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "bf60e501e4423acf3fffdf90699aee54d6db6006ddc6e052fe1b92b41644a219"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/ont-package.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "1dbf53d961c82433ca8df4fad36073f712f7b1983d3bbfa7bdc01e6ae592c7b8",
+      "working_bytes_before_sha256": "e5c94c9bcafa672fa70497a3ec35839a56107f81bcce1a8c28cf205d2a4894ac",
+      "working_bytes_after_sha256": "e6f70b1deb7d48573991cf6d86543f640df3b60be9abe3b0b369035fdac03bc1",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "5e96e7e2f5709e1dc79b9e71b610651f01e4116d9e6a9ca922fd368176bdc566"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/owned-source-paths.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "32a707a372f36098642393797f5623372cbfb37ae158d177e7df0240b11fabfa",
+      "working_bytes_before_sha256": "8679952e3a580e387912c502d98edd503edd99ecca787558db72156583d7c2ec",
+      "working_bytes_after_sha256": "b6aaef267f239b6212b273a0a54c33cf16e7cf308279a579bfe8ab81f036b447",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "457bdce1b7eee8e4a6ef65e9289b55898510cfa2d9dbe236df90782ec4534edf"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/public-log-redaction.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "fd98b2309fac45eb9a1b5e1ce59bac353026db0d21a1664baebd4f2d9b8b3575",
+      "working_bytes_before_sha256": "6d2137c74568e529a7faccc4d748041944dcdd14da07b1110fb88f0a5271fdd9",
+      "working_bytes_after_sha256": "ff2a52a564991dfb69922268c357627c6ea431b1e69858eb61ba2fd2457172e8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "4eff51558038496f9592e97cf04e8093de8de81542485b5643bb8bd240184ca6"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/resource-continuity.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "32dd943d9dc5931285288026b2328fb8e17b9fb382c231ba65c4a86bdaffb0ec",
+      "working_bytes_before_sha256": "487ef9400172c9ff2ef0d62cab0d623c5b86d6f23029bf93e24ba01c188c3774",
+      "working_bytes_after_sha256": "866a8d86eb08510fae89c455b391be655c0ae9a3d6446538e16a5384a524ab7f",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "5850f030196886d62edeb89380195ca54a6e019bec8e6f7c6f9e1e7d59dbc7bd"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/resources-after-api-reload-mcp.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "a132d7e7482de11b99017c8e47fd194599179d79dd58f41ea1b34fc91e40d981",
+      "working_bytes_before_sha256": "7dd2b67bb444a7befaecdfdc10d134fa4fe272f49e21ec20e9357f0585982c09",
+      "working_bytes_after_sha256": "c47ac225ad207c1d394d727155d7ec1ef639be6c872bdb58285c36fda879b151",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "ab617da1ce8802638bf8b71447b0a784402e28eda85510489046e109b60e2d20"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/resources-after-api-reload.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7d7615f71cd10ade1cf568541c80996e76b77887a2e61cbbb258150af2309d3e",
+      "working_bytes_before_sha256": "869d6ef9c792b6d111198da1a9bd33858bc7152ffeb8d016e7e12c762e7b379a",
+      "working_bytes_after_sha256": "d9d29fb7d3b7ef4baa3234b5d7bcaf95e1063e52a0a5b475d7ce3ba1bb6c4ce0",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "38a30eda095812218a38517c5ae616d2b471c5202cdfc326fa84ce92501fc1d4"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/resources-before-api-reload-mcp.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7d7615f71cd10ade1cf568541c80996e76b77887a2e61cbbb258150af2309d3e",
+      "working_bytes_before_sha256": "869d6ef9c792b6d111198da1a9bd33858bc7152ffeb8d016e7e12c762e7b379a",
+      "working_bytes_after_sha256": "d9d29fb7d3b7ef4baa3234b5d7bcaf95e1063e52a0a5b475d7ce3ba1bb6c4ce0",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "38a30eda095812218a38517c5ae616d2b471c5202cdfc326fa84ce92501fc1d4"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/resources-before-api-reload.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "3538c5c15bdf601d917ab97d6dcb678f2128f4392080beb6576c18b4a3ca5c47",
+      "working_bytes_before_sha256": "a398da2cc0b85d3dcf48bd9717eb60b023b0fa7163b1912e3e5a58e28a5a2e51",
+      "working_bytes_after_sha256": "a89bcacca38855dda7ffcfaf7fe565585aa9a33a9287b3b36b09f78b36e0f73f",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "fa6eede85a6ca53d8d61143bbada814f1d2c8f89406f9c957920b5775f8c9374"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/retained-business-after-api-reload.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "c7faed4c1d3ea288a617332d4140f6c5383483662ae7c7e8add468ca5be5f5a5",
+      "working_bytes_before_sha256": "bf5459e296b8ccab6dcc06a54a577755de0d6fad51a991bf699f6f6a05b519eb",
+      "working_bytes_after_sha256": "617dc1e68aeff217ad72130d9c3553674cbc948b89572ffcf1a18226e9cb3d1d",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "2fb2e169bcf53bc8d32e8d4890764313c742d584039a58117e243ad7bb2e138b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/retained-business-final.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ce438ba3280ad4e52f7953e4f31d1d7ae112b7b3853ba98389864432e5f3aaf0",
+      "working_bytes_before_sha256": "d1b47bd2422305348d841f070aa95f482601f1578594f1f7b49896fda4b48570",
+      "working_bytes_after_sha256": "51f09372b0d5caedb37a45e0168b445c604464d5a687b978b2ad4f1c2c50007d",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "9284fc46b7f74e78dd636937f2f94b46750ee5e988ba0aa3f0ee4cedee319e74"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/runtime-handoff.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "a8958b0b2d3e196e0e5b0b355a9eb8fb64a54d63d3e928b2731b3ae75464fad2",
+      "working_bytes_before_sha256": "8cd2f3b0105e0dc38bfc9211c28ae645916dc6316802aec592c8060bf9400f4a",
+      "working_bytes_after_sha256": "02b0e8d1c6d092152d48f6063284c6d7e430a0d7f844ab71327204ed172868b8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "ec4383fcac742d6d3f1aa52bab67379bdf3c82c360b659f429d0477504c3da56"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/source-commit-map.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "857e93f52fcefc502f45adff5311fcefc90208a137a2dea9ca7be201c44ab613",
+      "working_bytes_before_sha256": "9e6d96178be81d9613fe4f53be672c5ff9df60b393d23190b0e4ff3b7160765b",
+      "working_bytes_after_sha256": "8beef2f6f1a190f9ff4d14d48c1b2b4edd74bf5dd161091351f3bef737593fb8",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "75ca26d8968b0c30aff4f389fd9ed11a3e8f412c03f21026ef1cb05f3ae1e975"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/source-evidence-map.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "6872fd321da3fb40693276437f1c26699a847a534d00320e5db588107584e097",
+      "working_bytes_before_sha256": "9d76051b955d9c5c39fd3a9e8208adf64df913b71ffb36ca18bebc058cdb8d58",
+      "working_bytes_after_sha256": "306f4f975a083221aa009b9b2f04583a006a317e2f4ba08c9f5e08645dfebe63",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "b39ae1d0ceeb6d7c8b224a3a035d6abd56467549b7cdd428825b5d63c8ceb323"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/strict-signed-tenant-cover.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "2affdd4eac704a45e90ee77fbeb8a29b46d5c6453961c1050c41375bd51950af",
+      "working_bytes_before_sha256": "2c5659cbaeea580cc293630444af0207e3078f24bedb686ddaf9b46cc6ccd227",
+      "working_bytes_after_sha256": "31c7a0ca253c5deb22b73ba00f8001588288c5f2054c4d081db1059628ecedfc",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "2b3f35aa7a03bdc851fdb87184d0325c71e56110a31d876a1ebf67b9d2ce2d8d"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/strict-signed-tenant-cover.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "8295b424af2ce8e52f2a400a49fb42f0f703b3c0e88d9ca08a9412c91c94b128",
+      "working_bytes_before_sha256": "c931632f6b8e26b59f9edf3abb00dc9aedaa004edbc1e608e45d545500b75349",
+      "working_bytes_after_sha256": "6cca9060f26d47733216cfe38809133d00018d9f7a505aae88ddfb8b5e8a60a0",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "60b0c3bef8b6ea0495495364a53c982c64f3f94ff2f3a4ccf2f97c1950b1fab1"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/validation-command-context.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "32a07ced149828e129491c4b4a86c6bca9a150ae8a99b95e54529420c68457eb",
+      "working_bytes_before_sha256": "d3031c80fd628ff2ef9507336db6277a4165984506ef602e8bcd81ea957be99c",
+      "working_bytes_after_sha256": "036b1cf769b69fb85e9c101a704c40d42f8a7cc7d052835d4e2bd80877dcfc2c",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "c6aad426e60f8136b3280f3c589ec454cfd1a8dae9449c1508202495e35e1e7d"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/web-build.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "d7357bd11a7b4f56d3d65c1a459d0447d7d8197a0e286e23105a47fd2b3beb2b",
+      "working_bytes_before_sha256": "18615516343c876435bab7e3bba4a634da3fb7f8ee318ddccb14e42ba7e7f388",
+      "working_bytes_after_sha256": "eccb04cb181d5da03193fe1af7a095625b9e1da8856d2bb0c5eb77c63bbe94da",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "dbac42b95de0bb014ad51ef0b88cb80431a0458741f92dd8a649d9b6e4a28f4e"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/web-types.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "a060f5a7cf972860eb1606b335f8a2d99d583187010e3521d0eff065f65d8f6a",
+      "working_bytes_before_sha256": "8a2cf108d3473388f9b539462ce988e59794d5b0466975596e2dd830ef3b0060",
+      "working_bytes_after_sha256": "8befca8037cce01f073a089249e0b393ff90417cf9a9a18c43c53c78410ae22d",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "79619ef251406e0962fb091300ce7eec547151aeba050708146d2332ffa73b1a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-fix/web-types.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "working_bytes_before_sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "working_bytes_after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-1.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "944c1950f2567b5179d37aa5f0d3f3351b760bfa35b7f1e1a51a350007bfa096",
+      "working_bytes_before_sha256": "2851999f93b7385545d44d4662a2b27829bfbd16099ed813a01884d2c364ec4f",
+      "working_bytes_after_sha256": "a658baa8adfaf2104a2976fd1546a7aad8abe11acf1454ed0393325b3e72aa36",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "7123c9d7dd62d28062bbc6488fa09dae155f7cd04e1a5563c5ea9080853de0c7"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/api-reload-attempt-2.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "f84d68c4588105b243597c34b49d6d4d67fd60d00795a90f655b9bc978e39e5c",
+      "working_bytes_before_sha256": "ce87417888aaed62627f1de11c3d3387a629ec8667d67d0d31ba9245b455dc55",
+      "working_bytes_after_sha256": "f057279b5d2ddeeccd1791dd9a69a33ab2ee23238b135812a0afd7b685a88497",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "1b4129443d43e438a900a0908992fe84116046e693143f7d3e6cc4f432ee6bdb"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/auth-login-status.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ee6e889017faae2d24f57da39c331ecbc505730d671ee7e33508631c89164ef7",
+      "working_bytes_before_sha256": "ee6e889017faae2d24f57da39c331ecbc505730d671ee7e33508631c89164ef7",
+      "working_bytes_after_sha256": "cb96a928ea539ac58fc499c038617cfc2c4a318a70e7779788f018e78997493c",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "cb96a928ea539ac58fc499c038617cfc2c4a318a70e7779788f018e78997493c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/auth-runtime-diagnosis.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "40ce29fb08b236eb1792bcaa0754dc85a473f5d7b30c9a6f9ed40ead9ddb5d7e",
+      "working_bytes_before_sha256": "bcc95f58a435607ebbed5ef9353d3edeb61ac7348bc443e4e5a277ac1aaf1673",
+      "working_bytes_after_sha256": "5faa88ac3082283be4b7fe6499b5a34b290a7a2cbde96f0f9122c4cf89796591",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "c456945f0cc77981710be46a851dc18b88496bea16e3b407d2e140b7ce86d751"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/owned-evidence-paths.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "021cbb3982780de5481db6ceeab96475b935fa9bc578b4d3d8a21d6c1bf74b0a",
+      "working_bytes_before_sha256": "d36b1484c944d0e2a7197421d7c02fd8b5a729a8768f61fff94bc1209315173b",
+      "working_bytes_after_sha256": "2919ffc53ec28d7940ba1f9b427000650e13bdb4411976affe0541e84a8b26a7",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "077a8275707eaf5bb42fb1246e670cdefe017c31aa1a0e6751cbdcd928f98f90"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/owned-source-paths.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "b801caab0cf87882d384008b6c7e58caf86f6492563b44a8dc7fc1f443d04745",
+      "working_bytes_before_sha256": "ff37eed166e72ceef310af3c027fc6be866bc5ea8d3825181c3aed2ee9345d26",
+      "working_bytes_after_sha256": "fd09aba9b59f3b8adfa3da2dd48c4f90c5200a66e11a2faf7c478d3fe394f097",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "2d8083d38ed0c102314b8ecf562d749d9ae6ac3e699aecb89fd1cfc5fb1c863d"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/page-save-green.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "c6e840a156d47114f58caec3216c7bad07ba3244bc4c86d62b4217e534236bc5",
+      "working_bytes_before_sha256": "d7a59360e589de2ea158a31f64f4d155373c45a796d467e7eb1ffb64752f2c70",
+      "working_bytes_after_sha256": "09ff06ec50aaf237a1bc9c01329718c6916eb5526241b297fe9fadfb56207d50",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "df9ca6854b77f58f43fd1f5ff244af69c5ccaa4929b4d0b27be59221ef1c915b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/page-save-green.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "8f47af75b651dea40ae6669db76a968c6c9e8112eff358bb850248dc3574493f",
+      "working_bytes_before_sha256": "c978f250a8dee1180b9ad363f6aba80bd1f931364ebaa0ccd63bc5132a26a191",
+      "working_bytes_after_sha256": "ce25a3ad9136df29c72d0e7b73210aaed004f49d1c645ebd41a14b1a24059e19",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "12c52a32f48cf7f427c8219cae434352ea4b31a189050f689f0960d805bb3910"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/page-save-red.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "677347d290d253cd6d6ffa19845c294f25f3c48ead73512fbf14858f6433f6f6",
+      "working_bytes_before_sha256": "8888090e4ac28847cc8cf7e14d9126285083ca555ac4201f4b7c3382b768d6af",
+      "working_bytes_after_sha256": "b8a6e813e1d9ded70a7e5f700c8cf8d1ec051ce885fdae2e119da52bb3051ad7",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "e771b683bf4b171f550131d32fb829bdf89b5da7a957f0c75c487a0fad0cb3ce"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/page-save-red.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ab536e0f1c5c917bb5c58b3dcdaf3bdb62b8c5dbe38b893537ac64beb39cb9a9",
+      "working_bytes_before_sha256": "96e2ababf216d6486f8aee9cf66f6988174594de44b3527ae5fc085fd81486fe",
+      "working_bytes_after_sha256": "ebe10a163411941457a12ad2c5c0873626bf11219e9568addef44355920d4c98",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "b83afbccb170b96e42f3eff975b7b14505b842404aadf2c67850deb014e18178"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-read60.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "f44c3edfcf333b6a34ab61f121d47e0bd5b1f49f6e6e1b44bdcf1fca69484a93",
+      "working_bytes_before_sha256": "c5ade09dad05471fdf7e8fa426e6f3c925677cf25064b6c9ac290235efe717e5",
+      "working_bytes_after_sha256": "5252b47909770a6b7c5b8041e123045a2844461704bebd2b70ed6c18716945e5",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "d853662420bbb7aec3f82b14cdbcab5f4f4d95221576c3d5c0793308336233de"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/post-reload-snapshot-retry.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "c1f5ccfec28f34198cadcfa193e1616f3abc630fda5527fe46a3ae49f425d5e4",
+      "working_bytes_before_sha256": "8154eb0b976379e77e46a13ebb711416eb98607996d0712ccec79170529f5a0c",
+      "working_bytes_after_sha256": "82545cecf031e88745186b5eb87eca91835da5ba6cc1f445537dab10365c3303",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "7dd32deffe8e421354fa0a937b48956717a034f944fc3e737de5549a3b87ac21"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/processes-after-api-reload.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "e3c45982a50fa9a57087157586691f3370fc672da983e6cca659d8a6efe1b6d8",
+      "working_bytes_before_sha256": "cb14f6d8b0c8cd81ee809624df7924c591e363c34ebd1e33525ce587818b79f7",
+      "working_bytes_after_sha256": "5aa241905d44264ba9531e089eae12cd00488f3e41876b7ebe125b03f6a6bd1a",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "75e447cf7f8be53b54f9dac4dd4a66ae00af073b5a1ac733e28062ae949bd77f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/protected-wip-after.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "411a1d080199b5b1229a76286b02f3fbdbba95a8bf7ee1d5b0f1b4260cdb2462",
+      "working_bytes_before_sha256": "b233a0ebb88a15b9731d88b034bbb41c3c04e4270b5f022d7051206c8bdf4e3d",
+      "working_bytes_after_sha256": "cb3b85b2c53150d05010992c70d0d7413ff06207ff705a914418b2c475bc49db",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "579869813744e377a01301f556d5adf829f5ed48f2077f16ad8e3b36c81b5d7b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/protected-wip-before.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "598d890d6dd0a9cc9ca533901a22b90eca643fa13c136baa22b2bf37e2d6477f",
+      "working_bytes_before_sha256": "4044b754c02965f008b49a81f84dd531592386804d57bde8b75291c2065c1014",
+      "working_bytes_after_sha256": "1864bd171df9aebef4f3286e2a440fe37736e5ac70e93aafcdf2250389de91c4",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "b9f3e494dced4e119695959d521ce0c4fd41eb835308e3f23ffbf2279312dabb"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/publication-page-save-cover.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "86a84affbbbb2827902b79063623b2fc61d3d2eea87e617a042d82c485176615",
+      "working_bytes_before_sha256": "3cfdc313e3196fc77700cebf555959e6ad7b35030c1635d90e2b7fda6d3c7b06",
+      "working_bytes_after_sha256": "41d8377421f1e5cbfdc93a9e6c6a62403ad0e3a2e6b52d72db125b0ae0a53474",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "a34b27301c5c03cdac67f3e07b9b8f58ff73d0770f090cb5859af5276f66bcd9"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/publication-page-save-cover.log",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "c34da5c39235a50fc32742f3dc387cbe77d0326676f245b24bd4396fc2084914",
+      "working_bytes_before_sha256": "457f89cb73526a19ecae8e5829331b59fc6f5386e59c57722447f20ea35dc54a",
+      "working_bytes_after_sha256": "c89067a2429d100920035ce7d288a7e8c6df8390e541d4776c22027ee8311866",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "31bf289fe718b95a7441c25767f6c20039258dd20cc8f39cc5697642cf18954b"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/readonly-runtime-http-status.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "1907eed3bc1dc064b6a24e0706147bb75968ceca6d4646698ed486219e187929",
+      "working_bytes_before_sha256": "5fafb97b2fc81f8f96e359d546c20e1b23604475bec1adde6058827c3551dadb",
+      "working_bytes_after_sha256": "4ae25812fab4ab6f7d5fbd6e45204017fa4fe76e43357f6e9537f452ea3b4a77",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "d0a63388270810cef44f52d1310fee134a9c1b0a32b9e4f47f1663a5acadf685"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/resource-continuity.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "038352bbb3ac6ce375d2a36ccf96cbf7caf31f9de630c569a1fd5d2ba3f0c6d5",
+      "working_bytes_before_sha256": "f2f40c623c4e0019acd75a6db9bf7e953ada8e2873c46d26e614164b97b5aac8",
+      "working_bytes_after_sha256": "7c665c0e6789cfa05aead9e197be918ad3371e08d3013b0641a64bfb91dd6c3d",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "bf90cec502b6157a7470bfcc6caf2084ad3f4eb68f87611fd1cef5daa090809d"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/resources-before-api-reload.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "1e58a69afb36ee1bdd2bfa6414741c159ea2a10e026189f3bc6fa4bacf0104fd",
+      "working_bytes_before_sha256": "514776ccaff69c95ee0145dca45acfd3456e755715ce4791624cad7ebaf5655a",
+      "working_bytes_after_sha256": "0ca3270f0d22cb549ff14ea7d7938ee5667cb9504419379864f4e2e9f8585a64",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "2b21388fc0511f050953cfedb5ca557ef01be6182b589ee5380432fb3d1ee4d5"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/resources-initial.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "3c31039178555de7548589e95ecc32c6a492dec09434454b4f950237196cbf30",
+      "working_bytes_before_sha256": "f4fe947dadb74da38aaf4fb2108118337fb6a3585be1ad44e2c851d6c7825625",
+      "working_bytes_after_sha256": "7abea1cdf056c9af507a07e0fedffd09f61d97d0eb9189fd7b90708f3839902b",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "cf10345abbebeef98c5e4287c5371c3906255735a2099a27fa535dce5a5c1fc5"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/retained-business-check.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "0287a317ac8240d31772881d896172153b3c43dc779ffbba8a1fa6c54e45b7ac",
+      "working_bytes_before_sha256": "86e1ce6ba6214fbdf4a7a180dca63ac53b3aeb34efd45112b2e4acb349e7fbb2",
+      "working_bytes_after_sha256": "1cca42a0d79c453a89827d291edef0558afc7cf82f13146ab751485c3c0a2533",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "f917b22e2cfbc199dc34ec452b7ae00e60849ed523771d62ebcfa90883990b07"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http-status.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "f27bebdf1f2db576527c1c10935732256b8e5abf4e70b5cdbe4ea4b457f8b514",
+      "working_bytes_before_sha256": "5ce4b5e6898d4ad0d34409ef081bd0cdb74adf102ded5cb7203d5e8019bc6744",
+      "working_bytes_after_sha256": "6d3948a9b5eb41e2b3f7245e9ef7c1c9dd73c04f1ed6d7da77a1344660c9a03e",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "e6e87b2e893deabeaef6b26c1579b8817d68be9ebc084c0c2e4d93d7b28f9c78"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/retained-business-direct-http.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "b023de9c070dad4ac993198bc82c8a7a39017796cdefe7a4e13daf40d5658823",
+      "working_bytes_before_sha256": "bdee63f804eab19b99e4bcf271975dcfceff15dbaab4402cb28e2336d3cfc35d",
+      "working_bytes_after_sha256": "d1d98e554dbf1ced1297d5c1fc3a8ecdeb79c33e2c2aea3aaf4905957f47e015",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "4e30a182559b984dece2c393af85dc89e7d5d0e1c1d830f72e98a128a7ca92f9"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/retained-business-read60.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "51e23535335bf0d1755a11d1e8a56cd2972e398cbf07b548ed54030e111ebab0",
+      "working_bytes_before_sha256": "c18dc3f5b920ef4c236a6a5e1a90119e889675f7040c03d3303cd51c05c99a3e",
+      "working_bytes_after_sha256": "68e7e36501ff0fae41cb43465a0df6696e26d0fd3116bd37b342038d9f4b55fe",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "2cecf262ce247248a9efc53a7c4055a78700225bdff3b70258392cd7ca37ab1f"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/runtime-handoff.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "31d4f0869289b76e22cb45f2b4cedf6c89c10c6fa01d8f7855853ab0dcb60d3b",
+      "working_bytes_before_sha256": "470395e4374c46b0650063cd9670fed889c85e81d3e6471ed2e30a18ad7e32d7",
+      "working_bytes_after_sha256": "64aae79307082f3aa425aa22140e36ffdd3359113a0ceb3052742dc9ac4f3720",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "d83e6488f488d0415967db1fc410d01c77dcdaa8f2d64c0958375fa17fc76a4c"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/sanitization-check.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "1f7012d8cf14e910bc9f5cd07ebeb9a54fc3f24729824848ee521bb245760d44",
+      "working_bytes_before_sha256": "b1dae97a63925df668e48da698af8b3a0e447791531ca2a6e25334d68aa39419",
+      "working_bytes_after_sha256": "dd6c5f23324f0e60f97482c8ee625f6e6a41e1e2e12713364a40d99a91c935a6",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "9c2df694fb93b87bc30455830c7c135232251202555d88b3e6d14fec4f8bc96a"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/self-review.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "28dd4c95ca4eee59c48cf6e66a03322e0297ef235054a589ab255caac0ef007e",
+      "working_bytes_before_sha256": "9ffb38468532e1a3eacc285e3dc26745e894fb650398f15ddebe64b1c81d31ff",
+      "working_bytes_after_sha256": "12f31f09c9a489a6a5303878b5d72260ade8f5c973079f3c65ee9c325bb9ed1a",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "58fc4fb7408cc9d0e86e2757713399eb9f8affa605b80599cfd86d614b75a6d1"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/source-commit-map.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "3c597d37f04e6444488ac964d1b8ec03a4d91723820dae80a7a4f224fae8867e",
+      "working_bytes_before_sha256": "910a193ba81746f1e6f890605450a13844cf5ff653c60bb6c95077c17edf0e79",
+      "working_bytes_after_sha256": "c68a865093df363b5225c2e82516cf6129ae57ac95d4f921a3b312652098716d",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "0c840b87bae5b9d3ea5dcee707bd77aea0b0449804ef397b7d429d674d475447"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-final-residual/validation-command-context.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "67d30c09f42c606aba0541e855cadbf9b3b0bb7f89048cbd5d36220e5cf88760",
+      "working_bytes_before_sha256": "f0720f981168ff91630b42d61554ba7555a3ac1e1b999385d343a8ee9a4ac424",
+      "working_bytes_after_sha256": "4b59c91ee56282975c76b739df3ec1e8e37a6c3769c089d8f3168209d6d36a97",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "dad629312c9039d37d4c312ba1caf4126157edfaba6c0c646e30782c165b1315"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/controller-runtime-restored-20261012.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "4ea45a00b05889ddb0b6d8fffa7164479c7215d91e5f1affc922c54e82039646",
+      "working_bytes_before_sha256": "05331c710a805477bc53cd3d85dd57ddcbf606fb62508a887b34aa834070c38c",
+      "working_bytes_after_sha256": "e0dfbef9bf82f7fb12cc9c5b4dce9f2fc99e454505cbed865da23c34643c2eb0",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "2cf97f33d1f7ed9050488084e418c08fd5b6533ce32811fdb6a6bc2c9291c2df"
+    },
+    {
+      "path": "docs/active/delivery/evidence/mp11-plan/task-8-original-fresh-migration-receipt.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "509a52975072be5feb9517ba384f171f0cec841468ecd6845778cf566c41a637",
+      "working_bytes_before_sha256": "f153d9e20ba7d781198fe9504badf9657080fa92f95d8a6a0f8b3bd4c613339d",
+      "working_bytes_after_sha256": "ad6b672e705b627d0799c1518254b19c58eda2f3419d16a7ca8d124829a12d3e",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "ce2341aa83f97217b8668ba9f8d7f7020c8aa612c2f008fdc56858346fddb4fd"
+    },
+    {
+      "path": "docs/active/specs/2026-10-11-metaplatform-product-v1.1.md",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "029648c21091b54db26eb2becd13e182ed758f310424bbed2c642ab70c90f98a",
+      "working_bytes_before_sha256": "f3cbce16b303ec8bde086378cabdbe0e61c4ab443a1fa26ea7a65bdc6922da24",
+      "working_bytes_after_sha256": "99b3250a7962afe919fabf5d9c09b8fdc848c4a1a296c979f601af2168734b86",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "2cb1d90bcb57428735d559cfea040ea9ac7bd90c749c64dec197744457e24faf"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "ba99d43a85a38b92709d39d9a241074dd04d98f2faa4980471cb8f41872f15d3",
+      "working_bytes_before_sha256": "2009510f988a047cfba07b8a4d1bbcc2133ea7ff3fb45d93bd9d97e5761ff807",
+      "working_bytes_after_sha256": "04759154c70226a423d28d04e8c6e1c86a19fcd1b2126d439658db67d22c433f",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "2551ae87cb8332e4f5c575f173b484a8cb1f97eb6279ec7e30645c14b8e9ecfc"
+    },
+    {
+      "path": "research/2026-10-11-ontology-v1.1/commit-snapshots.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "2470d12772b96373f3ca7b64886c52b80b09dccd874b70e16f2a8507c1640f00",
+      "working_bytes_before_sha256": "5869f815bf40083940f93652a61f928544f90e40311a48bb0d6b02b1afd61837",
+      "working_bytes_after_sha256": "e1a4e99102df436d98be8ea920a4b91c962fa884a1f9a672355dc82b356f0664",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "4404dc759f13cb1d0c19c443c46d88210dedec8cc476cd2d00b4bdfed12f3fe6"
+    },
+    {
+      "path": "research/2026-10-11-ontology-v1.1/github-metadata.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "8fb0a92eb56f27a40107f936130aadf7e25bef075424ff8e4353a5f47a751ad4",
+      "working_bytes_before_sha256": "9df52337c0e7d379e66bbf8a396d5d16efe9b84b460708e9293d04a3b8cdf6f6",
+      "working_bytes_after_sha256": "8c09c74a44b886fa9ab48fa356de8d4f8c9c77d911942ca4a7f94eea888f28ef",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "9eb53ca0482e838c69d447c536c0cd8820158aeb87960029a1f50910e7968bfb"
+    },
+    {
+      "path": "research/2026-10-11-ontology-v1.1/metaplatform-v1.1-research.html",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "8524de51349f923c55c656a0310d87b725388687356939b0870628afdbe16e08",
+      "working_bytes_before_sha256": "5e362ad6e6dd6fffc30cdec566cb85d424073e9e2cee95755f04dca5663abe63",
+      "working_bytes_after_sha256": "dc0725239581127a7ad034a6b39b648a72afe3f4b7829d2139f7eb792f25717a",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": null,
+      "normalized_git_text_sha256": "719440404c648aa85b54bb3d21c497041bc5d65d95d20b30f2d91ce4fc778c77"
+    },
+    {
+      "path": "research/2026-10-11-ontology-v1.1/source-manifest.json",
+      "original_git_revision": "d3539e85a58973a5531ae0585965c77bc5151619",
+      "original_git_blob_sha256": "7720d5cfdf43f28c9c7b872f033d1729af9c670df6ffb5173467dc121d6bbf5f",
+      "working_bytes_before_sha256": "5152af6c0078b40980d6ac94050b1112b6762f199c09d6eabad3421e285e5931",
+      "working_bytes_after_sha256": "87cd4427004551847521863c76a4cc7f7151264d44c46aa68ed45637e113e92a",
+      "change": "trailing horizontal whitespace and one final newline only",
+      "json_values_equal": true,
+      "normalized_git_text_sha256": "58f77b09fae20620ba56c57fe098b825808c4a64ad06c6f343efc67a33b65d8b"
+    }
+  ]
+}

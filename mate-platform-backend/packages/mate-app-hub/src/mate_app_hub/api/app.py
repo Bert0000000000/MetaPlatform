@@ -124,12 +124,13 @@ def _tenant_id(request: Request, *, require_write: bool = True) -> str:
     """
     ctx = request.state.ctx
     tenant_id = require_tenant(ctx)
-    if (
-        require_write
-        and request.method not in {"GET", "HEAD", "OPTIONS"}
-        and not ctx.has_scope("platform.write")
-    ):
-        raise HTTPException(status_code=403, detail="platform.write required")
+    required_scope = (
+        "platform.write"
+        if require_write and request.method not in {"GET", "HEAD", "OPTIONS"}
+        else "platform.read"
+    )
+    if not ctx.has_scope(required_scope):
+        raise HTTPException(status_code=403, detail=f"{required_scope} required")
     return str(tenant_id)
 
 

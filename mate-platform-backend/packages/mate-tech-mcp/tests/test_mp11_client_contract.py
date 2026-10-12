@@ -171,6 +171,8 @@ def test_key_grants_subset_of_verified_issuer(issuer, requested, status, _fresh_
 def _fresh_store():
     from mate_tech_db.base import create_all, init_engine, reset_engine
 
+    # Register the lazy-loaded ORM before creating the empty test database.
+    from mate_tech_mcp.repositories.sql_models import McpApiKeyORM  # noqa: F401
     from mate_tech_mcp.security.api_keys import McpApiKeyStore, set_api_key_runtime
 
     reset_engine()
@@ -249,6 +251,13 @@ async def test_key_rejects_requested_foreign_workspace(_fresh_store):
 def _owned_pg_order_baseline(request, monkeypatch):
     """Bootstrap actual PG cases only in the explicitly named disposable database."""
     import os
+
+    if not request.node.name.startswith("test_actual_pg_"):
+        return
+    dsn = os.environ.get("MP11_APPHUB_PG_DSN")
+    if not dsn:
+        pytest.fail("explicit owned PG required: MP11_APPHUB_PG_DSN", pytrace=False)
+
     from datetime import UTC, datetime
     from urllib.parse import urlparse
 
@@ -263,13 +272,12 @@ def _owned_pg_order_baseline(request, monkeypatch):
     )
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
-    dsn = os.environ.get("MP11_APPHUB_PG_DSN")
-    if not dsn or not request.node.name.startswith("test_actual_pg_"):
-        return
     target = urlparse(dsn)
     if not target.path.startswith("/codex_mp11_other_"):
         return
-    expected = os.environ["MP11_OWNED_PG_DATABASE"]
+    expected = os.environ.get("MP11_OWNED_PG_DATABASE")
+    if not expected:
+        pytest.fail("MP11_OWNED_PG_DATABASE required for owned PG baseline", pytrace=False)
     assert target.hostname == "127.0.0.1" and target.port == 55497
     assert target.path == "/" + expected
     with psycopg2.connect(dsn) as connection, connection.cursor() as cursor:
@@ -327,9 +335,6 @@ def _owned_pg_order_baseline(request, monkeypatch):
         )
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit owned PG required"
-)
 def test_actual_pg_deadline_guards_and_completed_replay():
     import json
     import os
@@ -409,9 +414,6 @@ print('PASS independent-process completed deadline replay')
     assert child.returncode == 0, child.stderr
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit owned PG required"
-)
 def test_actual_pg_legacy_proposal_rolls_back_before_receipt(monkeypatch):
     import os
     import uuid
@@ -446,9 +448,6 @@ def test_actual_pg_legacy_proposal_rolls_back_before_receipt(monkeypatch):
             r.get_proposal_execution(p.proposal_id)
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit owned PG required"
-)
 def test_actual_pg_legacy_guard_replay_and_ordinary_connection(monkeypatch):
     import os
     import uuid
@@ -509,9 +508,6 @@ def test_actual_pg_legacy_guard_replay_and_ordinary_connection(monkeypatch):
         r.delete_individual(ind.rid)
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit owned PG required"
-)
 def test_actual_pg_legacy_state_rechecked_after_row_lock(monkeypatch):
     import os
     import threading
@@ -570,9 +566,6 @@ def test_actual_pg_legacy_state_rechecked_after_row_lock(monkeypatch):
         r.get_proposal_execution(p.proposal_id)
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit owned PG required"
-)
 @pytest.mark.parametrize("kind", ["model_type", "merge_suggestion"])
 def test_actual_pg_legacy_model_merge_atomic_receipt(kind, monkeypatch):
     import os
@@ -726,11 +719,15 @@ def owned_embedding_repo(monkeypatch):
 
     source = os.environ.get("MP11_APPHUB_PG_DSN")
     if not source:
-        pytest.skip("explicit owned PG required")
+        pytest.fail("explicit owned PG required: MP11_APPHUB_PG_DSN", pytrace=False)
     parsed = urlparse(source)
     assert parsed.hostname == "127.0.0.1" and parsed.port == 55497
     assert parsed.path.startswith("/codex_mp11_")
     if parsed.path.startswith("/codex_mp11_other_"):
+        if not os.environ.get("MP11_OWNED_PG_DATABASE"):
+            pytest.fail(
+                "MP11_OWNED_PG_DATABASE required for owned embedding fixture", pytrace=False
+            )
         assert parsed.path == "/" + os.environ["MP11_OWNED_PG_DATABASE"]
     dsn = source
     monkeypatch.setenv("ONT_VECTOR_DIM", "3")

@@ -7,6 +7,7 @@ not count as Accepted"; the hook keeps that discipline enforced.
 
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -31,10 +32,26 @@ def main() -> int:
             text = f.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        for lineno, line in enumerate(text.splitlines(), start=1):
-            for pat in PATTERNS:
-                if pat.search(line):
-                    bad.append((f, lineno, line.strip()))
+        # Parse the whole call so formatting cannot change the existing reason policy.
+        tree = ast.parse(text, filename=str(f))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                function = ast.unparse(node.func)
+                if function in {
+                    "pytest.skip",
+                    "pytest.mark.skip",
+                    "pytest.mark.skipif",
+                    "pytest.mark.xfail",
+                }:
+                    statement = ast.get_source_segment(text, node) or ""
+                    bad.append((f, node.lineno, " ".join(statement.splitlines())))
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                for decorator in node.decorator_list:
+                    if isinstance(decorator, ast.Attribute) and ast.unparse(decorator) in {
+                        "pytest.mark.skip",
+                        "pytest.mark.xfail",
+                    }:
+                        bad.append((f, decorator.lineno, ast.unparse(decorator)))
 
     # 合法 skip 模式（GA 框架认可的前置条件不可满足语义）：
     # - pytest.importorskip(...)：依赖在当前环境缺失

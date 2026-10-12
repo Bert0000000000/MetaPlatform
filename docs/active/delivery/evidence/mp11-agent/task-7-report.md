@@ -9,7 +9,7 @@ Commit: 35f00e8dc6cc094c9be13a0a0d9ff885b33d795e
 
 Persist verified scopes in existing API-key context/store with additive0022. Issuance requires USER, verified tenant and nonempty supported scope subset (equality allowed); roles/permission labels are never issuer grant proof. Supported scopes are platform.read/platform.write/ont.read/ont.write. SERVICE/API_KEY cannot manage keys or approve/execute as a human. Legacy [] grants fail closed and the UI requires reissue.
 
-FastMCP and REST bind verified scopes/tenant and strip external __caller__. Discovery and invocation use the same static tool allowlist; unknown ordinary/dynamic/federated tools fail closed externally. Ontology operations map to exact upstream operationIds, retaining metadata and runtime scope distinctions. Read/query uses ont.read+platform.read; pending proposal uses ont.write+platform.write. Composite schema/SHACL preflight requires all four due the SHACL canonical write authority; its read category is insufficient. Preview metadata now matches actual ontPreviewV2Proposal. Existing service transport credential fallback remains only behind exact Agent operation/grant/tenant checks; human decision tools are never available to Agent dispatch.
+FastMCP and REST bind verified scopes/tenant and strip external `__caller__`. Discovery and invocation use the same static tool allowlist; unknown ordinary/dynamic/federated tools fail closed externally. Ontology operations map to exact upstream operationIds, retaining metadata and runtime scope distinctions. Read/query uses ont.read+platform.read; pending proposal uses ont.write+platform.write. Composite schema/SHACL preflight requires all four due the SHACL canonical write authority; its read category is insufficient. Preview metadata now matches actual ontPreviewV2Proposal. Existing service transport credential fallback remains only behind exact Agent operation/grant/tenant checks; human decision tools are never available to Agent dispatch.
 
 Native dsh Cordis and WorkBuddy connector exports contain environment references only. UI tests actual initialize/initialized/list/query against same published object; no connected status from exports. Input changes abort/reset, including delayed published-page response race; temporary sessions DELETE after probing. Explicit app/page identifiers, first published object and200row probe limit remain documented.
 
@@ -22,6 +22,7 @@ Approved pg_repo.py cutoffs: private _ProposalConnectionLease/_LEGACY_PROPOSAL_T
 All backend commands use PYTHONUTF8=1, PYTHONDONTWRITEBYTECODE=1 and dot-source the guarded task-6-env.ps1. That script verifies the existing owned container and constructs credentials only in process environment; no DSN/token plaintext is recorded. PG regressions themselves assert127.0.0.1:55497 and codex_mp11_ prefix. No existing persistence suite with default5432/global delete was run.
 
 RED:
+
 - Initial new regression set observed7failed/1passed for missing deadline/scope behavior (historical tool output, no retained log).
 - `mate-platform-backend/.venv/Scripts/python.exe -m pytest mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py -q --no-cov`: actualPG injected _persist_proposal_transition failure demonstrated an orphan Individual before transaction fix; exit1. Subsequent same file exit0. Exact orphan later removed only after verifying Task7 rollback Proposal provenance and no receipt, in task-7-owned-red-cleanup.json.
 - `...python.exe -m pytest mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py -k concrete_operation -q --no-cov -p no:cacheprovider`: exit1, ontGetV2ProposalPreview != ontPreviewV2Proposal. After exact operation allowlist/metadata correction exit0,1passed; read-only composite refusal/unknown operation denial/all-grant allowed covered.
@@ -30,17 +31,21 @@ RED:
 - Intermediate expanded set156passed/8warnings preceded final operation-map correction; it is prior-source evidence, not final range.
 
 Final backend command (exact):
+
 ```powershell
 mate-platform-backend/.venv/Scripts/python.exe -m pytest mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_api_keys.py mate-platform-backend/packages/mate-tech-mcp/tests/test_server.py mate-platform-backend/packages/mate-tech-mcp/tests/test_ontology_proxy_tools.py mate-platform-backend/packages/mate-tech-mcp/tests/test_ontology_write_tools.py mate-platform-backend/packages/mate-tech-mcp/tests/test_protocol_tenant_binding.py mate-platform-backend/packages/mate-tech-mcp/tests/test_streamable_http.py mate-platform-backend/packages/mate-kernel/tests/test_action_engine.py mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_proposal_preview.py mate-platform-backend/packages/mate-app-hub/tests/test_apphub_order_binding.py -q --no-cov -p no:cacheprovider
 ```
+
 Exit0: **157passed,8warnings,17.44s** (`task-7-backend-green.log`). Covers key grants/service creators/revocation, tool filtering/tenant boundaries, kernel deadline/function refusal, actualPG action and legacy kinds rollback/replay/state/deadline, lease escaped context/wrong tenant, canonical key response/operationIDs, existing Proposal preview and Task6 AppHub order binding tests. RealPG is separate from mock upstream/identity fixtures; fixture USER is not signed-issuer proof.
 
 Final UI commands:
+
 ```powershell
 pnpm --dir metaplatform-frontend/apps/web exec vitest run src/pages/mcp/IdeConfigPage.test.tsx src/pages/ontology/components/ProposalConfirmDrawer.test.tsx --reporter=dot
 pnpm --dir metaplatform-frontend/apps/web exec tsc --noEmit
 pnpm --dir metaplatform-frontend/apps/web build
 ```
+
 Exit0 each: **2files/9tests**, tsc clean, production build19.50s. Existing ProposalConfirmDrawer fixture correction was explicitly moved into Task7 ownership: pending mount, future server-confirmed deadline, executed receipt. Assertions retain denial behavior and verify pending server600seconds/10minutes plus exact server deadline. Task8 full all-web suite remains pending. `task-7-ui-build.log` records Vite warnings.
 
 Migration command: `...python.exe .superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/task-7-migration-check.py` exit0, PASS fresh,0021upgrade, independent-new-process scopes/deadline. Evidence task-7-migration-evidence.json; DB names below. Additive _ensure_schema tested old Proposal column absent -> nullable added, no legacy backfill.0022 legacy key rows empty grants. New-process completed execution replay additionally tested in backend file.
@@ -96,10 +101,10 @@ Real dsh/WorkBuddy runtime/login remains1.1.1 NOT_EXERCISED. Signed issuer class
 
 Commit validation: git diff --cached --check exit0; committed exact28owned paths, no foreign staged files; git diff-tree names match task-7-owned-files.json.
 
-
 ## Task7 Fix round1 — I1 optional pgvector DDL isolation
 
 FIX_BASE: `35f00e8dc6cc094c9be13a0a0d9ff885b33d795e`. Only approved I1 is addressed; M1 deprecation/chunk warnings remain Task8-deferred. Exact owned source paths:
+
 - `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py`
 - `mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py`
 
@@ -116,16 +121,20 @@ Tests use actual `_embed_chunks` with deterministic nonempty three-dimensional e
 All commands ran at repository root with `PYTHONUTF8=1`, `PYTHONDONTWRITEBYTECODE=1`, then dot-sourced `.superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/task-6-env.ps1` without printing credentials.
 
 RED against FIX_BASE production plus the two new tests, and focused GREEN after guard:
+
 ```powershell
 mate-platform-backend/.venv/Scripts/python.exe -m pytest mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py -k proposal_embedding -q --no-cov -p no:cacheprovider
 ```
+
 RED exit1, two failures (`task-7-fix1-red.log`, original tool chunk7aa348): real `psycopg2.errors.InFailedSqlTransaction` at receipt SQL after extension failure, and `_pgvector_ready True is False` after actual rolled-back DDL. GREEN exit0, `.. [100%]` (`task-7-fix1-focused-green.log`, chunkb11460).
 
 Final covering run, source range FIX_BASE plus exactly the two approved file diffs:
+
 ```powershell
 $env:AI09_PG_DSN=$env:MP11_APPHUB_PG_DSN.Replace('/codex_mp11_apphub_20261011','/codex_mp11_agent_pgvector_fix1_20261012')
 mate-platform-backend/.venv/Scripts/python.exe -m pytest mate-platform-backend/packages/mate-tech-mcp/tests/test_mp11_client_contract.py mate-platform-backend/packages/mate-tech-ont/tests/test_ont_ai09_vector_search.py::TestPgVector -q --no-cov -p no:cacheprovider
 ```
+
 Exit0, **28 passed, 2 warnings in7.18s**, `task-7-fix1-covering.log`, tool chunka811ae. Warnings: existing Starlette/httpx TestClient deprecation and class-scoped instance-fixture PytestRemovedIn10Warning. No unchanged frontend/typecheck/build/full-backend repeats. Original157-pass source range and Redis limiter-fixture boundary above remain historical evidence, not rerun claims.
 
 ### Evidence retention and incident

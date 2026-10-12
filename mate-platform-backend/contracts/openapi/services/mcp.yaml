@@ -723,85 +723,93 @@ paths:
   /api/v1/mcp/api-keys:
     get:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 列出本租户已签发的 MCP API Key
       tags:
-      - mcp
+        - mcp
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/McpApiKey'
-        '401':
+                  $ref: "#/components/schemas/McpApiKey"
+        "401":
           description: 缺少有效凭证
-        '403':
+        "403":
           description: Non-USER, tenant mismatch, or requested grants exceed issuer authority
       operationId: mcpGetMcpApiKeys
-      description: 列出当前租户的长期 MCP API Key。仅返回前缀，明文不可再获取。 AuthMethod.USER required. Issuance
+      description:
+        列出当前租户的长期 MCP API Key。仅返回前缀，明文不可再获取。 AuthMethod.USER required. Issuance
         grants must be a nonempty supported subset of verified issuer scopes; roles do
         not imply scopes.
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
-      - FR-MCP-APIKEYS-LIST
+        - FR-MCP-APIKEYS-LIST
       x-mate-implementation-status: implemented
     post:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 签发 MCP API Key（明文仅返回一次）
       tags:
-      - mcp
+        - mcp
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateMcpApiKeyRequest'
+              $ref: "#/components/schemas/CreateMcpApiKeyRequest"
       responses:
-        '201':
+        "201":
           description: 创建成功，响应中的 key 为唯一一次明文
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/McpApiKeyCreated'
-        '401':
+                $ref: "#/components/schemas/McpApiKeyCreated"
+        "401":
           description: 缺少有效凭证
-        '403':
+        "403":
           description: Non-USER, tenant mismatch, or requested grants exceed issuer authority
-        '503':
+        "503":
           description: 密钥存储未启用
       operationId: mcpPostMcpApiKeys
-      description: 为当前租户签发长期 API Key，供外部 MCP 客户端替代 1 小时 JWT 使用。 AuthMethod.USER required.
+      description:
+        为当前租户签发长期 API Key，供外部 MCP 客户端替代 1 小时 JWT 使用。 AuthMethod.USER required.
         Issuance grants must be a nonempty supported subset of verified issuer scopes;
         roles do not imply scopes.
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-APIKEYS-CREATE
+        - FR-MCP-APIKEYS-CREATE
       x-mate-implementation-status: implemented
   /api/v1/mcp/api-keys/{kid}:
     parameters:
-    - name: kid
-      in: path
-      required: true
-      schema:
-        type: string
-      description: API Key 记录 id
+      - name: kid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: API Key 记录 id
     delete:
       security:
-      - bearerAuth: []
-        tenantHeader: []
+        - bearerAuth: []
+          tenantHeader: []
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 吊销 MCP API Key
       tags:
-      - mcp
+        - mcp
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -810,21 +818,22 @@ paths:
                 properties:
                   deleted:
                     type: string
-        '401':
+        "401":
           description: 缺少有效凭证
-        '403':
+        "403":
           description: Non-USER, tenant mismatch, or requested grants exceed issuer authority
-        '404':
+        "404":
           description: key 不存在
-        '503':
+        "503":
           description: 密钥存储未启用
       operationId: mcpDeleteMcpApiKeysKid
-      description: 吊销指定 API Key；吊销后立即失效。 AuthMethod.USER required. Issuance grants must
+      description:
+        吊销指定 API Key；吊销后立即失效。 AuthMethod.USER required. Issuance grants must
         be a nonempty supported subset of verified issuer scopes; roles do not imply scopes.
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
-      - FR-MCP-APIKEYS-DELETE
+        - FR-MCP-APIKEYS-DELETE
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -1036,34 +1045,35 @@ components:
             type: string
           title: Scopes
           type: array
-          description: 'Explicit subset of verified issuer scopes: platform.read, platform.write,
+          description:
+            "Explicit subset of verified issuer scopes: platform.read, platform.write,
             ont.read, ont.write. Legacy empty grants authorize no external tools; reissue
-            required.'
+            required."
         createdAt:
           title: Createdat
           type: string
         lastUsedAt:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type:
+            - string
+            - "null"
           default: null
           title: Lastusedat
         expiresAt:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type:
+            - string
+            - "null"
           default: null
           title: Expiresat
         enabled:
           title: Enabled
           type: boolean
       required:
-      - id
-      - name
-      - prefix
-      - scopes
-      - createdAt
-      - enabled
+        - id
+        - name
+        - prefix
+        - scopes
+        - createdAt
+        - enabled
       title: McpApiKeyResponse
       type: object
     McpApiKeyCreated:
@@ -1082,22 +1092,23 @@ components:
             type: string
           title: Scopes
           type: array
-          description: 'Explicit subset of verified issuer scopes: platform.read, platform.write,
+          description:
+            "Explicit subset of verified issuer scopes: platform.read, platform.write,
             ont.read, ont.write. Legacy empty grants authorize no external tools; reissue
-            required.'
+            required."
         createdAt:
           title: Createdat
           type: string
         lastUsedAt:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type:
+            - string
+            - "null"
           default: null
           title: Lastusedat
         expiresAt:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type:
+            - string
+            - "null"
           default: null
           title: Expiresat
         enabled:
@@ -1107,13 +1118,13 @@ components:
           title: Key
           type: string
       required:
-      - id
-      - name
-      - prefix
-      - scopes
-      - createdAt
-      - enabled
-      - key
+        - id
+        - name
+        - prefix
+        - scopes
+        - createdAt
+        - enabled
+        - key
       title: McpApiKeyCreatedResponse
       type: object
     CreateMcpApiKeyRequest:
@@ -1128,16 +1139,17 @@ components:
             type: string
           title: Scopes
           type: array
-          description: 'Explicit subset of verified issuer scopes: platform.read, platform.write,
+          description:
+            "Explicit subset of verified issuer scopes: platform.read, platform.write,
             ont.read, ont.write. Legacy empty grants authorize no external tools; reissue
-            required.'
+            required."
         expiresAt:
           anyOf:
-          - type: string
-          - type: 'null'
+            - type: string
+            - type: "null"
           default: null
           title: Expiresat
       required:
-      - name
+        - name
       title: CreateMcpApiKeyRequest
       type: object

@@ -8,21 +8,21 @@
     from starlette.testclient import TestClient as TestClient  # noqa
 
 packages\mate-tech-mcp\src\mate_tech_mcp\main.py:247
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-mcp\src\mate_tech_mcp\main.py:247: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-mcp\src\mate_tech_mcp\main.py:247: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     @app.on_event("startup")  # pyright: ignore[reportDeprecated]
 
 .venv\Lib\site-packages\fastapi\applications.py:4675
-  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning: 
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     return self.router.on_event(event_type)  # ty: ignore[deprecated]
 
 packages/mate-tech-mcp/tests/test_dynamic_registry.py: 12 warnings
@@ -44,4 +44,3 @@ packages/mate-tech-mcp/tests/test_mcp_http_endpoints.py::TestMcpHttpEndpointsWir
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 279 passed, 71 warnings in 68.33s (0:01:08)
-

@@ -12,4 +12,3 @@ packages/mate-app-hub/tests/test_apphub_publication.py::test_saved_binding_publi
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 5 passed, 4 warnings in 13.49s
-

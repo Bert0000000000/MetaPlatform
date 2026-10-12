@@ -56,7 +56,7 @@ Named faults: exact source DB ALLOW_CONNECTIONS=false and owned sessions only, r
 
 ## Runtime, usability, rollback and limits
 
-Current-source candidate http://127.0.0.1:9368/website/ and /login; API55522/Auth55523/KC55520/Redis55521, all loopback. Exact PG d259c84a... on55497, manifests list all owned databases. `runtime-handoff.json` is public safe identity/path metadata; `.tmp/codex-mp11-candidate/resources.json` and ACL-protected credentials/config live outside plan Scratch. Hidden process ancestry is checked to actual listener; stop rechecks PID/executable/start/args. Container stop/start checks ID/name/image digest/label/loopback. Cached --pull never; no shared reset/down/drop.
+Current-source candidate <http://127.0.0.1:9368/website/> and /login; API55522/Auth55523/KC55520/Redis55521, all loopback. Exact PG d259c84a... on55497, manifests list all owned databases. `runtime-handoff.json` is public safe identity/path metadata; `.tmp/codex-mp11-candidate/resources.json` and ACL-protected credentials/config live outside plan Scratch. Hidden process ancestry is checked to actual listener; stop rechecks PID/executable/start/args. Container stop/start checks ID/name/image digest/label/loopback. Cached --pull never; no shared reset/down/drop.
 
 `run-mp11-acceptance.ps1 -Phase Status|Verify|Frontend|Backend|PrepareBrowser|Browser|Security|Recovery|Migrations|Start|Stop` validates explicit config targets. README gives normal accounts and private input location, startup and data-retaining teardown; no passwords copied. Recovery is a retained acceptance fixture rather than arbitrary repeatable health probe. Deployment configuration is isolated local candidate composition; shared Docker application images are older unchanged images.
 
@@ -168,6 +168,7 @@ Twice consecutively from root:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/acceptance/run-mp11-acceptance.ps1 -Phase Browser
 
 Both report explicit owned config validated, prepare-browser PASS, refresh-browser PASS, then44 selected web/core cases/one worker/no retries:
+
 - bf7ce3d0ff0d:44 passed/0 failed/0 skipped/0 warnings, outer/subprocess exit0, elapsed69.32s, reporter1.1m. Full output actual-browser-bf7ce3d0ff0d.log; exact Playwright argv/cwd/source_head/elapsed browser-checks-bf7ce3d0ff0d.json; fixtures browser-fixtures-bf7ce3d0ff0d.json.
 - 1194b651968c:44 passed/0 failed/0 skipped/0 warnings, outer/subprocess exit0, elapsed58.49s, reporter57.3s. Full output actual-browser-1194b651968c.log; exact argv/cwd/source_head/elapsed browser-checks-1194b651968c.json; fixtures browser-fixtures-1194b651968c.json.
 

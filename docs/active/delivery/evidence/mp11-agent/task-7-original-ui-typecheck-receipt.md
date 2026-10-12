@@ -3,6 +3,7 @@
 Provenance: original agent conversation tool results on 2026-10-12, source subsequently committed as 35f00e8dc6cc094c9be13a0a0d9ff885b33d795e. Tool chunk 5a53e5 started process session55544; final poll chunk21c513 returned exit0. This sanitized excerpt retains the original command and output. No unchanged suite was rerun for Fix1.
 
 Original command chain excerpt (the preceding one-line production edit added the stale-generation check after getOrderRuntimeData):
+
 ```powershell
 pnpm --dir metaplatform-frontend/apps/web exec vitest run src/pages/mcp/IdeConfigPage.test.tsx src/pages/ontology/components/ProposalConfirmDrawer.test.tsx --reporter=dot
 if ($LASTEXITCODE -ne 0) {exit $LASTEXITCODE}
@@ -15,6 +16,7 @@ exit $code
 ```
 
 Original initial tool output, chunk5a53e5 (process still running):
+
 ```text
  RUN  v3.2.7 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/metaplatform-frontend/apps/web
 
@@ -27,6 +29,7 @@ Original initial tool output, chunk5a53e5 (process still running):
 ```
 
 Original final poll output, chunk21c513, process exit0:
+
 ```text
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks

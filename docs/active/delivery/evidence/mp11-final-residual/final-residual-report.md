@@ -5,6 +5,7 @@ Status: BLOCKED on current dependency/business continuity, pending controller Ru
 ## Implementation and exact ownership
 
 Changed only:
+
 - mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py: save_page selects the module's parent by exact a.code == module.app_code from existing tenant-local list_apps(tid), followed by existing put_app CAS. Module associations identify their parent by code.
 - mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py: appended one storage-parametrized normal RSA-signed HTTP regression (memory, SQLite, actual owned PostgreSQL), retaining all original15 cases and assertions as an unchanged normalized-byte prefix.
 

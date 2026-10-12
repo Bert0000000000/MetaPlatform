@@ -27,7 +27,10 @@
 设置唯一公开配置项：
 
 ```html
-<meta name="metaplatform-platform-url" content="https://你的真实平台域名/home">
+<meta
+  name="metaplatform-platform-url"
+  content="https://你的真实平台域名/home"
+/>
 ```
 
 空值保持同源 `/home`；接受完整 `http://` / `https://` 地址或以单个 `/` 开头的同源路径。

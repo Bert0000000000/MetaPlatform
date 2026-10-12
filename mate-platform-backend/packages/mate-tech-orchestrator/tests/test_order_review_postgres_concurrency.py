@@ -1,4 +1,4 @@
-"""Opt-in PostgreSQL concurrency coverage for order-review proposal resolution."""
+"""Required PostgreSQL concurrency coverage for order-review proposal resolution."""
 
 from __future__ import annotations
 
@@ -22,10 +22,6 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 from mate_tech_db.base import create_all, get_engine, get_session, init_engine, reset_engine
 
 POSTGRES_URL = os.environ.get("ORDER_REVIEW_POSTGRES_URL", "").strip()
-pytestmark = pytest.mark.skipif(
-    not POSTGRES_URL,
-    reason="ORDER_REVIEW_POSTGRES_URL is not set",
-)
 
 
 class _FakeOntologyCatalog:
@@ -44,6 +40,8 @@ class _FakeOntologyCatalog:
 
 @pytest.fixture
 def postgres_engine() -> Iterator[Engine]:
+    if not POSTGRES_URL:
+        pytest.fail("Explicit ORDER_REVIEW_POSTGRES_URL is required", pytrace=False)
     schema = f"order_review_concurrency_{uuid.uuid4().hex}"
     admin_engine = create_engine(POSTGRES_URL, future=True)
     with admin_engine.begin() as connection:

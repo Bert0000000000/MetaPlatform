@@ -5,11 +5,13 @@ Read task-8-brief.md FIRST — it is your requirements, with exact values to use
 Implement BOTH Important findings verbatim below. M1 warnings are deferred to final triage and do not enter this fix wave. Never mutate outside the owned worktree/resources, change branch, push/merge/deploy, spawn agents, lower auth verification, delete retained fixtures, reset databases, or weaken empty-state/relationship isolation assertions. Do not read the whole plan; the brief carries requirements. Ask controller for implementation ambiguity/ownership before expanding production scope.
 
 Approved source scope before edits:
+
 - Existing mate-platform/auth/verifier.py and services/auth-service/main.py only as necessary for strict signed tenant extraction/identity refusal; existing test_mp11_login_tenant.py and test_mp11_signed_identity.py for actual signed positive/negative shape regressions. Preserve normal signature/issuer/audience, valid supported list and attributes/fallback compatibility, and authoritative malformed-value refusal.
 - scripts/acceptance/run-mp11-acceptance.ps1 and scripts/acceptance/mp11/verify.py only Browser preparation/repeatability path; existing named affected E2E files only if the complete finding requires per-run identity allocation rather than the existing owned fresh-fixture helper. Do not erase prior tenants/accounts or relax assertions. Related alreadyowned acceptance/release docs and new sanitized covering logs/source-fix manifest may be updated.
 - No unrelated dependency/build/fixture warning cleanup. Preserve parent untracked docs/active/delivery/evidence/mp11-plan and protected user screenshots/worktrees/docs/examples. Never git add all, clean, stash, blanket restore or stage unrelated pyc.
 
 Process and evidence:
+
 1. Follow the existing implementer-prompt.md contract (no agents, test, self-review, commit explicit owned paths, concise return). Work from current source and complete findings; original model quota forced replacement, not a shortened requirement.
 2. Capture focused signed-shape RED before edits, then GREEN for both login/refresh plus verifier guard/valid identity compatibility. Cover malformed authoritative fields, attributes/fallback equivalents, preserve every forgery/expired/no-write assertion. Existing Auth and Platform signed fixture files are the covering tests; use actual fixture installed verifier, no production bypass.
 3. After source change, restart ONLY affected owned candidate API/Auth roles through current manifest identity checks; retain DB state. Normal actual Keycloak HUMAN/readonly/neighbor/SERVICE grant validation and same retained order/app GET readback must still succeed with new source. No endpoint inference from unsigned JWT or client hints.
@@ -20,7 +22,8 @@ Process and evidence:
 8. Return under15lines: status, commits, one-line tests, concerns and report path. Scoped independent re-review follows; do not commission it yourself.
 
 Verbatim open findings:
-#### Important (Should Fix)
+
+## Important (Should Fix)
 
 - **I1 — Reject malformed signed tenant values before returning trusted login/refresh DTOs.** `mate-platform-backend/services/auth-service/src/mate_auth_service/main.py:376` and `mate-platform-backend/services/auth-service/src/mate_auth_service/main.py:444` only check truthiness of `verified.tenant_id`. The reused extraction at `mate-platform-backend/packages/mate-platform/src/mate_platform/auth/verifier.py:200` returns whitespace strings unchanged and stringifies the first list value, so `[null]` becomes `'None'` and `[{}]` becomes `'{}'`. These satisfy the new supposedly validated identity gate; stringified values also pass the new SharedLoginPage string/nonblank check. This violates Task 8/Ruling 31's explicit missing/malformed-tenant refusal and publishes invalid tenant context as trusted identity. Focused current-source RSA/MockTransport probe, using the existing `test_mp11_login_tenant.py` fixture without lifespan or live services, produced HTTP 200 for **both** login and refresh for each of `[null]`, `[{}]` and whitespace, with those exact returned tenant values. No JWT, password, refresh token or credential body was printed. Strictly validate supported signed tenant locations/shapes (nonblank string, or supported nonblank string list), reject malformed authoritative values rather than coerce them, and add the six cases plus attributes/fallback equivalents to the owned login/refresh regressions. Preserve signature, issuer, audience and supported valid-list compatibility. This is an identity-contract defect, not proof of forged signature or arbitrary cross-tenant access.
 

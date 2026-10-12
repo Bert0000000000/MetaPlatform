@@ -5630,6 +5630,7 @@ class PgOntologyRepository(OntologyRepository):
                 result[source.name]["failed"] += 1
                 result[source.name]["failures"].append(
                     {
+                        "pk": None,
                         "stage": "source_changed",
                         "error": "Source changed during sync; checkpoint cleared, retry rescans the current dataset",
                     }

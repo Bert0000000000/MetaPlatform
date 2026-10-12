@@ -7,6 +7,8 @@ import pytest
 from fastapi import HTTPException
 from mate_app_hub.runtime import binding as binding_module
 
+from mate_clients.security import outgoing as delegated_transport
+
 ORDER = "ont.a.class.Order.v1"
 CUSTOMER = "ont.a.class.Customer.v1"
 ACTION = "ont.a.action.Review.v1"
@@ -133,6 +135,13 @@ def test_human_decision_requires_authenticated_user_write_scope(handler, identit
 def _owned_pg_order_baseline(request, monkeypatch):
     """Bootstrap actual PG cases only in the explicitly named disposable database."""
     import os
+
+    if not request.node.name.startswith("test_actual_pg_"):
+        return
+    dsn = os.environ.get("MP11_APPHUB_PG_DSN")
+    if not dsn:
+        pytest.fail("explicit isolated Task6 PG required: MP11_APPHUB_PG_DSN", pytrace=False)
+
     from datetime import UTC, datetime
     from urllib.parse import urlparse
 
@@ -148,13 +157,12 @@ def _owned_pg_order_baseline(request, monkeypatch):
     )
     from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
-    dsn = os.environ.get("MP11_APPHUB_PG_DSN")
-    if not dsn or not request.node.name.startswith("test_actual_pg_"):
-        return
     target = urlparse(dsn)
     if not target.path.startswith("/codex_mp11_other_"):
         return
-    expected = os.environ["MP11_OWNED_PG_DATABASE"]
+    expected = os.environ.get("MP11_OWNED_PG_DATABASE")
+    if not expected:
+        pytest.fail("MP11_OWNED_PG_DATABASE required for owned PG baseline", pytrace=False)
     assert target.hostname == "127.0.0.1" and target.port == 55497
     assert target.path == "/" + expected
     with psycopg2.connect(dsn) as connection, connection.cursor() as cursor:
@@ -222,9 +230,6 @@ def _owned_pg_order_baseline(request, monkeypatch):
         )
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit isolated Task6 PG required"
-)
 def test_actual_pg_declarative_proposal_replay_concurrency_and_state():
     import os
     import uuid
@@ -310,9 +315,6 @@ def test_binding_field_metadata_follows_selected_column_order():
     assert [p["rid"] for p in validate(payload, docs)["field_metadata"]] == ["status", "amount"]
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit isolated Task6 PG required"
-)
 def test_actual_pg_insert_only_module_page_concurrency():
     import os
     import uuid
@@ -364,9 +366,6 @@ def test_actual_pg_insert_only_module_page_concurrency():
     reset_engine()
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit isolated Task6 PG required"
-)
 def test_actual_pg_app_create_two_processes_and_legacy_duplicate_rejection():
     import json
     import os
@@ -436,9 +435,6 @@ except ValueError:
     reset_engine()
 
 
-@pytest.mark.skipif(
-    not __import__("os").getenv("MP11_APPHUB_PG_DSN"), reason="explicit isolated Task6 PG required"
-)
 @pytest.mark.parametrize("kind", ["action", "edit_set"])
 def test_actual_pg_history_filters_before_limit_and_survives_new_process(kind):
     import json
@@ -587,7 +583,7 @@ def test_direct_ontology_proposal_rejects_unverified_application_attribution(mon
     monkeypatch.setattr(api, "_call_scoped", repository)
     real_client = httpx.AsyncClient
     monkeypatch.setattr(
-        api,
+        delegated_transport,
         "httpx",
         SimpleNamespace(
             AsyncClient=lambda **kwargs: real_client(
@@ -643,7 +639,7 @@ def test_edit_set_alias_cannot_forge_application_history(monkeypatch, handler, c
     monkeypatch.setattr(api, "_call_scoped", repository)
     real_client = httpx.AsyncClient
     monkeypatch.setattr(
-        api,
+        delegated_transport,
         "httpx",
         SimpleNamespace(
             AsyncClient=lambda **kwargs: real_client(
@@ -675,6 +671,18 @@ def test_application_attribution_rejects_incomplete_duplicate_and_conflicting_va
             "headers": [(b"authorization", b"Bearer fixture-only")],
         }
     )
+    from mate_platform.tenancy.context import AuthMethod, RequestContext, TenantId, UserId
+
+    request.state.ctx = RequestContext(
+        "r",
+        "t",
+        TenantId("a"),
+        UserId("human"),
+        frozenset(),
+        frozenset(),
+        frozenset({"platform.read", "platform.write"}),
+        auth_method=AuthMethod.USER,
+    )
     provenance = {"app_id": "app", "page_id": "page", "app_version_id": "v1"}
     parameters = {}
     if case == "missing":
@@ -685,7 +693,7 @@ def test_application_attribution_rejects_incomplete_duplicate_and_conflicting_va
         provenance["app_version"] = "9.0.0"
     real_client = httpx.AsyncClient
     monkeypatch.setattr(
-        api,
+        delegated_transport,
         "httpx",
         SimpleNamespace(
             AsyncClient=lambda **kwargs: real_client(
@@ -730,6 +738,18 @@ def test_verified_direct_application_attribution_preserves_action_parameters(mon
             "headers": [(b"authorization", b"Bearer fixture-only")],
         }
     )
+    from mate_platform.tenancy.context import AuthMethod, RequestContext, TenantId, UserId
+
+    request.state.ctx = RequestContext(
+        "r",
+        "t",
+        TenantId("a"),
+        UserId("human"),
+        frozenset(),
+        frozenset(),
+        frozenset({"platform.read", "platform.write"}),
+        auth_method=AuthMethod.USER,
+    )
     provenance = {"app_id": "app", "page_id": "page", "app_version_id": "old-published"}
     parameters = {"amount": 7, **({"provenance": provenance} if entry == "parameters" else {})}
     observed = []
@@ -739,11 +759,12 @@ def test_verified_direct_application_attribution_preserves_action_parameters(mon
 
         observed.append(json.loads(req.content))
         assert req.headers["Authorization"] == "Bearer fixture-only"
+        assert req.headers["X-Tenant-Id"] == "a"
         return httpx.Response(200, json={**provenance, "app_version": "1.0.0"})
 
     real_client = httpx.AsyncClient
     monkeypatch.setattr(
-        api,
+        delegated_transport,
         "httpx",
         SimpleNamespace(
             AsyncClient=lambda **kwargs: real_client(

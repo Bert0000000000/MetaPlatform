@@ -83,10 +83,14 @@ def _owned_pg_admin(source_dsn):
 
     admin_dsn = os.environ.get("MP11_SOURCE_ADMIN_DSN")
     if not admin_dsn:
-        pytest.skip("requires guarded MP11_SOURCE_ADMIN_DSN for role/database fixtures")
+        pytest.fail(
+            "requires guarded MP11_SOURCE_ADMIN_DSN for role/database fixtures", pytrace=False
+        )
     source = parse_dsn(source_dsn)
     management = parse_dsn(admin_dsn)
-    expected = os.environ["MP11_OWNED_PG_DATABASE"]
+    expected = os.environ.get("MP11_OWNED_PG_DATABASE")
+    if not expected:
+        pytest.fail("MP11_OWNED_PG_DATABASE required for role/database fixtures", pytrace=False)
     assert expected.startswith("codex_mp11_other_")
     assert source["host"] == "127.0.0.1" and int(source["port"]) == 55497
     assert source["dbname"] == expected
@@ -109,7 +113,7 @@ def real_pg():
 
     dsn = os.environ.get("MP11_SOURCE_PG_DSN")
     if not dsn:
-        pytest.skip("requires guarded MP11_SOURCE_PG_DSN")
+        pytest.fail("requires guarded MP11_SOURCE_PG_DSN", pytrace=False)
     target = urlparse(dsn)
     assert (
         target.hostname == "127.0.0.1"
@@ -758,6 +762,9 @@ def test_fix_i1_source_edit_during_run_never_restores_old_checkpoint(
     declaration = c.pg.list_backing_datasources(c.rid)[0]
     assert not result["ok"] and result["status"] == "failed", result
     assert result["total_synced"] == 2 and result["total_failed"] == 1
+    failures = result["sources"][c.decl["name"]]["failures"]
+    assert len(failures) == 1 and failures[0]["stage"] == "source_changed"
+    assert "pk" in failures[0] and failures[0]["pk"] is None
     assert {str(i.primary_key) for i in c.pg.list_individuals(c.ot.rid)} == {"1", "2"}
     assert declaration["last_synced_at"] is None and declaration["last_synced_pk"] is None
     resumed = c.pg.sync_backing_datasources(c.rid, True)
@@ -901,8 +908,12 @@ def test_fix_i1_display_and_password_rotation_preserve_checkpoint(mp11_sync_case
     before = c.pg.list_backing_datasources(c.rid, internal=True)[0]["checkpoint_identity"]
     assert before and "checkpoint_identity" not in c.pg.list_backing_datasources(c.rid)[0]
     rotated = uuid.uuid4().hex
-    with c.conn.cursor() as q:
-        q.execute(f"ALTER ROLE {role} PASSWORD %s", (rotated,))
+    admin = _owned_pg_admin(os.environ["MP11_SOURCE_PG_DSN"])
+    try:
+        with admin.cursor() as q:
+            q.execute(f"ALTER ROLE {role} PASSWORD %s", (rotated,))
+    finally:
+        admin.close()
     c.sql.update_source(
         c.tenant,
         c.source.id,

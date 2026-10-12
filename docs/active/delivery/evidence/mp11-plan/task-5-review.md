@@ -66,7 +66,7 @@ Every initial mandatory file has a corresponding hunk:
 | Required file/group | Reviewed implementation |
 | --- | --- |
 | mate-tech-data api/app.py | Real schema diagnostics and source write scopes |
-| repositories/__init__.py | Selected-store source resolution before connector |
+| `repositories/__init__.py` | Selected-store source resolution before connector |
 | repositories/in_memory.py and sql_store.py | Real quality diagnostics, disconnected initial state, preserve-on-edit and public serialization |
 | frontend api/ontology-bigdata.ts and types/ontology-bigdata.ts | Actual CRUD/adaptation/schema shape, no fake success/schema fallback |
 | frontend routes/gov.tsx and components/shell/domains.tsx | Mounted visible source route |

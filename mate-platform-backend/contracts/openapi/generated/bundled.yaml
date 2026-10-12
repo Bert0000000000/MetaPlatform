@@ -2986,6 +2986,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -3058,6 +3061,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -3165,6 +3169,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -3232,6 +3239,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -3307,6 +3317,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -3375,6 +3386,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -3442,6 +3454,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.read
       x-mate-owner: application-platform
@@ -3508,6 +3521,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -3600,6 +3614,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -3665,6 +3682,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -3740,6 +3758,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -3811,6 +3832,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -3878,6 +3902,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -3976,6 +4001,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.read
       x-mate-owner: application-platform
@@ -4049,8 +4075,11 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.read
+      x-required-scopes:
+        - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -4121,6 +4150,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -4186,6 +4218,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -4267,6 +4300,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -4341,6 +4375,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -4415,6 +4450,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -4483,6 +4519,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -4656,6 +4695,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -4725,6 +4765,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -4806,6 +4847,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -4874,6 +4918,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -4942,6 +4987,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -5021,6 +5069,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -5089,6 +5140,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -5156,6 +5208,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -5227,6 +5282,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -5301,6 +5357,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -5369,6 +5426,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -5437,6 +5497,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -5502,6 +5565,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -5560,6 +5626,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -5595,8 +5662,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/AppHubShortlinkResolved'
         '401':
           description: Authentication required
           content:
@@ -5635,6 +5701,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -5780,6 +5849,9 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
@@ -5853,6 +5925,7 @@ paths:
                 $ref: '#/components/schemas/AppHubError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: application-platform
@@ -9984,6 +10057,9 @@ paths:
     get:
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
         - data
       summary: 列表 大数据源
@@ -10035,6 +10111,7 @@ paths:
     post:
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       tags:
@@ -10089,6 +10166,9 @@ paths:
     get:
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
         - data
       summary: 详情 大数据源
@@ -10133,6 +10213,7 @@ paths:
     put:
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       tags:
@@ -10191,6 +10272,7 @@ paths:
     delete:
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       tags:
@@ -10238,6 +10320,9 @@ paths:
     get:
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
       tags:
         - data
       summary: 发现 发现schema
@@ -10289,6 +10374,11 @@ paths:
     post:
       security:
         - bearerAuth: []
+          tenantHeader: []
+          oidcScopes:
+            - platform.read
+      x-required-scopes:
+        - platform.read
       tags:
         - data
       summary: 测试 测试连接
@@ -12317,6 +12407,8 @@ paths:
       security:
         - bearerAuth: []
           tenantHeader: []
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 列出本租户已签发的 MCP API Key
       tags:
         - mcp
@@ -12344,6 +12436,8 @@ paths:
       security:
         - bearerAuth: []
           tenantHeader: []
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 签发 MCP API Key（明文仅返回一次）
       tags:
         - mcp
@@ -12385,6 +12479,8 @@ paths:
       security:
         - bearerAuth: []
           tenantHeader: []
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 吊销 MCP API Key
       tags:
         - mcp
@@ -14088,6 +14184,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.read
       x-mate-owner: ontology-platform
@@ -14257,6 +14354,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: ontology-platform
@@ -14383,6 +14481,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: ontology-platform
@@ -14449,6 +14548,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: ontology-platform
@@ -17042,7 +17142,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BackingSyncRun'
+                $ref: '#/components/schemas/BackingSyncCompletedRun'
         '401':
           description: Authentication required
           content:
@@ -17689,6 +17789,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: ontology-platform
@@ -17771,6 +17872,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: ontology-platform
@@ -17886,6 +17988,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: ontology-platform
@@ -17950,6 +18053,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: ontology-platform
@@ -18004,6 +18108,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
         - bearerAuth: []
+          tenantHeader: []
           oidcScopes:
             - platform.write
       x-mate-owner: ontology-platform
@@ -21780,6 +21885,30 @@ components:
         opsOwnerId:
           type: string
       description: Full releases only. Empty approval assignees default to authenticated actor. Grayscale is explicitly rejected.
+    AppHubRenderNode:
+      type: object
+      properties:
+        node_type:
+          type: string
+        title:
+          type: string
+        layout:
+          type: object
+          additionalProperties: true
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppHubRenderNode'
+        config:
+          type: object
+          additionalProperties: true
+      required:
+        - node_type
+        - title
+        - layout
+        - children
+        - config
+      description: Each runtime render_tree element is the serialized RenderNode dataclass.
     AppHubRuntime:
       type: object
       properties:
@@ -21795,8 +21924,7 @@ components:
         render_tree:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: '#/components/schemas/AppHubRenderNode'
       required:
         - app_id
         - version
@@ -21910,7 +22038,9 @@ components:
           type: string
         success:
           type: boolean
-        data: {}
+        data:
+          type: object
+          additionalProperties: true
         error:
           type:
             - string
@@ -22300,6 +22430,7 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
       required:
         - code
         - app_id
@@ -22316,6 +22447,28 @@ components:
       required:
         - app_id
       description: Current PUBLISHED binding required; supplied role never grants runtime authority.
+    AppHubShortlinkResolved:
+      type: object
+      properties:
+        app_id:
+          type: string
+        role:
+          type:
+            - string
+            - 'null'
+        expires_at:
+          type:
+            - string
+            - 'null'
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - app_id
+        - role
+        - expires_at
+        - created_at
+      description: Existing tenant-bound resolver metadata; role and expiry keys are always present and may be null.
     AppHubReleaseTask:
       type: object
       properties:
@@ -23653,15 +23806,15 @@ components:
           title: Createdat
           type: string
         lastUsedAt:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Lastusedat
         expiresAt:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Expiresat
         enabled:
@@ -23720,15 +23873,15 @@ components:
           title: Createdat
           type: string
         lastUsedAt:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Lastusedat
         expiresAt:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Expiresat
         enabled:
@@ -24620,9 +24773,9 @@ components:
           title: Action Rid
           type: string
         target_iid:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Target Iid
         parameters:
@@ -24645,9 +24798,9 @@ components:
           title: Kind
           type: string
         confirmed_by:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Confirmed By
         created_at:
@@ -24655,9 +24808,9 @@ components:
           title: Created At
           type: string
         confirmed_at:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Confirmed At
         approval_expires_at:
@@ -24875,9 +25028,9 @@ components:
           title: Action Rid
           type: string
         target_iid:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Target Iid
         parameters:
@@ -24900,9 +25053,9 @@ components:
           title: Kind
           type: string
         confirmed_by:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Confirmed By
         created_at:
@@ -24910,9 +25063,9 @@ components:
           title: Created At
           type: string
         confirmed_at:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           default: null
           title: Confirmed At
         approval_expires_at:
@@ -26989,6 +27142,7 @@ components:
         trace_id:
           type: string
       required:
+        - pk
         - error
     BackingSyncCursor:
       type: object
@@ -27101,11 +27255,8 @@ components:
           default: null
           description: Registered source in the verified tenant. Resolution failure never falls back to dsn_env.
         ts_column:
-          type:
-            - string
-            - 'null'
-          default: null
-          description: Optional non-null source timestamp for (timestamp, primary-key) incremental ordering. CSV has no incremental cursor.
+          type: string
+          description: Stored source timestamp column for (timestamp, primary-key) incremental ordering. An empty string means no registered-source timestamp column; CSV has no incremental cursor.
         dsn_env:
           type: string
           default: ONT_SOURCE_DSN
@@ -27138,9 +27289,7 @@ components:
             - string
             - 'null'
         last_error:
-          type:
-            - string
-            - 'null'
+          type: string
         last_failed:
           type: integer
         updated_at:
@@ -27159,8 +27308,10 @@ components:
         - name
         - kind
         - table_name
+        - dsn_env
         - pk_column
         - field_mapping
+        - priority
         - run_history
     BackingDatasourceHttpError:
       type: object
@@ -27232,6 +27383,55 @@ components:
       required:
         - rid
         - name
+    BackingSyncCompletedRun:
+      type: object
+      properties:
+        run_id:
+          type: string
+        trace_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - succeeded
+            - failed
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        incremental:
+          type: boolean
+        ok:
+          type: boolean
+        total_synced:
+          type: integer
+        total_failed:
+          type: integer
+        total_deleted:
+          type: integer
+        sources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BackingSyncSourceResult'
+        error:
+          $ref: '#/components/schemas/BackingSyncError'
+      required:
+        - run_id
+        - trace_id
+        - status
+        - started_at
+        - ended_at
+        - incremental
+        - ok
+        - sources
+        - total_synced
+        - total_failed
+        - total_deleted
+      description: Completed synchronous POST result. Always includes the legacy success flag, per-source results and aggregate counts; persisted history separately uses BackingSyncRun for running/interrupted records.
     MaterializationV2:
       type: object
       required:
@@ -27271,14 +27471,14 @@ components:
           type: string
           title: Kind
         individual_rid:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           title: Individual Rid
         type_rid:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
           title: Type Rid
         action_rid:
           anyOf:

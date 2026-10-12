@@ -21,7 +21,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -222,7 +222,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -1249,7 +1249,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -1450,7 +1450,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -2477,7 +2477,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -2678,7 +2678,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -3715,7 +3715,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -3916,7 +3916,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -4979,7 +4979,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -5180,7 +5180,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -6243,7 +6243,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -6444,7 +6444,7 @@ Ignored nodes: comments, script, style
         管理全局数据源
       </a>
       <label>
-        对象类型 
+        对象类型
         <select
           aria-label="对象类型"
           class="mp-onto-input"
@@ -6636,7 +6636,7 @@ Ignored nodes: comments, script, style
      68|   expect((await screen.findByRole('alert')).textContent).toContain('分页…
        |                        ^
      69| });
-     70| 
+     70|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
 
@@ -7054,7 +7054,7 @@ Ignored nodes: comments, script, style
      68|   expect((await screen.findByRole('alert')).textContent).toContain('分页…
        |                        ^
      69| });
-     70| 
+     70|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
 
@@ -7484,7 +7484,6 @@ Ignored nodes: comments, script, style
      68|   expect((await screen.findByRole('alert')).textContent).toContain('分页…
        |                        ^
      69| });
-     70| 
+     70|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯
-

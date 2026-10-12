@@ -7,7 +7,7 @@ Supplied package: `review-2c13952c..38ff1190.diff`, 3,516,052 bytes, SHA256 `c4c
 
 This is the one whole-branch gate following eight accepted task gates. It does not revoke their scoped findings or authorize a remote merge/deployment. Binding authority: `docs/active/specs/2026-10-11-metaplatform-product-v1.1.md`, the complete approved implementation plan, global constraints, archived accepted task reviews and the progress/Ruling ledger. The completion matrix is a useful requirement/evidence index, not an approval.
 
-### Strengths
+## Strengths
 
 - Relationship integrity is enforced inside the PostgreSQL write transaction, with explicit strict HTTP mode and compatible direct-repository defaults. Definition locks, ordered endpoint lifetime locks and delete-before-cascade locking address the original races. Same-family publication and compound edit-set execution take schema locks in consistent order; current source retains the accepted deadlock regression and checksum-confirmation fix.
 - Source discovery resolves the actual selected SQL/in-memory source before invoking PostgreSQL/CSV adapters. Public source configuration is whitelisted; connection errors have safe categories/trace IDs. Qualified relation resolution and a durable non-secret checkpoint identity protect retargeting after bounded run history expires. Recovery rereads history after owning its lock; CSV checks canonicalized keys before any writes. Source deletes, full upsert and CSV batch boundaries are stated rather than silently advertised as CDC.

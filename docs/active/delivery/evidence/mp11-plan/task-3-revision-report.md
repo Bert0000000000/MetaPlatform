@@ -42,8 +42,8 @@ SHA256 E5DB328BBFA70B034DDE079A0C4AAB93642293AB93FC19007D17AB79F6130785, length 
 
 1. metaplatform-frontend/apps/web/public/website/index.html
 2. metaplatform-frontend/apps/web/dist/website/index.html
-3. actual HTTP http://127.0.0.1:9361/website/index.html
-4. actual HTTP http://127.0.0.1:9362/website/index.html
+3. actual HTTP <http://127.0.0.1:9361/website/index.html>
+4. actual HTTP <http://127.0.0.1:9362/website/index.html>
 
 Response hash evidence: task-3-revision-http-hashes.json. Earlier draft hashes are superseded by this final identity.
 
@@ -53,14 +53,17 @@ Absolute screenshot root:
 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/.superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/scratch/website-revision/
 
 Final built desktop and mobile first screens, inspected at actual readable viewport size:
+
 - built/MP11-website-revision-built-1440-hero.png
 - built/MP11-website-revision-built-390-hero.png
 
 Final built desktop and mobile complete pages:
+
 - built/MP11-website-revision-built-1440.png
 - built/MP11-website-revision-built-390.png
 
 Final preserved dev counterparts:
+
 - dev/MP11-website-revision-dev-1440-hero.png
 - dev/MP11-website-revision-dev-390-hero.png
 - dev/MP11-website-revision-dev-1440.png
@@ -88,6 +91,7 @@ No helper/backend/business app/Vite/Docker/planning document changes. Report and
 - Local product presentation and entry revision only. No cloud publication, new site/domain, DNS, production availability, real signed issuer login acceptance, complete order-chain acceptance, client acceptance,72h trial or user study is claimed.
 - Task6 remains sequenced after this revision, Task7/8 remain controller-owned pending work. Future version dates are intentionally unpromised.
 - The task did not spawn implementers/reviewers; independent review belongs to the controller.
+
 ## Commit and final source audit
 
 b53d47390a4aa81680ec412267036e8c881743f3 — feat(website): present enterprise AI platform and product evolution.

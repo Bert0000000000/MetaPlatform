@@ -26,11 +26,13 @@ class ForwardedUserAuth(httpx.Auth):
 
 
 def user_async_client(
-    authorization: str, *, tenant_id: str, timeout: httpx.Timeout | float
+    authorization: str, *, tenant_id: str, timeout: httpx.Timeout | float, base_url: str = ""
 ) -> httpx.AsyncClient:
     """Construct the ACL transport for user-delegated internal service calls."""
     return httpx.AsyncClient(
-        auth=ForwardedUserAuth(authorization, tenant_id=tenant_id), timeout=timeout
+        auth=ForwardedUserAuth(authorization, tenant_id=tenant_id),
+        timeout=timeout,
+        base_url=base_url,
     )
 
 

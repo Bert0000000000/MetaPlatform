@@ -71,18 +71,14 @@ def test_wrong_tenant_403(fresh_app: TestClient) -> None:
 
 
 def test_missing_scope_403(fresh_app: TestClient) -> None:
-    """Token without `platform.read` still reaches the handler today.
-
-    Step 4 (per-scope ACL wiring via mate_clients.security.BearerAuth)
-    is out of scope for PR#12; this test pins the current behaviour
-    so we notice when the contract lands.
-    """
+    """An authenticated tenant without the declared read scope is denied."""
     token = _token(tenant_id="tenant-acme", scopes="")
     r = fresh_app.get(
         "/api/v1/apphub/apps",
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert r.status_code == 200, r.text
+    assert r.status_code == 403, r.text
+    assert "platform.read" in r.text
 
 
 def test_no_tenant_400(fresh_app: TestClient) -> None:

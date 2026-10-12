@@ -120,11 +120,14 @@ jobs:
       - name: Boot ontology-core stack + wait healthy
         run: bash scripts/ci/ontology-core-e2e.sh up && bash scripts/ci/ontology-core-e2e.sh wait
 
-      - name: Verify native storage and modeling source have the same restricted identity
+      - name: Verify packaged source dependencies and restricted database identity
         run: |
           docker compose exec -T mate-tech-ont python - <<'PY'
           import os
           import psycopg2
+          import mate_tech_data
+          import mate_tech_db
+          print('Ontology source reader dependencies: packaged and importable')
           identities = []
           for name in ('KERNEL_PG_DSN', 'ONT_MODELING_SOURCE_DSN'):
               with psycopg2.connect(os.environ[name]) as conn, conn.cursor() as cursor:

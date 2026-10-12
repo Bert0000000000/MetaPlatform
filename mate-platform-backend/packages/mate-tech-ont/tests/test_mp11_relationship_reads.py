@@ -71,7 +71,7 @@ def seed(repo, tenant):
 def pg_relationship_repo():
     dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
     if not dsn:
-        pytest.skip("Requires dedicated codex_mp11_ PostgreSQL database")
+        pytest.fail("Requires dedicated codex_mp11_ PostgreSQL database", pytrace=False)
     target = urlparse(dsn)
     assert target.hostname in {"127.0.0.1", "localhost"}
     assert target.port and target.port != 5432

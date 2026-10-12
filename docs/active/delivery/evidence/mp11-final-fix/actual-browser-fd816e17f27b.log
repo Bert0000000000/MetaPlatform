@@ -50,4 +50,3 @@ Running 47 tests using 1 worker
   ok 47 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:395:1 › 前端：本体页面在真实后端下无未捕获错误 (1.4s)
 
   47 passed (1.4m)
-

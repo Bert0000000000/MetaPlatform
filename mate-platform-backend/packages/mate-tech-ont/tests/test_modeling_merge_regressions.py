@@ -16,7 +16,11 @@ from .test_modeling_integration import app as _modeling_app
 
 app = _modeling_app
 
-pytestmark = pytest.mark.skipif(not DSN, reason="MODELING_TEST_DSN requires isolated PostgreSQL")
+
+@pytest.fixture(autouse=True)
+def require_modeling_test_dsn():
+    if not DSN:
+        pytest.fail("MODELING_TEST_DSN requires isolated PostgreSQL", pytrace=False)
 
 
 def _workbook(sheet_name, rows):

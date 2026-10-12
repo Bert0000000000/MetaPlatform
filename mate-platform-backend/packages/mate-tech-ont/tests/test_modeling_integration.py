@@ -17,7 +17,12 @@ from mate_tech_ont.v2_kernel import api as native
 from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
 DSN = os.environ.get("MODELING_TEST_DSN", "")
-pytestmark = pytest.mark.skipif(not DSN, reason="MODELING_TEST_DSN requires isolated PostgreSQL")
+
+
+@pytest.fixture(autouse=True)
+def require_modeling_test_dsn():
+    if not DSN:
+        pytest.fail("MODELING_TEST_DSN requires isolated PostgreSQL", pytrace=False)
 
 
 @pytest.mark.asyncio

@@ -261,7 +261,9 @@ def test_pg_description_update_survives_new_repository():
     """No default DSN: writes are limited to an explicit disposable MP11 DB."""
     dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
     if not dsn:
-        pytest.skip("Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database")
+        pytest.fail(
+            "Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database", pytrace=False
+        )
     target = urlparse(dsn)
     assert target.hostname in {"127.0.0.1", "localhost"}
     assert target.port and target.port != 5432
@@ -289,7 +291,9 @@ def test_pg_description_update_survives_new_repository():
 def test_pg_concurrent_definition_update_cannot_break_an_inflight_instance(monkeypatch):
     dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
     if not dsn:
-        pytest.skip("Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database")
+        pytest.fail(
+            "Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database", pytrace=False
+        )
     target = urlparse(dsn)
     assert target.hostname in {"127.0.0.1", "localhost"}
     assert target.port and target.port != 5432
@@ -367,7 +371,9 @@ def test_pg_concurrent_definition_update_cannot_break_an_inflight_instance(monke
 def test_pg_instance_revalidates_endpoint_classes_after_definition_commits(monkeypatch):
     dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
     if not dsn:
-        pytest.skip("Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database")
+        pytest.fail(
+            "Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database", pytrace=False
+        )
     target = urlparse(dsn)
     assert target.hostname in {"127.0.0.1", "localhost"}
     assert target.port and target.port != 5432
@@ -460,7 +466,9 @@ def test_pg_instance_revalidates_endpoint_classes_after_definition_commits(monke
 def pg_http_pair(auth_headers):
     dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
     if not dsn:
-        pytest.skip("Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database")
+        pytest.fail(
+            "Set MP11_RELATIONSHIP_PG_DSN to a disposable codex_mp11_* database", pytrace=False
+        )
     target = urlparse(dsn)
     assert target.hostname in {"127.0.0.1", "localhost"}
     assert target.port and target.port != 5432

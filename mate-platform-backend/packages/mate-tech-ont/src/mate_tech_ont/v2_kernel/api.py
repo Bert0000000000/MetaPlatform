@@ -38,6 +38,7 @@ import structlog
 from fastapi import APIRouter, HTTPException, Request, WebSocket
 from pydantic import BaseModel, Field
 
+from mate_clients.security.outgoing import user_async_client
 from mate_kernel.action.engine import ProposalNotConfirmed, approval_ttl_seconds
 from mate_kernel.objectset.ir import (
     Aggregation,
@@ -3892,9 +3893,10 @@ async def _validated_app_provenance(
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=403, detail="Verified caller Bearer required")
     try:
-        async with httpx.AsyncClient(
+        async with user_async_client(
+            authorization,
+            tenant_id=str(_ctx(request).tenant_id),
             base_url=(os.getenv("APPHUB_URL") or "http://localhost:8100").rstrip("/"),
-            headers={"Authorization": authorization},
             timeout=20,
         ) as client:
             response = await client.post(

@@ -27,484 +27,492 @@ paths:
   /api/v1/apphub/apps/{app_id}/runtime/proposal-context:
     post:
       tags:
-      - apphub
+        - apphub
       summary: Validate Proposal Context
-      description: Read-only POST. Verifies caller tenant/read access, exact app ID, historical PUBLISHED snapshot,
+      description:
+        Read-only POST. Verifies caller tenant/read access, exact app ID, historical PUBLISHED snapshot,
         page, registered Action and actual ObjectSet target. No proposal creation or action execution. Published application
         required; older published snapshots remain valid independently of current pointer.
       operationId: apphubValidateProposalContext
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppProposalContextRequest'
+              $ref: "#/components/schemas/AppProposalContextRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubVerifiedProposalContext'
-        '401':
+                $ref: "#/components/schemas/AppHubVerifiedProposalContext"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
+      x-required-scopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
+        - MP11-APP-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/{app_id}/runtime/history:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Get Order Runtime History
       operationId: apphubGetOrderRuntimeHistory
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
-      - name: page_id
-        in: query
-        required: true
-        schema:
-          type: string
-          title: Page Id
-      - name: version_id
-        in: query
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Version Id
-      - name: limit
-        in: query
-        required: false
-        schema:
-          type: integer
-          maximum: 1000
-          minimum: 1
-          default: 100
-          title: Limit
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
+        - name: page_id
+          in: query
+          required: true
+          schema:
+            type: string
+            title: Page Id
+        - name: version_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            title: Version Id
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+            default: 100
+            title: Limit
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AppHubActionReceipt'
-        '401':
+                  $ref: "#/components/schemas/AppHubActionReceipt"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
+        - MP11-APP-01
       x-mate-implementation-status: implemented
-      description: Verified tenant and actual app/page authorization. Exact published snapshot history independent
+      description:
+        Verified tenant and actual app/page authorization. Exact published snapshot history independent
         of live ObjectSet membership. Defaults to current published version; explicit version_id must belong to this
         app and contain this page. Legacy receipts without complete provenance are excluded.
   /api/v1/apphub/apps/{app_id}/publication-check:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Check Publication
       operationId: apphubCheckPublication
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubPublicationCheck'
-        '401':
+                $ref: "#/components/schemas/AppHubPublicationCheck"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.read
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
+        - MP11-APP-01
       x-mate-implementation-status: implemented
-      description: Verified tenant and actual app/page authorization. Real saved draft checks; unknown dependencies
+      description:
+        Verified tenant and actual app/page authorization. Real saved draft checks; unknown dependencies
         prevent publication. Final publish revalidates.
   /api/v1/apphub/apps/{app_id}:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Get App Detail
-      description: Get a single application detail by id or code. Verified tenant comes exclusively from authentication.
+      description:
+        Get a single application detail by id or code. Verified tenant comes exclusively from authentication.
         Order bindings additionally require platform.read and forward the verified caller Bearer. Concurrent stale
         app changes fail409; no automatic retry overwrites newer publication/history.
       operationId: apphubGetAppDetail
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubApplication'
-        '401':
+                $ref: "#/components/schemas/AppHubApplication"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
     patch:
       tags:
-      - apphub
+        - apphub
       summary: Update App
-      description: 'Update an application''s metadata.
+      description: "Update an application's metadata.
 
 
         Version bumps must follow semver. The new version must differ
 
         from the current one. Verified tenant comes exclusively from authentication. Order bindings additionally require
         platform.read and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry
-        overwrites newer publication/history.'
+        overwrites newer publication/history."
       operationId: apphubPatchApphubAppsCode
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Code
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Code
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppUpdateRequest'
+              $ref: "#/components/schemas/AppUpdateRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubApplication'
-        '401':
+                $ref: "#/components/schemas/AppHubApplication"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
     delete:
       tags:
-      - apphub
+        - apphub
       summary: Delete App Endpoint
-      description: Delete an application by code. Verified tenant comes exclusively from authentication. Order bindings
+      description:
+        Delete an application by code. Verified tenant comes exclusively from authentication. Order bindings
         additionally require platform.read and forward the verified caller Bearer. Concurrent stale app changes fail409;
         no automatic retry overwrites newer publication/history.
       operationId: apphubDeleteApphubAppsCode
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Code
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Code
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List Registered Apps
       operationId: apphubGetApphubApps
       parameters:
-      - name: keyword
-        in: query
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: name/code 模糊匹配
+            title: Keyword
           description: name/code 模糊匹配
-          title: Keyword
-        description: name/code 模糊匹配
-      - name: category
-        in: query
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
+        - name: category
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: category 精确过滤
+            title: Category
           description: category 精确过滤
-          title: Category
-        description: category 精确过滤
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -514,62 +522,66 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AppHubApplication'
+                      $ref: "#/components/schemas/AppHubApplication"
                   total:
                     type: integer
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
     post:
       tags:
-      - apphub
+        - apphub
       summary: Register App
-      description: "Register a new application.\n\nValidation rules:\n  - ``code`` must be unique within the tenant.\n\
+      description:
+        "Register a new application.\n\nValidation rules:\n  - ``code`` must be unique within the tenant.\n\
         \  - ``category`` must be one of the known categories (knowledge /\n    platform / data) and match an existing\
         \ group.\n  - ``version`` must be a valid semver (MAJOR.MINOR.PATCH). Verified tenant comes exclusively from\
         \ authentication. Order bindings additionally require platform.read and forward the verified caller Bearer.\
@@ -580,69 +592,69 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppRegisterRequest'
+              $ref: "#/components/schemas/AppRegisterRequest"
       responses:
-        '201':
+        "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubApplication'
-        '401':
+                $ref: "#/components/schemas/AppHubApplication"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/groups:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List App Groups
       operationId: apphubGetApphubAppsGroups
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -652,79 +664,82 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AppHubGroup'
+                      $ref: "#/components/schemas/AppHubGroup"
                   total:
                     type: integer
                 required:
-                - items
-                - total
-        '401':
+                  - items
+                  - total
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/modules:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List Business Modules
       operationId: apphubGetApphubModules
       parameters:
-      - name: app_code
-        in: query
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
+        - name: app_code
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: 所属 app 编码
+            title: App Code
           description: 所属 app 编码
-          title: App Code
-        description: 所属 app 编码
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -734,219 +749,226 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AppHubModule'
+                      $ref: "#/components/schemas/AppHubModule"
                   total:
                     type: integer
                 required:
-                - items
-                - total
-        '401':
+                  - items
+                  - total
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
     post:
       tags:
-      - apphub
+        - apphub
       summary: Create Module
-      description: 'Create a new business module.
+      description: "Create a new business module.
 
 
         The ``app_code`` must reference an existing registered app. Verified tenant comes exclusively from authentication.
         Order bindings additionally require platform.read and forward the verified caller Bearer. Concurrent stale
-        app changes fail409; no automatic retry overwrites newer publication/history.'
+        app changes fail409; no automatic retry overwrites newer publication/history."
       operationId: apphubPostApphubModules
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ModuleCreateRequest'
+              $ref: "#/components/schemas/ModuleCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubModule'
-        '401':
+                $ref: "#/components/schemas/AppHubModule"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
-          description: Existing same-tenant code or concurrent creation rejected; no overwrite. IDs are tenant-scoped
+                $ref: "#/components/schemas/AppHubError"
+        "409":
+          description:
+            Existing same-tenant code or concurrent creation rejected; no overwrite. IDs are tenant-scoped
             and code is separate.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/modules/{module_id}:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Get Module Detail
-      description: Get a single business module detail. Verified tenant comes exclusively from authentication. Order
+      description:
+        Get a single business module detail. Verified tenant comes exclusively from authentication. Order
         bindings additionally require platform.read and forward the verified caller Bearer. Concurrent stale app changes
         fail409; no automatic retry overwrites newer publication/history.
       operationId: apphubGetModuleDetail
       parameters:
-      - name: module_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Module Id
+        - name: module_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Module Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubModule'
-        '401':
+                $ref: "#/components/schemas/AppHubModule"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/pages:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List Page Templates
       operationId: apphubGetApphubPages
       parameters:
-      - name: module_code
-        in: query
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
+        - name: module_code
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: 所属 module 编码
+            title: Module Code
           description: 所属 module 编码
-          title: Module Code
-        description: 所属 module 编码
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -956,138 +978,143 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AppHubPage'
+                      $ref: "#/components/schemas/AppHubPage"
                   total:
                     type: integer
                 required:
-                - items
-                - total
-        '401':
+                  - items
+                  - total
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
     post:
       tags:
-      - apphub
+        - apphub
       summary: Create Page
-      description: 'Create a new page template.
+      description: "Create a new page template.
 
 
         The ``module_code`` must reference an existing module. Verified tenant comes exclusively from authentication.
         Order bindings additionally require platform.read and forward the verified caller Bearer. Concurrent stale
-        app changes fail409; no automatic retry overwrites newer publication/history.'
+        app changes fail409; no automatic retry overwrites newer publication/history."
       operationId: apphubPostApphubPages
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PageCreateRequest'
+              $ref: "#/components/schemas/PageCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubPage'
-        '401':
+                $ref: "#/components/schemas/AppHubPage"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
-          description: Existing same-tenant code or concurrent creation rejected; no overwrite. IDs are tenant-scoped
+                $ref: "#/components/schemas/AppHubError"
+        "409":
+          description:
+            Existing same-tenant code or concurrent creation rejected; no overwrite. IDs are tenant-scoped
             and code is separate.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/groups:
     post:
       tags:
-      - apphub
+        - apphub
       summary: Create Group
-      description: Create a new application group. Verified tenant comes exclusively from authentication. Order bindings
+      description:
+        Create a new application group. Verified tenant comes exclusively from authentication. Order bindings
         additionally require platform.read and forward the verified caller Bearer. Concurrent stale app changes fail409;
         no automatic retry overwrites newer publication/history.
       operationId: apphubPostApphubGroups
@@ -1095,428 +1122,438 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupCreateRequest'
+              $ref: "#/components/schemas/GroupCreateRequest"
         required: true
       responses:
-        '201':
+        "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubGroup'
-        '401':
+                $ref: "#/components/schemas/AppHubGroup"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
-          description: Existing same-tenant code or concurrent creation rejected; no overwrite. IDs are tenant-scoped
+                $ref: "#/components/schemas/AppHubError"
+        "409":
+          description:
+            Existing same-tenant code or concurrent creation rejected; no overwrite. IDs are tenant-scoped
             and code is separate.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/groups/{code}:
     delete:
       tags:
-      - apphub
+        - apphub
       summary: Delete Group Endpoint
-      description: Delete a group. A group with apps referencing its category cannot be deleted. Verified tenant comes
+      description:
+        Delete a group. A group with apps referencing its category cannot be deleted. Verified tenant comes
         exclusively from authentication. Order bindings additionally require platform.read and forward the verified
         caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites newer publication/history.
       operationId: apphubDeleteApphubGroupsCode
       parameters:
-      - name: code
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Code
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Code
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/{app_id}/runtime:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Get App Runtime
-      description: Return the runtime context + render tree for an app. Verified tenant comes exclusively from authentication.
+      description:
+        Return the runtime context + render tree for an app. Verified tenant comes exclusively from authentication.
         Order bindings additionally require platform.read and forward the verified caller Bearer. Concurrent stale
         app changes fail409; no automatic retry overwrites newer publication/history.
       operationId: apphubGetAppRuntime
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubRuntime'
-        '401':
+                $ref: "#/components/schemas/AppHubRuntime"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/{app_id}/runtime/execute:
     post:
       tags:
-      - apphub
+        - apphub
       summary: Execute Runtime Action
-      description: Execute a runtime action (submit_form / trigger_flow / call_api / navigate). Verified tenant comes
+      description:
+        Execute a runtime action (submit_form / trigger_flow / call_api / navigate). Verified tenant comes
         exclusively from authentication. Order bindings additionally require platform.read and forward the verified
         caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites newer publication/history.
       operationId: apphubPostAppRuntimeExecute
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubRuntimeResult'
-        '401':
+                $ref: "#/components/schemas/AppHubRuntimeResult"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppHubRuntimeExecute'
+              $ref: "#/components/schemas/AppHubRuntimeExecute"
   /api/v1/apphub/apps/{app_id}/publish:
     post:
       tags:
-      - apphub
+        - apphub
       summary: Publish App
       operationId: apphubPostAppPublish
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubPublication'
-        '401':
+                $ref: "#/components/schemas/AppHubPublication"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/shortlinks/{code}:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Resolve Shortlink Endpoint
-      description: Resolve a short code to its bound app metadata. Verified tenant comes exclusively from authentication.
+      description:
+        Resolve a short code to its bound app metadata. Verified tenant comes exclusively from authentication.
         Order bindings additionally require platform.read and forward the verified caller Bearer. Concurrent stale
         app changes fail409; no automatic retry overwrites newer publication/history.
       operationId: apphubGetShortlink
       parameters:
-      - name: code
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Code
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Code
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
-        '401':
+                $ref: "#/components/schemas/AppHubShortlinkResolved"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
   /api/v1/apphub/shortlinks:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List Shortlinks Endpoint
-      description: List all short-links for the current tenant. Verified tenant comes exclusively from authentication.
+      description:
+        List all short-links for the current tenant. Verified tenant comes exclusively from authentication.
         Order bindings additionally require platform.read and forward the verified caller Bearer. Concurrent stale
         app changes fail409; no automatic retry overwrites newer publication/history.
       operationId: apphubListShortlinks
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1526,135 +1563,138 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AppHubShortlink'
-        '401':
+                      $ref: "#/components/schemas/AppHubShortlink"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
     post:
       tags:
-      - apphub
+        - apphub
       summary: Create Shortlink Endpoint
-      description: Create a new short-link for an app. Verified tenant comes exclusively from authentication. Order
+      description:
+        Create a new short-link for an app. Verified tenant comes exclusively from authentication. Order
         bindings additionally require platform.read and forward the verified caller Bearer. Concurrent stale app changes
         fail409; no automatic retry overwrites newer publication/history.
       operationId: apphubPostShortlink
       responses:
-        '201':
+        "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubShortlink'
-        '401':
+                $ref: "#/components/schemas/AppHubShortlink"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppHubShortlinkCreate'
+              $ref: "#/components/schemas/AppHubShortlinkCreate"
   /api/v1/apphub/apps/{app_id}/versions:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List App Versions
       operationId: apphubListAppVersions
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1664,393 +1704,400 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AppHubVersion'
+                      $ref: "#/components/schemas/AppHubVersion"
                   total:
                     type: integer
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
     post:
       tags:
-      - apphub
+        - apphub
       summary: Create App Version
       operationId: apphubCreateAppVersion
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       responses:
-        '201':
+        "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubVersion'
-        '401':
+                $ref: "#/components/schemas/AppHubVersion"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppHubVersionCreate'
+              $ref: "#/components/schemas/AppHubVersionCreate"
   /api/v1/apphub/apps/{app_id}/versions/{version_id}/publish:
     post:
       tags:
-      - apphub
+        - apphub
       summary: Publish App Version
       operationId: apphubPublishAppVersion
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
-      - name: version_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Version Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
+        - name: version_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Version Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubVersion'
-        '401':
+                $ref: "#/components/schemas/AppHubVersion"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/apps/{app_id}/versions/{version_id}/rollback:
     post:
       tags:
-      - apphub
+        - apphub
       summary: Rollback App Version
       operationId: apphubRollbackAppVersion
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
-      - name: version_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Version Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
+        - name: version_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Version Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubVersion'
-        '401':
+                $ref: "#/components/schemas/AppHubVersion"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/apps/{app_id}/versions/{version_id}:
     delete:
       tags:
-      - apphub
+        - apphub
       summary: Delete App Version
       operationId: apphubDeleteAppVersion
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
-      - name: version_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Version Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
+        - name: version_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Version Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/apps/{app_id}/releases:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List App Releases
       operationId: apphubListAppReleases
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
-      - name: page
-        in: query
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          default: 1
-          title: Page
-      - name: size
-        in: query
-        required: false
-        schema:
-          type: integer
-          maximum: 100
-          minimum: 1
-          default: 20
-          title: Size
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            title: Page
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 20
+            title: Size
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -2060,786 +2107,811 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AppHubRelease'
+                      $ref: "#/components/schemas/AppHubRelease"
                   total:
                     type: integer
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
     post:
       tags:
-      - apphub
+        - apphub
       summary: Create App Release
       operationId: apphubCreateAppRelease
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
       responses:
-        '201':
+        "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubRelease'
-        '401':
+                $ref: "#/components/schemas/AppHubRelease"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppHubReleaseCreate'
+              $ref: "#/components/schemas/AppHubReleaseCreate"
   /api/v1/apphub/releases/{release_id}:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Get App Release
       operationId: apphubGetAppRelease
       parameters:
-      - name: release_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Release Id
+        - name: release_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Release Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubRelease'
-        '401':
+                $ref: "#/components/schemas/AppHubRelease"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/releases/{release_id}/logs:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List Release Logs
       operationId: apphubListReleaseLogs
       parameters:
-      - name: release_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Release Id
+        - name: release_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Release Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AppHubReleaseLog'
-        '401':
+                  $ref: "#/components/schemas/AppHubReleaseLog"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/v1/wfe/release-approval/{process_instance_id}/tasks:
     get:
       tags:
-      - apphub
+        - apphub
       summary: List Release Tasks
       operationId: apphubListReleaseTasks
       parameters:
-      - name: process_instance_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Process Instance Id
+        - name: process_instance_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Process Instance Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AppHubReleaseTask'
-        '401':
+                  $ref: "#/components/schemas/AppHubReleaseTask"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/v1/wfe/release-approval/{process_instance_id}/tasks/{task_id}/complete:
     post:
       tags:
-      - apphub
+        - apphub
       summary: Complete Release Task
       operationId: apphubCompleteReleaseTask
       parameters:
-      - name: process_instance_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Process Instance Id
-      - name: task_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Task Id
+        - name: process_instance_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Process Instance Id
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Task Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
         newer publication/history. Only the assigned authenticated USER with platform.write can decide. Final approval
-        rejects if running version changed since release creation.'
+        rejects if running version changed since release creation."
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppHubApproval'
+              $ref: "#/components/schemas/AppHubApproval"
   /api/v1/apphub/pages/{page_id}:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Get Page Detail
       operationId: apphubGetPageDetail
       parameters:
-      - name: page_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Page Id
+        - name: page_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Page Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubPageDefinition'
-        '401':
+                $ref: "#/components/schemas/AppHubPageDefinition"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
     put:
       tags:
-      - apphub
+        - apphub
       summary: Save Page
       operationId: apphubSavePage
       parameters:
-      - name: page_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Page Id
+        - name: page_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Page Id
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PageSaveRequest'
+              $ref: "#/components/schemas/PageSaveRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubPageDefinition'
-        '401':
+                $ref: "#/components/schemas/AppHubPageDefinition"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/bindings/usage:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Get Object Binding Usage
       operationId: apphubGetObjectBindingUsage
       parameters:
-      - name: class_rid
-        in: query
-        required: true
-        schema:
-          type: string
-          title: Class Rid
+        - name: class_rid
+          in: query
+          required: true
+          schema:
+            type: string
+            title: Class Rid
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubBindingUsage'
-        '401':
+                $ref: "#/components/schemas/AppHubBindingUsage"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/apps/{app_id}/runtime/data:
     get:
       tags:
-      - apphub
+        - apphub
       summary: Get Order Runtime Data
       operationId: apphubGetOrderRuntimeData
       parameters:
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: App Id
-      - name: page_id
-        in: query
-        required: true
-        schema:
-          type: string
-          title: Page Id
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: App Id
+        - name: page_id
+          in: query
+          required: true
+          schema:
+            type: string
+            title: Page Id
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubRuntimeData'
-        '401':
+                $ref: "#/components/schemas/AppHubRuntimeData"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.read]
       x-mate-owner: application-platform
       x-mate-permission: apphub.read
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
-        newer publication/history.'
+        newer publication/history."
   /api/v1/apphub/pages/{page_id}/preview:
     post:
       tags:
-      - apphub
+        - apphub
       summary: Preview Order Page
       operationId: apphubPreviewOrderPage
       parameters:
-      - name: page_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Page Id
+        - name: page_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Page Id
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PageSaveRequest'
+              $ref: "#/components/schemas/PageSaveRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubRuntimeData'
-        '401':
+                $ref: "#/components/schemas/AppHubRuntimeData"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '403':
+                $ref: "#/components/schemas/AppHubError"
+        "403":
           description: Verified tenant/scope/human identity denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '404':
+                $ref: "#/components/schemas/AppHubError"
+        "404":
           description: Artifact not found in tenant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '409':
+                $ref: "#/components/schemas/AppHubError"
+        "409":
           description: Unpublished/offline/drifted version, stale revision or lifecycle conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '422':
+                $ref: "#/components/schemas/AppHubError"
+        "422":
           description: Invalid request or unresolved dependency
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
-        '503':
+                $ref: "#/components/schemas/AppHubError"
+        "503":
           description: Ontology dependency unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppHubError'
+                $ref: "#/components/schemas/AppHubError"
       security:
-      - bearerAuth: []
-        oidcScopes:
-        - platform.write
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-requirements:
-      - MP11-APP-01
-      - MP11-ONT-03
-      - MP11-UX-01
+        - MP11-APP-01
+        - MP11-ONT-03
+        - MP11-UX-01
       x-mate-implementation-status: implemented
-      description: ' Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
+      description:
+        " Verified tenant comes exclusively from authentication. Order bindings additionally require platform.read
         and forward the verified caller Bearer. Concurrent stale app changes fail409; no automatic retry overwrites
         newer publication/history. Validates unsaved draft and reads actual data without persistence/publication or
-        action execution.'
+        action execution."
   /api/v1/apphub/apps/domains:
     get:
       security:
@@ -3161,10 +3233,10 @@ components:
           title: Target Iid
       type: object
       required:
-      - page_id
-      - version_id
-      - action_rid
-      - target_iid
+        - page_id
+        - version_id
+        - action_rid
+        - target_iid
       title: AppProposalContextRequest
     AppHubVerifiedProposalContext:
       type: object
@@ -3178,10 +3250,10 @@ components:
         app_version:
           type: string
       required:
-      - app_id
-      - page_id
-      - app_version_id
-      - app_version
+        - app_id
+        - page_id
+        - app_version_id
+        - app_version
     AppHubReleaseTask:
       type: object
       properties:
@@ -3200,11 +3272,11 @@ components:
         endTime:
           type: string
       required:
-      - id
-      - name
-      - assignee
-      - status
-      - createTime
+        - id
+        - name
+        - assignee
+        - status
+        - createTime
     AppHubReleaseLog:
       type: object
       properties:
@@ -3221,12 +3293,12 @@ components:
         createdAt:
           type: string
       required:
-      - logId
-      - releaseId
-      - action
-      - operator
-      - remark
-      - createdAt
+        - logId
+        - releaseId
+        - action
+        - operator
+        - remark
+        - createdAt
     AppHubActionReceipt:
       type: object
       properties:
@@ -3248,14 +3320,14 @@ components:
         created_at:
           type: string
       required:
-      - audit_id
-      - tenant_id
-      - proposal_id
-      - action_rid
-      - target_iid
-      - actor_id
-      - result
-      - created_at
+        - audit_id
+        - tenant_id
+        - proposal_id
+        - action_rid
+        - target_iid
+        - actor_id
+        - result
+        - created_at
     AppHubPublicationCheck:
       type: object
       properties:
@@ -3276,33 +3348,33 @@ components:
             properties:
               key:
                 enum:
-                - bindings
-                - reference_versions
-                - access
-                - components
-                - action_policy
-                - runtime
+                  - bindings
+                  - reference_versions
+                  - access
+                  - components
+                  - action_policy
+                  - runtime
               status:
                 enum:
-                - pass
-                - fail
-                - unknown
+                  - pass
+                  - fail
+                  - unknown
               message:
                 type: string
               next_step:
                 type: string
             required:
-            - key
-            - status
-            - message
-            - next_step
+              - key
+              - status
+              - message
+              - next_step
       required:
-      - app_id
-      - draft_version
-      - revision
-      - checked_at
-      - can_publish
-      - checks
+        - app_id
+        - draft_version
+        - revision
+        - checked_at
+        - can_publish
+        - checks
     AppHubModule:
       type: object
       properties:
@@ -3321,13 +3393,13 @@ components:
         entry_path:
           type: string
       required:
-      - id
-      - tenant_id
-      - name
-      - code
-      - app_code
-      - description
-      - entry_path
+        - id
+        - tenant_id
+        - name
+        - code
+        - app_code
+        - description
+        - entry_path
     AppHubGroup:
       type: object
       properties:
@@ -3344,12 +3416,12 @@ components:
         sort_order:
           type: integer
       required:
-      - id
-      - tenant_id
-      - name
-      - code
-      - icon
-      - sort_order
+        - id
+        - tenant_id
+        - name
+        - code
+        - icon
+        - sort_order
     AppHubPage:
       type: object
       properties:
@@ -3371,20 +3443,20 @@ components:
           type: object
           additionalProperties: true
       required:
-      - id
-      - tenant_id
-      - name
-      - code
-      - module_code
-      - layout
-      - schema_version
-      - definition
+        - id
+        - tenant_id
+        - name
+        - code
+        - module_code
+        - layout
+        - schema_version
+        - definition
     AppHubError:
       type: object
       properties:
         detail: {}
       required:
-      - detail
+        - detail
     AppHubApplication:
       type: object
       properties:
@@ -3413,21 +3485,21 @@ components:
         status:
           type: string
           enum:
-          - DESIGNING
-          - PUBLISHED
-          - OFFLINE
+            - DESIGNING
+            - PUBLISHED
+            - OFFLINE
         created_at:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         updated_at:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         published_version_id:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         module_count:
           type: integer
         revision:
@@ -3436,16 +3508,16 @@ components:
           description: Internal store-owned compare-and-swap revision; not accepted in mutation input.
         published_version:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
           description: Version of the exact published snapshot; version is editable draft metadata.
       required:
-      - id
-      - tenant_id
-      - name
-      - code
-      - status
-      - revision
+        - id
+        - tenant_id
+        - name
+        - code
+        - status
+        - revision
     AppHubOrderBinding:
       type: object
       properties:
@@ -3493,15 +3565,16 @@ components:
             type: object
             additionalProperties: true
       required:
-      - object_type
-      - model_checksum
-      - customer_type
-      - customer_checksum
-      - link_type
-      - action_rid
-      - fields
-      - object_set
-      description: Exact same-tenant active published models/checksums, actual fields, relation and registered Action.on.
+        - object_type
+        - model_checksum
+        - customer_type
+        - customer_checksum
+        - link_type
+        - action_rid
+        - fields
+        - object_set
+      description:
+        Exact same-tenant active published models/checksums, actual fields, relation and registered Action.on.
         Fingerprints are captured by server and checked on publication/runtime.
     AppHubPageDefinition:
       type: object
@@ -3523,13 +3596,14 @@ components:
           type: object
           additionalProperties: true
         binding:
-          $ref: '#/components/schemas/AppHubOrderBinding'
+          $ref: "#/components/schemas/AppHubOrderBinding"
         application_metadata_updated:
           type: boolean
       required:
-      - name
-      - widgets
-      description: Draft definition. Save may return application_metadata_updated=false after page success and a concurrent
+        - name
+        - widgets
+      description:
+        Draft definition. Save may return application_metadata_updated=false after page success and a concurrent
         app metadata conflict; page remains saved.
     AppHubVersion:
       type: object
@@ -3554,13 +3628,14 @@ components:
             type: object
             additionalProperties: true
       required:
-      - versionId
-      - appId
-      - version
-      - status
-      - createdAt
-      - modules
-      description: Server-captured immutable page/binding snapshot; publication status may advance. Client supplied
+        - versionId
+        - appId
+        - version
+        - status
+        - createdAt
+        - modules
+      description:
+        Server-captured immutable page/binding snapshot; publication status may advance. Client supplied
         module snapshots are ignored.
     AppHubRuntimeData:
       type: object
@@ -3581,15 +3656,15 @@ components:
             type: object
             additionalProperties: true
         binding:
-          $ref: '#/components/schemas/AppHubOrderBinding'
+          $ref: "#/components/schemas/AppHubOrderBinding"
         version:
           type: string
       required:
-      - orders
-      - customers
-      - links
-      - binding
-      - version
+        - orders
+        - customers
+        - links
+        - binding
+        - version
     AppHubRuntime:
       type: object
       properties:
@@ -3605,13 +3680,36 @@ components:
         render_tree:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: "#/components/schemas/AppHubRenderNode"
       required:
-      - app_id
-      - version
-      - modules
-      - render_tree
+        - app_id
+        - version
+        - modules
+        - render_tree
+    AppHubRenderNode:
+      type: object
+      properties:
+        node_type:
+          type: string
+        title:
+          type: string
+        layout:
+          type: object
+          additionalProperties: true
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppHubRenderNode"
+        config:
+          type: object
+          additionalProperties: true
+      required:
+        - node_type
+        - title
+        - layout
+        - children
+        - config
+      description: Each runtime render_tree element is the serialized RenderNode dataclass.
     AppHubPublication:
       type: object
       properties:
@@ -3624,10 +3722,10 @@ components:
         version_id:
           type: string
       required:
-      - app_id
-      - status
-      - version
-      - version_id
+        - app_id
+        - status
+        - version
+        - version_id
     AppHubVersionCreate:
       type: object
       properties:
@@ -3645,13 +3743,14 @@ components:
         strategy:
           type: string
           enum:
-          - FULL
+            - FULL
           default: FULL
         techLeadId:
           type: string
         opsOwnerId:
           type: string
-      description: Full releases only. Empty approval assignees default to authenticated actor. Grayscale is explicitly
+      description:
+        Full releases only. Empty approval assignees default to authenticated actor. Grayscale is explicitly
         rejected.
     AppHubRelease:
       type: object
@@ -3682,8 +3781,8 @@ components:
           type: string
         basePublishedVersionId:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
         grayPercent:
           type: integer
         grayUsers:
@@ -3695,11 +3794,11 @@ components:
           items:
             type: string
       required:
-      - releaseId
-      - appId
-      - versionId
-      - status
-      - processInstanceId
+        - releaseId
+        - appId
+        - versionId
+        - status
+        - processInstanceId
     AppHubApproval:
       type: object
       properties:
@@ -3708,7 +3807,7 @@ components:
         comment:
           type: string
       required:
-      - approved
+        - approved
     AppHubShortlinkCreate:
       type: object
       properties:
@@ -3716,10 +3815,10 @@ components:
           type: string
         expires_at:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
       required:
-      - app_id
+        - app_id
       description: Current PUBLISHED binding required; supplied role never grants runtime authority.
     AppHubShortlink:
       type: object
@@ -3730,10 +3829,33 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
       required:
-      - code
-      - app_id
-      - created_at
+        - code
+        - app_id
+        - created_at
+    AppHubShortlinkResolved:
+      type: object
+      properties:
+        app_id:
+          type: string
+        role:
+          type:
+            - string
+            - "null"
+        expires_at:
+          type:
+            - string
+            - "null"
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - app_id
+        - role
+        - expires_at
+        - created_at
+      description: Existing tenant-bound resolver metadata; role and expiry keys are always present and may be null.
     AppHubBindingUsage:
       type: object
       properties:
@@ -3752,28 +3874,28 @@ components:
                 type: string
               version_id:
                 type:
-                - string
-                - 'null'
+                  - string
+                  - "null"
               model_version:
                 type: string
               model_checksum:
                 type:
-                - string
-                - 'null'
+                  - string
+                  - "null"
               action_rid:
                 type: string
             required:
-            - app_id
-            - app_name
-            - page_id
-            - status
-            - version_id
-            - model_version
+              - app_id
+              - app_name
+              - page_id
+              - status
+              - version_id
+              - model_version
         total:
           type: integer
       required:
-      - items
-      - total
+        - items
+        - total
     AppHubRuntimeExecute:
       type: object
       properties:
@@ -3789,8 +3911,9 @@ components:
           type: object
           additionalProperties: true
       required:
-      - action_type
-      description: ontology_propose resolves Action exclusively from published page binding and restricts target_iid
+        - action_type
+      description:
+        ontology_propose resolves Action exclusively from published page binding and restricts target_iid
         to its actual ObjectSet. No confirmation or execution occurs here.
     AppHubRuntimeResult:
       type: object
@@ -3799,16 +3922,18 @@ components:
           type: string
         success:
           type: boolean
-        data: {}
+        data:
+          type: object
+          additionalProperties: true
         error:
           type:
-          - string
-          - 'null'
+            - string
+            - "null"
       required:
-      - action_id
-      - success
-      - data
-      - error
+        - action_id
+        - success
+        - data
+        - error
     AppRegisterRequest:
       properties:
         name:
@@ -3830,7 +3955,7 @@ components:
           type: string
           maxLength: 2048
           title: Description
-          default: ''
+          default: ""
         version:
           type: string
           title: Version
@@ -3848,12 +3973,12 @@ components:
           type: string
           maxLength: 64
           title: Business Domain
-          default: ''
+          default: ""
       type: object
       required:
-      - name
-      - code
-      - category
+        - name
+        - code
+        - category
       title: AppRegisterRequest
       description: Body schema for POST /apps.
     ModuleCreateRequest:
@@ -3877,17 +4002,17 @@ components:
           type: string
           maxLength: 2048
           title: Description
-          default: ''
+          default: ""
         entry_path:
           type: string
           maxLength: 512
           title: Entry Path
-          default: ''
+          default: ""
       type: object
       required:
-      - name
-      - code
-      - app_code
+        - name
+        - code
+        - app_code
       title: ModuleCreateRequest
     PageCreateRequest:
       properties:
@@ -3918,48 +4043,48 @@ components:
           default: 1
       type: object
       required:
-      - name
-      - code
-      - module_code
+        - name
+        - code
+        - module_code
       title: PageCreateRequest
     AppUpdateRequest:
       properties:
         status:
           anyOf:
-          - type: string
-            enum:
-            - OFFLINE
-            - DESIGNING
-          - type: 'null'
+            - type: string
+              enum:
+                - OFFLINE
+                - DESIGNING
+            - type: "null"
           title: Status
         name:
           anyOf:
-          - type: string
-            maxLength: 256
-          - type: 'null'
+            - type: string
+              maxLength: 256
+            - type: "null"
           title: Name
         description:
           anyOf:
-          - type: string
-            maxLength: 2048
-          - type: 'null'
+            - type: string
+              maxLength: 2048
+            - type: "null"
           title: Description
         version:
           anyOf:
-          - type: string
-          - type: 'null'
+            - type: string
+            - type: "null"
           title: Version
         owner:
           anyOf:
-          - type: string
-            maxLength: 256
-          - type: 'null'
+            - type: string
+              maxLength: 256
+            - type: "null"
           title: Owner
         business_domain:
           anyOf:
-          - type: string
-            maxLength: 64
-          - type: 'null'
+            - type: string
+              maxLength: 64
+            - type: "null"
           title: Business Domain
       type: object
       title: AppUpdateRequest
@@ -3988,8 +4113,8 @@ components:
           default: 0
       type: object
       required:
-      - name
-      - code
+        - name
+        - code
       title: GroupCreateRequest
     PageSaveRequest:
       properties:
@@ -4012,16 +4137,16 @@ components:
           title: Scripts
         binding:
           anyOf:
-          - $ref: '#/components/schemas/AppHubOrderBinding'
-          - type: 'null'
+            - $ref: "#/components/schemas/AppHubOrderBinding"
+            - type: "null"
           default: null
         description:
           type: string
           title: Description
-          default: ''
+          default: ""
       type: object
       required:
-      - name
+        - name
       title: PageSaveRequest
     ErrorResponse:
       type: object

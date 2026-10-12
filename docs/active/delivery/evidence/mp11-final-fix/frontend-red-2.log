@@ -39,4 +39,3 @@ TypeError: Cannot set properties of null (setting 'fillStyle')
  ❯ Object.<anonymous> ../../node_modules/.pnpm/lottie-web@5.13.0/node_modules/lottie-web/build/player/lottie.js:5:3
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-

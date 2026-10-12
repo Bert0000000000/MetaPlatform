@@ -90,10 +90,15 @@ router = APIRouter(prefix="/api/v1/data", tags=["data"])
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _tid(request: Request) -> str:
-    """Return the verified tenant_id for the current request."""
+def _tid(request: Request, *, require_read: bool | None = None) -> str:
+    """Return the verified tenant, enforcing the declared read boundary."""
     ctx = request.state.ctx
-    return str(require_tenant(ctx))
+    tenant_id = require_tenant(ctx)
+    if require_read is None:
+        require_read = request.method in {"GET", "HEAD", "OPTIONS"}
+    if require_read and not ctx.has_scope("platform.read"):
+        raise HTTPException(status_code=403, detail="platform.read required")
+    return str(tenant_id)
 
 
 def _emit(
@@ -492,7 +497,7 @@ async def test_source_endpoint(
     source_id: str,
 ) -> dict[str, Any]:
     """Test a data source connection (FR-DATA-DATAPOSTDATASOURCESIDTEST)."""
-    tid = _tid(request)
+    tid = _tid(request, require_read=True)
     result = test_source_connection(tid, source_id)
     if result is None:
         raise HTTPException(status_code=404, detail="data source not found")

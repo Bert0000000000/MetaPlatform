@@ -9,6 +9,7 @@ Base supplied: b49426d5
 ## Scope and behavior
 
 Owned changes:
+
 - mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py: both relationship writes require authenticated platform.write scope; definitions require same-tenant existing ObjectTypes; invalid enum/conversion values become readable 422; instances require same-tenant existing type and endpoints with matching classes; existing instances block src/dst/cardinality/directionality changes with 409. Names and descriptions remain editable. Cardinality 409 and same-RID replay semantics remain intact. Constructor errors now fall within 422 translation.
 - mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py: description included in ON CONFLICT update; transactional existing-instance structural guard; exclusive advisory definition lock for definition updates and shared definition lock before endpoint locks for instance writes. Revalidates materialized endpoint classes against the current definition after the lock. A failed structural update rolls back and maps to 409.
 - mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py: 25 real authenticated FastAPI/InMemory cases plus 3 real PG regression cases, including both competing transaction orders.
@@ -29,22 +30,28 @@ All pytest runs use -p no:cacheprovider, preserving the protected existing cache
 Initial fixture construction errors (missing required Property fields) were corrected before treating a run as RED evidence. No production code was modified for that setup correction.
 
 Command:
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -p no:cacheprovider packages/mate-tech-ont/tests/test_mp11_relationship_writes.py -q --tb=short
 ```
+
 Verified behavioral RED output: 20 failed, 5 passed, 1 skipped, 26 warnings in 3.25s (exit 1). Failures showed 200 instead of 403/404/422/409, enum errors returned 500, self-links returned 500, and read-only token scope could write. PG was skipped only because no explicit DSN had yet been supplied.
 
 The disposable DSN was then assigned to MP11_RELATIONSHIP_PG_DSN, without using a default DSN. Credentials are omitted from this report.
 Command:
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -p no:cacheprovider packages/mate-tech-ont/tests/test_mp11_relationship_writes.py -q -k pg_description --tb=short
 ```
+
 Verified PG RED output: 1 failed, 25 deselected, 1 warning in 3.28s (exit 1). Re-reading through a new PgOntologyRepository returned Original description rather than Updated persistent description after update.
 
 Self-review identified an additional concurrent-definition window. The two real PG interleaving tests were written and run before the transaction lock/current-definition fix:
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -p no:cacheprovider packages/mate-tech-ont/tests/test_mp11_relationship_writes.py -k 'concurrent_definition or revalidates_endpoint' -q --tb=short
 ```
+
 Verified RED output: 2 failed, 26 deselected, 1 warning in 1.67s (exit 1). Instance-first interleaving silently changed definition; definition-first interleaving silently wrote mismatched instance. Tests use Events and independent real DB connections to hold the transaction window; the second test's cursor wrapper forwards all operations to the actual PG cursor and pauses only after the definition SQL has executed.
 
 ## GREEN and self-review
@@ -52,10 +59,13 @@ Verified RED output: 2 failed, 26 deselected, 1 warning in 1.67s (exit 1). Insta
 For final verification all four environment variables MP11_RELATIONSHIP_PG_DSN, EXP03_PG_DSN, LINKC_PG_DSN and LINKF_PG_DSN were explicitly assigned the same isolated localhost test database. No suite used its built-in default DSN.
 
 Final command:
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -p no:cacheprovider packages/mate-tech-ont/tests/test_mp11_relationship_writes.py packages/mate-tech-ont/tests/test_ont_exp03_link_semantics.py packages/mate-tech-ont/tests/integration/test_ont_link_cardinality_concurrency.py packages/mate-tech-ont/tests/integration/test_ont_link_instance_server_side_filter.py packages/mate-kernel/tests/test_ontology_api.py -q --tb=short
 ```
+
 Final output: 69 passed, 26 warnings in 8.05s, exit 0, no skipped tests.
+
 - Fresh final run includes shared-lock refinement that allows independent endpoints to write concurrently while blocking definition changes.
 - Both transaction order regressions passed: instance commit first causes the structural update to fail; definition commit first causes the mismatched instance to fail.
 - Existing cardinality concurrency and action/edit-set checks passed.
@@ -63,10 +73,12 @@ Final output: 69 passed, 26 warnings in 8.05s, exit 0, no skipped tests.
 - New tests assert repository state remains unchanged following rejected writes and assert same-RID replay does not add another link.
 
 Lint:
+
 ```powershell
 .\.venv\Scripts\python.exe -m ruff check packages/mate-tech-ont/tests/test_mp11_relationship_writes.py packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py
 .\.venv\Scripts\python.exe -m ruff format --check packages/mate-tech-ont/tests/test_mp11_relationship_writes.py
 ```
+
 Outputs: All checks passed!; 1 file already formatted. git diff --check also exited 0. Full owned production/contract diff was self-reviewed before explicit-path staging and commit. Commit uses git commit --only with the four named owned files; no unrelated WIP was staged or committed.
 
 ## Isolated test resources
@@ -99,34 +111,40 @@ Subject: fix(ontology): protect relationship endpoint lifetime during writes
 The previous transaction query permitted absent endpoint rows for legacy repository callers. HTTP's earlier endpoint checks were insufficient: deleting an endpoint between the API read and transaction, or after transaction validation before insertion, could yield a successful orphan edge. Thus the earlier report's HTTP-versus-legacy existence guarantee did not hold under deletion interleavings; this fix corrects that claim and behavior.
 
 Chosen compatible kernel/repository signature:
+
 ```python
 create_link_instance(self, li: LinkInstance, *, require_endpoints: bool = False) -> LinkInstance
 ```
+
 The Protocol, InMemory and PG implementations all accept the keyword. Existing direct calls retain their default compatibility. HTTP explicitly passes require_endpoints=True. In this strict path a missing LinkType or either Individual raises KeyError and the HTTP handler translates the transaction failure to the existing documented 404. InMemory strict mode also checks materialized endpoints and their classes.
 
 PG's endpoint SELECT now takes sorted ORDER BY rid FOR SHARE row locks, protecting endpoint existence and class_rid until insert/update commit. Definition locks and cardinality endpoint locks from the initial implementation remain intact. delete_individual takes SELECT ... FOR UPDATE on the individual before scanning/deleting its incident relationships, so it waits for a validated in-flight relationship write and then sees the newly committed edge in the cascade scan. Failed deletion explicitly rolls back. No DTO, operationId or contract changes were needed in this round.
 
 Owned files in fix commit:
+
 - mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/api.py
 - mate-platform-backend/packages/mate-kernel/src/mate_kernel/ontology/in_memory.py
 - mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py
 - mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/pg_repo.py
 - mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_relationship_writes.py
 
-### RED evidence
+### Fix round 1 RED evidence
 
 All commands use mate-platform-backend working directory and its existing .venv Python. MP11_RELATIONSHIP_PG_DSN explicitly targeted the same dedicated 127.0.0.1:55497 / codex_mp11_relationship database; credentials are omitted.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -p no:cacheprovider packages/mate-tech-ont/tests/test_mp11_relationship_writes.py -k 'endpoint_deleted or delete_waits' -q --tb=short
 ```
+
 Behavioral RED: 2 failed, 28 deselected, 3 warnings in 1.84s, exit 1.
+
 - Real authenticated HTTP request paused at the repository boundary after the API endpoint reads. Real separate PG repository deleted the target and committed. Resumed HTTP returned 200 instead of 404 and persisted an orphan edge.
 - Real HTTP write paused after transaction-level endpoint validation. Real separate delete completed before the write, proving that its cascade scan could precede insertion and miss the edge.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -p no:cacheprovider packages/mate-tech-ont/tests/test_mp11_relationship_writes.py -k in_memory_strict -q --tb=short
 ```
+
 Strict-mode RED: 1 failed, 30 deselected, 1 warning in 0.88s. Existing InMemory method rejected the new keyword with TypeError, confirming strict-mode support was absent before the Protocol/implementation change.
 
 ### GREEN evidence
@@ -134,10 +152,13 @@ Strict-mode RED: 1 failed, 30 deselected, 1 warning in 0.88s. Existing InMemory 
 Initial task-only GREEN after implementing locks and strict mode: 31 passed, 28 warnings in 5.52s, no skips.
 
 For covering verification MP11_RELATIONSHIP_PG_DSN, EXP03_PG_DSN, LINKC_PG_DSN and LINKF_PG_DSN were explicitly assigned the isolated test DSN; no default DSN was used.
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -p no:cacheprovider packages/mate-tech-ont/tests/test_mp11_relationship_writes.py packages/mate-tech-ont/tests/test_ont_exp03_link_semantics.py packages/mate-tech-ont/tests/integration/test_ont_link_cardinality_concurrency.py packages/mate-tech-ont/tests/integration/test_ont_link_instance_server_side_filter.py packages/mate-tech-ont/tests/test_tenant_integration.py packages/mate-kernel/tests/test_ontology_api.py -q --tb=short
 ```
+
 Fresh final covering output: 79 passed, 33 warnings in 20.23s, exit 0, no skips.
+
 - Delete-first ordering: HTTP returns readable 404; no relationship persisted.
 - Validated-write-first ordering: delete blocks before its cascade scan; HTTP write commits 200, delete then commits true; endpoint is absent and newly inserted edge has been removed. Assertions inspect the real PG repository after both operations.
 - Both prior definition-update competition orderings continue to pass.
@@ -145,9 +166,11 @@ Fresh final covering output: 79 passed, 33 warnings in 20.23s, exit 0, no skips.
 - Existing tenant deletion/cascade test continues to pass.
 
 SYNC_IT_PG_DSN was also explicitly assigned the isolated test DSN before this directly affected existing PG deletion check:
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -p no:cacheprovider packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py -k delete_event_and_full_tombstone -q --tb=short
 ```
+
 Output: 1 passed, 8 deselected in 5.39s, exit 0. Confirms CDC deletion and full-sync tombstone deletion still work against the dedicated database.
 
 Ruff check over all five fix-owned files: All checks passed! Ruff format check on the changed test module: 1 file already formatted. git diff --check on fix-owned files: exit 0. Full production fix diff was self-reviewed before git commit --only with the five explicit owned paths.

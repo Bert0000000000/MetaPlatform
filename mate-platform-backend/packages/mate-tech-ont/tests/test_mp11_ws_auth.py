@@ -81,7 +81,7 @@ def test_actual_pg_scoped_outbox_filters_before_limit():
 
     dsn = os.environ.get("MP11_WS_PG_DSN", "")
     if not dsn:
-        pytest.skip("explicit isolated MP11_WS_PG_DSN required")
+        pytest.fail("explicit isolated MP11_WS_PG_DSN required", pytrace=False)
     target = urlparse(dsn)
     if (
         target.hostname != "127.0.0.1"

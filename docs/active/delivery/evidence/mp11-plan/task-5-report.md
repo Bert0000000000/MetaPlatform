@@ -66,7 +66,7 @@ test_mp11_connection_schema.py contains 8 focused tests; the actual PostgreSQL s
 - Persistent LinkType and LinkInstance creation/query use the actual repository; browser acceptance also creates/queries the relationship through real HTTP.
 - New Python child process resolves the persisted SQL source and target data. A separate actual child is terminated after durable running start; its injected pause is before the sync body (not a simulated database crash mid-transaction). A new child completes sync with five objects and retains the interrupted original run.
 - Actual TestClient HTTP with real middleware/routes/PG queries failed and interrupted run IDs successfully. 21 actual additional runs establish exact retention of 20 and old-ID 404/new-ID 200. Time-mapping edit resets incompatible checkpoint.
-- Fresh codex_mp11_upgrade_<random> DB initializes via PgOntologyRepository._ensure_schema. Dropping only the two new columns recreates the previous backing table shape; a new repository's same _ensure_schema adds them correctly. Legacy dsn_env actual connection still works. The simulated-old-schema fixture is not a full historical release database restore.
+- Fresh `codex_mp11_upgrade_<random>` DB initializes via PgOntologyRepository._ensure_schema. Dropping only the two new columns recreates the previous backing table shape; a new repository's same _ensure_schema adds them correctly. Legacy dsn_env actual connection still works. The simulated-old-schema fixture is not a full historical release database restore.
 
 Retained example interrupted run: tenant mp11-bd19f771ac, class ont.mp11-bd19f771ac.obj.order, run_id 1d7f1a6d87de4970a37a69d29c61ff0d. Example retained UI failure: class ont.mp11-ingestion-ui.obj.order, run_id c08d885d58994d8fafbd8d3c9c55afba. Both are public run identifiers, not credentials. Test-created source schemas are subsequently cleaned; retained records document runs, and attempting to rerun those fixture bindings after cleanup may rightly fail. Use the retained UI source schema for renewed interactive acceptance.
 
@@ -81,6 +81,7 @@ Vitest tests mock APIs and validate UI/adapter behavior only. Browser and backen
 Initial uv lock --offline was blocked by unrelated uncached a2a-sdk resolution. Controller then approved official-PyPI uv lock --dry-run without --upgrade/--refresh/install. Dry run found existing local mate-tech-agent-team manifest version 2.1.0 against stale lock 0.1.0; controller verified BASE already had 2.1.0 and explicitly approved its correction. Generated with uv lock, then uv lock --check --offline passed.
 
 Final uv.lock diff is exactly 5 added lines / 1 removed line:
+
 - data package psycopg2-binary dependency and requires-dist;
 - ont package mate-tech-data dependency and requires-dist;
 - local editable agent-team version 0.1.0 -> 2.1.0.
@@ -132,7 +133,6 @@ Remaining integration concerns: live IAM proof and canonical OpenAPI reconciliat
 - `metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx`
 - `metaplatform-frontend/apps/web/tests/e2e/ontology-ia-v2-data-flow.spec.ts`
 
-
 ## Controller-requested canonical contract closure (2026-10-11)
 
 Status: DONE_WITH_CONCERNS; canonical contract gap is resolved. Live IAM remains the explicit Task8 boundary; existing unrelated contract-validator errors are reported below.
@@ -140,6 +140,7 @@ Final contract commit: 6dbef678393f37a956472ba4a11d8fc4b3eb0219
 Implementation commit remains 062c43592b240dea2d8a793cb6cd9a2f3b439719. This addendum supersedes the earlier statement that canonical OpenAPI reconciliation remained for Task8.
 
 Owned files in this follow-up only:
+
 - mate-platform-backend/contracts/openapi/services/data.yaml
 - mate-platform-backend/contracts/openapi/services/ont.yaml
 
@@ -152,6 +153,7 @@ Permission accuracy: source CRUD writes and backing upsert/sync handlers enforce
 Verification command from repository root (PYTHONDONTWRITEBYTECODE=1):
 mate-platform-backend/.venv/Scripts/python.exe .superpowers/sdd/2026-10-11-metaplatform-product-v1.1-implementation/task-5-contract-check.py
 Final exit 0. Exact output:
+
 - data: existing document validator 0 baseline errors, zero introduced
 - ont: existing document validator 16 baseline errors, zero introduced
 - PASS: 11 canonical operations match live router paths/methods; 4 backing operation IDs; 3 request DTO field/default/required sets; local refs; zero new document-validator errors; unrelated subtrees unchanged
@@ -163,7 +165,6 @@ Used existing contracts/scripts/validate_contracts.py validate_document and comp
 
 The 16 baseline validator errors are four missing x-mate fields (owner, permission, requirements, implementation-status) on each of these existing operations: GET and POST /api/v1/ont/v2/object-types/wip, POST /api/v1/ont/v2/object-types/wip/{rid}/apply, DELETE /api/v1/ont/v2/object-types/wip/{rid}. Confirmed identical before and after this task; no unrelated repair made. Controller notified for its owning task. No new runtime processes, DBs, network calls, dependency changes or installs in this closure; prior cleanup/retained resource handoff remains unchanged.
 
-
 ### Task4 existing WIP metadata closure (separately authorized)
 
 Controller subsequently authorized exactly the 16 missing x-mate fields on the four existing WIP operations above. This is Task4 contract metadata maintenance, not a Task5 feature. Added owner ontology-platform; permission ont.read for list and ont.write for save/apply/discard; actual MP11-ONT-02/08 requirements (plus MP11-ONT-03 for apply); implementation-status implemented, matching the already implemented handlers. No paths, request/response behavior, business source or Gate status changed.
@@ -172,7 +173,6 @@ Reran only the updated precise contract check after this new change. Final resul
 
 Contract chain commit: 6dbef678393f37a956472ba4a11d8fc4b3eb0219 (two approved YAML files).
 Final metadata commit / HEAD: caf0b1f2f377beabbb66bb76d15fe11a88e3a2de.
-
 
 ## Fix round 1 — independent review I1/I2/I3/I4 (2026-10-11)
 
@@ -192,6 +192,7 @@ After reads, current source identity is checked again before checkpoint persiste
 Mapping upsert and sync share the tenant/class advisory lock. Mapping changes fail immediately with BackingSyncBusyError while a sync owns it; no waiting/deadlock or stale run overwriting an edited mapping checkpoint. Backing upsert/sync API map that error to HTTP409, with existing tenant/write guards preserved. ont.yaml declares the two 409 responses. Existing frontend failure handling retains input and releases loading; UI/build were not changed or rerun.
 
 Real evidence:
+
 - Same registered source_id, same qualified table, changed database with 2020 timestamps after syncing 2026 timestamps: one older row is ingested, not falsely reported as an empty successful increment.
 - Same legacy dsn_env retargeted to a different database: older row is read.
 - Legacy DSN search_path changes between two same-named tables in one isolated DB: initial public.orders key99 then configured-schema orders key21 are both observed, despite key21 being below the old boundary.

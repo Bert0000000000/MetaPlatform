@@ -5,6 +5,7 @@ Read this first: it is your complete requirements for the ONE final fix wave, wi
 You are a fresh integration implementer on gpt-6.1-sol/xhigh, the capable available tier after recorded gpt-6-astra quota failure. Do not spawn agents/reviewers, touch user WIP/other worktrees, push/merge/deploy, reset/drop data, bypass signed identity or weaken old assertions. Root performs the single scoped re-review after your full report.
 
 Scope authorized before edits:
+
 - I1: existing AppHub SQL/in-memory lookup and only necessary existing repository/loader/detail/PATCH resolver call sites; one consistent exact-ID-first then tenant-local-code rule. Preserve old identities/snapshots and the accepted DELETE behavior. Meaningful SQL/HTTP/runtime/detail/PATCH collision and tenant regressions, including real owned PG lookup/persistence rather than only a mocked return.
 - I2: exact three existing ONT proposal-create handlers named in the review, using runtime platform.write just like existing action/edit-set paths. Preserve proposal kinds, allowed scoped USER/SERVICE/delegated use, tenant checks and normal human/deadline/idempotent execution boundaries. Cover direct signed readonly denial and unchanged stored proposal count; allowed scoped proposals and existing action behavior. Exercise affected authorized MCP proposal forwarding as needed, without widening delegated scopes.
 - I3: the three named frontend consumers and src/api/ont/kernel.ts or one small related shared reader as necessary. Honor existing authorized limit/offset; detect no progress/failing later pages, preserve selection/error/loading and tenant context. Focused >100-type behavior must show late-page Order/Customer available for source mapping/app binding and retained onboarding selection; not just relation picker coverage. Include a real current signed API/browser late-page consumer proof for those three consumers, using additive fresh owned fixtures and preserving old data. Explicit additional acceptance ownership: new metaplatform-frontend/apps/web/tests/e2e/mp11-catalog-pagination.spec.ts, scripts/acceptance/mp11/playwright.config.ts for inclusion and verify.py only required additive fresh late-page fixture preparation/evidence. Record the new full selection count separately from historical44-case runs. If an obstacle needs any other ownership, ask controller with precise reason before touching it. Existing browser runner has no authenticated trace/video/screenshots and must remain so.
@@ -21,7 +22,7 @@ Report contract: full final-fix-report.md in this plan Scratch, not a chat dump.
 
 ## Complete findings from the single final review (verbatim)
 
-#### Important (Should Fix)
+### Important (Should Fix)
 
 1. **I1 — App ID/code collisions still break or select the wrong application outside deletion.**
 
@@ -68,15 +69,12 @@ Report contract: full final-fix-report.md in this plan Scratch, not a chat dump.
    - Impact: the generic actual-column/typed binding and same-object/provider chain are substantive; this difference alone does not demonstrate missing generic functionality. However, those receipts should not be described as literal coverage of every field/ID in the uniform declared example.
    - Triage: add a single canonical retained fixture for the declared sample, or obtain an explicit documented equivalent-sample ruling and reconcile the sample description without rewriting historical evidence. Keep `customer_id` as an ordinary field and an explicit LinkInstance as the business relationship; do not imply foreign-key text automatically created the relationship.
 
-
-
 ## Controller M1/M2 rulings
 
 Ruling: Consolidate inherited fixture/dependency/lifecycle/bundle warnings into final M1 and defer their maintenance to the named shared-fixture, dependency/lifespan and frontend performance work — the final reviewer found no authentication defect or failed assertion from this noise, and all warnings remain disclosed — if wrong, prioritize the affected dependency or bundle work before formal rollout; do not suppress warnings or infer performance/SLO from build success.
 Ruling: Use the retained actual-column Customer(id,name)/Order(id,total,status), numeric1/2 and explicit customer_orders LinkInstances as the candidate's documented equivalent fixed sample, while keeping C001/O001/O002 and customer_id/amount as a separately identified business illustration — the binding spec requires typed actual data and the complete same-object chain, not these literal field names, and final M2 found substantive behavior with a documentation mismatch — if wrong, add the literal canonical fixture and its real PG/CSV/app proof; reconcile only this product plan/example and never relabel historical receipts or imply a customer_id field creates a relation.
 
 ## Global constraints (verbatim)
-
 
 - 当前用户指定仓库为 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform；保留截图、工作树和其他在途修改，仅暂存本计划拥有的文件。
 - 产品 1.1 不改写 v3.x 架构版本、已 Accepted 的 PRD/ADR、Gate 或历史验收状态。

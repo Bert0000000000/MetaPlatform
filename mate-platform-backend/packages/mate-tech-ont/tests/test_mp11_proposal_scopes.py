@@ -29,7 +29,7 @@ def scoped(request):
 
         dsn = os.environ.get("MP11_PROPOSAL_PG_DSN")
         if not dsn:
-            pytest.skip("explicit owned MP11_PROPOSAL_PG_DSN required")
+            pytest.fail("explicit owned MP11_PROPOSAL_PG_DSN required", pytrace=False)
         target = urlparse(dsn)
         assert (
             target.hostname == "127.0.0.1"

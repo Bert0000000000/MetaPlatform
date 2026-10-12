@@ -16,6 +16,9 @@ Scope assignment rules (verified by this test):
 * query-shaped POST operations may override the method default with
   ``x-required-scopes``; the operation contract must declare the effective
   scope explicitly instead of relying on heuristics
+* MCP key management requires a tenant-bound human JWT, not an OAuth grant;
+  API-key and service identities cannot manage keys, and issued grants must
+  remain within the verified human issuer's scopes
 
 Exemptions (``security: []`` or health probes):
 
@@ -60,6 +63,18 @@ VALID_SCOPES = frozenset(
     }
 )
 
+# mate_tech_mcp.api.management_routes._api_key_tenant requires AuthMethod.USER.
+# It intentionally permits human key revocation without platform.write and
+# prevents keys from minting replacement keys. Keep the exact route inventory
+# pinned; this does not exempt other MCP operations from scope checks.
+HUMAN_KEY_MANAGEMENT_ENDPOINT_IDS = frozenset(
+    {
+        "mcp.yaml::GET /api/v1/mcp/api-keys",
+        "mcp.yaml::POST /api/v1/mcp/api-keys",
+        "mcp.yaml::DELETE /api/v1/mcp/api-keys/{kid}",
+    }
+)
+
 
 def _load(path: Path) -> dict[str, Any]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -93,7 +108,9 @@ def _effective_security(
     return op.get("security", service_security)
 
 
-def _expected_scopes(method: str, path: str, op: dict[str, Any]) -> list[str]:
+def _expected_scopes(fname: str, method: str, path: str, op: dict[str, Any]) -> list[str]:
+    if _ep_id(fname, method, path) in HUMAN_KEY_MANAGEMENT_ENDPOINT_IDS:
+        return []
     declared = op.get("x-required-scopes")
     if declared is not None:
         return declared
@@ -135,14 +152,19 @@ def test_secured_endpoints_have_three_part_security(
     op: dict[str, Any],
     service_security: list[dict[str, Any]],
 ) -> None:
-    """Each non-exempt operation with explicit ``security:`` must declare all
-    three schemes: ``bearerAuth``, ``tenantHeader``, ``oidcScopes``."""
+    """Scope-based APIs require three schemes; human key management is stricter
+    about the authenticated actor and cannot accept an API-key alternative."""
     sec = _effective_security(op, service_security)
     assert sec, f"{fname} {method} {path} has empty security — expected three-part"
     req = sec[0]
     assert isinstance(req, dict), f"{fname} {method} {path} security entry is not a dict"
     assert "bearerAuth" in req, f"{fname} {method} {path} missing bearerAuth in security"
     assert "tenantHeader" in req, f"{fname} {method} {path} missing tenantHeader in security"
+    if _ep_id(fname, method, path) in HUMAN_KEY_MANAGEMENT_ENDPOINT_IDS:
+        assert sec == [{"bearerAuth": [], "tenantHeader": []}]
+        assert op.get("x-mate-required-auth-method") == "USER"
+        assert op.get("x-mate-required-tenant") is True
+        return
     assert "oidcScopes" in req, f"{fname} {method} {path} missing oidcScopes in security"
 
 
@@ -163,6 +185,10 @@ def test_oidc_scopes_valid_and_appropriate(
 ) -> None:
     """``oidcScopes`` must use canonical scope names and match effective scope."""
     req = _effective_security(op, service_security)[0]
+    if _ep_id(fname, method, path) in HUMAN_KEY_MANAGEMENT_ENDPOINT_IDS:
+        assert "oidcScopes" not in req
+        assert "x-required-scopes" not in op
+        return
     scopes = req["oidcScopes"]
     assert isinstance(scopes, list), f"{fname} {method} {path} oidcScopes is not a list"
     for s in scopes:
@@ -178,7 +204,7 @@ def test_oidc_scopes_valid_and_appropriate(
                 f"{fname} {method} {path} has invalid x-required-scopes entry '{scope}'"
             )
 
-    expected = _expected_scopes(method, path, op)
+    expected = _expected_scopes(fname, method, path, op)
     if declared is not None:
         assert scopes == expected, (
             f"{fname} {method} {path} oidcScopes={scopes} "
@@ -197,7 +223,7 @@ def test_oidc_scopes_valid_and_appropriate(
 WRITE_SECURED = [
     (fname, method, path, op, service_security)
     for fname, method, path, op, service_security in SECURED_ENDPOINTS
-    if _expected_scopes(method, path, op) == ["platform.write"]
+    if _expected_scopes(fname, method, path, op) == ["platform.write"]
 ]
 
 
@@ -226,7 +252,7 @@ def test_write_endpoints_not_read_only(
 ADMIN_SECURED = [
     (fname, method, path, op, service_security)
     for fname, method, path, op, service_security in SECURED_ENDPOINTS
-    if _expected_scopes(method, path, op) == ["platform.admin"]
+    if _expected_scopes(fname, method, path, op) == ["platform.admin"]
 ]
 
 
@@ -281,11 +307,13 @@ def test_health_endpoints_exempt_from_oidc(
 
 
 REQUIRED_READ_POST_ENDPOINT_IDS = {
+    "apphub.yaml::POST /api/v1/apphub/apps/{app_id}/runtime/proposal-context",
     "copilot.yaml::POST /api/v1/copilot/analysis/explain-sql",
     "copilot.yaml::POST /api/v1/copilot/generate/process",
     "copilot.yaml::POST /api/v1/copilot/ontology/graph/query",
     "copilot.yaml::POST /api/v1/copilot/scheduling/employees/match",
     "copilot.yaml::POST /api/v1/copilot/search",
+    "data.yaml::POST /api/v1/data/sources/{id}/test",
     "ont.yaml::POST /api/v1/ont/federation/query",
     "ont.yaml::POST /api/v1/ont/v2/object-sets/query",
     "ont.yaml::POST /api/v1/ont/v2/object-query",
@@ -341,6 +369,16 @@ def test_secured_endpoint_inventory_non_empty() -> None:
     assert len(SECURED_ENDPOINTS) >= 50, (
         f"Expected >=50 secured endpoints, got {len(SECURED_ENDPOINTS)}"
     )
+
+
+def test_human_key_management_inventory_is_pinned() -> None:
+    """All three human-only key operations remain in the secured inventory."""
+    actual = {
+        _ep_id(*endpoint)
+        for endpoint in SECURED_ENDPOINTS
+        if endpoint[0] == "mcp.yaml" and endpoint[2].startswith("/api/v1/mcp/api-keys")
+    }
+    assert actual == HUMAN_KEY_MANAGEMENT_ENDPOINT_IDS
 
 
 def test_all_twenty_two_services_present() -> None:

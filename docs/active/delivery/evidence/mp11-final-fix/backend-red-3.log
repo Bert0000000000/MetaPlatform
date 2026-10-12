@@ -4,7 +4,7 @@ ______ test_storage_and_loader_resolve_exact_id_then_local_code[memory] _______
 packages\mate-app-hub\tests\test_mp11_app_identity.py:62: in test_storage_and_loader_resolve_exact_id_then_local_code
     assert repo.get_app(tenant, key).id == exact.id
 E   AssertionError: assert 'other-8e892c...131e6b290415e' == 'collision-45...cf21c1b48d41b'
-E     
+E
 E     - collision-45ded7bc14cd4ecfb47cf21c1b48d41b
 E     + other-8e892c55a6534bc2859131e6b290415e
 ______ test_storage_and_loader_resolve_exact_id_then_local_code[sqlite] _______
@@ -41,21 +41,21 @@ ____ test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory] _____
 packages\mate-app-hub\tests\test_mp11_app_identity.py:89: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
     assert detail.json()['id'] == exact.id
 E   AssertionError: assert 'other-d22b34...a694efea20a7a' == 'collision-d0...44510e723244b'
-E     
+E
 E     - collision-d09afb31366c49de90f44510e723244b
 E     + other-d22b34407e9a4b96b77a694efea20a7a
 ____ test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite] _____
 packages\mate-app-hub\tests\test_mp11_app_identity.py:89: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
     assert detail.json()['id'] == exact.id
 E   AssertionError: assert 'other-b7034c...7ca9ad78100af' == 'collision-4f...704ec27d9357f'
-E     
+E
 E     - collision-4f8c9c89db0c45c687d704ec27d9357f
 E     + other-b7034cbaf025465fa6c7ca9ad78100af
 ______ test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg] _______
 packages\mate-app-hub\tests\test_mp11_app_identity.py:89: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
     assert detail.json()['id'] == exact.id
 E   AssertionError: assert 'other-a1481e...5966dece60a69' == 'collision-82...d16bea6da3d78'
-E     
+E
 E     - collision-828a24db31a14e10b44d16bea6da3d78
 E     + other-a1481e32a4494f58b835966dece60a69
 __ test_readonly_direct_proposal_denied_without_persistence[memory-instance] __
@@ -152,4 +152,3 @@ FAILED ::test_stop_rechecks_identity_immediately_before_termination[ExecutablePa
 FAILED ::test_stop_rechecks_identity_immediately_before_termination[CommandLine]
 FAILED ::test_stop_rechecks_identity_immediately_before_termination[ProcessId]
 16 failed, 14 passed, 1 warning in 13.55s
-

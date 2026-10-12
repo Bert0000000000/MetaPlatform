@@ -37,7 +37,7 @@ def store(request, monkeypatch, tmp_path):
             else f"sqlite:///{tmp_path / 'identity.db'}"
         )
         if not dsn:
-            pytest.skip("explicit owned MP11_APP_ID_PG_DSN required")
+            pytest.fail("explicit owned MP11_APP_ID_PG_DSN required", pytrace=False)
         if request.param == "pg":
             target = urlparse(dsn)
             assert (

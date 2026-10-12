@@ -52,7 +52,7 @@ def store(request):
 
     dsn = os.environ.get("MP11_OBJECT_PG_DSN")
     if not dsn:
-        pytest.skip("Dedicated MP11_OBJECT_PG_DSN required")
+        pytest.fail("Dedicated MP11_OBJECT_PG_DSN required", pytrace=False)
     parsed = urlparse(dsn)
     assert parsed.hostname == "127.0.0.1" and parsed.port == 55497
     assert parsed.path.startswith("/codex_mp11_")
@@ -176,9 +176,8 @@ def test_wip_checksum_is_rechecked_at_write(client, store, monkeypatch):
 
 
 @pytest.mark.parametrize("endpoint", ["src", "dst"])
+@pytest.mark.parametrize("store", ["pg"], indirect=True)
 def test_pg_version_publication_retains_links_and_supports_new_links(store, endpoint):
-    if isinstance(store, InMemoryOntologyRepository):
-        pytest.skip("PG supersede publication regression")
     with store.tenant_scope(T):
         customer = _dto_to_ot(ObjectTypeDTO(**definition("Customer")))
         order = _dto_to_ot(ObjectTypeDTO(**definition("Order")))
@@ -256,9 +255,8 @@ def test_wip_rejects_metadata_change_after_save(client):
     assert result.status_code == 409, result.text
 
 
+@pytest.mark.parametrize("store", ["pg"], indirect=True)
 def test_pg_relation_definition_rechecks_version_after_publish(store, monkeypatch):
-    if isinstance(store, InMemoryOntologyRepository):
-        pytest.skip("PG schema-lock regression")
     with store.tenant_scope(T):
         old = _dto_to_ot(ObjectTypeDTO(**definition("Old")))
         target = _dto_to_ot(ObjectTypeDTO(**definition("Target")))
@@ -384,9 +382,8 @@ def test_class_inspection_filters_actions_to_verified_tenant(client, store, monk
     assert client.get(f"{BASE}/classes/ont.other.obj.crm.secret.v1/inspect").status_code == 403
 
 
+@pytest.mark.parametrize("store", ["pg"], indirect=True)
 def test_pg_strict_new_survives_legacy_writer_without_advisory_lock(store, monkeypatch):
-    if isinstance(store, InMemoryOntologyRepository):
-        pytest.skip("SQL conflict race requires PostgreSQL")
     import json
     from contextlib import contextmanager
 
@@ -461,9 +458,8 @@ def test_explicit_compared_checksum_can_retry_stale_draft(client):
     assert result.json()["description"] == "My retained changes"
 
 
+@pytest.mark.parametrize("store", ["pg"], indirect=True)
 def test_pg_edit_set_then_link_and_supersede_do_not_deadlock(store, monkeypatch):
-    if isinstance(store, InMemoryOntologyRepository):
-        pytest.skip("PG transactional edit-set lock regression")
     import time
     from contextlib import contextmanager
 

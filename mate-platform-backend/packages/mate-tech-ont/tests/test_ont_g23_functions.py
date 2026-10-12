@@ -161,12 +161,10 @@ class TestWebSocketSubscription:
         from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
         dsn = os.environ.get("MP11_WS_PG_DSN", "")
-        if not dsn and os.environ.get("MP11_WS_PG_REQUIRED") != "1":
+        if not dsn:
             import pytest
 
-            pytest.skip(
-                "Explicit PG integration profile not configured; candidate requires MP11_WS_PG_REQUIRED=1"
-            )
+            pytest.fail("Explicit owned MP11_WS_PG_DSN is required", pytrace=False)
         target = urlparse(dsn)
         if (
             target.hostname != "127.0.0.1"
