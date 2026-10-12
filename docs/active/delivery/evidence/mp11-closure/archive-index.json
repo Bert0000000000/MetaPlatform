@@ -9,7 +9,7 @@
     {
       "path": "completion-audit-matrix.json",
       "bytes": 136410,
-      "sha256": "b47e02a1c6d539853429f6566bb84425dfcef6a63fdf905fb665bed1477baa7d"
+      "sha256": "d350082f149f813d27a33a4ead5c245d9f79f58b35ef39981a013d784461f72f"
     },
     {
       "path": "completion-audit-matrix.md",
@@ -87,6 +87,11 @@
       "sha256": "70f1d93d0c82c3ef102db277c6b6e1f09a63b591b46a9f331a35b3c370a3024c"
     },
     {
+      "path": "final-integrity.json",
+      "bytes": 1050,
+      "sha256": "8a21e566b4cf4f64699ac8aef7d1924116f19cbee6fc28abc8eab83b340f1e0e"
+    },
+    {
       "path": "final-rereview-package-index.json",
       "bytes": 22127,
       "sha256": "6c36e02d8e195e0003f98a6ef9b50cda6ab1175866cde332142bb2ebd5a2c2fe"
@@ -138,8 +143,8 @@
     },
     {
       "path": "postclosure-secret-scan.json",
-      "bytes": 27133,
-      "sha256": "70cbc705e38fefd9d89908e3499adbdef35c77a1b321afc5063295335fd7018f"
+      "bytes": 27314,
+      "sha256": "ee283a58c7886b4b6024aaacda4be001ed749d6183cc11685d7e0c7355266614"
     },
     {
       "path": "preclosure-secret-scan.json",
