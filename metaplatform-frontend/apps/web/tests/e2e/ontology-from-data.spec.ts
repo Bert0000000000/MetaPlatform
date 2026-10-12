@@ -16,6 +16,7 @@ async function confirmPublication(page: Page) {
 }
 
 async function reviewTab(page: Page, label: string) {
+  await page.getByRole('navigation', { name: '逆向发现本体流程', exact: true }).getByRole('button', { name: /候选匹配与合并确认/ }).click();
   await page.getByRole('tab', { name: new RegExp(`^${label}`) }).click();
   await expect(page.getByRole('tab', { name: new RegExp(`^${label}`) })).toHaveAttribute('aria-selected', 'true');
 }
@@ -342,6 +343,7 @@ test('缺失身份仍可发布本体 → 同步受阻 → 补齐来源复用模�
   let response = await request.put(endpoint, { headers, data: { revision: source.revision, draft, context: '', questions: [], resolutions: {} } });
   expect(response.ok()).toBeTruthy(); source = await response.json();
   await page.goto(`/ontology/model/from-data?source=${source.id}`);
+  await reviewTab(page, '对象类型');
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
   await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '查看发布方案', exact: true }).click();
@@ -358,12 +360,15 @@ test('缺失身份仍可发布本体 → 同步受阻 → 补齐来源复用模�
   let individuals = await (await request.get(`${gateway}/ont/v2/individuals?class_rid=${encodeURIComponent(target.rid)}&limit=100&offset=0`, { headers })).json();
   expect(individuals).toHaveLength(0);
   await page.reload();
+  await expect(page.getByRole('navigation', { name: '逆向发现本体流程', exact: true }).getByRole('button', { name: /数据同步（可选）/ })).toHaveAttribute('aria-current', 'step');
+  await page.getByRole('button', { name: '返回发布结果', exact: true }).click();
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
 
   source = await upload('modeling-repaired-identity.xlsx'); endpoint = `${gateway}/ont/v2/modeling/sources/${source.id}`;
   response = await request.put(endpoint, { headers, data: { revision: source.revision, draft, context: '', questions: [], resolutions: { [cid]: { mode: 'reuse', targetRid: target.rid, propertyMap: target.propertyMap } } } });
   expect(response.ok()).toBeTruthy(); source = await response.json();
   await page.goto(`/ontology/model/from-data?source=${source.id}`);
+  await reviewTab(page, '对象类型');
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
   await page.getByRole('button', { name: '查看发布方案', exact: true }).click();
   await confirmPublication(page);
