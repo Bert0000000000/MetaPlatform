@@ -238,7 +238,7 @@ jobs:
       - name: Install locked platform and KB runtime and test dependencies
         working-directory: mate-platform-backend
         run: |
-          uv sync --frozen --python 3.12 --package mate-platform --package mate-app-kb
+          uv sync --frozen --python 3.12 --package mate-platform --package mate-app-kb --package mate-tech-db
           uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
           uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
           .venv/bin/python -c "import sys, cryptography, pytest; print('test interpreter:', sys.executable); print('locked runtime cryptography:', cryptography.__version__); print('locked test runner pytest:', pytest.__version__)"

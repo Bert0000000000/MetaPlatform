@@ -94,3 +94,11 @@ Commit：`d9dcbc564bf579645c1aa2aa892065052d9aa60f`。这组结果只归本提�
 - ga-tests 在 backend `.venv` 已安装 cryptography49.0.0，但 selected member runtime 未安装 pytest，子包 `uv run ... pytest` 和 KB 裸 pytest 回落到系统解释器，导致新签名测试收集失败。本轮分别安装冻结 runtime/root dev closure，三套测试显式使用同一 venv Python，保留原套件与治理步骤；完整 Linux 执行须取新 CI。
 
 契约例外仍未获用户明确批准，清单全部 pending/false，原 ga-001 和 breaking-change 保持阻断。#103 未合并，本轮腾讯云未部署。
+
+### 9c4579ab 产品数据库验收与最后依赖修复
+
+Commit：`9c4579ab9d6694d72feb0749a7ef264642ad2efe`。[ga PR CI](https://github.com/Bert0000000000/MetaPlatform/actions/runs/38293874469) product job SUCCESS：Data 31、AppHub 59、schema 53（含全部 17 个真实 PG）、MCP 26、order-review 3，共 172 条全部执行、0 skipped，精确 XML artifact 上传成功。这次真实复跑关闭了 PG 主键快照接口错误；不复用上一提交数字。
+
+同 run 的 native required 与 ontology broad job 也 SUCCESS。ga-tests 已从明确 `.venv/bin/python` 执行，crypto49.0.0 与 pytest 正确安装；infra 2529 passed、3 原有 skipped，platform 361 passed、4 原有 skipped、4 failed。四个失败只发生于旧官方 migration 模块 import `alembic.op`：selected platform/KB closure 尚无 Alembic，原系统手工安装曾掩盖这一前提。本轮在冻结的 selected runtime 加入已经声明 Alembic 的 `mate-tech-db` 包，锁文件及版本不变；完整 export 包含 Alembic1.18.5，四个准确用例本地 4/4，平台完整 369 collected。新提交必须在 Linux 完整复跑；不能将这次 ga-tests 记为成功。
+
+契约精确例外仍全部 pending/false；原两道比较未改，#103/main/Tencent 部署边界继续保持。
