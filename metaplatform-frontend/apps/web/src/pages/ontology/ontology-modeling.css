@@ -1,0 +1,17 @@
+.om-workspace { display: flex; align-items: flex-start; gap: var(--mp-space-5); min-width: 0; width: 100%; }
+.om-domain-panel { flex: 0 0 240px; min-width: 0; }
+.om-concepts-panel { flex: 1; min-width: 0; }
+.om-filters { display: flex; align-items: center; flex-wrap: wrap; gap: var(--mp-space-2); }
+.om-filters > .mp-onto-search-box { flex: 1 1 180px; }
+.om-concept-card { min-width: 0; overflow: hidden; }
+.om-table-scroll { max-width: 100%; overflow-x: auto; }
+.om-table-scroll:focus-visible { outline: 2px solid var(--semi-color-primary); outline-offset: -2px; }
+.om-table-scroll .om-table { min-width: 760px; }
+.om-table-scroll .om-table td:last-child { white-space: nowrap; }
+@media (max-width: 900px) {
+  .om-workspace { flex-direction: column; align-items: stretch; }
+  .om-domain-panel { flex: none; width: 100%; max-height: 240px; overflow: auto; }
+  .om-concepts-panel { flex: none; width: 100%; }
+  .om-filters { align-items: stretch; }
+  .om-filters > .mp-onto-search-box { flex-basis: 100%; }
+}

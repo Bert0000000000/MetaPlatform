@@ -61,8 +61,8 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
     "基于本体论（Ontology）构建的企业 AI AgentOS — 把企业知识、业务流程与数字员工装进同一个可解释的运行时，让智能从对话走向执行。";
   const brandTags = props.brandTags ?? DEFAULT_TAGS;
   const defaultTenantId = props.defaultTenantId ?? "tenant-default";
-  const defaultUsername = props.defaultUsername ?? "admin";
-  const defaultPassword = props.defaultPassword ?? "admin123";
+  const defaultUsername = props.defaultUsername ?? "";
+  const defaultPassword = props.defaultPassword ?? "";
   const redirectTo = props.redirectTo ?? "/dashboard";
 
   const [username, setUsername] = useState(defaultUsername);
@@ -115,7 +115,8 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
       login(user, resp.accessToken, resp.refreshToken);
       navigate(redirectTo);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "登录失败，请重试";
+      const status = (e as { status?: number; response?: { status?: number } } | null)?.status ?? (e as { response?: { status?: number } } | null)?.response?.status;
+      const msg = status === 401 ? '账号或密码不正确，请重新输入' : e instanceof Error ? e.message : "登录失败，请重试";
       setError(msg);
     } finally {
       setLoading(false);
@@ -475,7 +476,7 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
               marginTop: 20,
             }}
           >
-            默认账号：admin / admin123（租户：{defaultTenantId}）
+            请使用管理员提供的账号登录
           </p>
         </div>
       </div>

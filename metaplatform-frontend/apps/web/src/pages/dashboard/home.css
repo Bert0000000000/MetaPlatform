@@ -4,6 +4,18 @@
 */
 .mp-home-grid { padding-bottom: var(--mp-space-4); }
 
+.mp-home-onboarding { flex: none; min-width: 0; padding: var(--mp-space-4); margin-bottom: var(--mp-space-4); border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-medium); background: var(--semi-color-bg-1); }
+.mp-home-onboarding h2 { font-size: 16px; margin: 0 0 var(--mp-space-3); }
+.mp-home-onboarding p { font-size: 13px; line-height: 1.6; color: var(--semi-color-text-2); }
+.mp-home-onboarding-actions { display: flex; flex-wrap: wrap; gap: var(--mp-space-2); }
+.mp-home-onboarding-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--mp-space-3); }
+.mp-home-onboarding-fields label { display: flex; flex-direction: column; gap: var(--mp-space-2); min-width: 0; font-size: 13px; }
+.mp-home-onboarding-fields select { width: 100%; min-width: 0; max-width: 100%; min-height: 32px; padding: var(--mp-space-1) var(--mp-space-2); border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-small); background: var(--semi-color-bg-1); color: var(--semi-color-text-0); }
+.mp-home-onboarding-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--mp-space-2); list-style: none; padding: 0; margin: var(--mp-space-4) 0; }
+.mp-home-onboarding-steps li { display: flex; flex-direction: column; align-items: flex-start; gap: var(--mp-space-2); padding: var(--mp-space-3); min-width: 0; border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-small); font-size: 12px; }
+@media (max-width: 1024px) { .mp-home-onboarding-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mp-home-onboarding-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .mp-home-onboarding-fields, .mp-home-onboarding-steps { grid-template-columns: minmax(0, 1fr); } }
+
 /* ---------- 概览 bento ---------- */
 .mp-home-kpis {
   display: grid;

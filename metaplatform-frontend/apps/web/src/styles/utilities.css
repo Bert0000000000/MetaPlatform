@@ -67,6 +67,9 @@
   overflow: hidden;
 }
 
+/* Preserve HTML hidden semantics even when a component declares flex/grid. */
+[hidden] { display: none !important; }
+
 /* 页面主滚动容器（旧页面里反复出现的 flex column + 可滚动 + 底部留白） */
 .mp-scroll-y {
   display: flex;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Tag } from '@douyinfe/semi-ui';
+import { Button } from '@douyinfe/semi-ui';
+import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -319,7 +320,7 @@ export default function OverviewPage() {
                       <li key={a.audit_id} className="mp-onto-ov-list-row">
                         <span className="mp-onto-ov-list-main">{ridTail(a.action_rid)}</span>
                         <span className="mp-onto-ov-list-sub">{ridTail(a.target_iid)}</span>
-                        <span className="mp-onto-ov-list-time">{a.created_at}</span>
+                        <time className="mp-onto-ov-list-time" dateTime={a.created_at} title={a.created_at}>{dayjs(a.created_at).format('MM-DD HH:mm')}</time>
                       </li>
                     ))}
                   </ul>
@@ -332,27 +333,27 @@ export default function OverviewPage() {
                 </div>
                 <div className="mp-onto-ov-jumps">
                   <JumpCard
-                    title="语义模型"
+                    title="业务模型"
                     desc="对象类型、关系、接口、公理与模型图谱"
                     onClick={() => navigate('/ontology/model/object-types')}
                   />
                   <JumpCard
-                    title="对象与查询"
+                    title="对象探索"
                     desc="查实例、看关系、对对象执行动作"
                     onClick={() => navigate('/ontology/explore/objects')}
                   />
                   <JumpCard
-                    title="数据映射"
+                    title="数据接入"
                     desc="对象映射、背挂数据源与本体血缘"
                     onClick={() => navigate('/ontology/data/mappings')}
                   />
                   <JumpCard
-                    title="动作与函数"
+                    title="业务动作"
                     desc="动作类型、函数、Action 编排与执行记录"
                     onClick={() => navigate('/ontology/logic/actions')}
                   />
                   <JumpCard
-                    title="发布与治理"
+                    title="变更发布"
                     desc="草稿、版本发布、模型校验与审计"
                     onClick={() => navigate('/ontology/governance/drafts')}
                   />
@@ -415,7 +416,7 @@ export default function OverviewPage() {
                     size="small"
                     onClick={() => navigate('/ontology/governance/drafts')}
                   >
-                    发布与治理 <ArrowRight size={14} strokeWidth={1.5} />
+                    变更发布 <ArrowRight size={14} strokeWidth={1.5} />
                   </Button>
                 </div>
                 <div className="mp-onto-ov-sync">
@@ -429,13 +430,13 @@ export default function OverviewPage() {
                     {runsCount ?? '—'} 次执行（近 200 条窗口）
                   </span>
                   {lastActivity && (
-                    <span className="mp-onto-ov-sync-none">最近 {lastActivity}</span>
+                    <span className="mp-onto-ov-sync-none" title={lastActivity}>最近 {dayjs(lastActivity).format('MM-DD HH:mm')}</span>
                   )}
                 </div>
                 <div className="mp-onto-ov-tags">
-                  <Tag size="small" type="light">草稿 → /governance/drafts</Tag>
-                  <Tag size="small" type="light">模型校验 → /model/validation</Tag>
-                  <Tag size="small" type="light">执行记录 → /logic/runs</Tag>
+                  <Button size="small" theme="borderless" onClick={() => navigate('/ontology/governance/drafts')}>变更草稿</Button>
+                  <Button size="small" theme="borderless" onClick={() => navigate('/ontology/model/validation')}>模型校验</Button>
+                  <Button size="small" theme="borderless" onClick={() => navigate('/ontology/logic/runs')}>执行记录</Button>
                 </div>
               </section>
             </div>

@@ -21,6 +21,7 @@ import {
   type ObjectTypeCandidate, type DestructiveConfirmDetail, type TypeHierarchyNode,
 } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
+import './ontology-modeling.css';
 import { actionDisplayName } from './logic/actions/displayName';
 import OntologyMergeDrawer from './components/OntologyMergeDrawer';
 import ObjectTypeEditorV2Drawer, { type ObjectTypeEditorPrefill } from './components/ObjectTypeEditorV2Drawer';
@@ -647,9 +648,9 @@ export default function OntologyModelingPage({
 
       {/* AIAssistantWorkspace__content 是横向 flex 容器：子行必须 flex:1 + width:100%
           才能撑满可用宽度（此前缺省导致右侧约 1/3 空白）。 */}
-      <div className="mp-w-full mp-flex mp-flex-1 mp-gap-5">
+      <div className="om-workspace">
         {/* Left: 业务域 → 概念（逐级下钻到末级） */}
-        <div className="mp-shrink-0 mp-w-240" >
+        <div className="om-domain-panel" >
           <Card className="mp-h-fit">
             <h3 className="mp-fw-600 mp-mb-3 mp-text-md">业务域</h3>
             <ul className="mp-m-0 mp-p-1 mp-onto-list-plain">
@@ -714,9 +715,9 @@ export default function OntologyModelingPage({
         </div>
 
         {/* Right: Concept Panel */}
-        <div className="mp-flex-1">
+        <div className="om-concepts-panel">
           {/* Search & Filter bar */}
-          <div className="mp-mb-4 mp-flex-center mp-gap-2" >
+          <div className="om-filters mp-mb-4" >
             <div className="mp-flex-1 mp-relative mp-onto-search-box">
               <Search className="mp-icon-16 mp-text-2 mp-absolute mp-onto-search-icon" />
               <input
@@ -742,7 +743,7 @@ export default function OntologyModelingPage({
           </div>
 
           {/* Concept Table */}
-          <Card className="mp-hidden" bodyStyle={{padding: 0}}>
+          <Card className="om-concept-card" bodyStyle={{padding: 0}}>
             <div className="mp-border mp-py-3 mp-px-5" >
               <h4 className="mp-fw-600 mp-text-md">
                 {DOMAIN_LABELS[selectedDomain] ?? (selectedDomain || '全部')} - 概念
@@ -753,7 +754,7 @@ export default function OntologyModelingPage({
             ) : filteredConcepts.length === 0 ? (
               <div className="mp-text-center mp-p-8 mp-text-body mp-text-2">当前业务域下没有匹配的概念</div>
             ) : (
-              <table className="om-table">
+              <div className="om-table-scroll" role="region" aria-label="对象类型表格" tabIndex={0}><table className="om-table">
                 <thead>
                   <tr className="mp-bg-fill-0">
                     <th>显示名</th>
@@ -820,7 +821,7 @@ export default function OntologyModelingPage({
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </Card>
         </div>

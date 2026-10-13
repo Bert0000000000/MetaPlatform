@@ -217,6 +217,9 @@
 
 /* ---------- 按钮 ---------- */
 .mp-onto-btn {
+  height: 32px;
+  padding: var(--mp-space-1) var(--mp-space-3);
+  font-size: 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

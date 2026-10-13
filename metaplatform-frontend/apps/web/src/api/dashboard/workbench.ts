@@ -69,6 +69,8 @@ export interface QuickLink {
 }
 
 export interface DashboardSummary {
+  /** Legacy page summary is seeded demonstration content until the provider marks live data. */
+  statsSource?: 'demo' | 'live';
   stats: DashboardStat[];
   recentTasks: RecentTask[];
   systemHealth: SystemHealthItem[];
@@ -171,7 +173,22 @@ export interface DeliverableSummary {
 
 /** 一次拉所有数据（推荐：减少 waterfall）。 */
 export async function getDashboardSummary(): Promise<DashboardSummary> {
-  return getData<DashboardSummary>('/page/summary');
+  const raw = await getData<DashboardSummary>('/page/summary');
+  const statusLabels: Record<string, string> = { online: '在线', busy: '忙碌', offline: '离线', running: '运行中', idle: '空闲', failed: '异常' };
+  return {
+    ...raw,
+    statsSource: raw.statsSource === 'live' ? 'live' : 'demo',
+    stats: (raw.stats ?? []).map(stat => {
+      const wire = stat as DashboardStat & { delta?: string; trend?: string };
+      return { ...stat, value: String(stat.value ?? '—'), trend_value: stat.trend_value ?? wire.delta ?? null, trend_up: stat.trend_up ?? wire.trend === 'up' };
+    }),
+    activeAgents: (raw.activeAgents ?? []).map(agent => {
+      const wire = agent as ActiveAgent & { taskCount?: number; status?: string };
+      return { ...agent, tasks: agent.tasks ?? wire.taskCount, status_label: agent.status_label || statusLabels[wire.status ?? ''] || '状态未知' };
+    }),
+    recentTasks: (raw.recentTasks ?? []).map(task => ({ ...task, type_label: task.type_label ?? (task as RecentTask & { type?: string }).type ?? '' })),
+    quickLinks: (raw.quickLinks ?? []).map(link => ({ ...link, label: link.link === '/ontology' ? '本体工作室' : link.link === '/apps' ? '业务应用' : link.label })),
+  };
 }
 
 /** 单独：统计卡片 */
