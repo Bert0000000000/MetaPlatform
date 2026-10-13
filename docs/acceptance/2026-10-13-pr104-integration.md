@@ -25,11 +25,17 @@ The existing local Compose override and generated artifacts are excluded.
   to a task-specific temporary directory. This does not prove a Docker build.
 - Local Docker daemon is unavailable; full stack execution must use CI.
 - Refetch after the user's update: PR #104 remains at `82563d16`, `main` remains
-  at `303d3ca6`; PR #103 separately points to `8312e625` (scope clarification
-  pending, not included in PR #104).
+  at `303d3ca6`; PR #103 separately points to `8312e625`. The user confirmed
+  that PR #103 is outside this task's scope.
 - Current PR PostgreSQL regressions and nonprivileged RLS checks: CI success.
 - Current PR frontend check, GA checks and backend tests: CI success.
-- Browser acceptance after the infrastructure fix: pending an actual CI run.
+- PR run `38333726511` after the infrastructure fix: core 9/9, migration 2/2
+  with zero skips and Builder 21/21 passed. Modeling executed all seven cases:
+  six passed, one failed because the test tries to click `返回发布结果` while
+  synchronization is blocked. That action is only rendered for syncable data;
+  the always-available workflow navigation exposes `本体发布与验收` instead.
+  Update that test to use the real workflow navigation, retaining all publication,
+  sync denial and repaired-source instance assertions. A fresh CI run is pending.
 - Local database/browser acceptance, deployment and business acceptance:
   not executed in this task; not claimed as passing.
 
