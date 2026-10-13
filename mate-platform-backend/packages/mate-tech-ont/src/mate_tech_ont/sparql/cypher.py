@@ -33,7 +33,11 @@ _SYNTAX_TOKENS = re.compile(
     r"|'(?:\\.|[^'\\\r\n])*'"
     r'|<[^<>"{}|^`\\\x00-\x20]*>'
     r"|#[^\r\n]*"
-    r"|(?P<word>[?$@]?[\w:](?:[\w:.\-\u00b7\u0300-\u036f\u203f-\u2040]|\\.|%[0-9a-fA-F]{2})*)",
+    r"|[?$][\w\u00b7\u0300-\u036f\u203f-\u2040]+"
+    r"|(?:[\w\u00b7\u0300-\u036f\u203f-\u2040][\w.\-\u00b7\u0300-\u036f\u203f-\u2040]*)?:"
+    r"(?:[\w:.\-\u00b7\u0300-\u036f\u203f-\u2040]|\\.|%[0-9a-fA-F]{2})*"
+    r"|@[a-zA-Z]+(?:-[a-zA-Z0-9]+)*"
+    r"|(?P<word>\w+)",
     re.DOTALL,
 )
 
@@ -42,7 +46,7 @@ def _reject_unsupported_syntax(sparql: str) -> None:
     for token in _SYNTAX_TOKENS.finditer(sparql):
         word = token.group("word")
         if word is not None:
-            keyword = word.rstrip(".").upper()
+            keyword = word.upper()
             if keyword in {"FILTER", "OPTIONAL"}:
                 raise ValueError(f"Unsupported SPARQL syntax: {keyword}")
 

@@ -15,6 +15,8 @@ _UNSUPPORTED = [
     ("SELECT ?s WHERE { ?s rdf:type ?o . filter (?o = 'x') }", "FILTER"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . FiLtEr(?o = 'x') }", "FILTER"),
     ("SELECT ?s WHERE { ?s rdf:type ?o .FILTER(?o = 'x') }", "FILTER"),
+    ("SELECT ?s WHERE { ?s rdf:type ?o.FILTER(?o = 'x') }", "FILTER"),
+    ("SELECT ?s WHERE { ?s rdf:type ?o.OPTIONAL{ ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . OPTIONAL { ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . optional{ ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . OpTiOnAl { ?s label ?v } }", "OPTIONAL"),
