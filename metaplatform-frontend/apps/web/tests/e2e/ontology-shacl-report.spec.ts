@@ -26,7 +26,9 @@ async function fixture(page: Page) {
 }
 async function choose(page: Page, name: string) {
   await page.getByRole('combobox', { name: '对象类型', exact: true }).click();
-  await page.getByRole('option', { name, exact: true }).click();
+  // Semi includes its selection icon in the option's accessible name.
+  // Scope the exact business label to the real option, excluding the trigger.
+  await page.locator('.semi-select-option').filter({ has: page.getByText(name, { exact: true }) }).click();
 }
 async function downloaded(page: Page) {
   const received = page.waitForEvent('download');

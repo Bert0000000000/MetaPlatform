@@ -8,7 +8,7 @@ export default defineConfig({
   expect: { timeout: 15000 }, forbidOnly: !!process.env.CI,
   reporter: [['list'], ['junit', { outputFile: 'test-results/shacl.xml' }]],
   outputDir: 'test-results/shacl-artifacts',
-  use: { ...devices['Desktop Chrome'], baseURL, trace: 'off', video: 'off', screenshot: 'off' },
+  use: { ...devices['Desktop Chrome'], baseURL, actionTimeout: 15000, navigationTimeout: 30000, trace: 'off', video: 'off', screenshot: 'off' },
   webServer: process.env.CI === 'true' ? {
     command: `pnpm --filter @mate/web exec vite --host 127.0.0.1 --port ${port} --strictPort`,
     url: baseURL, reuseExistingServer: true, timeout: 60000,
