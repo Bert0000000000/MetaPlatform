@@ -1264,6 +1264,45 @@ async def candidate(client, content=None, resolutions=None):
     return r.json()
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("encoded", [False, True])
+async def test_unicode_multipart_upload_persists_name_rows_and_tenant_scope(app, encoded):
+    from .test_modeling_upload import DOTNET, multipart
+    from .test_modeling_upload import workbook as chinese_workbook
+
+    content = chinese_workbook()
+    disposition = DOTNET if encoded else 'form-data; name="file"; filename="企业 世界.xlsx"'
+    body, headers = multipart(disposition, content)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        uploaded = await client.post(
+            "/api/v1/ont/v2/modeling/sources", content=body, headers=headers
+        )
+        assert uploaded.status_code == 201, uploaded.text
+        source = uploaded.json()
+        assert source["name"] == "企业 世界.xlsx"
+        assert source["profile"]["rowCount"] == 1
+        assert [(s["name"], s["rows"]) for s in source["profile"]["sheets"]] == [
+            ("业务资料", 1),
+            ("空表", 0),
+        ]
+        endpoint = "/api/v1/ont/v2/modeling/sources/" + source["id"]
+        retrieved = await client.get(endpoint)
+        assert retrieved.status_code == 200, retrieved.text
+        assert retrieved.json() == source
+        alien = await client.get(endpoint, headers={"x-test-tenant": "alien_" + uuid4().hex[:12]})
+        assert alien.status_code == 404
+        persisted, (rows, stored_headers) = ModelingStore(
+            PgOntologyRepository(DSN), app.state.test_tenant
+        ).get(source["id"], private=True)
+        assert persisted == source
+        assert rows == [
+            {"sheet": "业务资料", "row": 2, "values": {"编号": "P1", "名称": "中文产品"}}
+        ]
+        assert stored_headers == {"业务资料": ["编号", "名称"], "空表": ["备注"]}
+
+
 async def validate_publish(client, source):
     prefix = f"/api/v1/ont/v2/modeling/sources/{source['id']}"
     r = await client.post(
