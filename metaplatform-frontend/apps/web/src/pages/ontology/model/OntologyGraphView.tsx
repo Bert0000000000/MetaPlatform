@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   listObjectTypes,
@@ -90,7 +90,8 @@ export default function OntologyGraphView() {
       : types.some((t) => t.rid === rid)
         ? `所选资源被筛选隐藏 · ${rid}`
         : `未找到请求的模型 · ${rid}`;
-  useEffect(() => {
+  // Reset selection-owned checks before the enabled control can accept input.
+  useLayoutEffect(() => {
     checkGeneration.current++;
     setCheck(null);
     setCheckError('');
