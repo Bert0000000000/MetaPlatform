@@ -17,7 +17,7 @@
 - `pnpm --filter @mate/web test:unit src/api/dashboard/workbench.test.ts src/pages/dashboard src/pages/auth/SharedLoginPage.test.tsx src/pages/ontology/overview/OverviewPage.test.tsx src/pages/ontology/model/from-data src/pages/ontology/model/validation src/pages/ontology/governance/publication-workflow.test.tsx`：23 文件，197 项通过，0 跳过。
 - `pnpm --filter @mate/web typecheck`、`pnpm --filter @mate/web build` 通过。构建保留原有大于 500kB 分块提示，未调整阈值。
 - `pnpm exec playwright test --config playwright.ui-repair.config.ts`：9 项通过、0 跳过、0 失败。隔离端口 9371，固定 GET 响应，禁止业务写入；覆盖四档表格、手机引导、手机/桌面草稿控件、汇总错误及登录初始态。报告与截图保存到 `tests/e2e/.artifacts/ui-repair`，CI 上传同名证据。
-- 新回归先复现字段映射、历史批次标签、401 中文提示、手机表格与引导尺寸、错误汇总仍显示空卡。评审补充复现演示队列被称作账号审批、同一任务重复提交；修复后通过，并覆盖乱序读取。
+- 新回归先复现字段映射、历史批次标签、401 中文提示、手机表格与引导尺寸、错误汇总仍显示空卡。评审补充复现演示队列被称作账号审批、同一任务重复提交；修复后通过，并覆盖乱序读取。CI 截图复核发现搜索图标压住占位文字，补充四档内边距断言后复现并修复。
 - 独立代码复核已修正两项发现，最终无剩余 P1/P2；`git diff --check` 与 operations audit 完成。operations audit 的历史日期生成物未纳入提交。
 
 ## 数据与验收边界

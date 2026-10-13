@@ -23,6 +23,10 @@ for (const width of [390, 768, 1024, 1440]) {
     const search = page.getByPlaceholder('搜索概念名称 / rid...');
     const bounds = await search.boundingBox();
     expect(bounds?.width).toBeGreaterThan(100);
+    expect(await search.evaluate(e => {
+      const icon = e.parentElement!.querySelector('svg')!;
+      return e.getBoundingClientRect().left + parseFloat(getComputedStyle(e).paddingInlineStart) > icon.getBoundingClientRect().right;
+    })).toBe(true);
     const table = page.locator('table.om-table');
     const usable = await table.evaluate(e => {
       let parent = e.parentElement;

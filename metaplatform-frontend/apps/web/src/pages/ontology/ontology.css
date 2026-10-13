@@ -129,7 +129,7 @@
 .mp-onto-input--lg { height: 32px; font-size: 13px; }
 .mp-onto-input--md { height: 30px; font-size: 12px; }
 .mp-onto-input--sm { height: 28px; font-size: 12px; }
-.mp-onto-input--search { height: 34px; font-size: 13px; padding-inline: var(--mp-space-3) var(--mp-space-7); }
+.mp-onto-input--search { height: 34px; font-size: 13px; padding-inline: calc(var(--mp-space-3) + 16px + var(--mp-space-2)) var(--mp-space-3); }
 /* 多选列表：按内容自适应，落在 64/132 之间 */
 .mp-onto-input--multi { height: auto; min-height: 64px; max-height: 132px; }
 .mp-onto-select--kind { flex: 0 0 260px; }
