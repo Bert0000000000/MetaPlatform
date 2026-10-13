@@ -1,63 +1,36 @@
-# G03 PRD：类型 JSON-LD 往返保留属性业务标题
+# G03 PRD v2：属性业务标题往返，不改变技术标识
 
-状态：待实现 / 调研建议。优先级：P1。有效工作预算：60 分钟。发布单元：ont 应用服务。无本轮其他工单依赖。
+2026-10-13 · P1 · ont 应用增量 · 有效工作预算60分钟 · 待实施。
+本版本修订现有 Issue #120，不新建重复工单。与历史 ZIP 有冲突时，以本 v2 和本次 Issue 补充为准。
 
-## 用户、问题与价值
+## 问题与证据
 
-用户：业务本体建模/审核者及接口消费者。差距类别：往返导入保真。
+MetaPlatform 基线 dc8980d3e129e94f0bc55190705ede7cbe304ba0。定位 mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py 的 export_object_type/import_object_type。导出 schema:name 取 property_slug，导入以它回填 title，业务标题因此丢失。原 PRD 只建议把 schema:name 改为 p.title，但同一 props 列表还被 Turtle 分支复用，属性主语直接使用 pr['schema:name']。仅改该字段会把可编辑标题变成技术标识，含空格或符号时还可能破坏语法。
 
-当前证据：最新主分支已用 property_slug 修复含领域 RID 的取名，但 schema:name 仍是技术 slug，导入以其回填 title，因此原 p.title 业务标题仍会丢失。不能重复已修的 RID 解析。
+对标 TrustGraph exporter 将 propId 与 label 分离；参考的是身份与展示分离原则，不代表其所有格式全语义保真。固定对标代码见 ../../AUDIT.md。
 
-基线固定源码：[mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py](https://github.com/Bert0000000000/MetaPlatform/blob/dc8980d3e129e94f0bc55190705ede7cbe304ba0/mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#L2101)。行号用于定位，实际实施前核对最新 main，不能将调研时状态当未来现状。
+## 用户与目标
 
-对标依据：TrustGraph / Protégé / TIS，详见 [项目报告](../../REPORT.md) 的功能表及 `projects/` 固定 SHA 源链接；这是功能/交互参考，不代表复制许可已覆盖所有依赖。业务价值是让本项局部行为可理解、可核对、可正确使用。
+业务建模者导出、回灌合成模型后，属性中文标题一致；修改标题不产生另一个 RDF 属性。JSON-LD 的 schema:name 优先采用有效 p.title，空标题按已有规范回退 property_slug。Turtle 属性主语仍从原 property RID 通过现有 property_slug 取得，不能从业务标题构造。可在 Turtle 分支从 @id 重新取规范 slug；不要新增公共临时字段或手写点号 RID 解析。
 
-## 本轮范围与边界
+## 范围边界与操作
 
-导出 schema:name 优先采用真实 p.title，无标题才走既有规范 fallback；导入保持对应 title。只闭合标题往返。
+只闭合标题往返及本次改动不得破坏的 Turtle 身份不变量。保留 envelope、@id、primary_key、type_id、nullable 与权限行为；不改完整 IRI 映射、父类/关系/format/unit/metadata 往返，不依赖 G01/G02，不重复 #113 的实例列归一。
 
-边界：属性 format/unit/metadata、父类和关系的完整往返均不在此工单；不与 #113 的物化样本列归一重复。
+独立合成类型：简单类型名称、规范属性 RID，title='客户 名称（含备注）'。操作为创建→导出 JSON-LD→回灌→同租户重新 GET 读回。再改变同 RID 属性的业务标题并导出 Turtle，两次属性主语必须相同。测试 fixture 选择当前已能解析的普通类名，不能等 G01 完成才能验收。此为后端修复，不新增 UI；成功文案不得宣称完整本体无损恢复。
 
-## 用户操作、结果与文案
+## 验收和独立测试
 
-创建有中文标题的独立类型 → 导出 → 同 RID 回灌 → 刷新读取，业务标题一致。
+- [ ] 含领域/不含领域 RID、中文/空格/标点标题和空标题 fallback 均有用例。
+- [ ] 同 RID 两种标题：JSON-LD schema:name 改变，@id 与 Turtle 属性主语集合不变。
+- [ ] 用现有 RDF 解析器重新解析普通 fixture 的 Turtle，验证 RDF term，不只比较包含字符串。
+- [ ] 真实独立非特权 PG16 完成创建→导出→回灌→GET 读回标题；跨租户仍拒绝。
+- [ ] primary_key/type_id/nullable 不漂移，旧文件仍可读取，不额外承诺原未保真字段。
 
-加载期间明确“处理中”；没有有效结果时显示“尚未完成”，故障显示可定位错误与可行重试。成功文案只表达本轮实际完成行为，不写“全平台通过”或“完整 OWL2 支持”。具体文案随组件语境采用原有中文风格。
+先写失败测试，再做最小实现；先核对 ont.yaml、消费者与必要契约描述。实际命令/路径/数量/失败/skip 单独记录，mock 不能替代数据库验收。
 
-## 数据、API 与权限
+## 独立部署、回滚和完成定义
 
-以 [mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py](https://github.com/Bert0000000000/MetaPlatform/blob/dc8980d3e129e94f0bc55190705ede7cbe304ba0/mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#L2101) 及现有客户端/ont.yaml 为准；不建第二套定义库。Frontend 项使用已有响应和可信当前身份，不从 URL 推断租户权限。Backend 项先核对正式契约登记与错误/字段兼容性，再改变实现。所有实际请求保留 tenant ctx 和平台权限；任何 UI 预检都不能替代后端校验。
+一个 ont 实施 PR，零 schema 迁移，不需 web 或其他本批工单先升级。预热隔离候选环境发布本项制品，核对 revision、API 往返及 Turtle 身份；回滚上一应用制品。只操作合成模型，不对生产模型进行有损 round-trip，不重置数据库或卷。
 
-## 验收标准
-
-- [ ] 含领域与不含领域的属性 RID，标题均来自模型 title。
-- [ ] 中文及空标题 fallback 行为有测试；primary_key/type_id/nullable 不漂移。
-- [ ] 真实 PG 上回灌后重新 GET 读回标题，跨租户仍拒绝。
-
-## 独立测试
-
-在现有 v2 export/import fixture 中用同一测试类型做写入→导出→回灌→读回；不要以只比较 JSON 字符串代替持久化证据。
-
-测试需记录当前 SHA、具体命令、实际执行数量、失败/skip 与输出。组件故障注入与真实接口验证分开登记。共用命令与资源要求见 [DELIVERY-STANDARD](../../DELIVERY-STANDARD.md)。
-
-## 独立部署和回滚
-
-部署：ont 应用镜像，不迁移 schema。 基于最新 main 的单个改动即可在本项独立预热环境部署，无需先做其他 TOP5 工单。云端发布复用受信 main 的现有流水线，不跳过 required CI。核对实际 revision 和本项用户/API 行为。
-
-回滚：上一 ont 应用镜像；只操作本轮合成模型，不回灌任何存量生产模型。
-
-## 60 分钟实施预算
-
-| 操作 | 分钟 |
-|---|---:|
-| 读基线、核对复现 | 5 |
-| 实现最小完整行为 | 20 |
-| 目标回归与所需真实接口检查 | 15 |
-| 独立环境发布及回滚核对 | 15 |
-| 保存 evidence、说明边界 | 5 |
-
-前置环境：依赖、独立测试资源、身份及预热发布目标已就绪。CI 排队/首次安装不是该功能粒度的保证；没有所需前提时记录阻塞，不能用省略测试补足时钟。实做超预算必须再拆范围；不能增加大能力后仍标 1h。
-
-## 完成定义
-
-差距在最新代码仍成立 → 改动与目标行为对应 → 正反例通过 → 独立应用发布/回滚有证据 → reviewer 可核对。写入项必须持久化读回；不涉及写入的项验证只读与零副作用。未完成任何一项即不能记 Done；本 PRD 本身不是实现/部署通过证据。
+预算5分钟复现、20分钟实现、15分钟测试、15分钟候选发布/回滚、5分钟证据。环境/CI等待不承诺60分钟墙钟，云端仍需受信 main、审核与 required CI。没有发布证据不能记 Done。详见 ../../AUDIT-DELIVERY.md；执行提示见 PROMPT.md。
