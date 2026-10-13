@@ -25,7 +25,7 @@ async function fixture(page: Page) {
 
 test('root introduces the website and leads anonymous visitors to platform login', async ({page}) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('让企业的数据、AI 与业务行动协同起来');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('让 AI 深入业务， 让企业协同进化。');
   await page.getByRole('link', {name:'进入平台',exact:true}).first().click();
   await expect(page).toHaveURL(/\/login$/, {timeout:30000});
   await expect(page.getByRole('button',{name:'登录',exact:true})).toBeVisible();
@@ -35,7 +35,7 @@ test('root introduction works without JavaScript', async ({browser,baseURL}) => 
   const context = await browser.newContext({javaScriptEnabled:false,baseURL});
   const page = await context.newPage();
   await page.goto('/');
-  await expect(page.getByRole('heading',{level:1})).toHaveText('让企业的数据、AI 与业务行动协同起来');
+  await expect(page.getByRole('heading',{level:1})).toHaveText('让 AI 深入业务， 让企业协同进化。');
   await context.close();
 });
 
