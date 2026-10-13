@@ -789,6 +789,7 @@ def materialize_object_type(repo: Any, class_rid: str, *, limit: int = 10000) ->
     schema = {
         p.rid.rid: {
             "slug": property_slug(p.rid.rid),
+            "title": p.title,
             "type_id": p.type_id,
             "format": p.format.value,
         }

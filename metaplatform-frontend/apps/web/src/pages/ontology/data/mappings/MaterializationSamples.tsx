@@ -12,12 +12,34 @@ function cell(value: unknown): string {
       ? JSON.stringify(value)
       : String(value);
 }
-function descriptor(value: unknown): { label?: string; type?: string; rid?: string } {
+function descriptor(value: unknown): { label?: string; type?: string; rid?: string; slug?: string } {
   if (typeof value === 'string') return { type: value };
   if (!value || typeof value !== 'object') return {};
   const field = value as Record<string, unknown>;
   const actual = (key: string) => typeof field[key] === 'string' ? field[key] as string : undefined;
-  return { label: actual('title') || actual('slug'), type: actual('type') || actual('format') || actual('type_id'), rid: actual('rid') };
+  return { label: actual('title') || actual('slug'), type: actual('type') || actual('format') || actual('type_id'), rid: actual('rid'), slug: actual('slug') };
+}
+function businessSlug(rid: string): string {
+  return rid.replace(/\.v\d+$/, '').split('.').at(-1) || rid;
+}
+function sampleColumns(result: MaterializationResult | undefined, typeRid: string): Array<{ name: string; field: ReturnType<typeof descriptor>; keys: string[] }> {
+  const typeSlug = businessSlug(typeRid);
+  const model = Object.entries(result?.schema || {}).map(([name, metadata]) => {
+    const field = descriptor(metadata);
+    const slug = field.slug || businessSlug(field.rid || name);
+    const legacy = slug.startsWith(`${typeSlug}-`) ? slug.slice(typeSlug.length + 1) : '';
+    return { name, field, keys: [...new Set([name, field.rid, slug, legacy].filter((key): key is string => !!key))] };
+  });
+  const owners = new Map<string, number>();
+  for (const column of model) for (const key of column.keys) owners.set(key, (owners.get(key) || 0) + 1);
+  const columns = model.map(column => ({ ...column, keys: column.keys.filter(key => key === column.name || owners.get(key) === 1) }));
+  const known = new Set(columns.flatMap(column => column.keys));
+  const extras = [...new Set(result?.rows.flatMap(row => Object.keys(row)) || [])].filter(key => !known.has(key));
+  return [...columns, ...extras.map(name => ({ name, field: {}, keys: [name] }))];
+}
+function sampleValue(row: Record<string, unknown>, keys: string[]): unknown {
+  const key = keys.find(candidate => Object.prototype.hasOwnProperty.call(row, candidate));
+  return key === undefined ? undefined : row[key];
 }
 /** Type-scoped GET state survives source-editor composition and selection. */
 export function useMaterializationSamples(typeRid: string) {
@@ -55,12 +77,7 @@ export default function MaterializationSamples({
   state: ReturnType<typeof useMaterializationSamples>;
 }) {
   const { result, loading, error, read } = state;
-  const columns = [
-    ...new Set([
-      ...Object.keys(result?.schema || {}),
-      ...(result?.rows.flatMap((row) => Object.keys(row)) || []),
-    ]),
-  ];
+  const columns = sampleColumns(result, typeRid);
   return (
     <section className="mp-mapping-card mp-mapping-samples">
       <div className="mp-mapping-toolbar">
@@ -91,8 +108,7 @@ export default function MaterializationSamples({
               <table className="mp-mapping-table">
                 <thead>
                   <tr>
-                    {columns.map((name) => {
-                      const field = descriptor(result.schema[name]);
+                    {columns.map(({ name, field }) => {
                       return <th key={name}>
                         {field.label && <span>{field.label}</span>}
                         <code>{name}</code>
@@ -105,8 +121,8 @@ export default function MaterializationSamples({
                 <tbody>
                   {result.rows.map((row, index) => (
                     <tr key={index}>
-                      {columns.map((name) => (
-                        <td key={name}>{cell(row[name])}</td>
+                      {columns.map(({ name, keys }) => (
+                        <td key={name}>{cell(sampleValue(row, keys))}</td>
                       ))}
                     </tr>
                   ))}
@@ -119,3 +135,4 @@ export default function MaterializationSamples({
     </section>
   );
 }
+

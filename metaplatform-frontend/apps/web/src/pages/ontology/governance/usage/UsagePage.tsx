@@ -62,9 +62,9 @@ export default function UsagePage() {
               dataIndex: 'class_rid',
               render: (v: string) => <span className="mp-text-sm mp-mono">{v}</span>,
             },
-            { title: '读（30d）', dataIndex: 'reads', width: 100 },
-            { title: '写（30d）', dataIndex: 'writes', width: 100 },
-            { title: '活跃天数', dataIndex: 'active_days', width: 90 },
+            { title: '读（30d）', dataIndex: 'reads', render: (value: number | null | undefined) => value ?? '不可用', width: 100 },
+            { title: '写（30d）', dataIndex: 'writes', render: (value: number | null | undefined) => value ?? '不可用', width: 100 },
+            { title: '活跃天数', dataIndex: 'active_days', render: (value: number | null | undefined) => value ?? '不可用', width: 90 },
             {
               title: '',
               dataIndex: '__ops',
