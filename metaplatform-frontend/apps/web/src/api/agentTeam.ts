@@ -1,4 +1,5 @@
 import { get, post, put } from './client';
+import { createUuid } from '@/utils/uuid';
 import { getToken } from '@/utils/auth';
 import type { Evidence } from './superai/types';
 
@@ -132,8 +133,7 @@ export interface RunStep {
  * ——网络层重试/超时重发不会多跑一轮。
  */
 export function newIdempotencyKey(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-  return `run-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return createUuid();
 }
 
 export async function startRun(

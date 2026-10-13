@@ -1,4 +1,5 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
+import { createUuid } from '@/utils/uuid';
 
 const client = createApiClient({ baseURL: apiPath('apphub', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
@@ -142,5 +143,5 @@ export async function createOrderReviewApplication(name: string): Promise<AppIte
       if (status !== 409 || !(await listGroups()).includes('business')) throw error;
     }
   }
-  return createApp({ name, code: 'order_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16), group: 'business' });
+  return createApp({ name, code: 'order_' + createUuid().replace(/-/g, '').slice(0, 16), group: 'business' });
 }

@@ -2,6 +2,7 @@
 // apiClient 的 baseURL 是 /api/v1，v2 kernel 前缀 /ont/v2，故路径为 /ont/v2/...。
 
 import { apiClient } from '@/api/client';
+import { createUuid } from '@/utils/uuid';
 
 /** EXP-02：派生属性规格（fn ∈ count/sum/avg + over_link + 对端属性完整 rid）。 */
 export interface KernelDerivedSpec {
@@ -506,7 +507,7 @@ export async function getProposalPreview(id: string): Promise<ProposalPreview> {
 /** 确认 Proposal（POST /ont/v2/proposals/{id}/confirm）。 */
 export async function confirmProposal(id: string): Promise<ProposalOperationResponse> {
   const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/confirm`), {}, {
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    headers: { 'Idempotency-Key': createUuid() },
   });
   const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
   if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
@@ -518,7 +519,7 @@ export async function confirmProposal(id: string): Promise<ProposalOperationResp
 /** 执行已确认的 Proposal（POST /ont/v2/proposals/{id}/execute）。 */
 export async function executeProposal(id: string): Promise<ProposalOperationResponse> {
   const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/execute`), {}, {
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    headers: { 'Idempotency-Key': createUuid() },
   });
   const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
   if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
@@ -530,7 +531,7 @@ export async function executeProposal(id: string): Promise<ProposalOperationResp
 /** 拒绝 Proposal（POST /ont/v2/proposals/{id}/reject）。 */
 export async function rejectProposal(id: string): Promise<ProposalOperationResponse> {
   const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/reject`), {}, {
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    headers: { 'Idempotency-Key': createUuid() },
   });
   const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
   if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
@@ -1093,10 +1094,7 @@ export async function runMigration(
   plan: MigrationPlan,
   expectedChecksum: string,
 ): Promise<Record<string, unknown>> {
-  const key =
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `mig-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const key = createUuid();
   const resp = await apiClient.post(
     v2(`/object-types/${encodeURIComponent(classRid)}/migration/run`),
     { plan, expected_checksum: expectedChecksum },
