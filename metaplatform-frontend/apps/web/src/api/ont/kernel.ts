@@ -1414,6 +1414,8 @@ export interface ShaclValidateReport {
   conforms: boolean;
   violations: ShaclViolation[];
   stats?: Record<string, unknown>;
+  severity_counts?: Record<string, number>;
+  [key: string]: unknown;
 }
 
 /** SHACL 实例合规校验：POST /v2/shacl/validate（shapes 由 ObjectType 定义合成）。 */

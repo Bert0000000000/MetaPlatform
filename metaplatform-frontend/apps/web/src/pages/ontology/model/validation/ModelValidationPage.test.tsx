@@ -45,8 +45,8 @@ afterEach(() => { cleanup(); apiClient.defaults.adapter = originalAdapter; vi.re
 const mount = () => render(<MemoryRouter><SettingsProvider><ModelValidationPage /></SettingsProvider></MemoryRouter>);
 async function start() {
   const previous = pending.length;
-  await waitFor(() => expect(screen.getByRole('button', { name: '校验', exact: true })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: '校验', exact: true }));
+  await waitFor(() => expect(screen.getByRole('button', { name: '校验' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: '校验' }));
   await waitFor(() => expect(pending).toHaveLength(previous + 1));
 }
 async function select(label: string) {
@@ -104,13 +104,13 @@ describe('SHACL report handoff and severity', () => {
     await select('类型 B'); expect(download()).toBeDisabled();
   });
   it('disables downloads during a retry and after its failure', async () => {
-    mount(); await start(); await complete(0); fireEvent.click(screen.getByRole('button', { name: '校验', exact: true }));
+    mount(); await start(); await complete(0); fireEvent.click(screen.getByRole('button', { name: '校验' }));
     await waitFor(() => expect(pending).toHaveLength(2)); expect(download()).toBeDisabled();
     await fail(1); expect(download()).toBeDisabled(); expect(screen.queryByText('✓ conforms')).not.toBeInTheDocument();
   });
   it('renders three levels and unknown values with separate labels and counts', async () => {
     mount(); await start(); await complete(0, { conforms: false, violations: ['Violation', 'Warning', 'Info', 'FutureLevel'].map(severity => ({ severity, message: severity + ' message' })), severity_counts: { Violation: 1, Warning: 1, Info: 1 }, stats: {} });
-    expect(screen.getByText('违规 1').closest('.semi-tag')).toHaveClass('semi-tag-red'); expect(screen.getByText('警告 1').closest('.semi-tag')).toHaveClass('semi-tag-orange'); expect(screen.getByText('信息 1').closest('.semi-tag')).toHaveClass('semi-tag-blue');
+    expect(screen.getByText('违规 1').closest('.semi-tag')).toHaveClass('semi-tag-red-light'); expect(screen.getByText('警告 1').closest('.semi-tag')).toHaveClass('semi-tag-orange-light'); expect(screen.getByText('信息 1').closest('.semi-tag')).toHaveClass('semi-tag-blue-light');
     expect(screen.getByText('FutureLevel')).toBeVisible(); expect(screen.getByText('其他等级 1')).toBeVisible();
     expect(screen.queryByText('✗ 4 条违规')).not.toBeInTheDocument();
   });
