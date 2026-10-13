@@ -41,6 +41,23 @@ const open = (path = '/ontology/model/from-data?source=source-one') => render(<M
 const openObject = async (name = '物料') => { fireEvent.click(await screen.findByRole('button', { name: `审核${name}` })); };
 const showMappings = () => fireEvent.click(screen.getByRole('tab', { name: /数据映射/ }));
 
+it('history options distinguish imports with the same file name', async () => {
+  vi.mocked(listModelingSources).mockResolvedValue([
+    { ...fixture(), id: 'source-11111111', name: '同名资料.xlsx', revision: 3 },
+    { ...fixture(), id: 'source-22222222', name: '同名资料.xlsx', revision: 4 },
+  ]);
+  open('/ontology/model/from-data');
+  expect(await screen.findByRole('option', { name: '同名资料.xlsx · 修订 3 · 11111111' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: '同名资料.xlsx · 修订 4 · 22222222' })).toBeInTheDocument();
+});
+
+it('history loading never claims that the import list is empty', () => {
+  vi.mocked(listModelingSources).mockReturnValue(new Promise(() => {}));
+  open('/ontology/model/from-data');
+  expect(screen.getByRole('option', { name: '正在读取导入历史…' })).toBeInTheDocument();
+  expect(screen.queryByRole('option', { name: '暂无导入记录' })).toBeNull();
+});
+
 describe('逆向发现本体独立辅助入口', () => {
   it.each([[1, 0], [2, 0], [2, 1]])('发布 %i 个类型后，第 %i 个入口跳转到对应详情', async (count, index) => {
     const source = fixture();

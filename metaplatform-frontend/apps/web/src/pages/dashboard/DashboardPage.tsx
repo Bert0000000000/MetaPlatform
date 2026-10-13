@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Avatar, Button, Card, List, Spin, Tag, Toast } from '@douyinfe/semi-ui';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -33,6 +33,7 @@ import './home.css';
 
 /** 后端返回的是图标名字符串，按名字/label 兜底映射；未命中用通用图标。 */
 const ICONS: Record<string, LucideIcon> = {
+  Robot: Sparkles, AppstoreOutlined: Grid2x2, ApartmentOutlined: Boxes, ApiOutlined: Plug, TeamOutlined: Bot, ClusterOutlined: GitBranch,
   boxes: Boxes,
   bot: Bot,
   'check-circle': CheckCircle2,
@@ -67,11 +68,11 @@ function greeting(): string {
  *  - KPI 行 = summary.stats（后端给的统计口径，不做本地硬编码）
  *  - 今日动态 = summary.recentTasks
  *  - 快捷入口 = summary.quickLinks
- *  - 待办审批 = getPendingTasks + completeTask（平台 HITL 的统一入口）
+ *  - 待办审批 = getPendingTasks + completeTask（当前提供者是未绑定账号的演示队列）
  *  - 数字员工状态 = summary.activeAgents
  *
  * 说明：原型 KPI 卡带 sparkline；后端没有「按 KPI 的时间序列」接口
- * （metrics 的 trend 只给平台级 apiCalls/errors），故这里只呈现真实趋势值，
+ * （metrics 的 trend 只给平台级 apiCalls/errors），故这里只呈现提供者的趋势值，
  * 不画假曲线。
  */
 export default function DashboardPage() {
@@ -86,9 +87,13 @@ export default function DashboardPage() {
   const [activeAgents, setActiveAgents] = useState<ActiveAgent[]>([]);
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
   const [pending, setPending] = useState<ApprovalTask[]>([]);
+  const [pendingTotal, setPendingTotal] = useState<number | null>(null);
+  const [statsSource, setStatsSource] = useState<'demo' | 'live'>('demo');
   const [pendingError, setPendingError] = useState('');
   const [pendingLoading, setPendingLoading] = useState(true);
-  const [acting, setActing] = useState<string | null>(null);
+  const [acting, setActing] = useState<Set<string>>(() => new Set());
+  const inFlight = useRef(new Set<string>());
+  const pendingRequest = useRef(0);
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
@@ -96,6 +101,7 @@ export default function DashboardPage() {
     try {
       const s = await getDashboardSummary();
       setStats(s.stats ?? []);
+      setStatsSource(s.statsSource ?? 'demo');
       setRecentTasks(s.recentTasks ?? []);
       setActiveAgents(s.activeAgents ?? []);
       setQuickLinks(s.quickLinks ?? []);
@@ -105,11 +111,17 @@ export default function DashboardPage() {
     } finally { setLoading(false); }
   }, []);
   const loadPending = useCallback(async () => {
+    const request = ++pendingRequest.current;
     setPendingLoading(true);
     setPendingError('');
-    try { setPending((await getPendingTasks()).items ?? []); }
-    catch (e) { setPendingError(e instanceof Error ? e.message : String(e)); }
-    finally { setPendingLoading(false); }
+    try {
+      const page = await getPendingTasks();
+      if (request !== pendingRequest.current) return;
+      setPending(page.items ?? []);
+      setPendingTotal(page.total ?? page.items?.length ?? 0);
+    }
+    catch (e) { if (request === pendingRequest.current) setPendingError(e instanceof Error ? e.message : String(e)); }
+    finally { if (request === pendingRequest.current) setPendingLoading(false); }
   }, []);
   const load = useCallback(() => Promise.allSettled([loadSummary(), loadPending()]), [loadSummary, loadPending]);
 
@@ -119,18 +131,22 @@ export default function DashboardPage() {
 
   const decide = useCallback(
     async (task: ApprovalTask, action: 'approve' | 'reject') => {
-      setActing(task.taskId);
+      if (inFlight.current.has(task.taskId)) return;
+      inFlight.current.add(task.taskId);
+      setActing(prev => new Set(prev).add(task.taskId));
       try {
         await completeTask(task.taskId, action, action === 'approve' ? '通过' : '驳回');
         Toast.success(action === 'approve' ? `已通过「${task.title}」` : `已驳回「${task.title}」`);
         setPending((prev) => prev.filter((t) => t.taskId !== task.taskId));
+        await loadPending();
       } catch (e) {
         Toast.error(e instanceof Error ? e.message : String(e));
       } finally {
-        setActing(null);
+        inFlight.current.delete(task.taskId);
+        setActing(prev => { const next = new Set(prev); next.delete(task.taskId); return next; });
       }
     },
-    [],
+    [loadPending],
   );
 
   /**
@@ -168,9 +184,9 @@ export default function DashboardPage() {
       <PageHeader
         title={`${greeting()}，${displayName}`}
         desc={
-          pendingError ? `${today} · 审批读取未完成` : pendingLoading ? `${today} · 正在读取审批` : pending.length > 0
-            ? `${today} · ${pending.length} 项审批等待你确认`
-            : `${today} · 暂无待办审批`
+          pendingError ? `${today} · 审批读取未完成` : pendingLoading ? `${today} · 正在读取审批` : (pendingTotal ?? 0) > 0
+            ? `${today} · ${pendingTotal} 项演示审批`
+            : `${today} · 暂无演示待办审批`
         }
         actions={
           <>
@@ -215,17 +231,19 @@ export default function DashboardPage() {
               </Card>
             ) : (
               stats.slice(0, 4).map((s) => {
+                const approval = s.label === '待处理审批' || s.label === '我的待办审批';
                 const Icon = iconFor(s.icon);
                 return (
                   <Card key={`${s.label}-${s.value}`}>
                     <div className="mp-home-kpi">
                       <span className="mp-home-kpi-label">
                         <Icon size={14} strokeWidth={1.5} />
-                        {s.label}
+                        {approval ? '演示待办审批' : s.label}
+                        {!approval && statsSource === 'demo' && <Tag size="small">演示统计</Tag>}
                       </span>
                       <div className="mp-home-kpi-row">
-                        <span className="mp-home-kpi-value">{s.value}</span>
-                        {s.trend_value ? (
+                        <span className="mp-home-kpi-value">{approval ? pendingLoading || pendingError ? '—' : pendingTotal ?? '—' : s.value}</span>
+                        {!approval && s.trend_value ? (
                           <span className={`mp-home-kpi-trend ${s.trend_up ? 'is-up' : 'is-down'}`}>
                             {s.trend_up ? (
                               <ArrowUpRight size={13} strokeWidth={1.6} />
@@ -248,7 +266,7 @@ export default function DashboardPage() {
             <div className="mp-home-col">
               <Card
                 className="mp-home-card-feed"
-                title="今日动态"
+                title={statsSource === 'demo' ? '今日动态（演示）' : '今日动态'}
                 headerExtraContent={
                   <Button theme="borderless" type="primary" size="small" onClick={() => navigate('/agents')}>
                     查看全部
@@ -260,7 +278,7 @@ export default function DashboardPage() {
                   <EmptyState
                     illustration="no-content"
                     title="今天还没有任务动态"
-                    desc="数字员工执行任务后，这里会实时出现。"
+                    desc={statsSource === 'demo' ? '暂无演示任务动态。' : '数字员工执行任务后，这里会实时出现。'}
                   />,
                   <List
                     dataSource={recentTasks}
@@ -276,7 +294,7 @@ export default function DashboardPage() {
                                 {t.type_label ? ` · ${t.type_label}` : ''} · {t.time}
                               </span>
                             </span>
-                            <Tag type="light">{t.status}</Tag>
+                            <Tag type="light" color={t.status === 'failed' ? 'red' : t.status === 'running' ? 'blue' : t.status === 'done' ? 'green' : 'grey'}>{({ done: '已完成', running: '进行中', failed: '失败', pending: '待处理' } as Record<string, string>)[t.status] ?? t.status}</Tag>
                           </span>
                         }
                       />
@@ -323,11 +341,11 @@ export default function DashboardPage() {
             <div className="mp-home-col">
               <Card
                 className="mp-home-card-todos"
-                title="待办审批"
+                title="演示待办审批"
                 headerExtraContent={
                   pending.length > 0 ? (
                     <Tag color="amber" type="light">
-                      {pending.length}
+                      {pendingTotal ?? pending.length}
                     </Tag>
                   ) : undefined
                 }
@@ -337,8 +355,8 @@ export default function DashboardPage() {
                   pending.length === 0,
                   <EmptyState
                     illustration="no-content"
-                    title="没有待办审批"
-                    desc="需要人工确认的 Action 与计划会集中在这里。"
+                    title={(pendingTotal ?? 0) > 0 ? '当前页没有待办记录' : '没有待办审批'}
+                    desc="这里展示演示审批流程。"
                   />,
                   <List
                     dataSource={pending}
@@ -359,7 +377,8 @@ export default function DashboardPage() {
                                 theme="solid"
                                 type="primary"
                                 size="small"
-                                loading={acting === task.taskId}
+                                loading={acting.has(task.taskId)}
+                                disabled={acting.has(task.taskId)}
                                 onClick={() => void decide(task, 'approve')}
                               >
                                 通过
@@ -368,7 +387,7 @@ export default function DashboardPage() {
                                 theme="borderless"
                                 type="tertiary"
                                 size="small"
-                                disabled={acting === task.taskId}
+                                disabled={acting.has(task.taskId)}
                                 onClick={() => void decide(task, 'reject')}
                               >
                                 驳回
@@ -385,7 +404,7 @@ export default function DashboardPage() {
 
               <Card
                 className="mp-home-card-agents"
-                title="数字员工状态"
+                title={statsSource === 'demo' ? '数字员工状态（演示）' : '数字员工状态'}
                 headerExtraContent={
                   <Button theme="borderless" type="primary" size="small" onClick={() => navigate('/agents')}>
                     管理
@@ -394,7 +413,7 @@ export default function DashboardPage() {
               >
                 {summaryBody(
                   activeAgents.length === 0,
-                  <EmptyState illustration="no-content" title="暂无员工状态" desc="员工的实际状态会显示在这里。" />,
+                  <EmptyState illustration="no-content" title="暂无员工状态" desc={statsSource === 'demo' ? '暂无演示员工状态。' : '员工的实际状态会显示在这里。'} />,
                   <List
                     dataSource={activeAgents}
                     split={false}
@@ -412,7 +431,7 @@ export default function DashboardPage() {
                                 {typeof a.tasks === 'number' ? ` · ${a.tasks} 个任务` : ''}
                               </span>
                             </span>
-                            <Tag type="light">{a.status_label}</Tag>
+                            <Tag type="light" color={a.status_label === '忙碌' ? 'amber' : a.status_label === '在线' ? 'green' : 'grey'}>{a.status_label || '状态未知'}</Tag>
                           </span>
                         }
                       />

@@ -43,6 +43,7 @@ export default function FromDataPage() {
   const [resume, setResume] = useState(readProgress);
   const sourceId = params.get('source') || resume?.sourceId || null;
   const [sources, setSources] = useState<ModelingSource[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(true);
   const [source, setSource] = useState<ModelingSource | null>(null);
   const [types, setTypes] = useState<KernelObjectType[]>([]);
   const [catalogStatus, setCatalogStatus] = useState('');
@@ -88,7 +89,7 @@ export default function FromDataPage() {
     void listModelingSources().then(listed => {
       if (!active) return;
       setSources(listed);
-    }).catch(err => { if (active) setError(message(err)); });
+    }).catch(err => { if (active) setError(message(err)); }).finally(() => { if (active) setSourcesLoading(false); });
     return () => { active = false; };
   }, []);
 
@@ -254,7 +255,7 @@ export default function FromDataPage() {
       }}>刷新</Button>}
       {source && <Button theme="solid" icon={<Save size={15} />} disabled={!dirty || locked || candidateLocked} title={!dirty ? '当前没有未保存的修改；修改候选或确认定义后即可保存' : undefined} onClick={() => void save()}>{dirty ? '保存修改' : '已保存'}</Button>}
     </>} />
-    <div className="fd-source-bar"><FileSpreadsheet size={18} /><label><span>历史导入</span><select aria-label="选择历史导入" value={sourceId ?? ''} disabled={locked || sources.length === 0} onChange={e => selectSource(e.target.value)}><option value="">{sources.length === 0 ? '暂无导入记录' : '选择历史导入记录'}</option>{sources.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{source && <Tag>修订 {source.revision}{dirty ? ' · 未保存' : ''}</Tag>}
+    <div className="fd-source-bar"><FileSpreadsheet size={18} /><label><span>历史导入</span><select aria-label="选择历史导入" value={sourceId ?? ''} disabled={locked || sourcesLoading || sources.length === 0} onChange={e => selectSource(e.target.value)}><option value="">{sourcesLoading ? '正在读取导入历史…' : sources.length === 0 ? '暂无导入记录' : '选择历史导入记录'}</option>{sources.map(item => <option key={item.id} value={item.id}>{item.name} · 修订 {item.revision} · {item.id.slice(-8)}</option>)}</select></label>{source && <Tag>修订 {source.revision}{dirty ? ' · 未保存' : ''}</Tag>}
       <input ref={uploadInput} className="fd-file-input" type="file" aria-label="上传 Excel 文件" accept=".xlsx" disabled={locked} onChange={e => {
         const file = e.target.files?.[0];
         if (dirty && file) Modal.confirm({ title: '导入新的数据来源？', content: '当前未保存的修改将丢失。', okText: '继续导入', onOk: () => upload(file) }); else void upload(file);

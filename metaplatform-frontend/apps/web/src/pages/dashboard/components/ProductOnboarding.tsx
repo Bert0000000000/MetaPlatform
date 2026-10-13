@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@mate/shared';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
+import '../home.css';
 import { listApps, getApp } from '@/api/apphub/apps';
 import { getAppRuntime } from '@/api/apphub/runtime';
 import { listBigDataSources, type BigDataSource } from '@/api/ontology-bigdata';
@@ -90,28 +92,28 @@ function OnboardingFlow({ storageKey }: { storageKey: string }) {
   const completed = evidence ? deriveOnboardingEvidence(selection, evidence) : null;
   const mapping = mappings.find(m => m.rid === selection.mappingRid);
   const targets = ['/gov/data/sources', '/ontology/model/object-types', '/ontology/model/link-types', '/apps/mine', '/apps/mine?app=' + encodeURIComponent(selection.appId)];
-  return <section aria-label="开始使用平台" className="mp-p-4">
+  return <section aria-label="开始使用平台" className="mp-home-onboarding">
     <h2>开始使用平台</h2>
-    <div className="mp-flex mp-gap-3">
+    <div className="mp-home-onboarding-actions">
       {([['sample', '从样例开始'], ['data', '接入真实数据'], ['existing', '打开已有应用']] as const).map(([flow, title]) =>
-        <button key={flow} aria-pressed={selection.flow === flow} onClick={() => setSelection({ ...blank, flow })}>{title}</button>)}
+        <Button key={flow} theme={selection.flow === flow ? 'solid' : 'light'} aria-pressed={selection.flow === flow} onClick={() => setSelection({ ...blank, flow })}>{title}</Button>)}
     </div>
     {selection.flow && <>
       <p>{selection.flow === 'sample' ? '先导入所选样例源，再用实际数据完成对象、关系和应用。默认演示目录不会自动完成此流程。' : '选择本次流程的实际产物，返回首页后可从保存位置继续。'}</p>
-      {error && <div role="alert">状态未知：{error}<button onClick={() => void refresh()}>重试检查</button></div>}
+      {error && <div role="alert">状态未知：{error}<Button onClick={() => void refresh()}>重试检查</Button></div>}
       {loading && <p role="status">正在核验实际产物…</p>}
-      {selection.flow !== 'existing' && <>
+      <div className="mp-home-onboarding-fields">{selection.flow !== 'existing' && <>
         <label>本次数据源<select aria-label="本次数据源" value={selection.sourceId} onChange={e => update({ sourceId: e.target.value, mappingRid: '', runId: '' })}><option value="">选择数据源</option>{sources.map(s => <option key={s.sourceId} value={s.sourceId}>{s.name}</option>)}</select></label>
         <label>本次对象模型<select aria-label="本次对象模型" value={selection.modelRid} onChange={e => update({ modelRid: e.target.value, mappingRid: '', runId: '', linkRid: '' })}><option value="">选择模型</option>{models.map(m => <option key={m.rid} value={m.rid}>{m.display_name || m.rid}</option>)}</select></label>
         <label>本次映射<select aria-label="本次映射" value={selection.mappingRid} onChange={e => update({ mappingRid: e.target.value, runId: '' })}><option value="">选择源与对象映射</option>{mappings.filter(m => m.source_id === selection.sourceId).map(m => <option key={m.rid} value={m.rid}>{m.name}</option>)}</select></label>
         <label>本次导入运行<select aria-label="本次导入运行" value={selection.runId} onChange={e => update({ runId: e.target.value })}><option value="">选择导入回执</option>{mapping?.run_history?.map(r => <option key={r.run_id} value={r.run_id}>{r.run_id} · {r.status} · {r.total_synced} 条</option>)}</select></label>
         <label>本次客户关系<select aria-label="本次客户关系" value={selection.linkRid} onChange={e => update({ linkRid: e.target.value })}><option value="">选择关系</option>{links.filter(l => l.src === selection.modelRid || l.dst === selection.modelRid).map(l => <option key={l.rid} value={l.rid}>{l.rid}</option>)}</select></label>
       </>}
-      <label>本次应用<select aria-label="本次应用" value={selection.appId} onChange={e => update({ appId: e.target.value })}><option value="">选择应用</option>{apps.map(a => <option key={a.appId} value={a.appId}>{a.name} · {a.status}</option>)}</select></label>
+      <label>本次应用<select aria-label="本次应用" value={selection.appId} onChange={e => update({ appId: e.target.value })}><option value="">选择应用</option>{apps.map(a => <option key={a.appId} value={a.appId}>{a.name} · {a.status}</option>)}</select></label></div>
       {selection.flow === 'existing' ? <p>{!evidence ? '运行状态未知' : evidence.publishedVersionId ? '已核验发布绑定，可打开应用' : '应用尚无有效发布绑定'}</p>
-        : <ol>{steps.map((step, index) => <li key={step}>{step}：{!completed ? '未知' : completed[index] ? '已验证' : '待完成'}<button aria-current={selection.position === index ? 'step' : undefined} onClick={() => { update({ position: index }); navigate(targets[index]); }}>前往{step}</button></li>)}</ol>}
-      <button disabled={!selection.appId} onClick={() => navigate('/apps/mine?app=' + encodeURIComponent(selection.appId))}>继续所选应用</button>
-      <button onClick={() => void refresh()}>重新核验产物</button>
+        : <ol className="mp-home-onboarding-steps">{steps.map((step, index) => <li key={step}><span>{step}：{!completed ? '未知' : completed[index] ? '已验证' : '待完成'}</span><Button size="small" theme="borderless" aria-current={selection.position === index ? 'step' : undefined} onClick={() => { update({ position: index }); navigate(targets[index]); }}>前往{step}</Button></li>)}</ol>}
+      <div className="mp-home-onboarding-actions"><Button disabled={!selection.appId} onClick={() => navigate('/apps/mine?app=' + encodeURIComponent(selection.appId))}>继续所选应用</Button>
+      <Button loading={loading} onClick={() => void refresh()}>重新核验产物</Button></div>
     </>}
   </section>;
 }

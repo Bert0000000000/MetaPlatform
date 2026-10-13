@@ -1,0 +1,145 @@
+{
+  "/api/v1/dashboard/settings": {
+    "theme": "light",
+    "language": "zh-CN"
+  },
+  "/api/v1/dashboard/page/summary": {
+    "stats": [
+      {
+        "label": "活跃应用",
+        "value": 18,
+        "delta": "+3",
+        "trend": "up"
+      },
+      {
+        "label": "数字员工在线",
+        "value": "8/12"
+      },
+      {
+        "label": "今日任务",
+        "value": 234,
+        "delta": "+18%",
+        "trend": "up"
+      },
+      {
+        "label": "待处理审批",
+        "value": 5
+      }
+    ],
+    "recentTasks": [
+      {
+        "name": "测试任务",
+        "type": "审批",
+        "agent": "测试员工",
+        "status": "failed",
+        "time": "刚刚"
+      }
+    ],
+    "activeAgents": [
+      {
+        "name": "测试员工",
+        "type": "审核型",
+        "taskCount": 8,
+        "status": "busy"
+      }
+    ],
+    "quickLinks": [
+      {
+        "label": "本体引擎",
+        "icon": "ApartmentOutlined",
+        "link": "/ontology"
+      }
+    ],
+    "systemHealth": []
+  },
+  "/api/v1/dashboard/todos": {
+    "items": [
+      {
+        "taskId": "demo-1",
+        "title": "演示审批 1",
+        "status": "pending",
+        "applicant": "演示申请人",
+        "flowName": "演示流程"
+      },
+      {
+        "taskId": "demo-2",
+        "title": "演示审批 2",
+        "status": "pending",
+        "applicant": "演示申请人",
+        "flowName": "演示流程"
+      },
+      {
+        "taskId": "demo-3",
+        "title": "演示审批 3",
+        "status": "pending",
+        "applicant": "演示申请人",
+        "flowName": "演示流程"
+      }
+    ],
+    "total": 3,
+    "page": 1,
+    "pageSize": 20,
+    "totalPages": 1
+  },
+  "/api/v1/apphub/apps": {
+    "items": [],
+    "total": 0
+  },
+  "/api/v1/ont/v2/object-types": [
+    {
+      "rid": "ont.ui-repair.obj.crm.customer.v1",
+      "display_name": "客户模型与长名称响应式检查",
+      "primary_key": ["ont.ui-repair.prop.code.v1"],
+      "properties": [
+        {
+          "rid": "ont.ui-repair.prop.code.v1",
+          "type_id": "STRING",
+          "nullable": false,
+          "primary_key": true,
+          "title": "客户编号",
+          "format": "string"
+        }
+      ],
+      "interfaces": [],
+      "status": "active"
+    }
+  ],
+  "/api/v1/ont/v2/link-types": [],
+  "/api/v1/ont/v2/action-types": [],
+  "/api/v1/ont/v2/functions": [],
+  "/api/v1/ont/v2/interfaces": [],
+  "/api/v1/ont/v2/axioms": [],
+  "/api/v1/ont/v2/value-types": [],
+  "/api/v1/ont/v2/modeling/sources": {
+    "sources": [
+      {
+        "id": "source-first",
+        "name": "同名资料.xlsx",
+        "revision": 1
+      },
+      {
+        "id": "source-second",
+        "name": "同名资料.xlsx",
+        "revision": 2
+      }
+    ]
+  },
+  "/api/v1/iam/sso-providers": {
+    "items": []
+  },
+  "/api/v1/ont/v2/object-types/wip": [
+    {
+      "payload": {
+        "display_name": "客户模型长名称草稿",
+        "primary_key": [],
+        "interfaces": [],
+        "properties": [],
+        "rid": "ont.ui-repair.obj.crm.customer.v1"
+      },
+      "created_at": "2026-10-13",
+      "base_checksum": "test-base",
+      "rid": "ont.ui-repair.obj.crm.customer.v1",
+      "author": "ui-reader"
+    }
+  ]
+}

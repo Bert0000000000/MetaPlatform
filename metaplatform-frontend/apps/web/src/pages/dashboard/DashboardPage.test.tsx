@@ -1,5 +1,6 @@
+import '@douyinfe/semi-ui/react19-adapter';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import DashboardPage from './DashboardPage';
@@ -56,4 +57,55 @@ it('renders successful empty approvals without waiting for a slow summary', asyn
   vi.mocked(approvals.getPendingTasks).mockResolvedValue({ items: [], total: 0 } as never);
   render(<MemoryRouter><DashboardPage /></MemoryRouter>);
   expect(await screen.findByText('没有待办审批')).toBeVisible();
+});
+
+it('labels seeded approvals as demonstration data and uses the matching list total', async () => {
+  vi.mocked(summary.getDashboardSummary).mockResolvedValue({
+    stats: [{ label: '待处理审批', value: '5', icon: '', trend_label: null, trend_value: null, trend_up: false }],
+    recentTasks: [], activeAgents: [], quickLinks: [], systemHealth: [],
+  });
+  vi.mocked(approvals.getPendingTasks).mockResolvedValue({ items: [{ taskId: 'a1', title: '演示任务', applicant: '演示申请人' }], total: 1 } as never);
+  render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+  await waitFor(() => expect(screen.getAllByText('演示待办审批')).toHaveLength(2));
+  expect(screen.queryByText('5')).toBeNull();
+  expect(screen.getByText(/1 项演示审批/)).toBeVisible();
+  expect(screen.queryByText(/等待你确认/)).toBeNull();
+  expect(screen.queryByText('没有待办审批')).toBeNull();
+});
+
+it('keeps the newest approval snapshot when refresh responses finish out of order', async () => {
+  vi.mocked(summary.getDashboardSummary).mockResolvedValue({ stats: [], recentTasks: [], activeAgents: [], quickLinks: [], systemHealth: [] });
+  vi.mocked(approvals.getPendingTasks).mockResolvedValueOnce({ items: [], total: 0 } as never);
+  let older!: (page: never) => void;
+  let newer!: (page: never) => void;
+  vi.mocked(approvals.getPendingTasks).mockImplementationOnce(() => new Promise(resolve => { older = resolve; })).mockImplementationOnce(() => new Promise(resolve => { newer = resolve; }));
+  render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+  await screen.findByText('没有待办审批');
+  fireEvent.click(screen.getByRole('button', { name: '刷新' }));
+  fireEvent.click(screen.getByRole('button', { name: '刷新' }));
+  await act(async () => newer({ items: [{ taskId: 'latest', title: '最新审批', applicant: '申请人' }], total: 1 } as never));
+  await screen.findByText('最新审批');
+  await act(async () => older({ items: [{ taskId: 'old', title: '旧审批', applicant: '申请人' }], total: 2 } as never));
+  expect(screen.queryByText('旧审批')).toBeNull();
+  expect(screen.getByText(/1 项演示审批/)).toBeVisible();
+});
+
+it('blocks repeated submissions per task while other approvals are in flight and reloads the provider total', async () => {
+  vi.mocked(summary.getDashboardSummary).mockResolvedValue({ stats: [], recentTasks: [], activeAgents: [], quickLinks: [], systemHealth: [] });
+  const tasks = [{ taskId: 'a1', title: '审批 A', applicant: '申请人' }, { taskId: 'a2', title: '审批 B', applicant: '申请人' }];
+  vi.mocked(approvals.getPendingTasks).mockResolvedValueOnce({ items: tasks, total: 2 } as never).mockResolvedValue({ items: [], total: 0 } as never);
+  let finishA!: () => void;
+  let finishB!: () => void;
+  vi.mocked(approvals.completeTask).mockImplementation(id => new Promise<void>(resolve => { if (id === 'a1') finishA = resolve; else finishB = resolve; }));
+  render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+  const rowA = (await screen.findByText('审批 A')).closest('.mp-home-todo') as HTMLElement;
+  const rowB = screen.getByText('审批 B').closest('.mp-home-todo') as HTMLElement;
+  fireEvent.click(within(rowA).getByRole('button', { name: '通过' }));
+  fireEvent.click(within(rowB).getByRole('button', { name: '通过' }));
+  fireEvent.click(within(rowA).getByRole('button', { name: '通过' }));
+  expect(approvals.completeTask).toHaveBeenCalledTimes(2);
+  await act(async () => { finishA(); finishB(); });
+  await waitFor(() => expect(approvals.getPendingTasks).toHaveBeenCalledTimes(3));
+  expect(await screen.findByText('没有待办审批')).toBeVisible();
+  expect(screen.getByText(/暂无演示待办审批/)).toBeVisible();
 });

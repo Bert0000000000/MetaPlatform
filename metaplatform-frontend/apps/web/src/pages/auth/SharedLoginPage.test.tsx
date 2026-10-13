@@ -19,6 +19,12 @@ beforeEach(() => {
   vi.mocked(api.listEnabledSsoProviders).mockResolvedValue([]);
 });
 afterEach(cleanup);
+it('shows a useful Chinese error for rejected credentials', async () => {
+  vi.mocked(api.login).mockRejectedValueOnce(Object.assign(new Error('Request failed with status code 401'), { status: 401 }));
+  mount();
+  fireEvent.click(screen.getByTestId('shared-login-submit'));
+  expect(await screen.findByRole('alert')).toHaveTextContent('账号或密码不正确，请重新输入');
+});
 function PersonalPage() {
   const { user } = useAuth();
   return <h1>个人页面 {user?.id}</h1>;
