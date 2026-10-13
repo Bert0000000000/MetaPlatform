@@ -96,6 +96,63 @@ class GateTests(unittest.TestCase):
         self.assertEqual(load("ci_gate").evaluate(fixture, SHA, REPO)[0], "failed")
 
 
+class AppHubAcceptanceTests(unittest.TestCase):
+    def test_empty_known_catalog_and_binding_usage_are_accepted(self):
+        verify = load("verify")
+        calls, checks = [], []
+        rid = "ont.tenant-default.obj.synthetic.v1"
+
+        def call(method, path):
+            calls.append((method, path))
+            return {"items": [], "total": 0}
+
+        verify.verify_apphub_catalog(call, rid, checks)
+        self.assertEqual(
+            calls,
+            [
+                ("GET", "/api/v1/apphub/modules"),
+                ("GET", "/api/v1/apphub/bindings/usage?class_rid=" + rid),
+            ],
+        )
+        self.assertEqual(len(checks), 1)
+
+    def test_failed_catalog_or_binding_usage_blocks_release(self):
+        verify = load("verify")
+        for failed in ("/modules", "/bindings/usage"):
+            checks = []
+
+            def call(method, path, failed=failed):
+                if failed in path:
+                    raise RuntimeError("HTTP 500")
+                return {"items": [], "total": 0}
+
+            with self.subTest(failed=failed), self.assertRaisesRegex(RuntimeError, "HTTP 500"):
+                verify.verify_apphub_catalog(call, "ont.tenant-default.obj.synthetic.v1", checks)
+            self.assertEqual(checks, [])
+
+    def test_unknown_catalog_result_blocks_release(self):
+        verify = load("verify")
+        for result in (
+            None,
+            {},
+            {"items": []},
+            {"items": [], "total": True},
+            {"items": [], "total": -1},
+            {"items": "unknown", "total": 0},
+        ):
+            checks = []
+            with (
+                self.subTest(result=result),
+                self.assertRaisesRegex(RuntimeError, "unknown result"),
+            ):
+                verify.verify_apphub_catalog(
+                    lambda method, path, result=result: result,
+                    "ont.tenant-default.obj.synthetic.v1",
+                    checks,
+                )
+            self.assertEqual(checks, [])
+
+
 class TransferTests(unittest.TestCase):
     def test_slow_source_upload_has_a_separate_budget_from_status_queries(self):
         client = load("ci_client")

@@ -1,4 +1,4 @@
-"""Apply the two additive MP11 upgrades without changing existing rows or grants."""
+"""Prepare the AppHub catalog and additive MP11 upgrades without changing rows or grants."""
 
 from __future__ import annotations
 
@@ -38,13 +38,30 @@ class SchemaUpgradeError(RuntimeError):
 
 
 def target_tables():
-    from mate_app_hub.repositories.sql_models import ApphubAppORM, ApphubPageORM
+    from mate_app_hub.repositories.sql_models import (
+        ApphubAppORM,
+        ApphubDomainORM,
+        ApphubGroupORM,
+        ApphubModuleORM,
+        ApphubPageORM,
+        ApphubShortlinkORM,
+        ApphubTemplateORM,
+    )
 
     from mate_tech_mcp.repositories.sql_models import McpApiKeyORM
 
     return {
         table.name: table
-        for table in (ApphubAppORM.__table__, ApphubPageORM.__table__, McpApiKeyORM.__table__)
+        for table in (
+            ApphubAppORM.__table__,
+            ApphubDomainORM.__table__,
+            ApphubGroupORM.__table__,
+            ApphubModuleORM.__table__,
+            ApphubPageORM.__table__,
+            ApphubShortlinkORM.__table__,
+            ApphubTemplateORM.__table__,
+            McpApiKeyORM.__table__,
+        )
     }
 
 
@@ -88,7 +105,7 @@ def inspect_contract(connection, tables, allow_missing_additions):
         for expected in table.columns:
             actual = columns[name].get(expected.name)
             if actual is None:
-                if allow_missing_additions and expected.name in ADDITIONS[name]:
+                if allow_missing_additions and expected.name in ADDITIONS.get(name, set()):
                     continue
                 raise SchemaUpgradeError(f"Schema conflict {name}.{expected.name}: missing column")
             if not matching_type(actual["type"], expected.type, connection.dialect.name):
@@ -166,7 +183,7 @@ def _upgrade_in_transaction(connection):
 
 
 def upgrade_schema(connection):
-    """Upgrade only the three target tables in the caller's transaction/schema."""
+    """Upgrade only the explicit catalog/key allowlist in the caller's schema."""
     if connection.in_transaction():
         return _upgrade_in_transaction(connection)
     with connection.begin():

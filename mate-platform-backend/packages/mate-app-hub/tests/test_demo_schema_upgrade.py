@@ -12,13 +12,30 @@ from pathlib import Path
 
 import pytest
 import sqlalchemy as sa
-from mate_app_hub.repositories.sql_models import ApphubAppORM, ApphubPageORM
+from mate_app_hub.repositories.sql_models import (
+    ApphubAppORM,
+    ApphubDomainORM,
+    ApphubGroupORM,
+    ApphubModuleORM,
+    ApphubPageORM,
+    ApphubShortlinkORM,
+    ApphubTemplateORM,
+)
 
 from mate_tech_mcp.repositories.sql_models import McpApiKeyORM
 
 TABLES = {
     table.name: table
-    for table in (ApphubAppORM.__table__, ApphubPageORM.__table__, McpApiKeyORM.__table__)
+    for table in (
+        ApphubAppORM.__table__,
+        ApphubDomainORM.__table__,
+        ApphubGroupORM.__table__,
+        ApphubModuleORM.__table__,
+        ApphubPageORM.__table__,
+        ApphubShortlinkORM.__table__,
+        ApphubTemplateORM.__table__,
+        McpApiKeyORM.__table__,
+    )
 }
 ADDITIONS = {
     "apphub_apps": {
@@ -103,10 +120,12 @@ def engine(request, tmp_path):
         owner.dispose()
 
 
-def seed_legacy(connection, conflict=None):
+def seed_legacy(connection, conflict=None, omitted=()):
     metadata = sa.MetaData()
     legacy = {}
     for name, model in TABLES.items():
+        if name in omitted:
+            continue
         columns = [
             sa.Column(
                 c.name,
@@ -118,7 +137,8 @@ def seed_legacy(connection, conflict=None):
                 server_default=c.server_default,
             )
             for c in model.columns
-            if c.name not in ADDITIONS[name]
+            if c.name not in ADDITIONS.get(name, set())
+            and not (conflict and name == conflict[0] and c.name == conflict[1])
         ]
         if conflict and name == conflict[0]:
             columns.append(
@@ -157,6 +177,53 @@ def seed_legacy(connection, conflict=None):
             schema_version=1,
         )
     )
+    catalog_rows = {
+        "apphub_modules": dict(
+            id="kept-module",
+            tenant_id="tenant-kept",
+            name="Old module",
+            code="old-module",
+            app_code="old-app",
+            description="untouched",
+            entry_path="/old",
+        ),
+        "apphub_groups": dict(
+            id="kept-group",
+            tenant_id="tenant-kept",
+            name="Old group",
+            code="old-group",
+            icon="star",
+            sort_order=3,
+        ),
+        "apphub_domains": dict(
+            id="kept-domain",
+            tenant_id="tenant-kept",
+            name="Old domain",
+            code="business",
+            icon="briefcase",
+            sort_order=2,
+        ),
+        "apphub_templates": dict(
+            id="kept-template",
+            tenant_id="tenant-kept",
+            name="Old template",
+            code="old-template",
+            template_type="page",
+            description="untouched",
+            content='{"kept": true}',
+        ),
+        "apphub_shortlinks": dict(
+            id="kept-shortlink",
+            tenant_id="tenant-kept",
+            app_id="kept-app",
+            code="old-link",
+            role="reader",
+            expires_at=None,
+        ),
+    }
+    for name, values in catalog_rows.items():
+        if name in legacy:
+            connection.execute(legacy[name].insert().values(**values))
     scope_value = {}
     if "scopes" in legacy["mcp_api_keys"].columns:
         scope_value["scopes"] = (
@@ -194,18 +261,23 @@ def seed_legacy(connection, conflict=None):
 
 
 def rows(connection):
+    existing_tables = set(sa.inspect(connection).get_table_names())
     return {
         name: [
             dict(row) for row in connection.execute(sa.text(f'SELECT * FROM "{name}"')).mappings()
         ]
         for name in (*TABLES, "alembic_version", "untouched_records")
+        if name in existing_tables
     }
 
 
 def column_shape(connection):
     inspector = sa.inspect(connection)
     shapes = {}
+    existing_tables = set(inspector.get_table_names())
     for name in TABLES:
+        if name not in existing_tables:
+            continue
         primary_key = set(inspector.get_pk_constraint(name)["constrained_columns"])
         shapes[name] = [
             (c["name"], str(c["type"]), c["nullable"], c["default"], c["name"] in primary_key)
@@ -241,7 +313,13 @@ def test_legacy_rows_receive_only_safe_defaults_and_retry_has_zero_mutations(eng
     with engine.begin() as connection:
         legacy = seed_legacy(connection)
         before = rows(connection)
-        assert sum(len(ADDITIONS[name] - set(legacy[name].columns.keys())) for name in TABLES) == 9
+        assert (
+            sum(
+                len(ADDITIONS.get(name, set()) - set(legacy[name].columns.keys()))
+                for name in TABLES
+            )
+            == 9
+        )
         changes = schema_tool().upgrade_schema(connection)
         assert changes["created_tables"] == []
         assert {
@@ -265,7 +343,7 @@ def test_legacy_rows_receive_only_safe_defaults_and_retry_has_zero_mutations(eng
         assert rows(connection) == after
 
 
-def test_fresh_database_creates_only_the_three_target_tables(engine):
+def test_fresh_database_creates_only_the_catalog_and_key_allowlist(engine):
     with engine.begin() as connection:
         changes = schema_tool().upgrade_schema(connection)
         assert set(changes["created_tables"]) == set(TABLES)
@@ -467,8 +545,17 @@ def test_postgres_maintenance_lock_covers_the_whole_upgrade_transaction(engine):
         ("apphub_apps", "status", sa.String(32), True, "DESIGNING"),
         ("mcp_api_keys", "scopes", sa.Integer(), False, "0"),
         ("mcp_api_keys", "scopes", sa.Text(), True, "[]"),
+        ("apphub_modules", "code", sa.String(32), False, None),
+        ("apphub_templates", "content", sa.Text(), True, None),
     ],
-    ids=["revision-type", "status-nullable", "scopes-type", "scopes-nullable"],
+    ids=[
+        "revision-type",
+        "status-nullable",
+        "scopes-type",
+        "scopes-nullable",
+        "module-code-type",
+        "template-content-nullable",
+    ],
 )
 def test_existing_column_conflict_fails_before_any_upgrade_or_stamp(engine, conflict):
     with engine.begin() as connection:
@@ -530,3 +617,190 @@ def test_main_refuses_unapproved_target_before_connect_and_never_logs_the_url(
     output = capsys.readouterr()
     assert "never-log-this" not in output.out + output.err
     assert not dsn or dsn not in output.out + output.err
+
+
+@pytest.fixture
+def upgraded_catalog(engine, monkeypatch):
+    from mate_app_hub.repositories import sql_store
+    from sqlalchemy.orm import sessionmaker
+
+    with engine.begin() as connection:
+        schema_tool().upgrade_schema(connection)
+    # Bind real repository sessions to this fixture's isolated schema only.
+    monkeypatch.setenv("MATE_DB_URL", "isolated-test-catalog")
+    monkeypatch.setattr(sql_store, "_session", sessionmaker(bind=engine))
+    return engine
+
+
+def test_upgraded_catalog_supports_real_facade_and_empty_http_usage(
+    upgraded_catalog, auth_headers_acme
+):
+    from fastapi.testclient import TestClient
+    from mate_app_hub import repositories
+    from mate_app_hub.main import create_app
+
+    assert repositories.list_apps("tenant-acme") == []
+    assert repositories.list_modules("tenant-acme") == []
+    assert repositories.list_pages("tenant-acme") == []
+    assert repositories.list_groups("tenant-acme") == []
+    assert repositories.list_domains("tenant-acme") == []
+    assert repositories.list_templates("tenant-acme") == []
+    with TestClient(create_app()) as client:
+        for path in ("apps", "modules", "pages", "apps/groups", "apps/domains", "templates"):
+            result = client.get("/api/v1/apphub/" + path, headers=auth_headers_acme)
+            assert result.status_code == 200, result.text
+            assert result.json()["items"] == []
+        result = client.get(
+            "/api/v1/apphub/bindings/usage",
+            params={"class_rid": "ont.tenant-acme.obj.Empty.v1"},
+            headers=auth_headers_acme,
+        )
+        assert result.status_code == 200, result.text
+        assert result.json()["items"] == [] and result.json()["total"] == 0
+
+
+def test_upgraded_catalog_reads_saved_draft_and_published_usage_across_tenants(
+    upgraded_catalog, auth_headers_acme, auth_headers_globex
+):
+    from dataclasses import replace
+
+    from fastapi.testclient import TestClient
+    from mate_app_hub import repositories as repo
+    from mate_app_hub.main import create_app
+
+    for tenant in ("tenant-acme", "tenant-globex"):
+        rid = f"ont.{tenant}.obj.Order.v1"
+        binding = {"object_type": rid, "model_checksum": tenant + "-checksum"}
+        page_id = tenant + "-page"
+        version = {
+            "versionId": "v1",
+            "modules": [{"pages": [{"id": page_id, "definition": {"binding": binding}}]}],
+        }
+        repo.put_app(
+            tenant,
+            replace(
+                repo.ApphubApp(tenant + "-app", tenant, "Orders", "orders", "business", ""),
+                status="PUBLISHED",
+                published_version_id="v1",
+                versions=[version],
+            ),
+        )
+        repo.put_module(
+            tenant,
+            repo.ApphubModule(tenant + "-module", tenant, "Orders", "review", "orders", "", ""),
+        )
+        repo.put_page(
+            tenant,
+            replace(
+                repo.ApphubPage(page_id, tenant, "Orders", "review", "review", "grid"),
+                definition={"binding": binding},
+            ),
+        )
+    with upgraded_catalog.begin() as connection:
+        before = rows(connection)
+        with mutations(upgraded_catalog) as written:
+            assert schema_tool().upgrade_schema(connection) == {
+                "created_tables": [],
+                "added_columns": {},
+            }
+        assert written == []
+        assert rows(connection) == before
+    with TestClient(create_app()) as client:
+        for tenant, headers in (
+            ("tenant-acme", auth_headers_acme),
+            ("tenant-globex", auth_headers_globex),
+        ):
+            result = client.get(
+                "/api/v1/apphub/bindings/usage",
+                params={"class_rid": f"ont.{tenant}.obj.Order.v1"},
+                headers=headers,
+            )
+            assert result.status_code == 200, result.text
+            items = result.json()["items"]
+            assert result.json()["total"] == 2
+            assert {item["status"] for item in items} == {"DRAFT", "PUBLISHED"}
+            assert {item["app_id"] for item in items} == {tenant + "-app"}
+            assert {item["page_id"] for item in items} == {tenant + "-page"}
+            assert {item["model_checksum"] for item in items} == {tenant + "-checksum"}
+        assert (
+            client.get(
+                "/api/v1/apphub/bindings/usage",
+                params={"class_rid": "ont.tenant-acme.obj.Order.v1"},
+                headers=auth_headers_globex,
+            ).status_code
+            == 403
+        )
+
+
+@pytest.mark.parametrize(
+    "omitted",
+    [
+        ("apphub_modules",),
+        (
+            "apphub_modules",
+            "apphub_groups",
+            "apphub_domains",
+            "apphub_templates",
+            "apphub_shortlinks",
+        ),
+    ],
+    ids=["missing-module", "old-initializer"],
+)
+def test_partial_catalog_upgrade_preserves_legacy_rows_and_retry_has_zero_mutations(
+    engine, omitted
+):
+    with engine.begin() as connection:
+        seed_legacy(connection, omitted=omitted)
+        before = rows(connection)
+        tool = schema_tool()
+        changes = tool.upgrade_schema(connection)
+        assert set(changes["created_tables"]) == set(omitted)
+        assert {
+            name: set(columns) for name, columns in changes["added_columns"].items()
+        } == ADDITIONS
+        after = rows(connection)
+        for name, old_rows in before.items():
+            assert [{key: row[key] for key in old_rows[0]} for row in after[name]] == old_rows
+        for name in omitted:
+            assert after[name] == []
+        with mutations(engine) as written:
+            assert tool.upgrade_schema(connection) == {"created_tables": [], "added_columns": {}}
+        assert written == []
+        assert rows(connection) == after
+
+
+def test_existing_catalog_missing_column_fails_before_any_upgrade(engine):
+    with engine.begin() as connection:
+        metadata = sa.MetaData()
+        model = TABLES["apphub_modules"]
+        incomplete = sa.Table(
+            "apphub_modules",
+            metadata,
+            *[
+                sa.Column(c.name, c.type, primary_key=c.primary_key, nullable=c.nullable)
+                for c in model.columns
+                if c.name != "entry_path"
+            ],
+        )
+        incomplete.create(connection)
+        connection.execute(
+            incomplete.insert().values(
+                id="kept-module",
+                tenant_id="tenant-kept",
+                name="Module",
+                code="old",
+                app_code="old-app",
+                description="untouched",
+            )
+        )
+        before = rows(connection)
+        columns = column_shape(connection)
+        tool = schema_tool()
+        with mutations(engine) as written:
+            with pytest.raises(
+                tool.SchemaUpgradeError, match=r"apphub_modules\.entry_path: missing column"
+            ):
+                tool.upgrade_schema(connection)
+        assert written == []
+        assert rows(connection) == before
+        assert column_shape(connection) == columns

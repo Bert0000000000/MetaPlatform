@@ -11,6 +11,7 @@ import urllib.error
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlencode
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
@@ -42,6 +43,23 @@ def verify_platform_access(call, claims: dict, checks: list) -> None:
     checks.append("Data sources read through gateway")
     call("GET", "/api/v1/apphub/apps")
     checks.append("AppHub applications read through gateway")
+
+
+def verify_apphub_catalog(call, class_rid: str, checks: list) -> None:
+    """Read catalog dependencies for the saved synthetic class; errors block release."""
+    for path in (
+        "/api/v1/apphub/modules",
+        "/api/v1/apphub/bindings/usage?" + urlencode({"class_rid": class_rid}),
+    ):
+        result = call("GET", path)
+        require(
+            isinstance(result, dict)
+            and isinstance(result.get("items"), list)
+            and type(result.get("total")) is int
+            and result["total"] >= len(result["items"]),
+            "AppHub catalog read returned an unknown result",
+        )
+    checks.append("AppHub modules and object binding usage read through gateway")
 
 
 def main() -> None:
@@ -175,6 +193,7 @@ def main() -> None:
     proposal = call("GET", "/api/v1/ont/v2/proposals/" + state["proposal_id"])
     require(proposal["status"] == "executed", "Proposal terminal state was not persisted")
     checks.append("object type, individual and executed proposal read back")
+    verify_apphub_catalog(call, state["object_rid"], checks)
 
     # Check the real application role and tenant visibility without exposing its password.
     compose = [
