@@ -91,7 +91,7 @@ it.each([true, false])('copies a RID on HTTP and reports the actual copy result 
   const success = vi.spyOn(Toast, 'success');
   const error = vi.spyOn(Toast, 'error');
   renderWorkspace(`/ontology/explore/objects/${row.rid}?class=${customer.rid}`);
-  const copyButton = await screen.findByRole('button', { name: '复制 RID', exact: true });
+  const copyButton = await screen.findByRole('button', { name: '复制 RID' });
   copyButton.focus();
   fireEvent.click(copyButton);
   await waitFor(() => expect(exec).toHaveBeenCalledTimes(1));
