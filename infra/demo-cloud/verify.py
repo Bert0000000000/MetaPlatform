@@ -78,7 +78,12 @@ def verify_sparql_boundary(call, checks: list) -> None:
 
 def verify_excel_filename(call, checks: list, state: dict, *, read_only: bool) -> None:
     """Replay the .NET upload with synthetic data and verify persisted Unicode."""
-    if not read_only or not state.get("issue142_source_id"):
+    if read_only and not state.get("issue142_source_id"):
+        # A legacy receipt predates this probe. Read-only restart/rollback
+        # checks must not create new data or claim the new upload was accepted.
+        # The subsequent fresh release verification creates its own receipt.
+        return
+    if not read_only:
         fixture = ROOT / "metaplatform-frontend/apps/web/tests/fixtures/issue142-unicode.xlsx"
         boundary = "issue142-release-" + secrets.token_hex(8)
         disposition = (

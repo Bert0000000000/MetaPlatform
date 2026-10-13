@@ -188,9 +188,7 @@ async def upload_source(request: Request, file: UploadFile = File(...)):
     try:
         rows, headers = await asyncio.to_thread(read_workbook, content)
         profile = await asyncio.to_thread(profile_rows, rows, headers)
-        return store.create(
-            name, context(request).user_id, profile, rows, headers, content
-        )
+        return store.create(name, context(request).user_id, profile, rows, headers, content)
     except ValueError as exc:
         failure(exc)
 

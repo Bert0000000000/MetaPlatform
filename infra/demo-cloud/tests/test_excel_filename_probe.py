@@ -35,6 +35,18 @@ def source():
 
 
 class ExcelFilenameProbeTests(unittest.TestCase):
+    def test_old_receipt_read_only_does_not_create_a_source_or_claim_upload_acceptance(self):
+        calls, checks, state = [], [], {}
+
+        def call(method, path, body=None, **options):
+            calls.append((method, path))
+            return source()
+
+        verifier().verify_excel_filename(call, checks, state, read_only=True)
+        self.assertEqual(calls, [])
+        self.assertEqual(checks, [])
+        self.assertEqual(state, {})
+
     def test_initial_probe_uploads_dotnet_encoding_and_reads_back_persisted_chinese_data(self):
         calls, checks, state = [], [], {}
 
