@@ -81,7 +81,7 @@
   padding: 0 12px;
 }
 .mw-visual-panel .ms-schema-toolbar, .mw-visual-panel .ms-concept-footer, .mw-visual-panel .ms-concept-selected-relation { flex: none; }
-.mw-visual-panel .ms-concept-canvas { flex: 1; min-height: 300px; }
+.mw-visual-panel .ms-concept-canvas { flex: 1; min-height: 100px; }
 .mw-visual-panel .ms-concept-diagram .ms-schema-svg,
 .mw-visual-panel .ms-concept-diagram.is-overview .ms-schema-svg {
   position: absolute;
