@@ -5,6 +5,15 @@ import type { KernelObjectType } from '@/api/ont/kernel';
 import type { ModelingSource } from '@/api/ont/modeling';
 import PublicationDecisions from './PublicationDecisions';
 afterEach(cleanup);
+it('新建发布行独立提示所有同名对象及 RID，不自动选择复用', () => {
+  const resolve = vi.fn();
+  const same = Array.from({ length: 6 }, (_, i) => ({ ...target, rid: `ont.test.obj.crm.existing-${i}.v1`, display_name: '客户' }));
+  render(<PublicationDecisions source={{ ...source, resolutions: { customer: { mode: 'new', propertyMap: {} } } }} types={same} onResolve={resolve} />);
+  const notice = screen.getByRole('alert');
+  expect(notice).toHaveTextContent('精确同名');
+  same.forEach(t => expect(notice).toHaveTextContent(t.rid));
+  expect(resolve).not.toHaveBeenCalled();
+});
 const rid = 'ont.tenant-default.obj.scm.customer.v1';
 const prop = 'ont.tenant-default.prop.customer-code.v1';
 const target = { rid, display_name: '客户', primary_key: [prop], properties: [{rid: prop, title: '客户编码', type_id: 'string', format: 'string', nullable: false}] } as KernelObjectType;
@@ -25,7 +34,7 @@ it('选择已有对象自动带出完整 RID 和字段对应，保留复用操�
 it('冲突显示在对象行，部分发布后锁定目标', () => {
   const resolve = vi.fn();
   render(<PublicationDecisions source={{...source, publication: {completed: [rid]} as ModelingSource['publication']}} types={[target]} issues={[{item: 'customer', message: '客户标识已被占用'}]} onResolve={resolve} />);
-  expect(screen.getByRole('alert')).toHaveTextContent('客户标识已被占用');
+  expect(screen.getByText('客户标识已被占用')).toHaveAttribute('role', 'alert');
   expect(screen.getByRole('combobox', {name: '客户 发布操作'})).toBeDisabled();
   expect(resolve).not.toHaveBeenCalled();
 });

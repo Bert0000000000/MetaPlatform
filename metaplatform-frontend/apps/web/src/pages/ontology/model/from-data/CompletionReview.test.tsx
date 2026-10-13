@@ -102,3 +102,14 @@ it('兼容尚未返回暂缓属性字段的旧服务数据', async () => {
   expect(await screen.findByRole('combobox', {name: '费用明细 本次处理'})).toBeVisible();
   expect(screen.getByRole('button', {name: '确认方案并重新校验'})).toBeEnabled();
 });
+
+
+it('一次处理方案在最终确认前展示将确认的完整业务语义', async () => {
+  vi.mocked(prepareModelingCompletion).mockResolvedValue({ ...plan, semantics: [{ target: 'class:line', definition: '一张单据中的费用明细', aliases: ['费用行'], scope: '财务', grain: '一行费用', unit: '元', constraints: '单据内编号唯一', basis: '财务制度', confirmed: true }] });
+  render(<CompletionReview source={source} disabled={false} onPrepare={async () => source} onApplied={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '一次处理并确认' }));
+  expect(await screen.findByText('定义：一张单据中的费用明细')).toBeVisible();
+  expect(screen.getByText('依据：财务制度')).toBeVisible();
+  expect(screen.getByText('别名：费用行')).toBeVisible();
+  expect(confirmModelingCompletion).not.toHaveBeenCalled();
+});

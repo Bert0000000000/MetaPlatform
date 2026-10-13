@@ -307,16 +307,16 @@ jobs:
           E2E_IAM_LOGIN_URL: http://127.0.0.1:8100/api/v1/iam/auth/login
         run: pnpm exec playwright test --config playwright.modeling.config.ts
 
-      - name: Require all seven executed modeling browser cases with zero skips
+      - name: Require all eight executed modeling browser cases with zero skips
         if: ${{ !cancelled() }}
         run: |
           python3 - <<'PY'
           import xml.etree.ElementTree as ET
           cases = list(ET.parse('metaplatform-frontend/test-results/modeling.xml').getroot().iter('testcase'))
-          assert len(cases) == 7, f'Expected 7 modeling browser cases, found {len(cases)}'
+          assert len(cases) == 8, f'Expected 8 modeling browser cases, found {len(cases)}'
           assert all('ontology-from-data.spec.ts' in case.get('classname', '') for case in cases)
           assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error'))
-          print('Modeling browser gate: 7 executed, 0 skipped')
+          print('Modeling browser gate: 8 executed, 0 skipped')
           PY
 
       - name: Dump container logs

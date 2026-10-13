@@ -945,3 +945,158 @@ def test_only_most_specific_class_creates_instance_in_hierarchy():
     rows = [{"sheet": "CNC", "row": 2, "values": {"设备编码": "CNC01"}}]
     nodes, edges = compile_graph(value, rows)
     assert len(nodes) == 1 and nodes[0]["objectType"] == "cnc_machine_tool"
+
+
+def inherited_relation_case():
+    value = hierarchy_draft()
+    target_classes = deepcopy(value["classes"])
+    for cls in target_classes:
+        cls["id"] = "target_" + cls["id"]
+        cls["name"] = "目标" + cls["name"]
+        if cls.get("parentClassId"):
+            cls["parentClassId"] = "target_" + cls["parentClassId"]
+    value["classes"].extend(target_classes)
+    value["mappings"] = [
+        {"id": cid, "classId": cid, "sheet": cid, "bindings": {"code": "编码"}, "accepted": True}
+        for cid in ("equipment", "machine_tool", "cnc_machine_tool", "target_cnc_machine_tool")
+    ]
+    rows = [
+        {"sheet": cid, "row": 2, "values": {"编码": code}}
+        for cid, code in (
+            ("equipment", "A"),
+            ("machine_tool", "B"),
+            ("cnc_machine_tool", "C"),
+            ("target_cnc_machine_tool", "C"),
+        )
+    ]
+    value["relationships"] = [
+        {
+            "id": "assigned",
+            "name": "关联",
+            "source": "equipment",
+            "target": "target_equipment",
+            "joins": [{"sourceProperty": "code", "targetProperty": "code"}],
+            "accepted": True,
+        }
+    ]
+    return value, rows
+
+
+def test_inherited_relationship_matches_both_transitive_endpoints_and_reports_missing():
+    value, rows = inherited_relation_case()
+    report = validate_draft(value, rows)
+    assert report["errors"] == 0
+    assert report["relationships"][0]["total"] == 3
+    assert report["relationships"][0]["matched"] == 1
+    assert any("2 个实例无法关联" in i["message"] for i in report["issues"])
+    nodes, edges = compile_graph(value, rows)
+    assert len(nodes) == 4 and len(edges) == 1
+    types = {node["key"]: node["objectType"] for node in nodes}
+    assert types[edges[0]["source"]] == "cnc_machine_tool"
+    assert types[edges[0]["target"]] == "target_cnc_machine_tool"
+
+
+def test_inherited_manual_links_add_remove_and_exclude_use_actual_child_keys():
+    value, rows = inherited_relation_case()
+    key = lambda cid, code: "entity:" + cid + ":" + digest([code])[:24]
+    target = key("target_cnc_machine_tool", "C")
+    value["links"] = [
+        {
+            "id": "remove",
+            "relationId": "assigned",
+            "source": key("cnc_machine_tool", "C"),
+            "target": target,
+            "excluded": True,
+        },
+        {
+            "id": "add",
+            "relationId": "assigned",
+            "source": key("machine_tool", "B"),
+            "target": target,
+        },
+    ]
+    assert validate_draft(value, rows)["errors"] == 0
+    assert compile_graph(value, rows)[1] == [
+        {
+            "source": key("machine_tool", "B"),
+            "target": target,
+            "label": "关联",
+            "relationId": "assigned",
+        }
+    ]
+    value["instanceEdits"] = [{"key": target, "excluded": True}]
+    assert validate_draft(value, rows)["errors"] == 0
+    assert compile_graph(value, rows)[1] == []
+
+
+@pytest.mark.parametrize("source_class", ["equipment", "target_cnc_machine_tool"])
+def test_inherited_manual_links_reject_ancestor_or_unrelated_source(source_class):
+    value, rows = inherited_relation_case()
+    value["relationships"][0]["source"] = "cnc_machine_tool"
+    code = "A" if source_class == "equipment" else "C"
+    value["links"] = [
+        {
+            "id": "bad",
+            "relationId": "assigned",
+            "source": "entity:" + source_class + ":" + digest([code])[:24],
+            "target": "entity:target_cnc_machine_tool:" + digest(["C"])[:24],
+        }
+    ]
+    assert any("端点" in i["message"] for i in validate_draft(value, rows)["issues"])
+
+
+def test_inherited_relationship_respects_publication_scope_and_edge_capacity(monkeypatch):
+    from mate_tech_ont.modeling import core
+
+    value, rows = inherited_relation_case()
+    value["classes"][2]["included"] = False
+    report = validate_draft(value, rows)
+    assert report["errors"] == 0
+    assert report["relationships"][0]["total"] == 2
+    assert compile_graph(value, rows)[1] == []
+    value["classes"][2]["included"] = True
+    monkeypatch.setattr(core, "MAX_EDGES", 0)
+    assert any("关系超过" in i["message"] for i in validate_draft(value, rows)["issues"])
+
+
+def test_inherited_relationship_cardinality_and_partial_quarantine():
+    from mate_tech_ont.modeling.core import _evaluate
+
+    value, rows = inherited_relation_case()
+    value["relationships"][0].update(
+        cardinality="1:1", cardinalityStatus="confirmed", cardinalityReason="一对一分配"
+    )
+    value["links"] = [
+        {
+            "id": "extra",
+            "relationId": "assigned",
+            "source": "entity:machine_tool:" + digest(["B"])[:24],
+            "target": "entity:target_cnc_machine_tool:" + digest(["C"])[:24],
+        }
+    ]
+    assert any("基数" in i["message"] for i in validate_draft(value, rows)["issues"])
+    deferred = []
+    report, nodes, edges = _evaluate(value, rows, True, quarantine=deferred)
+    assert report["errors"] == 0 and len(nodes) == 4 and edges == []
+    assert any(i["kind"] == "relationship" and "基数" in i["reason"] for i in deferred)
+
+
+def test_sibling_descendants_share_parent_endpoint_without_duplicate_nodes():
+    value, rows = inherited_relation_case()
+    sibling = deepcopy(value["classes"][2])
+    sibling.update(id="sibling", name="另一类机床", parentClassId="equipment")
+    value["classes"].append(sibling)
+    value["mappings"].append(
+        {
+            "id": "sibling",
+            "classId": "sibling",
+            "sheet": "sibling",
+            "bindings": {"code": "编码"},
+            "accepted": True,
+        }
+    )
+    rows.append({"sheet": "sibling", "row": 2, "values": {"编码": "C"}})
+    nodes, edges = compile_graph(value, rows)
+    assert len(nodes) == 5 and len(edges) == 2
+    assert len({e["source"] for e in edges}) == 2
+    assert len({e["target"] for e in edges}) == 1

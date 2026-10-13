@@ -19,10 +19,267 @@ from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 DSN = os.environ.get("MODELING_TEST_DSN", "")
 
 
+def inherited_plant_sample():
+    """18 leaf specimens, three sites/batches, and two parent-declared relations."""
+    from copy import deepcopy
+
+    specimen = {
+        "id": "specimen",
+        "name": "植物标本",
+        "identity": ["code"],
+        "labelProperty": "name",
+        "accepted": True,
+        "properties": [
+            {"id": key, "name": key, "dataType": "text"}
+            for key in ("code", "name", "site", "batch")
+        ],
+    }
+    classes = [specimen]
+    for cid, name in (("tree", "乔木"), ("shrub", "灌木"), ("herb", "草本")):
+        classes.append(
+            {
+                **deepcopy(specimen),
+                "id": cid,
+                "name": name,
+                "parentClassId": "specimen",
+                "inheritanceReason": "标本分类中的一种植物标本",
+            }
+        )
+    for cid in ("site", "batch"):
+        classes.append(
+            {
+                "id": cid,
+                "name": cid,
+                "identity": ["code"],
+                "labelProperty": "code",
+                "accepted": True,
+                "properties": [{"id": "code", "name": "code", "dataType": "text"}],
+            }
+        )
+    value = {
+        "schemaVersion": 2,
+        "name": "植物调查",
+        "classes": classes,
+        "mappings": [
+            {
+                "id": c["id"],
+                "classId": c["id"],
+                "sheet": c["id"],
+                "bindings": {p["id"]: p["id"] for p in c["properties"]},
+                "accepted": True,
+            }
+            for c in classes[1:]
+        ],
+        "relationships": [
+            {
+                "id": "at_" + cid,
+                "name": "属于" + cid,
+                "source": "specimen",
+                "target": cid,
+                "joins": [{"sourceProperty": cid, "targetProperty": "code"}],
+                "accepted": True,
+                "cardinality": "N:1",
+                "cardinalityStatus": "confirmed",
+                "cardinalityReason": "每份标本属于一个采样点和批次",
+                "targetSelection": "entity",
+            }
+            for cid in ("site", "batch")
+        ],
+    }
+    book = Workbook()
+    book.remove(book.active)
+    for cid in ("tree", "shrub", "herb"):
+        sheet = book.create_sheet(cid)
+        sheet.append(["code", "name", "site", "batch"])
+        for i in range(6):
+            sheet.append([f"{cid}{i}", f"{cid}名称{i}", f"site{i % 3}", f"batch{i % 3}"])
+    for cid in ("site", "batch"):
+        sheet = book.create_sheet(cid)
+        sheet.append(["code"])
+        for i in range(3):
+            sheet.append([f"{cid}{i}"])
+    out = BytesIO()
+    book.save(out)
+    book.close()
+    return value, out.getvalue()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("target_descendant", [False, True])
+async def test_inherited_plant_links_new_reuse_and_repeated_sync(app, target_descendant):
+    value, content = inherited_plant_sample()
+    if target_descendant:
+        from copy import deepcopy
+
+        site_child = deepcopy(next(c for c in value["classes"] if c["id"] == "site"))
+        site_child.update(
+            id="site_leaf",
+            name="具体采样点",
+            parentClassId="site",
+            inheritanceReason="具体采样点是一种采样点",
+        )
+        value["classes"].append(site_child)
+        next(m for m in value["mappings"] if m["classId"] == "site")["classId"] = "site_leaf"
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        previous = None
+        snapshot = None
+        for reuse in (False, True):
+            uploaded = await client.post(
+                "/api/v1/ont/v2/modeling/sources", files={"file": ("plants.xlsx", content)}
+            )
+            assert uploaded.status_code == 201, uploaded.text
+            source = uploaded.json()
+            prefix = "/api/v1/ont/v2/modeling/sources/" + source["id"]
+            resolutions = (
+                {
+                    t["classId"]: {
+                        "mode": "reuse",
+                        "targetRid": t["rid"],
+                        "propertyMap": t["propertyMap"],
+                    }
+                    for t in previous["plan"]["types"]
+                }
+                if reuse
+                else {}
+            )
+            saved = await client.put(
+                prefix,
+                json={"revision": source["revision"], "draft": value, "resolutions": resolutions},
+            )
+            assert saved.status_code == 200, saved.text
+            source = await validate_publish(client, saved.json())
+            for _ in range(2):
+                checked = await client.post(
+                    prefix + "/sync-check", json={"revision": source["revision"]}
+                )
+                assert checked.status_code == 200, checked.text
+                source = checked.json()
+                assert source["syncCheck"]["canSync"], source["syncCheck"]
+                synced = await client.post(
+                    prefix + "/sync", json={"revision": source["revision"], "background": False}
+                )
+                assert synced.status_code == 200, synced.text
+                source = synced.json()
+                assert source["sync"]["status"] == "succeeded", source["sync"]
+                objects = (await client.get("/api/v1/ont/v2/individuals")).json()
+                links = (await client.get("/api/v1/ont/v2/link-instances")).json()
+                assert len(objects) == 24 and len(links) == 36
+                types = {t["classId"]: t["rid"] for t in source["plan"]["types"]}
+                by_rid = {o["rid"]: o for o in objects}
+                assert not any(o["class_rid"] == types["specimen"] for o in objects)
+                assert {by_rid[l["src"]]["class_rid"] for l in links} == {
+                    types[cid] for cid in ("tree", "shrub", "herb")
+                }
+                assert {by_rid[l["dst"]]["class_rid"] for l in links} == {
+                    types["site_leaf" if target_descendant else "site"],
+                    types["batch"],
+                }
+                current = (
+                    {o["rid"] for o in objects},
+                    {(l["rid"], l["src"], l["dst"]) for l in links},
+                )
+                if snapshot is not None:
+                    assert current == snapshot
+                snapshot = current
+            previous = source
+
+
 @pytest.fixture(autouse=True)
 def require_modeling_test_dsn():
     if not DSN:
         pytest.fail("MODELING_TEST_DSN requires isolated PostgreSQL", pytrace=False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["人员", "组织", "产品"])
+async def test_exact_name_review_uses_real_tenant_catalog_even_when_similarity_misses(
+    app, monkeypatch, name
+):
+    from types import SimpleNamespace
+
+    async def no_similarity(*args):
+        return SimpleNamespace(model_dump=lambda: {"candidates": []})
+
+    monkeypatch.setattr(native, "precheck_object_type", no_similarity)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = await candidate(client)
+        prefix = "/api/v1/ont/v2/modeling/sources/" + source["id"]
+        initial = (
+            await client.post(
+                prefix + "/validate",
+                json={"revision": source["revision"], "preparePublication": True},
+            )
+        ).json()
+        payload = initial["plan"]["types"][0]["payload"]
+        tenant = app.state.test_tenant
+        rids = [f"ont.{tenant}.obj.crm.existing-{i}.v1" for i in range(6)]
+        for rid in rids:
+            response = await client.post(
+                "/api/v1/ont/v2/object-types", json={**payload, "rid": rid, "display_name": name}
+            )
+            assert response.status_code in (200, 201), response.text
+        # The same name in another tenant must not become part of this notice.
+        other_tenant = "other_" + uuid4().hex[:12]
+        other_rid = f"ont.{other_tenant}.obj.crm.other-name.v1"
+        other = {
+            **payload,
+            "rid": other_rid,
+            "display_name": name,
+            "primary_key": [
+                rid.replace(f"ont.{tenant}.", f"ont.{other_tenant}.")
+                for rid in payload["primary_key"]
+            ],
+            "properties": [
+                {**p, "rid": p["rid"].replace(f"ont.{tenant}.", f"ont.{other_tenant}.")}
+                for p in payload["properties"]
+            ],
+        }
+        response = await client.post(
+            "/api/v1/ont/v2/object-types", headers={"x-test-tenant": other_tenant}, json=other
+        )
+        assert response.status_code in (200, 201), response.text
+        source["draft"]["classes"][0]["name"] = name
+        saved = await client.put(
+            prefix,
+            json={"revision": source["revision"], "draft": source["draft"], "resolutions": {}},
+        )
+        assert saved.status_code == 200, saved.text
+        source = saved.json()
+        checked = (
+            await client.post(
+                prefix + "/validate",
+                json={"revision": source["revision"], "preparePublication": True},
+            )
+        ).json()
+        assert not checked["validation"]["canPublish"] and checked["plan"] is None
+        notice = next(
+            i["message"] for i in checked["validation"]["issues"] if "精确同名" in i["message"]
+        )
+        assert all(rid in notice for rid in rids) and other_rid not in notice
+        cid = source["draft"]["classes"][0]["id"]
+        saved = await client.put(
+            prefix,
+            json={
+                "revision": source["revision"],
+                "draft": source["draft"],
+                "resolutions": {cid: {"mode": "new", "propertyMap": {}}},
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        source = saved.json()
+        checked = (
+            await client.post(
+                prefix + "/validate",
+                json={"revision": source["revision"], "preparePublication": True},
+            )
+        ).json()
+        assert checked["validation"]["canPublish"], checked
+        notice = next(w for w in checked["plan"]["warnings"] if "精确同名" in w)
+        assert all(rid in notice for rid in rids) and other_rid not in notice
 
 
 @pytest.mark.asyncio

@@ -16,11 +16,26 @@ it('复用模型工作台关系图，保留继承与候选详情', () => {
   expect(screen.getByRole('button', { name: '查看本体类 设备' })).toBeVisible();
   expect(screen.getByRole('button', { name: '查看本体类 数控机床' })).toBeVisible();
   expect(screen.getByRole('button', {name: '查看关系 使用设备 · N:1'})).toBeVisible();
-  expect(screen.getByRole('button', {name: '查看关系 继承'})).toBeVisible();
+  const inheritance = screen.getByRole('button', {name: '查看关系 继承 · 是一种'});
+  expect(inheritance).toBeVisible();
+  expect(inheritance).toHaveClass('is-inheritance');
+  expect(inheritance.querySelector('polyline:not(.ms-schema-edge-hit)')?.getAttribute('marker-end')).toContain('inheritance');
   fireEvent.click(screen.getByRole('button', { name: '查看本体类 数控机床' }));
   expect(screen.getByLabelText('候选模型详情')).toHaveTextContent('数控机床定义');
   expect(screen.getByLabelText('候选模型详情')).toHaveTextContent('父类：设备');
   expect(screen.getByRole('button', { name: '适应本体图' })).toBeVisible();
+});
+
+it('选择子类时单独展示父类关系的继承适用线，不复制候选关系', () => {
+  const value = { ...draft, classes: [...draft.classes, cls('site', '采样点')], relationships: [{ ...draft.relationships[0], id: 'sampled', name: '采样于', source: 'equipment', target: 'site' }] };
+  render(<CandidateGraph draft={value} />);
+  fireEvent.click(screen.getByRole('button', { name: '查看本体类 数控机床' }));
+  expect(screen.queryByRole('button', { name: '查看关系 采样于 · 继承适用 · N:1' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('checkbox', { name: '显示继承适用关系' }));
+  expect(screen.getByRole('button', { name: '查看关系 采样于 · 继承适用 · N:1' })).toBeVisible();
+  expect(screen.getByLabelText('候选模型详情')).toHaveTextContent('继承适用');
+  expect(screen.getByLabelText('候选模型详情')).toHaveTextContent('设备');
+  expect(value.relationships).toHaveLength(1);
 });
 
 it('空候选给出提示且不读取平台已发布模型', () => {
