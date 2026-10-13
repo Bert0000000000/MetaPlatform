@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import os
 import sys
+from dataclasses import replace
+
+import pytest
 
 _K = os.path.join(os.path.dirname(__file__), "..", "src")
 if _K not in sys.path:
@@ -121,6 +124,30 @@ class TestActionParameterGate:
 
 
 class TestCreateInstanceGate:
+    @pytest.mark.parametrize("version", ["", ".v1"])
+    @pytest.mark.parametrize("use_rids", [False, True])
+    def test_namespaced_properties_agree_across_schema_and_shacl(self, version, use_rids):
+        properties = tuple(
+            replace(p, rid=ClassRef(f"ont.t.prop.crm.{slug}{version}"))
+            for p, slug in zip(_ot().properties, ("p-id", "p-name", "p-amt"), strict=True)
+        )
+        ot = replace(_ot(), properties=properties, primary_key=(properties[0].rid,))
+        props = {
+            p.rid.rid if use_rids else slug: value
+            for p, slug, value in zip(
+                properties, ("p-id", "p-name", "p-amt"), ("o1", "n", 5), strict=True
+            )
+        }
+        report = preflight_create_instance(ot, props)
+        assert report.schema["valid"] is True, report.schema
+        assert report.shacl["conforms"] is True, report.shacl
+        assert report.blocked is False
+        props.pop(properties[1].rid.rid if use_rids else "p-name")
+        missing = preflight_create_instance(ot, props)
+        assert missing.schema["valid"] is False
+        assert missing.shacl["conforms"] is False
+        assert missing.blocked is True
+
     def test_missing_pk_blocked_by_schema_and_shacl(self):
         r = preflight_create_instance(_ot(), {CNAME: "n"})
         assert r.blocked is True
