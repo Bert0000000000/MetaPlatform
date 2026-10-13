@@ -26,24 +26,37 @@ _TRIPLE_RE = re.compile(r"""\\?\\w+\\s+(<[^>]+>|:?\\w+)\\s+(\\?\\w+|<[^>]+>|"[^"
 # This token scan only identifies unsupported syntax; it is not a SPARQL parser.
 # Consume complete RDF terms/comments before inspecting bare words, so names,
 # escaped quotes and IRI fragments cannot be mistaken for FILTER/OPTIONAL.
+_PN_BASE = (
+    r"A-Za-z\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02ff\u0370-\u037d\u037f-\u1fff"
+    r"\u200c-\u200d\u2070-\u218f\u2c00-\u2fef\u3001-\ud7ff\uf900-\ufdcf\ufdf0-\ufffd"
+    r"\U00010000-\U000effff"
+)
+_VARNAME_START = _PN_BASE + "_0-9"
+_VARNAME_TAIL = _VARNAME_START + r"\u00b7\u0300-\u036f\u203f-\u2040"
+_CODEPOINT_ESCAPE = re.compile(r"\\(?:u([0-9a-fA-F]{4})|U([0-9a-fA-F]{8}))")
 _SYNTAX_TOKENS = re.compile(
-    r'"""(?:\\.|(?!""").)*"""'
-    r"|'''(?:\\.|(?!''').)*'''"
+    r'"""(?:\\.|(?!""")[^\\])*"""'
+    r"|'''(?:\\.|(?!''')[^\\])*'''"
     r'|"(?:\\.|[^"\\\r\n])*"'
     r"|'(?:\\.|[^'\\\r\n])*'"
     r'|<[^<>"{}|^`\\\x00-\x20]*>'
     r"|#[^\r\n]*"
-    r"|[?$][\w\u00b7\u0300-\u036f\u203f-\u2040]+"
-    r"|(?:[\w\u00b7\u0300-\u036f\u203f-\u2040][\w.\-\u00b7\u0300-\u036f\u203f-\u2040]*)?:"
-    r"(?:[\w:.\-\u00b7\u0300-\u036f\u203f-\u2040]|\\.|%[0-9a-fA-F]{2})*"
+    rf"|[?$][{_VARNAME_START}][{_VARNAME_TAIL}]*"
+    rf"|(?:[{_PN_BASE}_][{_VARNAME_TAIL}.\-]*)?:"
+    rf"(?:[{_VARNAME_TAIL}:.\-]|\\.|%[0-9a-fA-F]{{2}})*"
     r"|@[a-zA-Z]+(?:-[a-zA-Z0-9]+)*"
-    r"|(?P<word>\w+)",
+    rf"|(?P<word>[{_VARNAME_START}][{_VARNAME_TAIL}\-]*)",
     re.DOTALL,
 )
 
 
 def _reject_unsupported_syntax(sparql: str) -> None:
-    for token in _SYNTAX_TOKENS.finditer(sparql):
+    # SPARQL expands codepoint escapes before lexical classification. Do not
+    # change the text consumed by the legacy triple parser or its result shape.
+    syntax_text = _CODEPOINT_ESCAPE.sub(
+        lambda match: chr(int(match.group(1) or match.group(2), 16)), sparql
+    )
+    for token in _SYNTAX_TOKENS.finditer(syntax_text):
         word = token.group("word")
         if word is not None:
             keyword = word.upper()

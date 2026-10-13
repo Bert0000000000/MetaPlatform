@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -17,6 +22,11 @@ _UNSUPPORTED = [
     ("SELECT ?s WHERE { ?s rdf:type ?o .FILTER(?o = 'x') }", "FILTER"),
     ("SELECT ?s WHERE { ?s rdf:type ?o.FILTER(?o = 'x') }", "FILTER"),
     ("SELECT ?s WHERE { ?s rdf:type ?o.OPTIONAL{ ?s label ?v } }", "OPTIONAL"),
+    ("SELECT ?s WHERE { ?s :p 1.FILTER(?s = ?s) }", "FILTER"),
+    ("SELECT ?s WHERE { ?s :p true.FILTER(?s = ?s) }", "FILTER"),
+    ('SELECT ?s WHERE { ?s label "x"@en.FILTER(?s = ?s) }', "FILTER"),
+    (r"SELECT ?s WHERE { ?s rdf:type ?o . F\u0049LTER(?o = 'x') }", "FILTER"),
+    (r"SELECT ?s WHERE { ?s rdf:type ?o . \U0000004fPTIONAL{ ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . OPTIONAL { ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . optional{ ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . OpTiOnAl { ?s label ?v } }", "OPTIONAL"),
@@ -54,6 +64,13 @@ _KEYWORD_TEXT = [
     "SELECT ?s WHERE { ?s rdf:type ?o . # FILTER OPTIONAL\n }",
     "SELECT ?s WHERE { ?s rdf:type ?o . # FILTER OPTIONAL\r }",
     "SELECT ?s WHERE { ?s FILTERED OPTIONALLY }",
+    "SELECT ?s WHERE { ?s ex:a\u200cFILTER ex:a\u200dOPTIONAL }",
+    "SELECT ?\u200dOPTIONAL WHERE { ?\u200dOPTIONAL rdf:type ?\u200cFILTER }",
+    "SELECT ?🚀FILTER WHERE { ?🚀FILTER rdf:type ?OPTIONAL🚀 }",
+    r'SELECT ?s WHERE { ?s label "F\u0049LTER \u004fPTIONAL" }',
+    r"SELECT ?s WHERE { ?s <urn:F\u0049LTER> <urn:\u004fPTIONAL> }",
+    r"SELECT ?F\u0049LTER WHERE { ?F\u0049LTER rdf:type ?\u004fPTIONAL }",
+    r"SELECT ?s WHERE { ?s ex:F\u0049LTER ex:\u004fPTIONAL }",
 ]
 
 
@@ -150,7 +167,7 @@ def test_delete_translation_preserves_subject_variable() -> None:
     assert sparql_to_cypher(parsed) == "MATCH (s:label) DELETE s"
 
 
-@pytest.mark.parametrize(("query", "keyword"), [_UNSUPPORTED[0], _UNSUPPORTED[4]])
+@pytest.mark.parametrize(("query", "keyword"), _UNSUPPORTED)
 def test_explain_rejects_unsupported_syntax_with_http_error(
     client: TestClient, auth_headers: dict[str, str], query: str, keyword: str
 ) -> None:
@@ -169,3 +186,18 @@ def test_explain_simple_select_remains_available(
     )
     assert response.status_code == 200, response.text
     assert response.json()["variables"] == ["s"]
+
+
+@pytest.mark.parametrize("quote", ['"""', "'''"])
+def test_unterminated_long_literal_has_bounded_validation(quote: str) -> None:
+    query = "SELECT ?s WHERE { ?s label " + quote + "\\" * 44
+    script = (
+        "from mate_tech_ont.sparql.cypher import parse_sparql; parse_sparql(" + repr(query) + ")"
+    )
+    subprocess.run(
+        [sys.executable, "-B", "-c", script],
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src")},
+        capture_output=True,
+        check=True,
+        timeout=5,
+    )
