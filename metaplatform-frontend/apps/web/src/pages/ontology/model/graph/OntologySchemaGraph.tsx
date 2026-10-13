@@ -87,7 +87,11 @@ export default function OntologySchemaGraph({ classes, relationships, selected, 
     setDragging(''); setMoving(false);
     if (svg.current?.hasPointerCapture(pointerId)) svg.current.releasePointerCapture(pointerId);
     if (!current?.id) {
-      if (current && !current.moved && !canceled) onSelect('');
+      if (current && !current.moved && !canceled) {
+        setHovered('');
+        onSelect('');
+        onRelationSelect?.('');
+      }
       return;
     }
     if (canceled) { setManualLayout({ key: storageKey, positions: current.initialPositions }); return; }
@@ -111,13 +115,17 @@ export default function OntologySchemaGraph({ classes, relationships, selected, 
     return { x: size.width / 2 - (size.width / 2 - c.x) * ratio, y: size.height / 2 - (size.height / 2 - c.y) * ratio, scale };
   });
   const resetLayout = () => {
+    setAll(true);
+    setHovered('');
+    onSelect('');
+    onRelationSelect?.('');
     setManualLayout({ key: storageKey, positions: {} });
     setReset(v => v + 1);
     try { localStorage.removeItem(storageKey); } catch { /* Keep reset usable without browser storage. */ }
   };
   if (diagram.error) return <div role="alert" className="ms-empty ms-error">{diagram.error}</div>;
   return <div className={`mp-schema-graph ms-schema-diagram ms-concept-diagram${compact ? ' is-overview' : ''}${expanded ? ' ms-schema-expanded' : ''}`}>
-    <div className="ms-schema-toolbar"><div className="ms-concept-heading"><b>本体关系</b><small>{diagram.nodes.length} / {classes.length} 类 · {diagram.edges.length} 关系</small></div><label className="ms-concept-search"><Search size={14} /><input aria-label="搜索图谱对象" placeholder="搜索对象" value={search} onChange={e => setSearch(e.target.value)} /></label><div className="ms-segmented"><button aria-pressed={all} onClick={() => setAll(true)}>全部类型</button><button aria-pressed={!all} onClick={() => setAll(false)}>局部关联</button></div><div className="ms-schema-actions"><button title="缩小本体图" aria-label="缩小本体图" onClick={() => zoom(.8)}><Minus size={15} /></button><output aria-label="图谱缩放比例" className="ms-concept-zoom">{Math.round(camera.scale * 100)}%</output><button title="放大本体图" aria-label="放大本体图" onClick={() => zoom(1.25)}><Plus size={15} /></button><button title="适应本体图" aria-label="适应本体图" onClick={fit}><Scan size={15} /></button><button title="重新布局本体图" aria-label="重新布局本体图" onClick={resetLayout}><RotateCcw size={15} /></button><button title={expanded ? '退出展开视图' : '展开本体图'} aria-label="展开本体图" aria-pressed={expanded} onClick={() => setExpanded(v => !v)}><Maximize size={15} /></button></div></div>
+    <div className="ms-schema-toolbar"><div className="ms-concept-heading"><b>本体关系</b><small>{diagram.nodes.length} / {classes.length} 类 · {diagram.edges.length} 关系</small></div><label className="ms-concept-search"><Search size={14} /><input aria-label="搜索图谱对象" placeholder="搜索对象" value={search} onChange={e => setSearch(e.target.value)} /></label><div className="ms-segmented"><button aria-pressed={all} onClick={() => setAll(true)}>全部类型</button><button aria-pressed={!all} onClick={() => setAll(false)}>局部关联</button></div><div className="ms-schema-actions"><button title="缩小本体图" aria-label="缩小本体图" onClick={() => zoom(.8)}><Minus size={15} /></button><output aria-label="图谱缩放比例" className="ms-concept-zoom">{Math.round(camera.scale * 100)}%</output><button title="放大本体图" aria-label="放大本体图" onClick={() => zoom(1.25)}><Plus size={15} /></button><button title="适应本体图" aria-label="适应本体图" onClick={fit}><Scan size={15} /></button><button title="重置本体图" aria-label="重置本体图" onClick={resetLayout}><RotateCcw size={15} /></button><button title={expanded ? '退出展开视图' : '展开本体图'} aria-label="展开本体图" aria-pressed={expanded} onClick={() => setExpanded(v => !v)}><Maximize size={15} /></button></div></div>
     <div className="ms-concept-canvas">
       <svg ref={svg} role="img" aria-label="本体类与关系结构图" className={`ms-schema-svg${moving || dragging ? ' is-interacting' : ''}`} onWheel={e => { if (e.ctrlKey && !drag.current) { e.preventDefault(); zoom(e.deltaY > 0 ? .9 : 1.1); } }} onPointerDown={e => { if (e.button !== 0 || !e.isPrimary) return; drag.current = { x: e.clientX, y: e.clientY, camera, positions, initialPositions: positions, moved: false }; setMoving(true); e.currentTarget.setPointerCapture(e.pointerId); }} onPointerMove={e => {
         const current = drag.current;
