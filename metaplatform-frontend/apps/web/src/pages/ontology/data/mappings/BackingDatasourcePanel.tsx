@@ -47,8 +47,18 @@ function MappingSelection({ identity }: { identity: string }) {
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const request = useRef(0);
+  const pendingType = useRef('');
   const requestedRef = useRef(requested);
   requestedRef.current = requested;
+  useEffect(() => {
+    if (pendingType.current === requested) pendingType.current = '';
+  }, [requested]);
+  const isTypeSelectionCurrent = useCallback(
+    (rid: string) =>
+      requestedRef.current === rid &&
+      (!pendingType.current || pendingType.current === rid),
+    [],
+  );
   const paramsRef = useRef(params);
   paramsRef.current = params;
   const setParamsRef = useRef(setParams);
@@ -104,6 +114,8 @@ function MappingSelection({ identity }: { identity: string }) {
         ))
     )
       return;
+    // Record intent before the router commits a concurrent navigation.
+    pendingType.current = rid;
     const next = new URLSearchParams(params);
     next.set('typeRef', rid);
     next.delete('class');
@@ -168,6 +180,7 @@ function MappingSelection({ identity }: { identity: string }) {
           identity={identity}
           type={selected}
           onState={state}
+          isTypeSelectionCurrent={isTypeSelectionCurrent}
         />
       )}
     </div>
@@ -177,10 +190,12 @@ function SourceWorkspace({
   identity,
   type,
   onState,
+  isTypeSelectionCurrent,
 }: {
   identity: string;
   type: KernelObjectType;
   onState: (dirty: boolean, busy: boolean) => void;
+  isTypeSelectionCurrent: (rid: string) => boolean;
 }) {
   const [params, setParams] = useSearchParams();
   const sourceRef = params.get('sourceRef') || '';
@@ -249,11 +264,17 @@ function SourceWorkspace({
     };
   }, [load]);
   useEffect(() => {
-    if (!loaded || loading || error || sourceRef) return;
+    if (
+      !loaded || loading || error || sourceRef ||
+      !isTypeSelectionCurrent(type.rid)
+    ) return;
     const next = new URLSearchParams(params);
     next.set('sourceRef', sourceKey);
     setParams(next, { replace: true });
-  }, [loaded, loading, error, sourceRef, sourceKey, params, setParams]);
+  }, [
+    loaded, loading, error, sourceRef, sourceKey, params, setParams,
+    type.rid, isTypeSelectionCurrent,
+  ]);
   useEffect(() => {
     onState(dirty, busy);
     return () => onState(false, false);

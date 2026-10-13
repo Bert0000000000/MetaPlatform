@@ -202,6 +202,8 @@ services:
       KERNEL_BACKEND: pg
       KERNEL_PG_DSN: postgresql://mate_app:${ONT_APP_PASSWORD}@postgres:5432/metaplatform_ont
       ONT_SOURCE_DSN: postgresql://mate_app:${ONT_APP_PASSWORD}@postgres:5432/metaplatform_ont
+      # Excel staging and the native backing-source reader use the same database.
+      ONT_MODELING_SOURCE_DSN: postgresql://mate_app:${ONT_APP_PASSWORD}@postgres:5432/metaplatform_ont
       ONT_EMBEDDER: ${ONT_EMBEDDER:-llmgw}
       # Seed once through bootstrap.py with an explicit tenant before enabling RLS.
       ONT_SEED_DEMO: "0"
