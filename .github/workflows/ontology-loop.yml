@@ -226,6 +226,36 @@ jobs:
           print('Experience browser regressions: 8 executed, 0 skipped; real ontology suites remain required.')
           PY
 
+      - name: Execute real SHACL report browser cases
+        if: ${{ !cancelled() }}
+        working-directory: metaplatform-frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:9200
+          E2E_GATEWAY_URL: http://127.0.0.1:8100/api/v1
+          E2E_IAM_LOGIN_URL: http://127.0.0.1:8100/api/v1/iam/auth/login
+        run: pnpm exec playwright test --config playwright.shacl.config.ts
+
+      - name: Require all three executed SHACL browser cases with zero skips
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          cases = list(ET.parse('metaplatform-frontend/test-results/shacl.xml').getroot().iter('testcase'))
+          assert len(cases) == 3 and len({case.get('name') for case in cases}) == 3
+          assert all('ontology-shacl-report.spec.ts' in case.get('classname', '') for case in cases)
+          assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error'))
+          print('SHACL browser gate: 3 executed, 0 skipped')
+          PY
+
+      - name: Upload safe SHACL browser results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shacl-safe-results
+          path: metaplatform-frontend/test-results/shacl.xml
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Collect both required migration browser cases
         if: ${{ !cancelled() }}
         working-directory: metaplatform-frontend
