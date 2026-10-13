@@ -3881,6 +3881,12 @@ paths:
       description:
         Optional reverse-modeling workspace. Candidate changes require explicit human publication; positive
         modeling remains independent. Revision and native baseline conflicts fail closed.
+        Uploads accept UTF-8 browser filenames or a complete RFC 2047 encoded-word
+        filename emitted by PowerShell/.NET. The decoded filename is preserved in
+        the source name. The plain multipart filename is authoritative; filename*
+        does not override it. Invalid filename encodings, unsupported extensions
+        and invalid workbook content return 422; content over 12 MiB returns 413.
+        Existing administrator and tenant checks apply.
       x-mate-required-tenant: true
   /api/v1/ont/v2/modeling/sources/{ident}:
     get:
