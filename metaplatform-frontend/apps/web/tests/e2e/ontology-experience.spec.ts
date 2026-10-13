@@ -79,7 +79,7 @@ for (const [width,height] of [[1280,720],[1920,1080],[768,1024]]) {
     await expect.poll(async()=>(await svg.boundingBox())!.width).toBeGreaterThan(before!.width);
     await page.getByRole('button',{name:'放大本体图'}).click();
     await page.getByRole('button',{name:'适应本体图'}).click();
-    await page.getByRole('button',{name:'重新布局本体图'}).click();
+    await page.getByRole('button',{name:'重置本体图'}).click();
     await page.getByRole('button',{name:'展开本体图'}).click();
     await expect(page.locator('.ms-schema-expanded')).toBeVisible();
     await page.keyboard.press('Escape');
