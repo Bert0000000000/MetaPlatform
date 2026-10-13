@@ -71,7 +71,7 @@ export default function OntologyDomainShell({ children }: { children: ReactNode 
   useEffect(() => () => setOntologyNavigation(null), []);
 
   return (
-    <div className="mp-page-full mp-onto-shell">
+    <div className="mp-native-controls mp-page-full mp-onto-shell">
       <div className="mp-onto-shell-main">{children}</div>
     </div>
   );

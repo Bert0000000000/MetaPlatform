@@ -11,7 +11,7 @@
 //   Property 级：见 PropertyEditorV2（title/description/值类型联动/array+reducer/
 //     derived/struct_fields/shared/nullable/primary_key）
 //
-// dev 模式 Semi 交互组件 onClick 被截 noop —— 全部原生元素 + 内联样式。
+// 原生表单沿用平台控件样式；草稿、预检和发布继续使用既有提交契约。
 
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createUuid } from '@/utils/uuid';
@@ -525,7 +525,7 @@ export default function ObjectTypeEditorV2Drawer({
       <div
         onClick={(e) => e.stopPropagation()}
         role="dialog" aria-modal="true" aria-label="模型编辑器"
-        className="mp-h-full mp-flex-col mp-onto-drawer-panel mp-onto-drawer-panel--fixed"
+        className="mp-native-controls mp-model-editor mp-h-full mp-flex-col mp-onto-drawer-panel mp-onto-drawer-panel--fixed"
       >
         {/* Header */}
         <div className="mp-justify-between mp-border mp-shrink-0 mp-flex-center mp-py-3 mp-px-5" >
@@ -624,7 +624,7 @@ export default function ObjectTypeEditorV2Drawer({
             )}
           </div>
 
-          <label>业务说明<textarea aria-label="业务说明" value={description} onChange={e => setDescription(e.target.value)} /></label>
+          <label className="mp-model-editor-description">业务说明<textarea aria-label="业务说明" value={description} onChange={e => setDescription(e.target.value)} /></label>
           {validated && !displayName.trim() && <p role="alert">业务名称必填</p>}
           {validated && !/^[a-z0-9-]+$/.test(slug.trim()) && mode === 'create' && <p role="alert">业务标识必填，仅限小写字母、数字和连字符</p>}
           <button type="button" aria-expanded={advanced} onClick={() => setAdvanced(!advanced)}>高级设置</button>
@@ -746,6 +746,7 @@ export default function ObjectTypeEditorV2Drawer({
           </>}
           <div className="mp-mb-3">
             <h4>从数据表选择字段</h4>
+            <div className="mp-model-editor-source-tools">
             <button type="button" disabled={sourceBusy} onClick={async () => {
               setSourceBusy(true); setSourceError('');
               try { setSources(await listBigDataSources()); } catch { setSourceError('数据源暂不可用，请重试或先到数据接入配置。'); }
@@ -761,6 +762,7 @@ export default function ObjectTypeEditorV2Drawer({
               } catch { setSourceError('尚未取得可验证的实际字段，请检查数据源连接后重试。'); }
               finally { setSourceBusy(false); }
             }}><option value="">选择已有数据源</option>{sources.map(source => <option key={source.sourceId} value={source.sourceId}>{source.name}</option>)}</select>
+            </div>
             {sourceBusy && <p>正在读取实际字段…</p>}{sourceError && <p role="alert">{sourceError}</p>}
             {sourceTables.map(table => <fieldset key={table.name}><legend>{table.name}</legend>{table.columns.map(column => <button type="button" key={column.name} onClick={() => {
               const name=column.name.toLowerCase().replace(/[^a-z0-9-]/g,'-');
@@ -919,7 +921,7 @@ export default function ObjectTypeEditorV2Drawer({
               {onLocateExisting && <button type="button" onClick={async () => { try { await onLocateExisting(currentTypeRid); } catch { setNotice('未找到已有类型，请检查标识后重试。'); } }}>定位已有类型</button>}
             </div>
           )}
-          <div className="mp-flex mp-justify-end mp-gap-2">
+          <div className="mp-model-editor-actions mp-flex mp-justify-end mp-gap-2">
             <button type="button" disabled={busy} onClick={() => { if(lastSaved.current) restorePayload(lastSaved.current); else { discardEditorInput(sessionKey); setResetTick(t=>t+1); } }}>撤销更改</button>
             <button type="button" disabled={busy} onClick={() => void submit(undefined, 'draft')}>保存草稿</button>
             <button type="button" disabled={busy} onClick={() => void submit(undefined, 'preflight')}>预检与影响</button>

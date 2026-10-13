@@ -103,6 +103,12 @@
 .mp-onto-drawer-panel--fixed { width: 720px; }
 .mp-onto-drawer-panel--fluid { width: 66.666%; min-width: 720px; }
 .mp-onto-drawer-panel--wide { width: 66.666%; min-width: 720px; max-width: 960px; }
+.mp-model-editor-description { display: flex; flex-direction: column; gap: var(--mp-space-2); margin-bottom: var(--mp-space-3); font-size: 13px; }
+.mp-model-editor-description textarea { width: 100%; }
+.mp-model-editor-source-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mp-space-2); }
+.mp-model-editor-actions { flex-wrap: wrap; }
+.mp-model-editor-actions button { flex-shrink: 0; white-space: nowrap; }
+.mp-model-editor .mp-onto-hint { overflow-wrap: anywhere; }
 
 .mp-onto-close-btn {
   display: inline-flex;
