@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from .cypher import parse_sparql, sparql_to_cypher
@@ -24,8 +24,11 @@ class ExplainResponse(BaseModel):
 @router.post("", response_model=ExplainResponse)
 async def explain_endpoint(req: ExplainRequest) -> ExplainResponse:
     """ST-5.4.5: SPARQL EXPLAIN."""
-    parsed = parse_sparql(req.query)
-    cypher = sparql_to_cypher(parsed)
+    try:
+        parsed = parse_sparql(req.query)
+        cypher = sparql_to_cypher(parsed)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Parse failed: {exc}") from exc
 
     # 伪 plan（实际应调 neo4j EXPLAIN / PROFILE）
     plan = (
