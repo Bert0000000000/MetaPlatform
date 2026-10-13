@@ -76,6 +76,59 @@ def verify_sparql_boundary(call, checks: list) -> None:
     )
 
 
+def verify_excel_filename(call, checks: list, state: dict, *, read_only: bool) -> None:
+    """Replay the .NET upload with synthetic data and verify persisted Unicode."""
+    if not read_only or not state.get("issue142_source_id"):
+        fixture = ROOT / "metaplatform-frontend/apps/web/tests/fixtures/issue142-unicode.xlsx"
+        boundary = "issue142-release-" + secrets.token_hex(8)
+        disposition = (
+            'form-data; name="file"; filename="=?utf-8?B?5LyB5LiaIOS4lueVjC54bHN4?="; '
+            "filename*=utf-8''%E4%BC%81%E4%B8%9A%20%E4%B8%96%E7%95%8C.xlsx"
+        )
+        body = (
+            (
+                f"--{boundary}\r\nContent-Disposition: {disposition}\r\n"
+                "Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n\r\n"
+            ).encode()
+            + fixture.read_bytes()
+            + f"\r\n--{boundary}--\r\n".encode()
+        )
+        uploaded = call(
+            "POST",
+            "/api/v1/ont/v2/modeling/sources",
+            body,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+            expected=(201,),
+        )
+        require(
+            isinstance(uploaded, dict) and bool(uploaded.get("id")), "Excel upload source missing"
+        )
+        state["issue142_source_id"] = uploaded["id"]
+    source = call("GET", "/api/v1/ont/v2/modeling/sources/" + state["issue142_source_id"])
+    require(
+        isinstance(source, dict) and source.get("name") == "企业 世界.xlsx",
+        "Decoded Excel filename not persisted",
+    )
+    profile = source.get("profile") or {}
+    sheets = profile.get("sheets") or []
+    require(
+        profile.get("rowCount") == 1
+        and [(sheet.get("name"), sheet.get("rows")) for sheet in sheets]
+        == [("业务资料", 1), ("空表", 0)],
+        "Unicode Excel sheet or row counts changed",
+    )
+    require(
+        any(
+            column.get("name") == "名称" and column.get("samples") == ["中文产品"]
+            for column in sheets[0].get("columns", [])
+        ),
+        "Unicode Excel business values changed",
+    )
+    checks.append(
+        "Issue142 .NET multipart upload: decoded Chinese name, 2 sheets, 1 row and Chinese values persisted"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default="http://127.0.0.1:8080")
@@ -97,7 +150,11 @@ def main() -> None:
             request_headers["Authorization"] = "Bearer " + token
         request = urllib.request.Request(
             base + path,
-            data=None if body is None else json.dumps(body).encode("utf-8"),
+            data=body
+            if isinstance(body, bytes)
+            else None
+            if body is None
+            else json.dumps(body).encode("utf-8"),
             headers=request_headers,
             method=method,
         )
@@ -196,6 +253,9 @@ def main() -> None:
         checks.append("instance proposal confirmed and executed")
         state_path.parent.mkdir(exist_ok=True)
         state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+    verify_excel_filename(call, checks, state, read_only=args.read_only)
+    state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
     saved_type = call("GET", "/api/v1/ont/v2/object-types/" + state["object_rid"])
     require(saved_type["display_name"] == state["display_name"], "Object type read-back mismatch")
