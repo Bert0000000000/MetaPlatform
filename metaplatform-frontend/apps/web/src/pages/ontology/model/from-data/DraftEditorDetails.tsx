@@ -4,6 +4,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import type { KernelObjectType } from '@/api/ont/kernel';
 import type { ModelingDraft, ModelingProfile, ModelingResolution } from '@/api/ont/modeling';
 import IdentityReview from './IdentityReview';
+import ReuseComparison from './ReuseComparison';
 import ParentIdentityRepair from './ParentIdentityRepair';
 import RelationshipReview from './RelationshipReview';
 import RelationshipRepair from './RelationshipRepairPanel';
@@ -21,6 +22,7 @@ export interface DraftEditorProps {
   onResolve: (classId: string, resolution: ModelingResolution) => void;
   onRename: (draft: ModelingDraft, resolutions: Record<string, ModelingResolution>) => void;
   identityLocked?: boolean;
+  catalogStatus?: string;
 }
 export const uniqueId = (prefix: string, ids: string[]) => {
   let n = 1; while (ids.includes(`${prefix}_${n}`)) n++;
@@ -35,7 +37,7 @@ function BatchReview({ name, total, confirmed, onChange }: { name: string; total
   </div>;
 }
 
-export default function DraftEditor({ draft, profile, types, resolutions, onChange, onResolve, onRename, identityLocked = false, selection, onOpenClass }: DraftEditorProps) {
+export default function DraftEditor({ draft, profile, types, resolutions, onChange, onResolve, onRename, identityLocked = false, selection, onOpenClass, catalogStatus }: DraftEditorProps) {
   const [renaming, setRenaming] = useState<{ from: string; value: string } | null>(null);
   const [renameError, setRenameError] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
@@ -122,6 +124,7 @@ export default function DraftEditor({ draft, profile, types, resolutions, onChan
         <ParentIdentityRepair cls={cls} draft={draft} profile={profile} locked={identityLocked} onChange={value => update(next => Object.assign(next, value))} />
         <IdentityReview cls={cls} profile={profile} locked={identityLocked} onChange={patch => update(next => { Object.assign(next.classes[i], patch, { accepted: false }); })} />
         {cls.parentClassId && <p className="mp-onto-muted">子类继承父类的属性与身份。选择父类会补齐缺失属性、沿用父类身份并取消相关审核，请核对数据映射；已有同名标识的类型冲突由校验指出。</p>}
+        <ReuseComparison cls={cls} resolution={resolutions[cls.id] ?? { mode: 'new', propertyMap: {} }} types={types} catalogStatus={catalogStatus} />
         {selection && <h3>属性定义</h3>}
         <div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>属性</th><th>数据类型</th><th>业务身份</th><th>显示标签</th><th>本次发布</th><th>操作</th></tr></thead><tbody>
           {cls.properties.map((prop, p) => { const structural = cls.identity.includes(prop.id) || cls.labelProperty === prop.id || (cls.uniqueKeys ?? []).some(key => key.confirmed && key.properties.includes(prop.id)) || draft.relationships.some(rel => included(rel) && rel.joins.some(join => (rel.source === cls.id && join.sourceProperty === prop.id) || (rel.target === cls.id && join.targetProperty === prop.id))); return <tr key={prop.id}><td><input aria-label={`${cls.name} 属性 ${prop.id}`} value={prop.name} onChange={e => update(next => { next.classes[i].properties[p].name = e.target.value; next.classes[i].accepted = false; })} /><small>{prop.id}</small>{prop.included === false && prop.deferReason && <small>暂缓原因：{prop.deferReason}</small>}</td>

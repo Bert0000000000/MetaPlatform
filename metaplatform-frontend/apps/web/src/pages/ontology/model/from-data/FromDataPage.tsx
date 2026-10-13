@@ -43,6 +43,7 @@ export default function FromDataPage() {
   const [sources, setSources] = useState<ModelingSource[]>([]);
   const [source, setSource] = useState<ModelingSource | null>(null);
   const [types, setTypes] = useState<KernelObjectType[]>([]);
+  const [catalogStatus, setCatalogStatus] = useState('');
   const [step, setStep] = useState(0);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState('');
@@ -75,13 +76,30 @@ export default function FromDataPage() {
 
   useEffect(() => {
     let active = true;
-    void Promise.allSettled([listModelingSources(), listObjectTypes()]).then(([listed, native]) => {
+    void listModelingSources().then(listed => {
       if (!active) return;
-      if (listed.status === 'fulfilled') setSources(listed.value); else setError(message(listed.reason));
-      if (native.status === 'fulfilled') setTypes(native.value); else setError(`平台对象类型读取失败：${message(native.reason)}`);
-    });
+      setSources(listed);
+    }).catch(err => { if (active) setError(message(err)); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!sourceId || (step !== 1 && step !== 3)) return;
+    let active = true, sequence = 0;
+    const refresh = async () => {
+      const request = ++sequence;
+      setTypes([]); setCatalogStatus('正在读取当前已有本体目录…');
+      try {
+        const current = await listObjectTypes();
+        if (active && request === sequence) { setTypes(current); setCatalogStatus(''); }
+      } catch (err) {
+        if (active && request === sequence) setCatalogStatus(`平台对象类型读取失败：${message(err)}；无法确认是否有同名对象，请重试。`);
+      }
+    };
+    void refresh();
+    window.addEventListener('focus', refresh);
+    return () => { active = false; window.removeEventListener('focus', refresh); };
+  }, [sourceId, step]);
 
   const accept = useCallback((value: ModelingSource) => {
     setSource(value); setDirty(false); setWarningAck(false); setPublishConfirmed(false);
@@ -253,7 +271,7 @@ export default function FromDataPage() {
       </>}
       {step === 1 && source.draft && <>
         <section className="fd-card"><div className="fd-section-head"><div><h2>完整处理方案</h2><p className="mp-onto-muted">有依据的统一补全；不完整的类可选择本次不发布，其子类、关系和实例一起暂缓。确认一次后自动重新校验。</p></div>{completion}</div></section>
-        <ReviewWorkspace draft={source.draft} profile={source.profile} types={types} resolutions={source.resolutions} disabled={locked || candidateLocked} focusClassId={focusClassId} identityLocked={publicationStarted} onChange={draft => edit(next => { next.draft = draft; })} onResolve={(classId, resolution) => edit(next => { next.resolutions[classId] = resolution;
+        <ReviewWorkspace draft={source.draft} profile={source.profile} types={types} catalogStatus={catalogStatus} resolutions={source.resolutions} disabled={locked || candidateLocked} focusClassId={focusClassId} identityLocked={publicationStarted} onChange={draft => edit(next => { next.draft = draft; })} onResolve={(classId, resolution) => edit(next => { next.resolutions[classId] = resolution;
           if (next.draft) {
             const cls = next.draft.classes.find(c => c.id === classId);
             if (cls) cls.accepted = false;
@@ -295,7 +313,12 @@ export default function FromDataPage() {
         <section className="fd-card"><h2>本体变更草稿与发布确认</h2><p className="mp-onto-muted">核对复用、新增、扩展属性及关系后确认发布。当前草稿尚未生效；发布按对象、关系分步执行，失败可重试。</p>
           <p>这里只展示已审批候选。点击发布本体，在窗口中选择新建、复用或增加属性，再校验并确认。</p>
           <PublicationReview source={source} types={types} disabled={locked || Boolean(published)}
-            onPrepare={async () => { const saved = dirty ? await saveModelingSource(source) : await getModelingSource(source.id); accept(saved); return saved; }}
+            onPrepare={async () => {
+              const saved = dirty ? await saveModelingSource(source) : await getModelingSource(source.id); accept(saved);
+              try { const current = await listObjectTypes(); setTypes(current); setCatalogStatus(''); }
+              catch (err) { setTypes([]); const detail = `平台对象类型读取失败：${message(err)}`; setCatalogStatus(detail); throw new Error(detail); }
+              return saved;
+            }}
             onChanged={accept} onPublished={value => { accept(value); setPublishError(''); void listObjectTypes().then(setTypes).catch(err => setError(message(err))); }} />
           <div aria-label="发布操作反馈" aria-live="polite" aria-busy={busy === '发布原生模型'}>
             {busy === '发布原生模型' && <div role="status" className="fd-status"><Spin size="small" /><span>正在发布原生模型，请稍候。完成结果将在这里显示。</span></div>}
