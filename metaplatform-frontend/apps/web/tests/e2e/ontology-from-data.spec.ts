@@ -30,7 +30,7 @@ test('中文、英文及空格文件名上传同一工作簿 → 原文资料及
     await page.reload();
     const history = page.getByRole('combobox', { name: '选择历史导入', exact: true });
     await expect(history).toHaveValue(source.id);
-    await expect(history.getByRole('option', { name, exact: true })).toHaveCount(1);
+    await expect(history.locator('option:checked')).toHaveText(name);
   }
 });
 
