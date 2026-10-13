@@ -14108,11 +14108,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/SparqlResponse'
         '400':
-          description: SPARQL parse / transpile failure
+          description: SPARQL parse / transpile failure, including unsupported FILTER or OPTIONAL syntax
       x-sunset: '2026-12-31'
       x-migration-target: /api/v1/ont/v2/object-sets:evaluate
       operationId: ontPostOntSparql
-      description: SPARQL -> Cypher -> execute
+      description: Legacy simplified SPARQL execution. FILTER and OPTIONAL syntax are rejected with HTTP 400; those words inside literals, IRI references, variables, prefixed names or comments are not syntax. Supported simple SELECT queries retain their existing behavior and authenticated tenant context.
       x-mate-owner: ontology-platform
       x-mate-permission: ont.post
       x-mate-requirements:
