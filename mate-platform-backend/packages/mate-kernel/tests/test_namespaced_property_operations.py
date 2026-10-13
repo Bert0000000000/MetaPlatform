@@ -66,6 +66,7 @@ def test_query_retains_every_value_and_schema_field(model: ObjectType) -> None:
     assert result.rows == (
         {"__rid__": "ont.nsp.ind.customer.c1", "id": "c1", "name": "Ada", "score": 3},
     )
+    assert result.result_schema is not None
     assert set(result.result_schema) == {"id", "name", "score"}
     assert result.result_schema["id"]["rid"] == model.primary_key[0].rid
 

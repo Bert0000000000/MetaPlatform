@@ -126,7 +126,7 @@ class TestActionParameterGate:
 class TestCreateInstanceGate:
     @pytest.mark.parametrize("version", ["", ".v1"])
     @pytest.mark.parametrize("use_rids", [False, True])
-    def test_namespaced_properties_agree_across_schema_and_shacl(self, version, use_rids):
+    def test_namespaced_properties_agree_across_schema_and_shacl(self, version: str, use_rids: bool) -> None:
         properties = tuple(
             replace(p, rid=ClassRef(f"ont.t.prop.crm.{slug}{version}"))
             for p, slug in zip(_ot().properties, ("p-id", "p-name", "p-amt"), strict=True)

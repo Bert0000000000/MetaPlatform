@@ -275,6 +275,17 @@ class TestSourceResolutionMatrix:
                     )
                 )
                 assert aggregate.rows == ({"total": 12},)
+                proposal = backend.propose_create_instance(
+                    rid, {"ns-id": "three", "ns-name": "Ada", "ns-score": 1}, "namespaced customer"
+                )
+                backend.confirm_proposal(proposal.proposal_id, confirmed_by="reviewer")
+                created = backend.execute_proposal(proposal.proposal_id)
+                assert created.rid == f"ont.{T}.ind.namespaced.three"
+                assert dict(created.props) == {
+                    ClassRef(p_id): "three",
+                    ClassRef(p_name): "Ada",
+                    ClassRef(p_score): 1,
+                }
 
     def test_parent_includes_descendants_in_all_entries(self, repo) -> None:
         want = {_rid("alice"), _rid("bob"), _rid("carol")}
