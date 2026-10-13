@@ -262,10 +262,7 @@ def build_card(
 ) -> dict[str, Any]:
     """matched 属性 → 对象卡片（card_text 带 rid 可追溯）。"""
     score = max((m["score"] for m in matched), default=0.0)
-    parts = [
-        f"- {m['value_text']} ({property_slug(m['property_rid'])})"
-        for m in matched
-    ]
+    parts = [f"- {m['value_text']} ({property_slug(m['property_rid'])})" for m in matched]
     card_text = f"{individual_rid}:\n" + "\n".join(parts)
     return {
         "individual_rid": individual_rid,
