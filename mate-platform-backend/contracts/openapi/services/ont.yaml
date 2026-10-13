@@ -2494,6 +2494,11 @@ paths:
         [{ bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write] }]
       tags: [ont]
       summary: Create LinkInstance
+      description: >-
+        Both endpoints must be instances of the declared endpoint class or a
+        transitive descendant through the same tenant's valid parent_class chain.
+        Unrelated, ancestor-only, cross-tenant, missing or cyclic chains are rejected.
+        Inherited applicability retains the original link type and cardinality.
       operationId: ontCreateV2LinkInstance
       x-mate-owner: ontology-platform
       x-mate-permission: ont.write
@@ -5708,6 +5713,10 @@ components:
               link_type: { $ref: "#/components/schemas/RidString" }
               direction: { type: string, enum: [out, in] }
               peer_class: { $ref: "#/components/schemas/RidString" }
+              inherited_from:
+                type: string
+                default: ""
+                description: Declared endpoint class for an inherited applicable relationship; empty for a direct relationship.
         actions:
           type: array
           items: { $ref: "#/components/schemas/RidString" }
@@ -6655,6 +6664,10 @@ components:
               identity: { type: array, items: { type: string } }
               reason: { type: string }
               problem: { type: string }
+        semantics:
+          description: 本次方案显式确认的发布范围内业务语义，内容绑定方案哈希
+          type: array
+          items: { $ref: "#/components/schemas/DataModelingSemanticDefinition" }
         relationships: { type: array, items: { type: object } }
         counts:
           type: object

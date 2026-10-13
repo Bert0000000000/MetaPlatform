@@ -5,10 +5,11 @@ from __future__ import annotations
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from urllib.parse import urlparse
+from uuid import uuid4
 
 import jwt
 import pytest
@@ -712,3 +713,104 @@ def test_pg_http_create_only_refuses_rid_claimed_after_catalog_read(pg_http_pair
     )
     with writer.tenant_scope(T):
         assert writer.get_link_type(ClassRef(rid)).description == "Explicit edit"
+
+
+@pytest.fixture(params=["memory", "postgres"])
+def inherited_client(request, auth_headers):
+    if request.param == "postgres":
+        from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+        dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
+        if not dsn:
+            pytest.fail("Required independent MP11_RELATIONSHIP_PG_DSN", pytrace=False)
+        repo = PgOntologyRepository(dsn=dsn)
+    else:
+        repo = InMemoryOntologyRepository()
+    key = uuid4().hex
+    source, target = f"ont.{T}.obj.child-{key}", f"ont.{T}.obj.leaf-{key}"
+    child_instance, leaf_instance = f"ont.{T}.ind.child.{key}", f"ont.{T}.ind.leaf.{key}"
+    with repo.tenant_scope(T) if request.param == "postgres" else nullcontext():
+        _seed(repo)
+        repo.upsert_object_type(
+            replace(
+                repo.get_object_type(ClassRef(CUSTOMER)),
+                rid=ClassRef(source),
+                parent_class=ClassRef(CUSTOMER),
+            )
+        )
+        repo.upsert_object_type(
+            replace(
+                repo.get_object_type(ClassRef(source)),
+                rid=ClassRef(target),
+                parent_class=ClassRef(source),
+            )
+        )
+        repo.create_individual(
+            replace(
+                repo.get_individual(C1),
+                rid=child_instance,
+                class_rid=ClassRef(source),
+                primary_key=key,
+            )
+        )
+        repo.create_individual(
+            replace(
+                repo.get_individual(C1),
+                rid=leaf_instance,
+                class_rid=ClassRef(target),
+                primary_key=key + "leaf",
+            )
+        )
+    app = FastAPI()
+    install_auth(app)
+    app.include_router(router)
+    app.state.kernel_repo = repo
+    with TestClient(app, headers=auth_headers, raise_server_exceptions=False) as client:
+        yield client, repo, source, target, child_instance, leaf_instance, key
+
+
+def test_two_sided_transitive_inheritance_replay_inspection_and_query(inherited_client):
+    client, repo, child, leaf, child_i, leaf_i, key = inherited_client
+    link = f"ont.{T}.link.inherited-{key}"
+    # Both endpoints are declared on the ancestor; distinct descendant instances are valid.
+    response = client.post(BASE + "/link-types", json=_definition(rid=link, dst=CUSTOMER))
+    assert response.status_code == 200, response.text
+    payload = _instance(
+        rid=f"ont.{T}.lnk.inherited-{key}", link_type_rid=link, src=child_i, dst=leaf_i
+    )
+    response = client.post(BASE + "/link-instances", json=payload)
+    assert response.status_code == 200, response.text
+    assert client.post(BASE + "/link-instances", json=payload).status_code == 200
+    links = client.get(BASE + "/link-instances", params={"link_type_rid": link}).json()
+    assert any(item["rid"] == payload["rid"] for item in links)
+    inspected = client.get(BASE + f"/classes/{leaf}/inspect")
+    assert inspected.status_code == 200, inspected.text
+    applicable = [item for item in inspected.json()["links"] if item["link_type"] == link]
+    assert {item["direction"] for item in applicable} == {"in", "out"}
+    assert all(item["inherited_from"] == CUSTOMER for item in applicable)
+    queried = client.get(BASE + "/individuals", params={"class_rid": CUSTOMER}).json()
+    assert {child_i, leaf_i} <= {item["rid"] for item in queried}
+    # A second source cannot claim this same target under the original 1:N constraint.
+    rejected = client.post(
+        BASE + "/link-instances", json={**payload, "rid": payload["rid"] + "other", "src": C2}
+    )
+    assert rejected.status_code == 409, rejected.text
+
+
+def test_inheritance_is_directional_and_does_not_accept_unrelated_types(inherited_client):
+    client, repo, child, leaf, child_i, leaf_i, key = inherited_client
+    link = f"ont.{T}.link.child-only-{key}"
+    assert (
+        client.post(BASE + "/link-types", json=_definition(rid=link, src=child)).status_code == 200
+    )
+    payload = _instance(rid=f"ont.{T}.lnk.child-only-{key}", link_type_rid=link)
+    assert client.post(BASE + "/link-instances", json=payload).status_code == 422
+    assert client.post(BASE + "/link-instances", json={**payload, "src": O1}).status_code == 422
+    assert (
+        client.post(
+            BASE + "/link-instances", json={**payload, "src": "ont.other.ind.child.1"}
+        ).status_code
+        == 403
+    )
+    response = client.post(BASE + "/link-instances", json={**payload, "src": leaf_i})
+    assert response.status_code == 200, response.text

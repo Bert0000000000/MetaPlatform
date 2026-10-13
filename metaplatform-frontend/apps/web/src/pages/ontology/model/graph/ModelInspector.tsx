@@ -3,6 +3,7 @@ import {
   type KernelLinkType,
 } from '@/api/ont/kernel';
 import { ridTail } from '../../rid';
+import { applicableRelationships } from './relationshipInheritance';
 export default function ModelInspector({
   type,
   link,
@@ -26,6 +27,9 @@ export default function ModelInspector({
   unavailableSelection?: string;
   linksUnavailable?: boolean;
 }) {
+  const applicable = type ? applicableRelationships(type.rid,
+    (objectTypes.length ? objectTypes : [type]).map(t => ({ id: t.rid, parentId: t.parent_class })),
+    links.map(l => ({ ...l, id: l.rid, source: l.src, target: l.dst }))) : [];
   return (
     <aside className="mw-inspector" aria-label="资源属性">
       <small>资源属性 INSPECTOR</small>
@@ -76,15 +80,15 @@ export default function ModelInspector({
               </li>
             ))}
           </ul>
-          <h3>关联模型 · {linksUnavailable ? '未完成' : links.length}</h3>
+          <h3>关联模型 · {linksUnavailable ? '未完成' : new Set(applicable.map(item => item.relation.rid)).size}</h3>
           {linksUnavailable && <p>关系读取未完成，请重试模型读取。</p>}
           <ul>
-            {links.map((l) => (
-              <li key={l.rid}>
-                {(l.src === type.rid ? l.src_display_name : l.dst_display_name)?.trim()
-                  || l.src_display_name?.trim()
-                  || l.dst_display_name?.trim()
-                  || ridTail(l.rid)} · {l.cardinality}
+            {applicable.map(({ relation: l, side, inherited, declaredOn }) => (
+              <li key={`${l.rid}:${side}`}>
+                {(side === 'source' ? l.src_display_name : l.dst_display_name)?.trim()
+                  || l.src_display_name?.trim() || l.dst_display_name?.trim() || ridTail(l.rid)} · {l.cardinality}
+                <span> · {inherited ? '继承适用' : '直接关系'}</span>
+                {inherited && <small>关系声明于：{objectTypes.find(t => t.rid === declaredOn)?.display_name || declaredOn}</small>}
               </li>
             ))}
           </ul>
