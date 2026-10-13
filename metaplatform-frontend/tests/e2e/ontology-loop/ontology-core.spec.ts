@@ -197,6 +197,16 @@ test('手工新建：同领域多属性草稿 → 恢复 → 预检 → 发布 �
     expect.objectContaining({rid: pId, primary_key: true, nullable: false}),
     expect.objectContaining({rid: pAmount, title: '金额', type_id: 'double', format: 'double'}),
   ]));
+  const instance = await request.post(`${GW}/ont/v2/individuals`, { headers: h(), data: {
+    rid: `ont.${T}.ind.${slug}.sample`, class_rid: rid, primary_key: 'sample',
+    props: {[pId]: {value: 'sample', type: 'string'}, [pAmount]: {value: 12.5, type: 'double'}},
+  }});
+  expect(instance.ok()).toBeTruthy();
+  const query = await request.post(`${GW}/ont/v2/object-query`, { headers: h(), data: {source: rid} });
+  expect(query.ok()).toBeTruthy();
+  const queried = await query.json();
+  expect(queried.rows).toEqual([expect.objectContaining({[`${slug}-id`]: 'sample', [`${slug}-amount`]: 12.5})]);
+  expect(Object.keys(queried.result_schema)).toEqual(expect.arrayContaining([`${slug}-id`, `${slug}-amount`]));
   const duplicate = await request.post(`${GW}/ont/v2/object-types?create_only=true`, {
     headers: h(), data: {...draft.payload, display_name: '禁止覆盖'},
   });

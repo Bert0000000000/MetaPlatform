@@ -33,9 +33,11 @@ for _p in (_K, _O):
 
 from mate_kernel.objectset.ir import (
     Aggregation,
+    Condition,
     InMemoryQueryExecutor,
     MetricSpec,
     ObjectSetQuery,
+    QueryOp,
     SortKey,
 )
 from mate_kernel.ontology.identity.class_ref import ClassRef
@@ -213,6 +215,66 @@ def _rid(pk: str) -> str:
 
 class TestSourceResolutionMatrix:
     """源类解析矩阵：三条入口必须给出**同一**类集合。"""
+
+    def test_namespaced_fields_query_filter_sort_and_aggregate_in_both_backends(self, repo):
+        rid = f"ont.{T}.obj.crm.namespaced.v1"
+        p_id, p_name, p_score = (
+            f"ont.{T}.prop.crm.ns-{slug}.v1" for slug in ("id", "name", "score")
+        )
+        ot = ObjectType(
+            rid=ClassRef(rid),
+            primary_key=(ClassRef(p_id),),
+            properties=(
+                _prop(p_id, pk=True),
+                _prop(p_name),
+                _prop(p_score, numeric=True),
+            ),
+        )
+        now = datetime.now(UTC)
+        for backend in (repo, InMemoryOntologyRepository()):
+            with backend.tenant_scope(T):
+                backend.upsert_object_type(ot)
+                for pk, score in (("one", 3), ("two", 9)):
+                    backend.create_individual(
+                        Individual(
+                            rid=f"ont.{T}.ind.namespaced.{pk}",
+                            class_rid=ot.rid,
+                            props=(
+                                (ClassRef(p_id), pk),
+                                (ClassRef(p_name), "Ada"),
+                                (ClassRef(p_score), score),
+                            ),
+                            primary_key=pk,
+                            tenant_id=T,
+                            created_at=now,
+                            updated_at=now,
+                        )
+                    )
+                result = backend.execute_object_query(
+                    ObjectSetQuery(
+                        source=rid,
+                        filters=(Condition("ns-name", QueryOp.EQ, "Ada"),),
+                        sort=(SortKey("ns-score", desc=True),),
+                    )
+                )
+                assert [row["ns-id"] for row in result.rows] == ["two", "one"]
+                assert [row["ns-score"] for row in result.rows] == [9, 3]
+                assert set(result.result_schema) == {"ns-id", "ns-name", "ns-score"}
+                assert {
+                    i.primary_key
+                    for i in backend.evaluate_object_set(
+                        ObjectSet(class_rid=ot.rid, filter_expr="ns-score > 5")
+                    )
+                } == {"two"}
+                aggregate = backend.execute_object_query(
+                    ObjectSetQuery(
+                        source=rid,
+                        aggregation=Aggregation(
+                            metrics=(MetricSpec("sum", "ns-score", alias="total"),)
+                        ),
+                    )
+                )
+                assert aggregate.rows == ({"total": 12},)
 
     def test_parent_includes_descendants_in_all_entries(self, repo) -> None:
         want = {_rid("alice"), _rid("bob"), _rid("carol")}

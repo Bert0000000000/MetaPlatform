@@ -22,6 +22,7 @@ it('creates independent property drafts on HTTP without changing the model RID',
   for (const draft of [first, second, restored]) expect(draft.uid).toMatch(uuidV4);
   expect(new Set([first.uid, second.uid, restored.uid]).size).toBe(3);
   expect(restored.rid).toBe('ont.acme.prop.crm.order-id.v1');
+  expect(restored.name).toBe('order-id');
   expect(restored.primaryKey).toBe(true);
 });
 
