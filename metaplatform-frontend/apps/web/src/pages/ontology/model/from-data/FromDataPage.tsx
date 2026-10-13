@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Banner, Button, Checkbox, Modal, Spin, Tag } from '@douyinfe/semi-ui';
 import { ArrowRight, Check, FileSpreadsheet, RefreshCw, Save, Sparkles, Upload } from 'lucide-react';
-import { EmptyState, PageHeader } from '@/components/skeleton';
+import { EmptyState, PageHeader, SheetDetail } from '@/components/skeleton';
 import { listObjectTypes, type KernelObjectType } from '@/api/ont/kernel';
 import { exportModelingQuarantine, getModelingSource, listModelingSources, runModelingOperation, saveModelingSource, uploadModelingSource, type ModelingSource } from '@/api/ont/modeling';
 import DataReadiness from './DataReadiness';
+import DraftEditorDetails, { type DraftEditorProps } from './DraftEditorDetails';
+import { invalidateSemanticChanges, semanticOwner } from './review';
 import PublicationAcceptance from './PublicationAcceptance';
 import CandidateGraph from './CandidateGraph';
 import GenerationProgress from './GenerationProgress';
@@ -53,6 +55,13 @@ export default function FromDataPage() {
   const [warningAck, setWarningAck] = useState(false);
   const [publishConfirmed, setPublishConfirmed] = useState(false);
   const [focusClassId, setFocusClassId] = useState<string | null>(null);
+  const [inlineSelection, setInlineSelection] = useState<DraftEditorProps['selection']>();
+  useEffect(() => {
+    if (!inlineSelection) return;
+    const prefix = inlineSelection.kind === 'classes' ? 'class' : inlineSelection.kind === 'relationships' ? 'relation' : 'mapping';
+    const timer = window.setTimeout(() => document.getElementById(`fd-${prefix}-${inlineSelection.id}`)?.focus({ preventScroll: true }), 100);
+    return () => window.clearTimeout(timer);
+  }, [inlineSelection]);
   const uploadInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (step !== 1 || !focusClassId) return;
@@ -182,6 +191,7 @@ export default function FromDataPage() {
       next.draft.semantics.definitions.forEach(item => { item.confirmed = false; });
       next.draft.semantics.context = next.context; next.draft.semantics.questions = structuredClone(next.questions);
     }
+    if (source.draft && next.draft) invalidateSemanticChanges(source.draft, next.draft);
     setSource(next); setDirty(true); setWarningAck(false); setPublishConfirmed(false);
   };
   const save = async () => {
@@ -203,12 +213,14 @@ export default function FromDataPage() {
       if (operation === 'validate') setStep(2);
       if (operation === 'publish') setStep(3);
       if (operation === 'sync' || operation === 'sync-check') setStep(4);
+      return true;
     } catch (err) {
       if (operation === 'sync') {
         try { accept({ ...await getModelingSource(source.id), syncCheck: null }); } catch { setSource(current => current ? { ...current, syncCheck: null } : current); }
         setStep(4); setError(`同步请求或回读失败，请先刷新核实结果；已有写入不会回滚。${message(err)}`);
       } else if (operation === 'publish') setPublishError(message(err));
       else setError(message(err));
+      return false;
     } finally { setBusy(''); }
   };
   const selectSource = (id: string) => {
@@ -288,7 +300,12 @@ export default function FromDataPage() {
         <div className="fd-section-head"><div><h2>本体结构校验与接入预览</h2><p>检查概念、属性、继承和关系定义，再预检平台接入；数据质量独立限制可选同步。</p></div><Button onClick={() => void operate('validate')}>重新校验</Button></div>
         {(!source.validation || source.validation.scope !== 'ontology' || dirty) ? <Banner type="info" description="请保存当前候选并重新执行本体校验。旧版数据报告不能作为本体发布许可。" closeIcon={null} /> : <>
           <div className="fd-metrics"><section className="fd-card"><small>阻断问题</small><strong>{source.validation.errors}</strong></section><section className="fd-card"><small>警告</small><strong>{source.validation.warnings}</strong></section><section className="fd-card"><small>对象类型</small><strong>{source.draft?.classes.filter(included).length ?? 0}</strong></section><section className="fd-card"><small>关系定义</small><strong>{source.draft?.relationships.filter(included).length ?? 0}</strong></section></div>
-          <section className="fd-card"><h3>校验结果</h3><p className="mp-onto-muted">下方仅校验本次发布范围。阻断项可在下方直接定位处理。</p>{!source.validation.issues.length && <p><Check size={15} /> 当前校验没有发现问题。</p>}<ul className="fd-issues">{source.validation.issues.map((issue, i) => <li key={i}><Tag color={issue.severity === 'error' ? 'red' : 'orange'}>{issue.severity === 'error' ? '阻断' : '警告'}</Tag><code>{issue.item}</code><span>{issue.message}</span></li>)}</ul></section>
+          <section className="fd-card"><h3>校验结果</h3><p className="mp-onto-muted">下方仅校验本次发布范围。阻断项可在下方直接定位处理。</p>{!source.validation.issues.length && <p><Check size={15} /> 当前校验没有发现问题。</p>}<ul className="fd-issues">{source.validation.issues.map((issue, i) => <li key={i}><Tag color={issue.severity === 'error' ? 'red' : 'orange'}>{issue.severity === 'error' ? '阻断' : '警告'}</Tag><code>{issue.item}</code><span>{issue.message}</span>{source.draft && (() => {
+            const owner = semanticOwner(source.draft, issue.item)
+              ?? (source.draft.classes.some(c => c.id === issue.item) ? { kind: 'classes' as const, id: issue.item }
+                : source.draft.relationships.some(r => r.id === issue.item) ? { kind: 'relationships' as const, id: issue.item } : undefined);
+            return owner && <Button size="small" disabled={locked} onClick={() => setInlineSelection(owner)}>查看并处理</Button>;
+          })()}</li>)}</ul></section>
           <section className="fd-card"><h3>本体结构预览</h3><p className="mp-onto-muted">业务身份是待核实的建模规则；当前文件是否具备相应值，请查看独立的数据接入检查。</p><div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>业务概念</th><th>父类</th><th>属性数</th><th>业务身份定义</th></tr></thead><tbody>{source.draft?.classes.filter(included).map(cls => <tr key={cls.id}><td>{cls.name}</td><td>{parentLabel(cls.id)}</td><td>{cls.properties.length}</td><td>{cls.identity.length ? cls.identity.map(id => cls.properties.find(p => p.id === id)?.name ?? id).join(' + ') : '尚未确定（平台使用来源记录技术身份）'}</td></tr>)}</tbody></table></div></section>
           <details><summary>可选：数据接入检查</summary><DataReadiness report={source.validation.dataValidation} draft={source.draft} /></details>
           {source.validation.dataValidation?.canSync && source.preview && <details><summary>可选：实例样本</summary><section className="fd-card"><h3>对象与关系预览</h3><p className="mp-onto-muted">最多展示 {source.preview.limit} 条样本；总对象 {source.preview.totalNodes}，总关系 {source.preview.totalEdges}。来源行用于追溯。</p><div className="fd-table-scroll"><table className="fd-table"><thead><tr><th>对象类型</th><th>父类</th><th>标签</th><th>身份</th><th>来源</th><th>来源行</th></tr></thead><tbody>{source.preview.nodes.map((node, i) => <tr key={i}><td>{readable(node.objectType ?? node.kind ?? '')}</td><td>{parentLabel(node.objectType)}</td><td>{readable(node.label ?? '')}</td><td>{readable(node.identity ?? '')}</td><td>{readable(node.sheet ?? '')}</td><td>{readable(node.row ?? '')}</td></tr>)}</tbody></table></div><details><summary>关系样本（{source.preview.edges.length} 条）</summary><Findings value={source.preview.edges} /></details></section></details>}
@@ -301,7 +318,7 @@ export default function FromDataPage() {
                 const relation = source.draft?.relationships.find(item => item.id === issue.item);
                 const label = cls?.name ?? relation?.name ?? issue.item;
                 const target = cls ? `fd-class-${cls.id}` : relation ? `fd-relation-${relation.id}` : null;
-                return <li key={i}><strong>{label}</strong><span>{issue.message}</span>{target && <Button size="small" onClick={() => { setFocusClassId(target); setStep(1); }}>处理{label}</Button>}</li>;
+                return <li key={i}><strong>{label}</strong><span>{issue.message}</span>{target && <Button size="small" onClick={() => setInlineSelection({ kind: cls ? 'classes' : 'relationships', id: cls?.id ?? relation!.id })}>处理{label}</Button>}</li>;
               })}</ul>
             </> : <p>候选尚未通过结构校验，请重新校验。</p>}
             <Button onClick={() => void operate('validate')}>重新校验本体</Button>
@@ -332,5 +349,8 @@ export default function FromDataPage() {
       </>}
       {step === 4 && <SyncWorkspace source={source} dirty={dirty} busy={Boolean(busy || running || repairing)} error={error} published={Boolean(published)} onCheck={() => void operate('sync-check')} onSync={options => void operate('sync', options)} onAnalyze={() => void operate('data-repair')} onConfirmRepairs={keys => void operate('data-repair-confirm', {proposalId:source.dataRepair?.proposal?.id, keys})} onExport={() => { void exportModelingQuarantine(source).catch(err => setError(message(err))); }} onLocate={id => { setFocusClassId(id); setStep(1); }} onBack={() => setStep(3)} onRefresh={() => { void getModelingSource(source.id).then(accept).catch(err => setError(message(err))); }} />}
     </fieldset>}
+    <SheetDetail title="审核并处理校验问题" open={Boolean(inlineSelection)} onClose={() => { if (!locked) setInlineSelection(undefined); }} width={760} className="fd-review-sheet" footer={<div className="fd-review-sheet-footer"><span>修改后重新校验，保留当前步骤。</span><Button disabled={locked} onClick={async () => { if (await operate('validate')) setInlineSelection(undefined); }}>保存并重新校验</Button></div>}>
+      {source?.draft && inlineSelection && <fieldset className="fd-fieldset fd-page" disabled={locked}><DraftEditorDetails draft={source.draft} profile={source.profile} types={types} resolutions={source.resolutions} selection={inlineSelection} identityLocked={Boolean(source.publication?.completed.length)} onOpenClass={id => setInlineSelection({ kind: 'classes', id })} onChange={draft => edit(next => { next.draft = draft; })} onRename={(draft, resolutions) => edit(next => { next.draft = draft; next.resolutions = resolutions; })} onResolve={(id, resolution) => edit(next => { next.resolutions[id] = resolution; })} /></fieldset>}
+    </SheetDetail>
   </div>;
 }

@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 2,
+  "name": "植物调查",
+  "classes": [
+    {
+      "id": "specimen",
+      "name": "植物标本",
+      "identity": ["code"],
+      "labelProperty": "name",
+      "accepted": true,
+      "properties": [
+        { "id": "code", "name": "code", "dataType": "text" },
+        { "id": "name", "name": "name", "dataType": "text" },
+        { "id": "site", "name": "site", "dataType": "text" },
+        { "id": "batch", "name": "batch", "dataType": "text" }
+      ]
+    },
+    {
+      "id": "tree",
+      "name": "乔木",
+      "identity": ["code"],
+      "labelProperty": "name",
+      "accepted": true,
+      "properties": [
+        { "id": "code", "name": "code", "dataType": "text" },
+        { "id": "name", "name": "name", "dataType": "text" },
+        { "id": "site", "name": "site", "dataType": "text" },
+        { "id": "batch", "name": "batch", "dataType": "text" }
+      ],
+      "parentClassId": "specimen",
+      "inheritanceReason": "标本分类中的一种植物标本"
+    },
+    {
+      "id": "shrub",
+      "name": "灌木",
+      "identity": ["code"],
+      "labelProperty": "name",
+      "accepted": true,
+      "properties": [
+        { "id": "code", "name": "code", "dataType": "text" },
+        { "id": "name", "name": "name", "dataType": "text" },
+        { "id": "site", "name": "site", "dataType": "text" },
+        { "id": "batch", "name": "batch", "dataType": "text" }
+      ],
+      "parentClassId": "specimen",
+      "inheritanceReason": "标本分类中的一种植物标本"
+    },
+    {
+      "id": "herb",
+      "name": "草本",
+      "identity": ["code"],
+      "labelProperty": "name",
+      "accepted": true,
+      "properties": [
+        { "id": "code", "name": "code", "dataType": "text" },
+        { "id": "name", "name": "name", "dataType": "text" },
+        { "id": "site", "name": "site", "dataType": "text" },
+        { "id": "batch", "name": "batch", "dataType": "text" }
+      ],
+      "parentClassId": "specimen",
+      "inheritanceReason": "标本分类中的一种植物标本"
+    },
+    {
+      "id": "site",
+      "name": "site",
+      "identity": ["code"],
+      "labelProperty": "code",
+      "accepted": true,
+      "properties": [{ "id": "code", "name": "code", "dataType": "text" }]
+    },
+    {
+      "id": "batch",
+      "name": "batch",
+      "identity": ["code"],
+      "labelProperty": "code",
+      "accepted": true,
+      "properties": [{ "id": "code", "name": "code", "dataType": "text" }]
+    }
+  ],
+  "mappings": [
+    {
+      "id": "tree",
+      "classId": "tree",
+      "sheet": "tree",
+      "bindings": {
+        "code": "code",
+        "name": "name",
+        "site": "site",
+        "batch": "batch"
+      },
+      "accepted": true
+    },
+    {
+      "id": "shrub",
+      "classId": "shrub",
+      "sheet": "shrub",
+      "bindings": {
+        "code": "code",
+        "name": "name",
+        "site": "site",
+        "batch": "batch"
+      },
+      "accepted": true
+    },
+    {
+      "id": "herb",
+      "classId": "herb",
+      "sheet": "herb",
+      "bindings": {
+        "code": "code",
+        "name": "name",
+        "site": "site",
+        "batch": "batch"
+      },
+      "accepted": true
+    },
+    {
+      "id": "site",
+      "classId": "site",
+      "sheet": "site",
+      "bindings": { "code": "code" },
+      "accepted": true
+    },
+    {
+      "id": "batch",
+      "classId": "batch",
+      "sheet": "batch",
+      "bindings": { "code": "code" },
+      "accepted": true
+    }
+  ],
+  "relationships": [
+    {
+      "id": "at_site",
+      "name": "属于site",
+      "source": "specimen",
+      "target": "site",
+      "joins": [{ "sourceProperty": "site", "targetProperty": "code" }],
+      "accepted": true,
+      "cardinality": "N:1",
+      "cardinalityStatus": "confirmed",
+      "cardinalityReason": "每份标本属于一个采样点和批次",
+      "targetSelection": "entity"
+    },
+    {
+      "id": "at_batch",
+      "name": "属于batch",
+      "source": "specimen",
+      "target": "batch",
+      "joins": [{ "sourceProperty": "batch", "targetProperty": "code" }],
+      "accepted": true,
+      "cardinality": "N:1",
+      "cardinalityStatus": "confirmed",
+      "cardinalityReason": "每份标本属于一个采样点和批次",
+      "targetSelection": "entity"
+    }
+  ]
+}
