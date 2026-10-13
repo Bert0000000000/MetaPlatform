@@ -537,6 +537,9 @@ def test_list_unfinished_reads_the_checkpoint_table_by_status(
         resumed_service = _build(plan_delay=0.0, run_delay=0.0)
         after = RunControl(resumed_service, run_index=_FakeIndex([(TENANT, run_id)]))
         assert await after.recover() == [run_id]
+        # aget_state can expose pending writes before the raw checkpoint is committed.
+        # Wait for recovery itself to finish before asserting the SQL scanner's view.
+        await asyncio.wait_for(asyncio.gather(*tuple(after._tasks)), timeout=8.0)
         landed = await _settle(resumed_service, run_id)
         assert landed["status"] == "awaiting_approval", landed
         assert counts[0] == 2, (
