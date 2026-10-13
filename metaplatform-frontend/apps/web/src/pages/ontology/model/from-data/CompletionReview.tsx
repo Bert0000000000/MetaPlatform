@@ -43,12 +43,12 @@ export default function CompletionReview({ source, disabled, onPrepare, onApplie
       cancelButtonProps={{disabled:Boolean(working)}} maskClosable={!working} closable={!working}
       onCancel={() => setVisible(false)} onOk={() => void apply()}>
       <div className="fd-page">
-      <p>一次核对补全与暂缓范围。类不发布时，其子类、关系和实例一并排除；原始数据和候选保留。</p>
+      <p>一次核对补全与暂缓范围。普通属性不完整时只暂缓该属性；身份或标签不完整时暂缓对象实例。原始数据和候选定义都会保留。</p>
       {working && <div role="status" className="fd-status"><Spin size="small" />{working}</div>}
       {error && <Banner type="danger" description={error} closeIcon={null} />}
       {error && !working && <Button onClick={() => void load(deferred, true)}>重新查看最新方案</Button>}
       {plan && <>
-        <p role="status">本次发布 <strong>{plan.counts.classes}</strong> 个类、<strong>{plan.counts.relationships}</strong> 条关系，暂缓 {plan.counts.deferred} 项。</p>
+        <p role="status">本次发布 <strong>{plan.counts.classes}</strong> 个类、<strong>{plan.counts.relationships}</strong> 条关系，暂缓 {plan.counts.deferred} 个结构项、{plan.counts.deferredProperties ?? 0} 个属性。</p>
         <div className="fd-table-scroll" tabIndex={0} role="region" aria-label="对象补全与暂缓范围"><table className="fd-table fd-completion-table"><thead><tr><th>对象类型</th><th>身份规则及依据</th><th>本次处理</th><th>预计结果</th></tr></thead><tbody>{plan.candidates.map(cls => <tr key={cls.id}>
           <td><strong>{cls.name}</strong>{cls.parent && <p>父类：{plan.candidates.find(c => c.id === cls.parent)?.name ?? cls.parent}</p>}</td>
           <td>{cls.identity.join(' + ') || '来源记录身份'}<p className="mp-onto-muted">{cls.reason || '尚无业务身份依据'}</p></td>
@@ -56,7 +56,7 @@ export default function CompletionReview({ source, disabled, onPrepare, onApplie
             const ids = e.target.value === 'defer' ? [...deferred, cls.id] : deferred.filter(id => id !== cls.id);
             setDeferred(ids); void load(ids);
           }}>{cls.parent && !plan.candidates.find(c => c.id === cls.parent)?.included && <option value="parent">随父类暂缓（含实例）</option>}<option value="complete">按现有依据补全并确认</option><option value="defer">本次不发布（含实例）</option></select></td>
-          <td><Tag color={cls.included ? 'green' : 'orange'}>{cls.included ? '纳入发布' : '暂缓'}</Tag>{cls.problem && <p>{cls.problem}</p>}{cls.problem && onEditClass && !deferred.includes(cls.id) && <Button size="small" theme="borderless" aria-label={`补充${cls.name}信息`} onClick={() => {setVisible(false);onEditClass(cls.id);}}>补充缺失信息</Button>}</td>
+          <td><Tag color={cls.included ? 'green' : 'orange'}>{cls.included ? '纳入发布' : '暂缓'}</Tag>{(cls.deferredProperties?.length ?? 0) > 0 && <p><strong>暂缓属性：</strong>{cls.deferredProperties?.map(p => p.name).join('、')}</p>}{cls.problem && <p>{cls.problem}</p>}{cls.problem && onEditClass && !deferred.includes(cls.id) && <Button size="small" theme="borderless" aria-label={`补充${cls.name}信息`} onClick={() => {setVisible(false);onEditClass(cls.id);}}>补充缺失信息</Button>}</td>
         </tr>)}</tbody></table></div>
         <p className="mp-onto-muted">补全只采用已有定义和明确字段对应；依据不足时保持暂缓，不编造身份、基数或数据。</p>
         <details open={plan.changes.some(c => c.action === '暂缓')}><summary>全部修复与暂缓明细（{plan.changes.length}）</summary><ul>{plan.changes.map((change,i) => <li key={i}><strong>{change.name} · {change.action}</strong>：{change.reason}</li>)}</ul></details>

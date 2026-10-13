@@ -291,6 +291,31 @@ it('reads saved full-RID mappings, saves exact DTO through the real HTTP client 
     ),
   ).toHaveLength(2);
 });
+it('shows managed Excel mappings with Chinese business names while preserving technical columns', async () => {
+  bindings[a.rid] = [
+    {
+      ...source(a.rid, 'excel-modeling'),
+      name: 'excel-modeling',
+      dsn_env: 'ONT_MODELING_SOURCE_DSN',
+      table_name: 'ont_excel_168578d51f7f516bd7c76789',
+      pk_column: 'business_key',
+      field_mapping: {
+        [a.properties[0].rid]: 'p_ed0727cd179fd669',
+        [a.properties[1].rid]: 'p_c45c2c02b20d3826',
+      },
+    },
+  ];
+  mount();
+  await screen.findByText('Excel 建模导入（系统维护）');
+  expect(
+    screen.getByRole('heading', { name: '字段映射 Excel 建模导入 → 客户' }),
+  ).toBeInTheDocument();
+  expect(screen.getAllByText('由 Excel 建模自动映射')).toHaveLength(3);
+  expect(screen.queryByDisplayValue('p_ed0727cd179fd669')).not.toBeInTheDocument();
+  expect(screen.getAllByText('技术列名')).toHaveLength(3);
+  expect(screen.getByText('p_ed0727cd179fd669')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '保存映射' })).toBeDisabled();
+});
 it('blocks blank required sources and duplicate targets before any external write', async () => {
   types = [{ ...a, properties: [...a.properties, a.properties[1]] }];
   mount();

@@ -42,7 +42,7 @@ async function syncReviewedData(page: Page, repeat = false) {
   const checked = page.waitForResponse(r => r.url().endsWith('/sync-check') && r.request().method() === 'POST');
   await page.getByRole('button', { name: /^(检查本次数据|重新检查数据)$/ }).click();
   expect((await checked).ok()).toBeTruthy();
-  await page.getByRole('checkbox', { name: '我已核对同步范围，确认写入正式实例', exact: true }).press('Space');
+  await page.getByRole('checkbox', { name: '我已确认同步范围，写入正式实例', exact: true }).press('Space');
   const synced = page.waitForResponse(r => r.url().endsWith('/sync') && r.request().method() === 'POST');
   await page.getByRole('button', { name: repeat ? '重新同步本次数据' : '开始同步', exact: true }).click();
   const response = await synced;
@@ -371,8 +371,9 @@ test('缺失身份仍可发布本体 → 同步受阻 → 补齐来源复用模�
   const blockedReport = (await checkedResponse.json()).syncCheck;
   expect(blockedReport.canSync).toBe(false);
   expect(blockedReport.report.errors).toBe(2);
-  await expect(page.getByRole('checkbox', { name: '我已核对暂缓范围，确认仅写入合格实例及关系', exact: true })).not.toBeChecked();
-  await expect(page.getByRole('button', { name: '同步合格数据', exact: true })).toBeDisabled();
+  await expect(page.getByText('当前还不能同步实例', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'AI 分析批量修复', exact: true })).toBeEnabled();
+  await expect(page.getByRole('checkbox')).toHaveCount(0);
   source = await (await request.get(endpoint, { headers })).json();
   expect(source.validation.canPublish).toBeTruthy();
   expect(source.validation.dataValidation.errors).toBe(2);
@@ -384,7 +385,7 @@ test('缺失身份仍可发布本体 → 同步受阻 → 补齐来源复用模�
   expect(individuals).toHaveLength(0);
   await page.reload();
   await expect(page.getByRole('navigation', { name: '逆向发现本体流程', exact: true }).getByRole('button', { name: /数据同步（可选）/ })).toHaveAttribute('aria-current', 'step');
-  await page.getByRole('button', { name: '返回发布结果', exact: true }).click();
+  await page.getByRole('navigation', { name: '逆向发现本体流程', exact: true }).getByRole('button', { name: /本体发布与验收/ }).click();
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
 
   source = await upload('modeling-repaired-identity.xlsx'); endpoint = `${gateway}/ont/v2/modeling/sources/${source.id}`;

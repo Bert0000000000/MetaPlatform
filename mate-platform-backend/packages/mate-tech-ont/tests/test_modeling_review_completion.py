@@ -5,6 +5,7 @@ import pytest
 from mate_tech_ont.modeling.core import profile_rows, validate_ontology
 from mate_tech_ont.modeling.data_treatment import prepare
 from mate_tech_ont.modeling.review_completion import propose
+from mate_tech_ont.modeling.scope import publication_scope
 
 from .test_modeling_generation_quality import related_fixture
 
@@ -54,7 +55,12 @@ def test_defer_class_excludes_descendants_mappings_manual_instances_and_links():
         }
     ]
     plan = propose(source, rows, ["line"])
-    assert plan["canApply"] and plan["counts"] == {"classes": 1, "relationships": 0, "deferred": 3}
+    assert plan["canApply"] and plan["counts"] == {
+        "classes": 1,
+        "relationships": 0,
+        "deferred": 3,
+        "deferredProperties": 1,
+    }
     assert not next(c for c in plan["draft"]["classes"] if c["id"] == "child")["included"]
     trial = {**source, "draft": plan["draft"]}
     report, nodes, edges, _ = prepare(trial, rows, True)
@@ -126,6 +132,35 @@ def test_missing_identity_mapping_defers_whole_class_instead_of_guessing_columns
     assert plan["canApply"] and plan["counts"]["classes"] == 1 and plan["data"]["nodes"] == 1
     assert any(c["id"] == "line" and c["action"] == "暂缓" for c in plan["changes"])
     assert "line_no" not in plan["draft"]["mappings"][0]["bindings"]
+
+
+def test_conflicting_ordinary_property_is_deferred_without_dropping_stable_instances():
+    source, rows = fixture()
+    rows.append(
+        {
+            "sheet": "费用",
+            "row": 4,
+            "values": {"单号": "A", "明细号": "10", "金额": 999},
+        }
+    )
+
+    plan = propose(source, rows)
+    line = next(c for c in plan["candidates"] if c["id"] == "line")
+    scoped = publication_scope(plan["draft"])
+    scoped_line = next(c for c in scoped["classes"] if c["id"] == "line")
+    scoped_mapping = next(m for m in scoped["mappings"] if m["classId"] == "line")
+
+    assert plan["canApply"] and plan["data"]["canSync"]
+    assert plan["data"]["nodes"] == 3 and plan["data"]["rows"] == 0
+    assert line["deferredProperties"] == [
+        {
+            "id": "amount",
+            "name": "金额",
+            "reason": "同一业务身份存在多个非空值，当前来源无法可靠确定唯一值",
+        }
+    ]
+    assert "amount" not in {p["id"] for p in scoped_line["properties"]}
+    assert "amount" not in scoped_mapping["bindings"]
 
 
 def test_deferred_classes_do_not_consume_completion_record_capacity(monkeypatch):

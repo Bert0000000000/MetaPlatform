@@ -205,6 +205,65 @@ async def test_completion_plan_is_inert_hash_gated_and_deferred_class_never_sync
         ).status_code == 422
 
 
+@pytest.mark.asyncio
+async def test_completion_defers_conflicting_ordinary_properties_and_syncs_stable_entity(app):
+    from .test_modeling_generation_quality import fixture as quality_fixture
+
+    draft, _ = quality_fixture()
+    book = Workbook()
+    sheet = book.active
+    sheet.title = "费用"
+    sheet.append(["单号", "明细号", "金额"])
+    sheet.append(["A", "10", 100])
+    sheet.append(["B", "10", 200])
+    output = BytesIO()
+    book.save(output)
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = (
+            await client.post(
+                "/api/v1/ont/v2/modeling/sources",
+                files={"file": ("property-deferral.xlsx", output.getvalue())},
+            )
+        ).json()
+        prefix = "/api/v1/ont/v2/modeling/sources/" + source["id"]
+        source = (
+            await client.put(prefix, json={"revision": source["revision"], "draft": draft})
+        ).json()
+        body = {"revision": source["revision"]}
+        plan = (await client.post(prefix + "/completion-plan", json=body)).json()
+
+        assert plan["canApply"] and plan["data"]["canSync"]
+        assert plan["data"]["nodes"] == 1 and plan["data"]["rows"] == 0
+        assert {p["id"] for p in plan["candidates"][0]["deferredProperties"]} == {
+            "document_id",
+            "amount",
+        }
+
+        confirmed = (
+            await client.post(
+                prefix + "/completion-confirm", json={**body, "planHash": plan["hash"]}
+            )
+        ).json()
+        published = await validate_publish(client, confirmed)
+        type_plan = published["plan"]["types"][0]
+        assert set(type_plan["propertyMap"]) == {"line_no"}
+        assert len(type_plan["payload"]["properties"]) == 1
+
+        synced = await client.post(prefix + "/sync", json={"revision": published["revision"]})
+        assert synced.status_code == 200, synced.text
+        result = synced.json()
+        assert result["sync"]["status"] == "succeeded"
+        assert result["sync"]["types"][0]["total_synced"] == 1
+
+        repo = app.state.kernel_repo
+        with repo.tenant_scope(app.state.test_tenant):
+            instances = repo.list_individuals(ClassRef(type_plan["rid"]))
+            assert len(instances) == 1
+
+
 async def treatment_candidate(client):
     from .test_modeling_data_treatment import source_fixture
 
@@ -1042,6 +1101,24 @@ async def test_modeling_cardinality_native_acceptance_and_read_only_drift_detect
         assert report.status_code == 200, report.text
         assert report.json()["status"] == "passed"
         assert source["publication"]["acceptance"]["status"] == "passed"
+        repo = app.state.kernel_repo
+        from dataclasses import replace
+
+        with repo.tenant_scope(app.state.test_tenant):
+            live_link = repo.get_link_type(ClassRef(relation["rid"]))
+            repo.upsert_link_type(replace(live_link, description="stale description"))
+        repaired = await client.post(
+            prefix + "/publish",
+            json={
+                "revision": source["revision"],
+                "configHash": source["plan"]["configHash"],
+                "acknowledgeWarnings": True,
+            },
+        )
+        assert repaired.status_code == 200, repaired.text
+        source = repaired.json()
+        assert source["publication"]["status"] == "succeeded"
+        assert any(result["status"] == "repaired" for result in source["publication"]["results"])
         changed = {**relation["payload"], "cardinality": "N:N"}
         response = await client.post("/api/v1/ont/v2/link-types", json=changed)
         assert response.status_code == 200, response.text
@@ -1051,6 +1128,66 @@ async def test_modeling_cardinality_native_acceptance_and_read_only_drift_detect
         reread = (await client.get(prefix)).json()
         assert reread["revision"] == source["revision"]
         assert reread["publication"]["status"] == "succeeded"
+
+
+@pytest.mark.asyncio
+async def test_modeling_all_reuse_with_existing_relationship_passes_acceptance(app):
+    from copy import deepcopy
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        value = draft()
+        target = deepcopy(value["classes"][0])
+        target.update(id="target", name="Target")
+        value["classes"].append(target)
+        mapping = deepcopy(value["mappings"][0])
+        mapping.update(id="target_rows", classId="target")
+        value["mappings"].append(mapping)
+        value["relationships"] = [
+            {
+                "id": "belongs",
+                "name": "belongs",
+                "source": "item",
+                "target": "target",
+                "joins": [{"sourceProperty": "code", "targetProperty": "code"}],
+                "accepted": True,
+                "cardinality": "N:1",
+                "cardinalityStatus": "confirmed",
+                "cardinalityReason": "每条对象引用一个目标",
+                "targetSelection": "entity",
+            }
+        ]
+        first = await candidate(client)
+        prefix = f"/api/v1/ont/v2/modeling/sources/{first['id']}"
+        first = (
+            await client.put(prefix, json={"revision": first["revision"], "draft": value})
+        ).json()
+        first = await validate_publish(client, first)
+
+        resolutions = {
+            item["classId"]: {
+                "mode": "reuse",
+                "targetRid": item["rid"],
+                "propertyMap": item["propertyMap"],
+            }
+            for item in first["plan"]["types"]
+        }
+        second = await candidate(client)
+        second_prefix = f"/api/v1/ont/v2/modeling/sources/{second['id']}"
+        second = (
+            await client.put(
+                second_prefix,
+                json={
+                    "revision": second["revision"],
+                    "draft": value,
+                    "resolutions": resolutions,
+                },
+            )
+        ).json()
+        second = await validate_publish(client, second)
+        assert all(item["mode"] == "reuse" for item in second["plan"]["types"])
+        assert second["publication"]["acceptance"]["status"] == "passed"
 
 
 @pytest.mark.asyncio

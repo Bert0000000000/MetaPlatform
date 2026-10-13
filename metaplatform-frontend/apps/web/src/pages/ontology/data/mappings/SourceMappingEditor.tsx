@@ -110,6 +110,10 @@ export default function SourceMappingEditor({
   const customWatermark =
     !!source?.ts_column && source.ts_column !== 'updated_at';
   const unsupportedKind = form.kind !== 'pg_table';
+  const managedExcelSource =
+    source?.name === 'excel-modeling' &&
+    source.dsn_env === 'ONT_MODELING_SOURCE_DSN' &&
+    source.table_name.startsWith('ont_excel_');
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -268,7 +272,10 @@ export default function SourceMappingEditor({
       <aside className="mp-mapping-source">
         <section className="mp-mapping-card">
           <h3>来源与同步配置</h3>
-          <fieldset disabled={locked} className="mp-mapping-fields">
+          <fieldset
+            disabled={locked || managedExcelSource}
+            className="mp-mapping-fields"
+          >
             <label>
               <span>源名</span>
               <Input
@@ -318,6 +325,11 @@ export default function SourceMappingEditor({
               />
             </label>
           </fieldset>
+          {managedExcelSource && (
+            <p className="mp-mapping-muted">
+              此来源由“从数据建模”自动维护。如需调整字段，请返回候选审核后重新发布。
+            </p>
+          )}
         </section>
         <section className="mp-mapping-card">
           <h3>绑定状态</h3>
@@ -353,11 +365,14 @@ export default function SourceMappingEditor({
       <div className="mp-mapping-target">
         <section className="mp-mapping-card mp-mapping-properties">
           <h3>
-            字段映射 {form.table || '未配置来源'} →{' '}
+            字段映射{' '}
+            {managedExcelSource ? 'Excel 建模导入' : form.table || '未配置来源'} →{' '}
             {type.display_name || ridTail(type.rid)}
           </h3>
           <p className="mp-mapping-muted">
-            来源列按声明填写；当前接口未提供源字段清单。目标使用完整属性 RID。
+            {managedExcelSource
+              ? '中文名称用于业务核对；技术列名由系统生成并用于同步。'
+              : '来源列按声明填写；当前接口未提供源字段清单。目标使用完整属性 RID。'}
           </p>
           {!identity && (
             <p role="alert">
@@ -404,7 +419,7 @@ export default function SourceMappingEditor({
                               type="checkbox"
                               aria-label={`映射 ${property.title || ridTail(property.rid)}`}
                               checked={enabled}
-                              disabled={locked}
+                              disabled={locked || managedExcelSource}
                               onChange={(event) => {
                                 setForm((old) => {
                                   const mapping = { ...old.mapping };
@@ -419,15 +434,28 @@ export default function SourceMappingEditor({
                             映射此属性
                           </label>
                         )}
-                        <Input
-                          aria-label={`${property.title || ridTail(property.rid)} 来源列`}
-                          value={form.mapping[property.rid] || ''}
-                          disabled={locked || !enabled}
-                          onChange={(value) =>
-                            changeColumn(property.rid, value)
-                          }
-                          placeholder={required ? '填写来源列' : '可选'}
-                        />
+                        {managedExcelSource ? (
+                          <div className="mp-mapping-managed-column">
+                            <strong>
+                              {property.title || ridTail(property.rid)}
+                            </strong>
+                            <small>由 Excel 建模自动映射</small>
+                            <details>
+                              <summary>技术列名</summary>
+                              <code>{form.mapping[property.rid] || '未生成'}</code>
+                            </details>
+                          </div>
+                        ) : (
+                          <Input
+                            aria-label={`${property.title || ridTail(property.rid)} 来源列`}
+                            value={form.mapping[property.rid] || ''}
+                            disabled={locked || !enabled}
+                            onChange={(value) =>
+                              changeColumn(property.rid, value)
+                            }
+                            placeholder={required ? '填写来源列' : '可选'}
+                          />
+                        )}
                       </td>
                       <td>
                         <strong>
@@ -479,6 +507,7 @@ export default function SourceMappingEditor({
                 !identity ||
                 customWatermark ||
                 unsupportedKind ||
+                managedExcelSource ||
                 locked ||
                 !canSave
               }

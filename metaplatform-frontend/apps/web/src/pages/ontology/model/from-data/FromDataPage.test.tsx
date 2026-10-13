@@ -115,9 +115,9 @@ describe('逆向发现本体独立辅助入口', () => {
     fireEvent.click(await screen.findByRole('button', { name: '同步本次数据' }));
     expect(runModelingOperation).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: '检查本次数据' }));
-    await screen.findByText('数据接入检查 · 可同步');
+    await screen.findByText('数据接入检查 · 全部可同步');
     expect(runModelingOperation).toHaveBeenCalledWith(source, 'sync-check', {});
-    fireEvent.click(screen.getByRole('checkbox', { name: '我已核对同步范围，确认写入正式实例' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '我已确认同步范围，写入正式实例' }));
     fireEvent.click(screen.getByRole('button', { name: '开始同步' }));
     await waitFor(() => expect(runModelingOperation).toHaveBeenCalledWith(checked, 'sync', { background: true }));
     expect(saveModelingSource).not.toHaveBeenCalled();
@@ -195,9 +195,10 @@ describe('逆向发现本体独立辅助入口', () => {
     open();
     expect(await screen.findByText('本次所选本体已发布')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '同步本次数据' }));
-    expect(screen.getByRole('button', { name: '开始同步' })).toBeDisabled();
-    expect(screen.getByText(/数据问题不影响已发布的本体/)).toBeVisible();
-    expect(screen.getByText('633')).toBeVisible();
+    expect(screen.getByText('当前还不能同步实例')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'AI 分析批量修复' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: '开始同步' })).not.toBeInTheDocument();
+    expect(screen.getAllByText('633')).toHaveLength(2);
     expect(runModelingOperation).not.toHaveBeenCalled();
   });
   it('按类别批量确认与撤销，保存后重新校验且不自动发布', async () => {

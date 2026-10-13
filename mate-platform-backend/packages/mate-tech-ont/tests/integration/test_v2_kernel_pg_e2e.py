@@ -260,6 +260,8 @@ def _interface(slug: str = "auditable") -> Interface:
 
 
 def test_upsert_link_type_round_trip(repo) -> None:
+    from dataclasses import replace
+
     lt = _lt()
     repo.upsert_link_type(lt)
     got = repo.get_link_type(ClassRef(lt.rid.rid))
@@ -269,6 +271,8 @@ def test_upsert_link_type_round_trip(repo) -> None:
     assert got.cardinality == Cardinality.MANY_TO_ONE
     assert got.directionality == Directionality.DIRECTED
     assert len(got.link_properties) == 1
+    repo.upsert_link_type(replace(lt, description="updated relationship evidence"))
+    assert repo.get_link_type(ClassRef(lt.rid.rid)).description == "updated relationship evidence"
 
 
 def test_get_link_type_missing_raises_keyerror(repo) -> None:

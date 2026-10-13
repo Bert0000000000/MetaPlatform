@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
 WORKDIR /app
 
 # ???
-ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
+ARG PIP_INDEX_URL=https://pypi.org/simple/
+ENV PIP_INDEX_URL=${PIP_INDEX_URL}
 COPY pyproject.toml uv.lock* ./
 COPY packages/ packages/
 COPY services/ services/

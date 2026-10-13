@@ -163,6 +163,44 @@ def test_deferred_candidate_is_preserved_but_not_validated_or_compiled():
     assert value == before
 
 
+def test_deferred_property_is_preserved_but_removed_from_mapping_and_compiled_nodes():
+    import json
+
+    from mate_tech_ont.modeling.core import compile_graph
+    from mate_tech_ont.modeling.scope import publication_scope
+
+    value = draft()
+    value["classes"][0]["properties"].append(
+        {
+            "id": "quantity",
+            "name": "数量",
+            "dataType": "number",
+            "included": False,
+            "deferReason": "来源不完整",
+        }
+    )
+    value["mappings"][0]["bindings"]["quantity"] = "数量"
+    rows = [
+        {
+            "sheet": "业务表",
+            "row": 2,
+            "values": {"编码": "P1", "名称": "产品", "数量": 3},
+        }
+    ]
+
+    before = deepcopy(value)
+    scoped = publication_scope(value)
+    report = validate_ontology(value)
+    nodes, _ = compile_graph(value, rows)
+    payload = json.loads(nodes[0]["payload"])
+
+    assert report["canPublish"] and report["counts"]["properties"] == 2
+    assert "quantity" not in {p["id"] for p in scoped["classes"][0]["properties"]}
+    assert "quantity" not in scoped["mappings"][0]["bindings"]
+    assert "quantity" not in payload["properties"]
+    assert value == before
+
+
 def test_selected_dependencies_and_empty_scope_are_blocked():
     value = draft()
     value["classes"][0]["included"] = False

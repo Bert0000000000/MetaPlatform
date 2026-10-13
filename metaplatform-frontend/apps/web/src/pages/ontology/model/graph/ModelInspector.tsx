@@ -2,6 +2,7 @@ import {
   type KernelObjectType,
   type KernelLinkType,
 } from '@/api/ont/kernel';
+import { ridTail } from '../../rid';
 export default function ModelInspector({
   type,
   links,
@@ -58,7 +59,10 @@ export default function ModelInspector({
           <ul>
             {links.map((l) => (
               <li key={l.rid}>
-                {l.rid} · {l.cardinality}
+                {(l.src === type.rid ? l.src_display_name : l.dst_display_name)?.trim()
+                  || l.src_display_name?.trim()
+                  || l.dst_display_name?.trim()
+                  || ridTail(l.rid)} · {l.cardinality}
               </li>
             ))}
           </ul>
