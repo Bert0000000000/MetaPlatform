@@ -172,7 +172,7 @@ def check_action_parameters(action_type: ActionType, parameters: dict[str, Any])
     for p in action_type.parameters:
         # 别名索引：rid 全名 / slug（尾段去版本）/ title —— AI 抽取三者皆可能
         rid_str = p.rid.rid
-        slug = rid_str.split(".")[-2] if rid_str.count(".") >= 2 else rid_str
+        slug = property_slug(rid_str)
         aliases = tuple(dict.fromkeys(a for a in (rid_str, slug, p.title) if a))
         for a in aliases:
             by_key.setdefault(a, p)

@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ..action.validation import Condition, evaluate_rule_group
+from .identity.class_ref import property_slug
 
 __all__ = [
     "ColumnPolicy",
@@ -179,8 +180,7 @@ def policy_applies(
 def _ind_resolve(ind: Any, prop_field: str) -> Any:
     """individual 上按 slug/rid 取属性值（与 individual_to_row 同规则）。"""
     for k, v in ind.props:
-        parts = k.rid.split(".")
-        slug = parts[3] if len(parts) >= 5 else parts[-1]
+        slug = property_slug(k.rid)
         if prop_field in (slug, k.rid):
             return v
     return None
@@ -270,8 +270,7 @@ def mask_property_values(
         if rid_to_slug and p.property_rid in rid_to_slug:
             slug = rid_to_slug[p.property_rid]
         else:
-            parts = p.property_rid.split(".")
-            slug = parts[3] if len(parts) >= 5 else parts[-1]
+            slug = property_slug(p.property_rid)
         if slug in row:
             row[slug] = None
     return row

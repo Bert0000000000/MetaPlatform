@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .identity.class_ref import property_slug
 from .types.object_type import ObjectType
 
 __all__ = [
@@ -41,9 +42,8 @@ _NUM_RE = re.compile(r"^-?\d+(\.\d+)?([eE][-+]?\d+)?$")
 
 
 def prop_slug(prop_rid: str) -> str:
-    """prop rid → slug（`ont.<t>.prop.<slug>.vN` 第 4 段；退化取末段）。"""
-    parts = prop_rid.split(".")
-    return parts[3] if len(parts) >= 5 else parts[-1]
+    """Property alias used by validation, queries and successor matching."""
+    return property_slug(prop_rid)
 
 
 def coerce_value(from_fmt: str, to_fmt: str, value: Any) -> Any:

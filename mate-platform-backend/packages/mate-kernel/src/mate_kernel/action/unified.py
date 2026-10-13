@@ -25,6 +25,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..ontology.identity.class_ref import property_slug
 from .edit_set import EditOp, EditSetError, resolve_edit_templates
 
 __all__ = [
@@ -49,8 +50,7 @@ class UnifiedEditAssembly:
 
 def _slug_of_param_rid(rid: str) -> str:
     """参数完整 rid → 短名（与 legacy 回写同规则）。"""
-    parts = rid.split(".")
-    return parts[-2] if parts[-1].startswith("v") else parts[-1]
+    return property_slug(rid)
 
 
 def _param_rid_map(action_type: Any) -> dict[str, str]:

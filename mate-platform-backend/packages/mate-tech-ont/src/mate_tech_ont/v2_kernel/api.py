@@ -57,6 +57,7 @@ from mate_kernel.ontology.api import (
 )
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import ClassRef, definition_checksum
+from mate_kernel.ontology.identity.class_ref import property_slug
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
 from mate_kernel.ontology.reasoning import Axiom, AxiomKind, Function, FunctionLanguage
@@ -2102,7 +2103,7 @@ async def export_object_type(rid: str, request: Request, format: str = "jsonld")
         {
             "@id": p.rid.rid,
             "@type": "owl:DatatypeProperty",
-            "schema:name": p.rid.rid.split(".")[3] if len(p.rid.rid.split(".")) >= 5 else p.rid.rid,
+            "schema:name": property_slug(p.rid.rid),
             "rdfs:domain": ot.rid.rid,
             "ont:type_id": p.type_id,
             "ont:nullable": p.nullable,
@@ -4383,6 +4384,8 @@ _PREVIEW_LOCK_MESSAGES = {
 
 def _slug_from_rid(rid: str) -> str:
     parts = (rid or "").split(".")
+    if len(parts) >= 6:
+        return parts[4]
     if len(parts) >= 5:
         return parts[3]
     return ""
@@ -4415,7 +4418,7 @@ async def _render_model_type_preview(
         properties.append(
             {
                 "rid": p_rid,
-                "name": _slug_from_rid(p_rid),
+                "name": property_slug(p_rid),
                 "type_id": str(p.get("type_id") or "string"),
                 "nullable": bool(p.get("nullable", False)),
                 "primary_key": bool(p.get("primary_key", False)),
@@ -4558,9 +4561,9 @@ async def _render_merge_suggestion_preview(
         overlap["source_only"] = list(src_names.keys())
         overlap["target_only"] = list(tgt_names.keys())
         for p_rid, _title in src_names.items():
-            p_slug = _slug_from_rid(p_rid).split("-")[-1]
+            p_slug = property_slug(p_rid).split("-")[-1]
             for t_rid, _t_title in tgt_names.items():
-                t_slug = _slug_from_rid(t_rid).split("-")[-1]
+                t_slug = property_slug(t_rid).split("-")[-1]
                 if p_slug and p_slug == t_slug:
                     overlap["shared_props"].append(
                         {

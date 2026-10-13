@@ -12,6 +12,7 @@ from mate_kernel.ontology.api import (
     OntologyRepository,
 )
 from mate_kernel.ontology.identity import ClassRef, Version, VersionConflict, definition_checksum
+from mate_kernel.ontology.identity.class_ref import property_slug
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
 
@@ -433,8 +434,7 @@ class InMemoryOntologyRepository(OntologyRepository):
     def _index_embeddings(self, ind: Individual) -> None:
         assert self._embedder is not None
         for prop_ref, value in ind.props:
-            parts = prop_ref.rid.split(".")
-            slug = parts[3] if len(parts) >= 5 else parts[-1]
+            slug = property_slug(prop_ref.rid)
             self._embeddings[f"{ind.rid}#{prop_ref.rid}"] = {
                 "individual_rid": ind.rid,
                 "class_rid": ind.class_rid.rid,
@@ -1064,8 +1064,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             for pr in ot_arr.properties:
                 if not pr.array or not pr.reducer:
                     continue
-                parts = pr.rid.rid.split(".")
-                slug = parts[3] if len(parts) >= 5 else parts[-1]
+                slug = property_slug(pr.rid.rid)
                 for row in rows0:
                     if slug in row:
                         row[slug] = reduce_array_value(row[slug], pr.reducer)
@@ -1316,9 +1315,9 @@ class InMemoryOntologyRepository(OntologyRepository):
             ot = self.get_object_type(ClassRef(p.action_rid))
             props_in: dict[str, Any] = dict(p.parameters.get("props") or {})
             slug_to_ref: dict[str, ClassRef] = {
-                q.rid.rid.split(".")[3]: q.rid for q in ot.properties
+                property_slug(q.rid.rid): q.rid for q in ot.properties
             }
-            pk_slug = ot.primary_key[0].rid.split(".")[3]
+            pk_slug = property_slug(ot.primary_key[0].rid)
             pk_value = props_in.get(pk_slug)
             if pk_value is None:
                 raise ValueError(f"primary key '{pk_slug}' required to create {p.action_rid}")
@@ -1476,7 +1475,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             ot = self._object_types.get(ClassRef(str(p.action_rid)))
             props_in = dict((p.parameters or {}).get("props") or {})
             if ot is not None:
-                pk_slug = ot.primary_key[0].rid.split(".")[3]
+                pk_slug = property_slug(ot.primary_key[0].rid)
                 pk_value = props_in.get(pk_slug)
                 parts = ot.rid.rid.split(".")
                 tenant, cls_slug = parts[1], parts[4] if len(parts) >= 6 else parts[3]
@@ -1953,8 +1952,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             # rid 形如 ont.<tenant>.prop.<slug>.v1，slug 在版本后缀之前。
             param_rids: dict[str, ClassRef] = {}
             for p in at.parameters:
-                parts = p.rid.rid.split(".")
-                slug = parts[-2] if parts[-1].startswith("v") else parts[-1]
+                slug = property_slug(p.rid.rid)
                 param_rids[slug] = p.rid
             from dataclasses import replace
 

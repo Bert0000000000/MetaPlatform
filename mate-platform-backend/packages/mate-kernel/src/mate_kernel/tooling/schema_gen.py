@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..ontology.identity.class_ref import property_slug
 from ..ontology.instances.link_instance import LinkInstance
 from ..ontology.types.object_type import ObjectType
 
@@ -50,8 +51,7 @@ def slug_of_rid(rid: str) -> str:
 
 
 def slug_of_property_rid(rid: str) -> str:
-    parts = rid.split(".")
-    return parts[3] if len(parts) >= 5 else parts[-1]
+    return property_slug(rid)
 
 
 def tool_name_for(ot: ObjectType) -> str:

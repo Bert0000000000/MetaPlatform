@@ -615,7 +615,7 @@ export async function searchObjectsSemantic(payload: {
 /** props 键（完整 Property rid）→ slug 短键（与后端 individual_to_row 同规则）。 */
 export function propSlug(rid: string): string {
   const parts = rid.split('.');
-  return parts[3] ?? rid;
+  return /^v\d+$/.test(parts.at(-1) ?? '') ? (parts.at(-2) ?? rid) : (parts.at(-1) ?? rid);
 }
 
 // ── UI-02/03/04/05：Action 表单 / 治理面 / Interface / 时序 ──

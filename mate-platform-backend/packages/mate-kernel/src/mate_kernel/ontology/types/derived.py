@@ -17,13 +17,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..identity.class_ref import property_slug
 from .property_ import DerivedSpec, Property
 
 
 def _slug(rid: str) -> str:
     """与 compiler.individual_to_row 同规则的 slug 提取。"""
-    parts = rid.split(".")
-    return parts[3] if len(parts) >= 5 else parts[-1]
+    return property_slug(rid)
 
 
 def derived_properties(props: tuple[Property, ...]) -> list[Property]:

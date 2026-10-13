@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
+from ..ontology.identity.class_ref import property_slug
 from ..ontology.instances.individual import Individual
 from ..ontology.instances.link_instance import LinkInstance
 from ..ontology.types.object_type import ObjectType
@@ -317,8 +318,7 @@ class InMemoryQueryExecutor:
             return None
         out: dict[str, Any] = {}
         for p in ot.properties:
-            parts = p.rid.rid.split(".")
-            slug = parts[3] if len(parts) >= 5 else parts[-1]
+            slug = property_slug(p.rid.rid)
             out[slug] = {"type": p.type_id, "rid": p.rid.rid}
         return out
 

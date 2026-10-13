@@ -14,6 +14,8 @@ import os
 import re
 from typing import Any, Protocol
 
+from mate_kernel.ontology.identity.class_ref import property_slug
+
 __all__ = [
     "Embedder",
     "HashEmbedder",
@@ -261,7 +263,7 @@ def build_card(
     """matched 属性 → 对象卡片（card_text 带 rid 可追溯）。"""
     score = max((m["score"] for m in matched), default=0.0)
     parts = [
-        f"- {m['value_text']} ({m['property_rid'].rsplit('.', 2)[0].split('.')[-1]})"
+        f"- {m['value_text']} ({property_slug(m['property_rid'])})"
         for m in matched
     ]
     card_text = f"{individual_rid}:\n" + "\n".join(parts)
