@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Maximize, Minus, Plus, RotateCcw, Scan, Search } from 'lucide-react';
 import { layoutConceptSchema, positionSchemaNodes, schemaNeighborhood, type SchemaPositions } from './schema-layout';
 import './schema-graph.css';
+import { groupRelationships, type GraphRelationship, type RelationshipGroup } from './groupRelationships';
 function classPurpose(name: string) {
   if (/明细|结存|流水|批次|结果|BOM行|工序|记录/.test(name)) return '明细与记录';
   if (/订单|任务单|工单|变更单|计划|MPS|到货单/.test(name)) return '业务单据与计划';
@@ -9,7 +10,7 @@ function classPurpose(name: string) {
   return '其他业务对象';
 }
 interface ModelClass { id: string; name: string; description: string; properties: unknown[] }
-interface Relationship { id: string; name: string; cardinality?: string; source: string; target: string; kind?: 'inheritance' | 'inherited'; relationRef?: string }
+type Relationship = GraphRelationship;
 
 const purposes = ['基础对象', '业务单据与计划', '明细与记录', '其他业务对象'];
 const category = (name: string) => purposes.indexOf(classPurpose(name));
@@ -33,17 +34,20 @@ function readPositions(key: string): SchemaPositions {
   } catch { return {}; }
 }
 
-export default function OntologySchemaGraph({ classes, relationships: suppliedRelationships, selected, onSelect, onOpen, compact = false, selectedRelation, onRelationSelect, layoutKey = 'schema' }: {
+export default function OntologySchemaGraph({ classes, relationships: suppliedRelationships, selected, onSelect, onOpen, compact = false, selectedRelation, onRelationSelect, layoutKey = 'schema', singleRelationship = true }: {
   classes: ModelClass[]; relationships: Relationship[]; selected?: string; onSelect: (id: string) => void; onOpen?: (id: string) => void; compact?: boolean;
   selectedRelation?: string; onRelationSelect?: (id: string) => void;
   layoutKey?: string;
+  singleRelationship?: boolean;
 }) {
   const [all, setAll] = useState(true);
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState(purposes);
   const [labels, setLabels] = useState(true);
   const [showInherited, setShowInherited] = useState(false);
-  const relationships = useMemo(() => suppliedRelationships.filter(r => r.kind !== 'inherited' || showInherited), [suppliedRelationships, showInherited]);
+  const relationships = useMemo(() => groupRelationships(suppliedRelationships.filter(r => r.kind !== 'inherited' || showInherited), singleRelationship), [suppliedRelationships, showInherited, singleRelationship]);
+  const hasRelation = (group: RelationshipGroup, id?: string) => group.members.some(r => (r.relationRef || r.id) === id);
+  const selectedGroup = relationships.find(r => hasRelation(r, selectedRelation));
   const [hovered, setHovered] = useState('');
   const [camera, setCamera] = useState({ x: 0, y: 0, scale: 1 });
   const [size, setSize] = useState({ width: 800, height: 580 });
@@ -71,7 +75,7 @@ export default function OntologySchemaGraph({ classes, relationships: suppliedRe
   }, [filtered, relationships, layoutFocus, all, size.width, size.height]);
   const positioned = useMemo(() => diagram.dag ? positionSchemaNodes(diagram.dag, positions) : null, [diagram, positions]);
   const related = useMemo(() => {
-    const selectedEdges = relationships.filter(r => (r.relationRef || r.id) === selectedRelation);
+    const selectedEdges = relationships.filter(r => hasRelation(r, selectedRelation));
     if (selectedEdges.length && !dragging) return { ids: new Set(selectedEdges.flatMap(r => [r.source, r.target])), active: '', relation: selectedRelation };
     const active = dragging || hovered || selected || (!all ? focus : '');
     const ids = new Set(active ? [active] : []);
@@ -147,8 +151,8 @@ export default function OntologySchemaGraph({ classes, relationships: suppliedRe
         <g className="ms-schema-scene" transform={`translate(${camera.x},${camera.y}) scale(${camera.scale})`}>
           {diagram.edges.map(r => {
             const edge = positioned!.edge(r.source, r.target, r.id), points = edge.points;
-            const isSelected = selectedRelation === (r.relationRef || r.id);
-            const active = related.relation ? (r.relationRef || r.id) === related.relation : r.source === related.active || r.target === related.active;
+            const isSelected = hasRelation(r, selectedRelation);
+            const active = related.relation ? hasRelation(r, related.relation) : r.source === related.active || r.target === related.active;
             const label = relationshipLabel(r);
             const activate = () => r.kind === 'inheritance' ? onSelect(r.source) : onRelationSelect?.(r.relationRef || r.id);
             return <g key={r.id} className={`ms-schema-edge${r.kind === "inheritance" ? " is-inheritance" : r.kind === "inherited" ? " is-inherited" : " is-business"}${isSelected ? ' is-selected' : ''}${active ? ' is-connected' : related.ids.size ? ' is-dimmed' : ''}`} role="button" tabIndex={0} aria-label={`查看关系 ${label}`} onPointerDown={e => e.stopPropagation()} onClick={activate} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } }}><title>{label}</title><rect x={edge.x - 10} y={edge.y - 10} width="20" height="20" fill="transparent" /><polyline className="ms-schema-edge-hit" points={points.map((p: { x: number; y: number }) => `${p.x},${p.y}`).join(' ')} /><polyline points={points.map((p: { x: number; y: number }) => `${p.x},${p.y}`).join(' ')} strokeDasharray={r.kind === 'inherited' ? '5 4' : undefined} markerEnd={`url(#${marker}${r.kind === 'inheritance' ? '-inheritance' : ''}${active || isSelected ? '-active' : ''})`} />{(labels || isSelected || Boolean(r.kind)) && camera.scale > .45 && <text x={edge.x} y={edge.y - 8} textAnchor="middle">{relationshipLabel(r, true)}</text>}</g>;
@@ -168,7 +172,7 @@ export default function OntologySchemaGraph({ classes, relationships: suppliedRe
       {!diagram.nodes.length && <div className="ms-concept-empty">没有匹配的对象</div>}
     </div>
     <div className="ms-concept-footer"><div className="ms-concept-legend" aria-label="图谱用途筛选">{purposes.filter(p => classes.some(c => classPurpose(c.name) === p)).map(p => <label key={p} title="用途分组建议"><input type="checkbox" checked={categories.includes(p)} onChange={e => setCategories(v => e.target.checked ? [...v, p] : v.filter(k => k !== p))} /><i className={`ms-concept-kind-${purposes.indexOf(p)}`} />{p}</label>)}</div><label className="ms-concept-label-toggle"><input type="checkbox" checked={labels} onChange={e => setLabels(e.target.checked)} />关系名称与基数</label></div>
-    <div className="ms-relation-legend"><span className="ms-inheritance-key">▷ 是一种（指向父类）</span><span className="ms-business-key">→ 业务关系</span>{suppliedRelationships.some(r => r.kind === "inherited") && <label><input type="checkbox" checked={showInherited} onChange={e => setShowInherited(e.target.checked)} />显示继承适用关系</label>}</div>
-    {!!selectedRelation && <div className="ms-concept-selected-relation">{relationships.filter(r => (r.relationRef || r.id) === selectedRelation).map(r => <button key={r.id} onClick={() => onRelationSelect?.(r.relationRef || r.id)}><strong>{relationshipLabel(r)}</strong><span>{classes.find(c => c.id === r.source)?.name} → {classes.find(c => c.id === r.target)?.name}</span></button>)}</div>}
+    <div className="ms-relation-legend"><span className="ms-inheritance-key">▷ 是一种（指向父类）</span><span className="ms-business-key">→ 业务关系</span>{suppliedRelationships.some(r => r.kind === 'inherited') && <label><input type="checkbox" checked={showInherited} onChange={e => setShowInherited(e.target.checked)} />显示继承适用关系</label>}</div>
+    {selectedGroup && <div className="ms-concept-selected-relation"><button onClick={() => onRelationSelect?.(selectedGroup.relationRef || selectedGroup.id)}><strong>{relationshipLabel(selectedGroup)}</strong><span>{classes.find(c => c.id === selectedGroup.source)?.name} → {classes.find(c => c.id === selectedGroup.target)?.name}</span></button></div>}
   </div>;
 }

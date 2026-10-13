@@ -71,7 +71,7 @@
   min-width: 0;
 }
 .mw-tree-panel, .mw-inspector-panel { overflow: hidden; }
-.mw-visual-panel { display: flex; flex-direction: column; overflow: hidden; }
+.mw-visual-panel { display: flex; flex-direction: column; overflow: auto; }
 .mw-view-heading { flex: none; }
 .mw-visual-panel > .mp-schema-graph {
   display: flex;
@@ -81,7 +81,7 @@
   padding: 0 12px;
 }
 .mw-visual-panel .ms-schema-toolbar, .mw-visual-panel .ms-concept-footer, .mw-visual-panel .ms-concept-selected-relation { flex: none; }
-.mw-visual-panel .ms-concept-canvas { flex: 1; min-height: 0; }
+.mw-visual-panel .ms-concept-canvas { flex: 1; min-height: 100px; }
 .mw-visual-panel .ms-concept-diagram .ms-schema-svg,
 .mw-visual-panel .ms-concept-diagram.is-overview .ms-schema-svg {
   position: absolute;

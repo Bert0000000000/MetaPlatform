@@ -24,7 +24,7 @@ export default function CandidateGraph({ draft, layoutKey }: { draft: ModelingDr
   return <section className="fd-card" aria-label="候选本体图谱">
     <h3>本体图谱预览</h3><p className="mp-onto-muted">查看候选对象、属性、业务关系和子类继承。与模型工作台使用同一图谱，支持搜索、拖动、缩放及局部关联；点击对象查看候选详情。</p>
     {!graph.classes.length ? <p>暂无候选对象类型</p> : <div>
-      <OntologySchemaGraph classes={graph.classes} relationships={graph.relationships} selected={selectedId}
+      <OntologySchemaGraph classes={graph.classes} relationships={graph.relationships} selected={selectedId} singleRelationship={false}
         onSelect={id => { setSelectedId(id); setSelectedRelation(''); }} onOpen={setSelectedId}
         selectedRelation={selectedRelation} onRelationSelect={setSelectedRelation}
         layoutKey={`ontology-discovery:${layoutKey ?? draft.name + ':' + graph.classes.map(cls => cls.id).join(',')}`} compact />
