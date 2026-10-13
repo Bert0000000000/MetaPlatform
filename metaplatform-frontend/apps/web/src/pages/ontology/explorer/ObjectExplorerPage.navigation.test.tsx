@@ -19,6 +19,8 @@ vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ resolvedThe
 
 const customer: KernelObjectType = { rid: 'ont.test.obj.customer.v1', display_name: '客户', primary_key: [], properties: [], interfaces: [] };
 const order: KernelObjectType = { rid: 'ont.test.obj.order.v1', display_name: '订单', primary_key: [], properties: [], interfaces: [] };
+const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+const originalExecCommand = Object.getOwnPropertyDescriptor(document, 'execCommand');
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -47,7 +49,14 @@ beforeEach(() => {
   Range.prototype.getBoundingClientRect = () => new DOMRect();
   HTMLElement.prototype.scrollIntoView = vi.fn();
 });
-afterEach(async () => { cleanup(); await act(async () => Toast.destroyAll()); vi.restoreAllMocks(); vi.unstubAllGlobals(); window.history.replaceState(null, '', '/'); });
+afterEach(async () => {
+  cleanup(); await act(async () => Toast.destroyAll()); vi.restoreAllMocks(); vi.unstubAllGlobals();
+  if (originalClipboard) Object.defineProperty(navigator, 'clipboard', originalClipboard);
+  else Reflect.deleteProperty(navigator, 'clipboard');
+  if (originalExecCommand) Object.defineProperty(document, 'execCommand', originalExecCommand);
+  else Reflect.deleteProperty(document, 'execCommand');
+  window.history.replaceState(null, '', '/');
+});
 
 function renderWorkspace(path = '/ontology/explore/objects', strict = false) {
   window.history.replaceState(null, '', path);
@@ -61,6 +70,41 @@ function renderWorkspace(path = '/ontology/explore/objects', strict = false) {
   const view = render(strict ? <StrictMode>{tree}</StrictMode> : tree);
   return { ...view, chat, chatRequested: () => chatRequested };
 }
+
+it.each([true, false])('copies a RID on HTTP and reports the actual copy result (%s)', async copied => {
+  const row = rows(customer.rid)[0];
+  let copyInput!: HTMLTextAreaElement;
+  const exec = vi.fn((command: string) => {
+    expect(command).toBe('copy');
+    copyInput = document.activeElement as HTMLTextAreaElement;
+    expect(copyInput.value.slice(copyInput.selectionStart, copyInput.selectionEnd)).toBe(row.rid);
+    return copied;
+  });
+  Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+  Object.defineProperty(document, 'execCommand', { value: exec, configurable: true });
+  boundary.get.mockImplementation((url: string) => {
+    if (url === '/ont/v2/object-types') return boundary.typeRead();
+    if (url === '/ont/v2/individuals') return Promise.resolve({ data: rows(customer.rid) });
+    if (url === `/ont/v2/individuals/${row.rid}`) return Promise.resolve({ data: row });
+    return Promise.resolve({ data: [] });
+  });
+  const success = vi.spyOn(Toast, 'success');
+  const error = vi.spyOn(Toast, 'error');
+  renderWorkspace(`/ontology/explore/objects/${row.rid}?class=${customer.rid}`);
+  const copyButton = await screen.findByRole('button', { name: '复制 RID', exact: true });
+  copyButton.focus();
+  fireEvent.click(copyButton);
+  await waitFor(() => expect(exec).toHaveBeenCalledTimes(1));
+  expect(copyInput.isConnected).toBe(false);
+  expect(document.activeElement).toBe(copyButton);
+  if (copied) {
+    expect(success).toHaveBeenCalledWith('RID 已复制');
+    expect(error).not.toHaveBeenCalled();
+  } else {
+    expect(error).toHaveBeenCalledWith('复制失败，请手动选择 RID 复制');
+    expect(success).not.toHaveBeenCalled();
+  }
+});
 
 it('does not replace a pending lazy destination URL when the old Explorer receives its first type list', async () => {
   const typeRequest = deferred<{ data: KernelObjectType[] }>();
