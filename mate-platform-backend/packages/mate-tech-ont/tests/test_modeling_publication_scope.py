@@ -55,6 +55,121 @@ def test_structure_publication_is_independent_of_missing_identity_and_mapping_ap
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["人员", "组织", "产品"])
+async def test_exact_name_conflicts_are_independent_of_similarity_and_catalog_page(
+    monkeypatch, name
+):
+    from types import SimpleNamespace
+
+    from mate_tech_ont.modeling import publication
+
+    value = draft()
+    value["classes"][0].update(id="new-concept", name=name)
+    source = {"revision": 1, "draft": value, "resolutions": {}}
+    monkeypatch.setattr(
+        publication.native, "_ctx", lambda request: SimpleNamespace(tenant_id="test")
+    )
+
+    async def missing(*args):
+        return None
+
+    pages = []
+
+    async def catalog(request, limit, offset):
+        pages.append(offset)
+        items = (
+            [
+                {"rid": f"ont.test.obj.crm.unrelated-{i}.v1", "display_name": f"无关{i}"}
+                for i in range(100)
+            ]
+            if offset == 0
+            else [
+                {"rid": f"ont.test.obj.crm.existing-{i}.v1", "display_name": name} for i in range(6)
+            ]
+        )
+        return [SimpleNamespace(model_dump=lambda item=item: item) for item in items]
+
+    monkeypatch.setattr(publication, "current_type", missing)
+    monkeypatch.setattr(publication.native, "list_object_types", catalog)
+    issues = await publication.new_type_conflicts(None, source)
+    assert len(issues) == 1
+    assert issues[0]["item"] == "new-concept" and issues[0]["severity"] == "error"
+    assert "精确同名" in issues[0]["message"]
+    assert all(f"existing-{i}" in issues[0]["message"] for i in range(6))
+    assert pages == [0, 100]
+    source["resolutions"] = {"new-concept": {"mode": "new", "propertyMap": {}}}
+    assert await publication.new_type_conflicts(None, source) == []
+
+    async def valid(*args):
+        return {"valid": True}
+
+    async def similar(*args):
+        return SimpleNamespace(model_dump=lambda: {"candidates": []})
+
+    async def no_sources(*args):
+        return []
+
+    monkeypatch.setattr(publication.native, "validate_model_endpoint", valid)
+    monkeypatch.setattr(publication.native, "precheck_object_type", similar)
+    monkeypatch.setattr(publication.native, "list_backing_datasources", no_sources)
+    plan = await publication.prepare(None, source)
+    assert plan["types"][0]["mode"] == "new"
+    notice = next(w for w in plan["warnings"] if "精确同名" in w)
+    assert all(f"existing-{i}" in notice for i in range(6))
+    source["resolutions"] = {}
+    with pytest.raises(ValueError, match="精确同名"):
+        await publication.prepare(None, source)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("matching", [True, False])
+async def test_same_named_own_completed_type_does_not_block_valid_retry(monkeypatch, matching):
+    from types import SimpleNamespace
+
+    from mate_tech_ont.modeling import publication
+    from mate_tech_ont.modeling.core import digest
+
+    value = draft()
+    other = deepcopy(value["classes"][0])
+    other["id"] = "remaining"
+    value["classes"].append(other)
+    source = {"draft": value, "resolutions": {}}
+    input_hash = digest(
+        {k: source.get(k) for k in ("draft", "context", "questions", "resolutions")}
+    )
+    own_rid = "ont.test.obj.data.product.v1"
+    source["plan"] = {
+        "configHash": "plan",
+        "inputHash": input_hash,
+        "types": [{"rid": own_rid}, {"rid": "ont.test.obj.data.remaining.v1"}],
+    }
+    source["publication"] = {
+        "configHash": "plan" if matching else "stale",
+        "inputHash": input_hash,
+        "completed": [own_rid],
+    }
+    monkeypatch.setattr(
+        publication.native, "_ctx", lambda request: SimpleNamespace(tenant_id="test")
+    )
+
+    async def missing(*args):
+        return None
+
+    catalog = [{"rid": own_rid, "display_name": "产品"}]
+
+    async def native_catalog(*args):
+        return catalog
+
+    monkeypatch.setattr(publication, "current_type", missing)
+    monkeypatch.setattr(publication, "native_type_catalog", native_catalog)
+    issues = await publication.new_type_conflicts(None, source)
+    assert bool(issues) is not matching
+    catalog.append({"rid": "ont.test.obj.crm.external.v1", "display_name": "产品"})
+    issues = await publication.new_type_conflicts(None, source)
+    assert any("external" in issue["message"] for issue in issues)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("started", ["intent", "completed", "none"])
 @pytest.mark.parametrize("matching", [True, False])
 async def test_blocked_precheck_preserves_only_matching_started_publication_plan(
@@ -137,6 +252,7 @@ async def test_similar_customer_requires_explicit_new_decision(monkeypatch):
     monkeypatch.setattr(publication.native, "validate_model_endpoint", valid)
     monkeypatch.setattr(publication.native, "precheck_object_type", similar)
     monkeypatch.setattr(publication.native, "list_backing_datasources", no_sources)
+    monkeypatch.setattr(publication, "native_type_catalog", no_sources)
     with pytest.raises(ValueError, match="显式选择"):
         await publication.prepare(None, source)
     source["resolutions"] = {"customer": {"mode": "new", "propertyMap": {}}}

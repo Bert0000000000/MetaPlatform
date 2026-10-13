@@ -83,3 +83,12 @@
 .mp-schema-graph button[aria-pressed=true] { color: var(--ms-accent); background: var(--semi-color-primary-light-default); }
 .mp-schema-graph .ms-segmented { display: flex; gap: 4px; }
 .mp-schema-graph input { color: var(--ms-text); }
+.ms-concept-diagram { --ms-inheritance: #9c7dcc; --ms-business: #438c88; }
+[theme-mode=dark] .ms-concept-diagram { --ms-inheritance: #c1a5e8; --ms-business: #7cd6d0; }
+.ms-concept-diagram .ms-schema-edge.is-inheritance { color: var(--ms-inheritance); }
+.ms-concept-diagram .ms-schema-edge.is-business, .ms-concept-diagram .ms-schema-edge.is-inherited { color: var(--ms-business); }
+.ms-relation-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; font-size: 12px; padding-top: 10px; }
+.ms-inheritance-key { color: var(--ms-inheritance); }
+.ms-business-key { color: var(--ms-business); }
+.mp-schema-graph .ms-relation-legend label { display: inline-flex; align-items: center; flex-direction: row; gap: 6px; margin: 0; }
+.mw-inspector li small, .fd-card li small { display: block; color: var(--ms-muted, var(--semi-color-text-2)); }
