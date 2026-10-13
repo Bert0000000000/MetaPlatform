@@ -65,7 +65,9 @@ def main() -> None:
             request_headers["Authorization"] = "Bearer " + token
         request = urllib.request.Request(
             base + path,
-            data=None if body is None else json.dumps(body).encode("utf-8"),
+            data=body
+            if isinstance(body, bytes)
+            else (None if body is None else json.dumps(body).encode("utf-8")),
             headers=request_headers,
             method=method,
         )
@@ -226,6 +228,20 @@ ROLLBACK;
         "PostgreSQL NOSUPERUSER/NOBYPASSRLS role, forced RLS and tenant visibility verified"
     )
 
+    # Fresh releases must exercise the Excel provider -> native instance chain.
+    # Retained receipts are read back on restarts without touching enterprise batches.
+    from verify_modeling import verify as verify_excel_modeling
+
+    if not args.read_only or state.get("modeling"):
+        state["modeling"] = verify_excel_modeling(
+            call, state.get("modeling") if args.read_only else None
+        )
+        checks.append(
+            "Synthetic Excel objects and relationships persisted; repeat sync identities stable"
+        )
+        if not args.read_only:
+            state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
     report = {
         "verified_at": datetime.now(UTC).isoformat(),
         "phase": "after-restart" if args.read_only else "initial-write",
@@ -236,6 +252,7 @@ ROLLBACK;
         "individual_rid": state["individual_rid"],
         "proposal_id": state["proposal_id"],
         "checks": checks,
+        "modeling": state.get("modeling"),
     }
     report_path = (
         HERE

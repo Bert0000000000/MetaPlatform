@@ -1874,3 +1874,41 @@ async def test_structure_can_publish_with_missing_data_identity_but_sync_is_bloc
                 )
                 == []
             )
+
+
+@pytest.mark.asyncio
+async def test_tencent_release_excel_probe_runs_real_modeling_endpoints(app):
+    """The release probe consumes the real parser, publication, staging and repository."""
+    import asyncio
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[4] / "infra/demo-cloud/verify_modeling.py"
+    spec = importlib.util.spec_from_file_location("demo_excel_probe", path)
+    probe = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(probe)
+    loop = asyncio.get_running_loop()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+
+        async def request(method, path, body=None, **kwargs):
+            response = await client.request(
+                method,
+                path,
+                content=body if isinstance(body, bytes) else None,
+                json=None if isinstance(body, bytes) else body,
+                headers=kwargs.get("headers"),
+            )
+            assert response.status_code in (200, 201), response.text
+            return response.json()
+
+        def call(method, path, body=None, **kwargs):
+            return asyncio.run_coroutine_threadsafe(
+                request(method, path, body, **kwargs), loop
+            ).result(timeout=90)
+
+        receipt = await asyncio.to_thread(probe.verify, call, None)
+        assert len(receipt["identities"]["individuals"]) == 4
+        assert len(receipt["identities"]["links"]) == 2
+        assert await asyncio.to_thread(probe.verify, call, receipt) == receipt

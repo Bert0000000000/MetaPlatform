@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -135,13 +136,28 @@ class DockerRuntimeTests(unittest.TestCase):
                 encoding="utf-8",
             )
             result = subprocess.run(
-                ["docker", "compose", "--env-file", str(env), "-f", "docker-compose.yml",
-                 "-f", "infra/demo-cloud/compose.yml", "config", "--format", "json"],
-                cwd=KIT.parent.parent, check=True, capture_output=True, text=True,
+                [
+                    shutil.which("docker"),
+                    "compose",
+                    "--env-file",
+                    str(env),
+                    "-f",
+                    "docker-compose.yml",
+                    "-f",
+                    "infra/demo-cloud/compose.yml",
+                    "config",
+                    "--format",
+                    "json",
+                ],
+                cwd=KIT.parent.parent,
+                check=True,
+                capture_output=True,
+                text=True,
             )
         runtime = json.loads(result.stdout)["services"]["mate-tech-ont"]["environment"]
         self.assertEqual(
-            runtime.get("ONT_MODELING_SOURCE_DSN"), runtime["KERNEL_PG_DSN"],
+            runtime.get("ONT_MODELING_SOURCE_DSN"),
+            runtime["KERNEL_PG_DSN"],
             "Excel source must read the same database where modeling stages rows",
         )
         self.assertTrue(runtime["KERNEL_PG_DSN"].startswith("postgresql://mate_app:"))
