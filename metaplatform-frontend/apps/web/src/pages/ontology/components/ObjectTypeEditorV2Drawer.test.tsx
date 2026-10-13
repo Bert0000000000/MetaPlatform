@@ -8,6 +8,7 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import ObjectTypeEditorV2Drawer from './ObjectTypeEditorV2Drawer';
 import * as kernel from '@/api/ont/kernel';
 import { setEditorSessionIdentity } from '../hooks/editorSession';
+import { webcrypto } from 'node:crypto';
 vi.mock('@mate/shared', () => ({ useAuth: () => ({ user: { id: 'editor-user', tenantId: 'acme' } }) }));
 vi.mock('@/utils/auth', async original => ({ ...(await original<typeof import('@/utils/auth')>()), getTenantId: () => 'acme' }));
 vi.hoisted(() => { HTMLCanvasElement.prototype.getContext = (() => ({ fillRect() {}, measureText: () => ({ width: 0 }) })) as unknown as typeof HTMLCanvasElement.prototype.getContext; });
@@ -29,6 +30,18 @@ const originalAdapter=apiClient.defaults.adapter;
 beforeEach(() => { setEditorSessionIdentity(''); vi.clearAllMocks(); vi.mocked(kernel.getObjectBindingUsage).mockResolvedValue([]); const storage=new Map<string,string>(); vi.stubGlobal('localStorage',{getItem:(k:string)=>storage.get(k)??null,setItem:(k:string,v:string)=>storage.set(k,v),removeItem:(k:string)=>storage.delete(k),clear:()=>storage.clear()}); apiClient.defaults.adapter=async config=>({config,status:200,statusText:'OK',headers:{},data:{}}); vi.stubGlobal('matchMedia', () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} })); vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} }); vi.mocked(kernel.listSchemaWip).mockResolvedValue([]); });
 afterEach(() => { cleanup(); apiClient.defaults.adapter=originalAdapter; vi.unstubAllGlobals(); });
 const fill = () => { fireEvent.change(screen.getByLabelText('业务名称'), {target:{value:'客户'}}); fireEvent.change(screen.getByLabelText('业务标识'), {target:{value:'customer'}}); };
+it('opens the creation editor and saves a property on an HTTP browser', async () => {
+  vi.stubGlobal('crypto', { getRandomValues: webcrypto.getRandomValues.bind(webcrypto) });
+  mount(); fill();
+  fireEvent.click(screen.getByRole('button', {name:'添加属性'}));
+  fireEvent.change(screen.getByPlaceholderText('例如 dept_name'), {target:{value:'amount'}});
+  fireEvent.click(screen.getByRole('button', {name:'保存草稿'}));
+  await screen.findByText('草稿已保存，刷新后可恢复；尚未发布。');
+  expect(vi.mocked(kernel.saveSchemaWip).mock.calls[0][0].properties).toEqual(expect.arrayContaining([
+    expect.objectContaining({rid:'ont.acme.prop.crm.customer-id.v1',primary_key:true}),
+    expect.objectContaining({rid:'ont.acme.prop.crm.customer-amount.v1'}),
+  ]));
+});
 it('shows business form with technical metadata progressively disclosed', async () => {
   mount();
   expect(screen.getByRole('heading', {name:'新建对象类型'})).toBeInTheDocument();
