@@ -25,10 +25,14 @@ async function fixture(page: Page) {
   return rows;
 }
 async function choose(page: Page, name: string) {
-  await page.getByRole('combobox', { name: '对象类型', exact: true }).click();
+  const selector = page.getByRole('combobox', { name: '对象类型', exact: true });
+  await selector.click();
   // Semi includes its selection icon in the option's accessible name.
   // Scope the exact business label to the real option, excluding the trigger.
-  await page.locator('.semi-select-option').filter({ has: page.getByText(name, { exact: true }) }).click();
+  const option = page.locator('.semi-select-option').filter({ has: page.getByText(name, { exact: true }) });
+  await option.click();
+  await expect(option).toBeHidden();
+  await expect(selector).toContainText(name);
 }
 async function downloaded(page: Page) {
   const received = page.waitForEvent('download');
