@@ -68,7 +68,7 @@ def test_parser_does_not_reject_keyword_text(query: str) -> None:
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(app)
+    return TestClient(app, raise_server_exceptions=False)
 
 
 @pytest.fixture
@@ -146,3 +146,24 @@ def test_http_requires_authentication_before_parsing(client: TestClient, query: 
 def test_delete_translation_preserves_subject_variable() -> None:
     parsed = parse_sparql("DELETE { ?s :type :Concept } WHERE { ?s :label 'X' }")
     assert sparql_to_cypher(parsed) == "MATCH (s:label) DELETE s"
+
+
+@pytest.mark.parametrize(("query", "keyword"), [_UNSUPPORTED[0], _UNSUPPORTED[4]])
+def test_explain_rejects_unsupported_syntax_with_http_error(
+    client: TestClient, auth_headers: dict[str, str], query: str, keyword: str
+) -> None:
+    response = client.post("/api/v1/ont/explain", json={"query": query}, headers=auth_headers)
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"] == f"Parse failed: Unsupported SPARQL syntax: {keyword}"
+
+
+def test_explain_simple_select_remains_available(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    response = client.post(
+        "/api/v1/ont/explain",
+        json={"query": "SELECT ?s WHERE { ?s rdf:type ?o } LIMIT 1"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["variables"] == ["s"]
