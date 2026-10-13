@@ -82,7 +82,13 @@
 }
 .mw-visual-panel .ms-schema-toolbar, .mw-visual-panel .ms-concept-footer, .mw-visual-panel .ms-concept-selected-relation { flex: none; }
 .mw-visual-panel .ms-concept-canvas { flex: 1; min-height: 0; }
-.mw-visual-panel .ms-schema-svg { position: absolute; inset: 0; height: 100%; }
+.mw-visual-panel .ms-concept-diagram .ms-schema-svg,
+.mw-visual-panel .ms-concept-diagram.is-overview .ms-schema-svg {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 0;
+}
 .mw-visual-panel .mw-list { overflow: auto; }
 .mw-tree-panel[hidden], .mw-inspector-panel[hidden], .mw-resource-list[hidden] {
   display: none;

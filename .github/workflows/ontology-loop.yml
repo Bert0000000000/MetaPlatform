@@ -221,9 +221,9 @@ jobs:
           python3 - <<'PY'
           import xml.etree.ElementTree as ET
           cases = list(ET.parse('metaplatform-frontend/test-results/experience.xml').getroot().iter('testcase'))
-          assert len(cases) == 7, f'Expected 7 experience browser cases, found {len(cases)}'
+          assert len(cases) == 8, f'Expected 8 experience browser cases, found {len(cases)}'
           assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error'))
-          print('Experience browser regressions: 7 executed, 0 skipped; real ontology suites remain required.')
+          print('Experience browser regressions: 8 executed, 0 skipped; real ontology suites remain required.')
           PY
 
       - name: Collect both required migration browser cases

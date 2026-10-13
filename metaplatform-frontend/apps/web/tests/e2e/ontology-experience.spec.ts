@@ -62,6 +62,8 @@ for (const [width,height] of [[1280,720],[1920,1080],[768,1024]]) {
     const svg = page.getByRole('img',{name:'本体类与关系结构图'});
     await expect(svg).toBeVisible();
     const before = await svg.boundingBox();
+    const canvas = await page.locator('.ms-concept-canvas').boundingBox();
+    expect(Math.abs(before!.height-canvas!.height)).toBeLessThanOrEqual(2);
     const footer = page.locator('.ms-concept-legend');
     await expect(footer).toBeInViewport();
     const layout = await page.locator('.mw-workbench').evaluate(element => {
@@ -88,6 +90,11 @@ for (const [width,height] of [[1280,720],[1920,1080],[768,1024]]) {
     await page.getByLabel('搜索图谱对象').fill('订单');
     await expect(page.getByRole('button',{name:'查看本体类 客户',exact:true})).toHaveCount(0);
     await expect(page.getByRole('button',{name:'查看本体类 订单',exact:true})).toBeVisible();
+    await expect.poll(async () => {
+      const node = await page.getByRole('button',{name:'查看本体类 订单',exact:true}).boundingBox();
+      const viewport = await svg.boundingBox();
+      return !!node && !!viewport && node.y >= viewport.y && node.y+node.height <= viewport.y+viewport.height;
+    }).toBe(true);
     if (width === 1280) await page.screenshot({path:'test-results/experience-artifacts/graph-1280.png'});
   });
 }
@@ -102,4 +109,23 @@ test('selecting a graph relation shows its actual endpoints and cardinality', as
   await page.getByRole('button',{name:'查看目标模型 订单',exact:true}).click();
   await expect(page.locator('#model-inspector').getByRole('heading',{name:'订单',exact:true})).toBeVisible();
   await expect(page).not.toHaveURL(/linkRef=/);
+});
+
+test('phone graph keeps the canvas and controls usable without horizontal overflow', async ({page}) => {
+  await page.setViewportSize({width:390,height:844}); await fixture(page);
+  await page.goto('/ontology/model/graph');
+  const svg = page.getByRole('img',{name:'本体类与关系结构图'});
+  await expect(svg).toBeVisible();
+  const viewport = await svg.boundingBox(), canvas = await page.locator('.ms-concept-canvas').boundingBox();
+  expect(Math.abs(viewport!.height-canvas!.height)).toBeLessThanOrEqual(2);
+  expect(viewport!.width).toBeGreaterThan(200);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.locator('.ms-concept-footer').scrollIntoViewIfNeeded();
+  await expect(page.locator('.ms-concept-legend')).toBeInViewport();
+  await page.getByRole('checkbox',{name:'其他业务对象',exact:true}).uncheck();
+  await expect(page.getByRole('button',{name:'查看本体类 客户',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'查看本体类 订单',exact:true})).toBeVisible();
+  await page.getByRole('checkbox',{name:'其他业务对象',exact:true}).check();
+  await expect(page.getByRole('button',{name:'查看本体类 客户',exact:true})).toBeVisible();
+  await page.screenshot({path:'test-results/experience-artifacts/graph-phone.png'});
 });
