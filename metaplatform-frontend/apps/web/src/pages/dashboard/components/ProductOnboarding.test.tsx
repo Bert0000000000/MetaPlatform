@@ -3,6 +3,7 @@ vi.mock('@/api/apphub/runtime', () => ({ getAppRuntime: vi.fn() }));
 vi.mock('@/api/ontology-bigdata', () => ({ listBigDataSources: vi.fn() }));
 vi.mock('@/api/ont/kernel', () => ({ listAllObjectTypes: vi.fn(), listLinkTypes: vi.fn(), listBackingDatasources: vi.fn(), listIndividuals: vi.fn(), listLinkInstances: vi.fn() }));
 import { describe, expect, it, vi } from 'vitest';
+vi.hoisted(() => { HTMLCanvasElement.prototype.getContext = (() => ({ fillRect() {}, clearRect() {}, getImageData: () => ({ data: new Uint8ClampedArray(4) }) })) as never; });
 const auth = vi.hoisted(() => ({ user: { id: 'one', tenantId: 'a' } }));
 vi.mock('@mate/shared', () => ({ useAuth: () => ({ user: auth.user }) }));
 import ProductOnboarding, { deriveOnboardingEvidence, onboardingKey } from './ProductOnboarding';
