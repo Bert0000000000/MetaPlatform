@@ -280,8 +280,9 @@ class TestSourceResolutionMatrix:
                     rid, {"ns-id": "three", "ns-name": "Ada", "ns-score": 1}, "namespaced customer"
                 )
                 backend.confirm_proposal(proposal.proposal_id, confirmed_by="reviewer")
-                created = backend.execute_proposal(proposal.proposal_id)
-                assert created.rid == f"ont.{T}.ind.namespaced.three"
+                backend.execute_proposal(proposal.proposal_id)
+                created = backend.get_individual(f"ont.{T}.ind.namespaced.three")
+                assert backend.get_proposal(proposal.proposal_id).status.value == "executed"
                 assert dict(created.props) == {
                     ClassRef(p_id): "three",
                     ClassRef(p_name): "Ada",
