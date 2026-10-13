@@ -9,4 +9,4 @@
 - [GitHub issue 发布结果](ISSUES.md)
 - [仓库与 SHA 快照](evidence/repository-snapshots.json)、[候选池](evidence/candidate-pool.json)、[源码校验清单](evidence/source-manifest.json)
 
-每个工单提供实际 ZIP 附件（PRD.md + PROMPT.md + DELIVERY-STANDARD.md）和固定 SHA 仓库文档链接；附件与 issue 编号在发布结果中对应。没有实现、部署或主分支合并发生于本次研究。
+每个工单提供存档于本仓库的 ZIP 文件附件（固定 SHA 下载链接）（PRD.md + PROMPT.md + DELIVERY-STANDARD.md）和固定 SHA 仓库文档链接；附件与 issue 编号在发布结果中对应。没有实现、部署或主分支合并发生于本次研究。
