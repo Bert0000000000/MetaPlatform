@@ -32,10 +32,14 @@ def app():
     from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
     from mate_tech_ont.main import app
 
-    # 若 main 已挂载（PG / seed），先看一眼 repo；否则装个干净的 InMemory
-    repo = getattr(app.state, "kernel_repo", None) or InMemoryOntologyRepository()
-    app.state.kernel_repo = repo
-    return app
+    # This suite declares an in-memory adapter. Preserve any repository left by
+    # another suite instead of inheriting its PostgreSQL scope or fixture data.
+    previous = getattr(app.state, "kernel_repo", None)
+    app.state.kernel_repo = InMemoryOntologyRepository()
+    try:
+        yield app
+    finally:
+        app.state.kernel_repo = previous
 
 
 @pytest.fixture()
