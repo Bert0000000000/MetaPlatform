@@ -13700,7 +13700,7 @@ paths:
       x-sunset: '2026-12-31'
       x-migration-target: /api/v1/ont/v2/object-sets:evaluate
       operationId: ontPostOntExplain
-      description: SPARQL EXPLAIN (parse + transpile only)
+      description: SPARQL EXPLAIN (parse + transpile only). Unsupported FILTER or OPTIONAL syntax returns HTTP 400 using the same simplified parser as execution.
       x-mate-owner: ontology-platform
       x-mate-permission: ont.post
       x-mate-requirements:
