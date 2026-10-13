@@ -1,0 +1,12 @@
+{
+  "label": "web-build",
+  "command": [
+    "pnpm.cmd",
+    "run",
+    "build"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+  "exit_code": 0,
+  "elapsed_seconds": 41.95,
+  "head": "38ff11900b9d72560afe20db4715d344c1370a23"
+}

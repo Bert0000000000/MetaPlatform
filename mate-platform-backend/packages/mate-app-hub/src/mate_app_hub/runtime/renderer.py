@@ -29,6 +29,8 @@ def render_page(
                 layout={"type": page.get("layout", "single")},
                 children=[],
                 config={
+                    **page.get("definition", {}),
+                    "page_id": page.get("id"),
                     "page_code": page.get("code"),
                     "module_code": mod.get("code"),
                     "schema_version": page.get("schema_version", 1),

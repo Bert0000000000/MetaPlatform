@@ -100,6 +100,7 @@ class McpApiKeyORM(Base):
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    scopes: Mapped[str] = mapped_column(Text, default="[]", server_default="[]")
     key_name: Mapped[str] = mapped_column(String(128), default="")
     key_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     key_prefix: Mapped[str] = mapped_column(String(16), default="")

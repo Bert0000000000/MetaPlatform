@@ -35,6 +35,8 @@ from mate_tech_mcp.server import create_server
 
 class AddTool:
     name = "add"
+    required_scope = "platform.read"
+    agent_invokable = True
     description = "Add two numbers"
     input_schema = {
         "type": "object",
@@ -49,6 +51,7 @@ class AddTool:
 class _Ctx:
     def __init__(self, tenant_id: str) -> None:
         self.tenant_id = tenant_id
+        self.scopes = frozenset({"platform.read"})
 
 
 class _State:
@@ -130,12 +133,12 @@ async def test_dynamic_tools_are_tenant_scoped() -> None:
 
     with _in_request("tenant-a"):
         names = {t.name for t in await surf.list_tools()}
-    assert "a_only" in names
+    assert "a_only" not in names
     assert "b_only" not in names  # cross-tenant negative
 
     with _in_request("tenant-b"):
         names = {t.name for t in await surf.list_tools()}
-    assert "b_only" in names
+    assert "b_only" not in names
     assert "a_only" not in names
 
 
@@ -143,7 +146,7 @@ async def test_dynamic_tools_are_tenant_scoped() -> None:
 async def test_call_tool_rejects_foreign_tenant_dynamic_tool() -> None:
     register_tool("tenant-b", "b_only", endpoint="http://b:9000")
     surf = MateStreamableHttpServer(_build_server(), default_tenant="default")
-    with _in_request("tenant-a"), pytest.raises(ValueError):
+    with _in_request("tenant-a"), pytest.raises(PermissionError):
         await surf.call_tool("b_only", {})
 
 
@@ -179,6 +182,7 @@ async def test_platform_wide_static_tool_visible_to_all_tenants() -> None:
 class _CtxWithAuth:
     def __init__(self, tenant_id: str, auth_method: object) -> None:
         self.tenant_id = tenant_id
+        self.scopes = frozenset({"platform.read"})
         self.auth_method = auth_method
 
 
@@ -251,7 +255,7 @@ def test_mounted_surface_resolves_tenant_from_auth_middleware() -> None:
                 user_id=UserId("u-1"),
                 roles=frozenset(),
                 permissions=frozenset(),
-                scopes=frozenset(),
+                scopes=frozenset({"platform.read"}),
                 client_id="test",
                 auth_method=AuthMethod.API_KEY,
             )
@@ -276,19 +280,30 @@ def test_mounted_surface_resolves_tenant_from_auth_middleware() -> None:
 
     import uvicorn
 
-    cfg = uvicorn.Config(app, host="127.0.0.1", port=18611, log_level="error")
+    cfg = uvicorn.Config(app, host="127.0.0.1", port=55517, log_level="error")
     server = uvicorn.Server(cfg)
-    threading.Thread(target=server.run, daemon=True).start()
-    time.sleep(1.5)
+    import socket
+
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 55517))  # checked-free owned loopback test listener
+    thread = threading.Thread(target=lambda: server.run(sockets=[listener]), daemon=True)
+    thread.start()
+    for _ in range(100):
+        if server.started:
+            break
+        time.sleep(0.02)
 
     from mcp.client.session import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.client.streamable_http import streamable_http_client
 
     async def _names(tenant: str) -> set[str]:
+        import httpx
+
         async with (
-            streamablehttp_client(
-                "http://127.0.0.1:18611/api/v1/mcp/protocol/mcp",
-                headers={"x-test-tenant": tenant},
+            httpx.AsyncClient(headers={"x-test-tenant": tenant}) as http_client,
+            streamable_http_client(
+                "http://127.0.0.1:55517/api/v1/mcp/protocol/mcp",
+                http_client=http_client,
             ) as (read, write, _sid),
             ClientSession(read, write) as session,
         ):
@@ -297,10 +312,13 @@ def test_mounted_surface_resolves_tenant_from_auth_middleware() -> None:
             return {t.name for t in tools.tools}
 
     try:
+        assert server.started
         a = asyncio.run(_names("tenant-a"))
         b = asyncio.run(_names("tenant-b"))
     finally:
         server.should_exit = True
+        thread.join(5)
+        listener.close()
+        assert not thread.is_alive()
 
-    assert "a_only" in a and "b_only" not in a
-    assert "b_only" in b and "a_only" not in b
+    assert a == {"add"} and b == {"add"}  # unscoped dynamic records are hidden in both tenants

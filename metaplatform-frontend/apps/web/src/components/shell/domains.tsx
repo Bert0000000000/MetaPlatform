@@ -118,6 +118,7 @@ export const DOMAINS: DomainDef[] = [
       ] },
       { key: 'data', label: '数据架构', path: '/gov/data', children: [
         { key: 'entities', label: '数据实体', path: '/gov/data' },
+        { key: 'sources', label: '数据源', path: '/gov/data/sources' },
         { key: 'flows', label: '数据流', path: '/gov/data/flows' },
         { key: 'standards', label: '数据标准', path: '/gov/data/standards' },
         { key: 'assets', label: '资产目录', path: '/gov/data/assets' },

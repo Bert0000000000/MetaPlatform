@@ -1,0 +1,135 @@
+{
+  "identity": "signature-bypass USER fixture, not signed issuer proof",
+  "actual_pg_http": "PASS",
+  "duplicate_create409_delete_by_id404": "PASS",
+  "filtered_order_history": "PASS",
+  "history_app_id": "app-e1598b1298475cdf91c87b5bf7ecca26",
+  "history_page_id": "page-f5329031a0285d1d9d4fb07a9eae7409",
+  "history_audit_id": "audit-c37c2df73dd6",
+  "samples": {
+    "apphubCheckPublication": {
+      "app_id": "app-32af75ef793e41a19a7c3e4e948d9efb",
+      "draft_version": "1.0.0",
+      "revision": 4,
+      "checked_at": "2026-10-11T17:15:09.110046+00:00",
+      "can_publish": true,
+      "checks": [
+        {
+          "key": "bindings",
+          "status": "pass",
+          "message": "已验证 1 个订单、客户与关系绑定",
+          "next_step": ""
+        },
+        {
+          "key": "reference_versions",
+          "status": "pass",
+          "message": "模型版本及 Action / 关系指纹与已保存绑定一致",
+          "next_step": ""
+        },
+        {
+          "key": "access",
+          "status": "pass",
+          "message": "当前租户的读取与发布权限",
+          "next_step": ""
+        },
+        {
+          "key": "components",
+          "status": "pass",
+          "message": "已保存可运行页面",
+          "next_step": ""
+        },
+        {
+          "key": "action_policy",
+          "status": "pass",
+          "message": "注册 Action 的目标类型有效；执行仍须人工 USER 确认及写权限",
+          "next_step": ""
+        },
+        {
+          "key": "runtime",
+          "status": "pass",
+          "message": "已加载保存的运行树及实际绑定数据（不执行动作）",
+          "next_step": ""
+        }
+      ]
+    },
+    "apphubListReleaseLogs": [
+      {
+        "logId": "log-769c491dd4414e938ed3f18eb91f68a3",
+        "releaseId": "rel-61d7e68ea5704bf3827581745a7c33ca",
+        "action": "提交发布申请",
+        "operator": "mp11-order-reviewer",
+        "remark": "Fix round1 actual canonical arrays",
+        "createdAt": "2026-10-11T17:15:09.387177+00:00"
+      },
+      {
+        "logId": "log-d75fd2d698684773b56e663ea8b3a718",
+        "releaseId": "rel-61d7e68ea5704bf3827581745a7c33ca",
+        "action": "审批驳回",
+        "operator": "mp11-order-reviewer",
+        "remark": "Fixture validation only",
+        "createdAt": "2026-10-11T17:15:09.399150+00:00"
+      }
+    ],
+    "apphubListReleaseTasks": [
+      {
+        "id": "task-788b5c6e626d42c78386399786c7bf8b",
+        "name": "技术负责人审批",
+        "assignee": "mp11-order-reviewer",
+        "status": "COMPLETED",
+        "createTime": "2026-10-11T17:15:09.387177+00:00",
+        "endTime": "2026-10-11T17:15:09.399150+00:00"
+      },
+      {
+        "id": "task-b88005f5def2456dbc2ca1e0ada8aa47",
+        "name": "运维审批",
+        "assignee": "mp11-order-reviewer",
+        "status": "ACTIVE",
+        "createTime": "2026-10-11T17:15:09.387177+00:00"
+      }
+    ],
+    "apphubGetOrderRuntimeHistory": [
+      {
+        "audit_id": "audit-c37c2df73dd6",
+        "tenant_id": "mp11-app-ui",
+        "proposal_id": "prop-0e099fd7",
+        "action_rid": "ont.mp11-app-ui.act.review",
+        "target_iid": "ont.mp11-app-ui.ind.order.pending-browser-1791738810840",
+        "actor_id": "mp11-order-reviewer",
+        "result": {
+          "kind": "edit_set",
+          "fn_spec": null,
+          "inverse": [
+            {
+              "op": "set_property",
+              "dst": "",
+              "src": "",
+              "props": {},
+              "value": "pending-browser-1791738810840",
+              "target": "ont.mp11-app-ui.ind.order.pending-browser-1791738810840",
+              "class_rid": "",
+              "primary_key": "",
+              "property_rid": "ont.mp11-app-ui.prop.status",
+              "link_type_rid": "",
+              "link_instance_rid": ""
+            }
+          ],
+          "assembly": {
+            "ops": 1,
+            "fn_edits": 0,
+            "declarative_fallback": true,
+            "declarative_templates": 1
+          },
+          "audit_id": "audit-c37c2df73dd6",
+          "is_compat": false,
+          "action_rid": "ont.mp11-app-ui.act.review",
+          "target_iid": "ont.mp11-app-ui.ind.order.pending-browser-1791738810840",
+          "created_rids": [],
+          "applied_count": 1,
+          "non_invertible": []
+        },
+        "created_at": "2026-10-11T17:13:39.294981Z"
+      }
+    ]
+  },
+  "actual_api_new_process_filtered_receipt": "PASS"
+}

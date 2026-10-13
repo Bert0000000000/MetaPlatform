@@ -1,0 +1,34 @@
+{
+  "schema_source": "https://spec.openapis.org/oas/3.1/schema/2022-10-07",
+  "results": [
+    {
+      "file": "mate-platform-backend\\contracts\\openapi\\services\\ont.yaml",
+      "sha256": "0ca7a958e0656b05e7054e027738bbcef6203361d38538f50cc4b8f2ac66eb6d",
+      "errors": []
+    },
+    {
+      "file": "mate-platform-backend\\contracts\\openapi\\services\\apphub.yaml",
+      "sha256": "02d818f788a67594b6c4d36fd12f57aeb42c14352c4bfec0699e26ada91ce28b",
+      "errors": []
+    },
+    {
+      "file": "mate-platform-backend\\contracts\\openapi\\services\\data.yaml",
+      "sha256": "d35d492311184c9ffdad3d07f31699c9f24ff016a29c7980fd04dafb32adf3ae",
+      "errors": [],
+      "relocated_operations": [
+        "/api/v1/data/lineage/edges",
+        "/api/v1/data/lineage/graph",
+        "/api/v1/data/quality/rules",
+        "/api/v1/data/quality/run",
+        "/api/v1/data/quality/results",
+        "/api/v1/data/catalog/search"
+      ],
+      "parsed_semantics_preserved": true
+    },
+    {
+      "file": "mate-platform-backend\\contracts\\openapi\\services\\mcp.yaml",
+      "sha256": "a637915290053179f9b46719b1b4fc0e4079be249aa54019454b6963a8adccb1",
+      "errors": []
+    }
+  ]
+}

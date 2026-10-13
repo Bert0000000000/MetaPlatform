@@ -51,16 +51,14 @@ def no_external_redis() -> None:
 # ---------------------------------------------------------------------------
 # Case 1 — P0: 工具未授权调用
 # ---------------------------------------------------------------------------
-def test_case1_unregistered_tool_returns_404(
-    client: TestClient, auth_headers: dict[str, str]
-) -> None:
+def test_case1_unregistered_tool_denied(client: TestClient, auth_headers: dict[str, str]) -> None:
     """POST /api/v1/mcp/tools/{name} 调用未注册工具 → 404 + ToolNotFound."""
     resp = client.post(
         "/api/v1/mcp/tools/no_such_tool_xyz",
         json={"arguments": {}},
         headers=auth_headers,
     )
-    assert resp.status_code in (404, 405), resp.text
+    assert resp.status_code == 403, resp.text
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +131,7 @@ def test_case5_kb_tool_argument_sql_injection_safe(
         json={"arguments": {"query": inj, "top_k": 3}},
         headers=auth_headers,
     )
-    assert resp.status_code in (200, 400), resp.text
+    assert resp.status_code == 403, resp.text
 
 
 # ---------------------------------------------------------------------------

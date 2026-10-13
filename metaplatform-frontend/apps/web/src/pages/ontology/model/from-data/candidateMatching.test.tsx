@@ -47,3 +47,9 @@ it('中文字段名通过英文稳定标识对应既有属性，不把已有编�
   const native = {...target, rid:'ont.test.obj.scm.supplier.v1',properties:[{...target.properties[0],rid:'ont.test.prop.supplier-supplier-code.v1',title:'supplier code'}]};
   expect(suggestResolution(supplier,native).propertyMap).toEqual({supplier_code:'ont.test.prop.supplier-supplier-code.v1'});
 });
+
+
+it('暂缓的普通属性不参与复用建议，也不能把已匹配类误算为增加属性', () => {
+  const candidate = {...cls,properties:[...cls.properties,{id:'level',name:'客户等级',dataType:'text' as const,included:false}]};
+  expect(suggestResolution(candidate,target)).toEqual({mode:'reuse',targetRid:target.rid,propertyMap:{code:target.primary_key[0]}});
+});

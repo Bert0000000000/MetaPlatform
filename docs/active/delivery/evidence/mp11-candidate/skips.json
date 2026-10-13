@@ -1,0 +1,67 @@
+[
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t1_select_only_own_tenant_rows",
+    "reason": "owned test role is privileged/superuser; actual nonprivileged RLS NOT_EXERCISED",
+    "status": "NOT_EXERCISED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t2_create_with_cross_tenant_rid_via_api_guard",
+    "reason": "owned test role is privileged/superuser; actual nonprivileged RLS NOT_EXERCISED",
+    "status": "NOT_EXERCISED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t3_apply_action_cross_tenant_target_rejected",
+    "reason": "owned test role is privileged/superuser; actual nonprivileged RLS NOT_EXERCISED",
+    "status": "NOT_EXERCISED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t4_upsert_object_type_cross_tenant_rid_blocked",
+    "reason": "owned test role is privileged/superuser; actual nonprivileged RLS NOT_EXERCISED",
+    "status": "NOT_EXERCISED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t5_link_instance_cross_tenant_blocked",
+    "reason": "owned test role is privileged/superuser; actual nonprivileged RLS NOT_EXERCISED",
+    "status": "NOT_EXERCISED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t6_write_with_wrong_tenant_id_blocked_by_with_check",
+    "reason": "owned test role is privileged/superuser; actual nonprivileged RLS NOT_EXERCISED",
+    "status": "NOT_EXERCISED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t7_select_other_tenant_rows_returns_empty",
+    "reason": "owned test role is privileged/superuser; actual nonprivileged RLS NOT_EXERCISED",
+    "status": "NOT_EXERCISED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/security/test_tenant_isolation_hard.py::test_t8_update_other_tenant_row_touches_zero",
+    "reason": "owned test role is privileged/superuser; actual nonprivileged RLS NOT_EXERCISED",
+    "status": "NOT_EXERCISED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_pg_version_publication_retains_links_and_supports_new_links[memory-src]",
+    "reason": "InMemory parameter cannot exercise PostgreSQL SQL/locking regression; matching pg parameter passed",
+    "status": "SKIPPED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_pg_version_publication_retains_links_and_supports_new_links[memory-dst]",
+    "reason": "InMemory parameter cannot exercise PostgreSQL SQL/locking regression; matching pg parameter passed",
+    "status": "SKIPPED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_pg_relation_definition_rechecks_version_after_publish[memory]",
+    "reason": "InMemory parameter cannot exercise PostgreSQL SQL/locking regression; matching pg parameter passed",
+    "status": "SKIPPED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_pg_strict_new_survives_legacy_writer_without_advisory_lock[memory]",
+    "reason": "InMemory parameter cannot exercise PostgreSQL SQL/locking regression; matching pg parameter passed",
+    "status": "SKIPPED"
+  },
+  {
+    "id": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_pg_edit_set_then_link_and_supersede_do_not_deadlock[memory]",
+    "reason": "InMemory parameter cannot exercise PostgreSQL SQL/locking regression; matching pg parameter passed",
+    "status": "SKIPPED"
+  }
+]

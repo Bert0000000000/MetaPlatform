@@ -1,0 +1,28 @@
+{
+  "legacy_task6_api_listener": {
+    "ProcessId": 62164,
+    "ParentProcessId": 65568,
+    "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+    "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.superpowers\\sdd\\2026-10-11-metaplatform-product-v1.1-implementation\\task-6-ui-api.py",
+    "CreationTicks": 639273373014301580
+  },
+  "port": 55510,
+  "manifest_paths": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.superpowers\\sdd\\2026-10-11-metaplatform-product-v1.1-implementation\\task-6-processes.json",
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.superpowers\\sdd\\2026-10-11-metaplatform-product-v1.1-implementation\\task-6-listeners.json"
+  ],
+  "launch_input_references": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.superpowers\\sdd\\2026-10-11-metaplatform-product-v1.1-implementation\\task-6-ui-api.py",
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.superpowers\\sdd\\2026-10-11-metaplatform-product-v1.1-implementation\\task-6-ui-start.ps1",
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.superpowers\\sdd\\2026-10-11-metaplatform-product-v1.1-implementation\\task-6-ui-restart.ps1"
+  ],
+  "action": "read-only; retain pending controller exact retirement after reviews",
+  "runtime_input_contract": {
+    "env": [
+      "MP11_SOURCE_PG_DSN",
+      "MATE_DB_URL"
+    ],
+    "database": "codex_mp11_apphub_20261011",
+    "credential_source": "exact Goal PG Docker config read only by original launcher; no separately named credential file in API script"
+  }
+}

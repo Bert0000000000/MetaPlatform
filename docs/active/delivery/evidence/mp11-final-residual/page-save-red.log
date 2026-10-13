@@ -1,0 +1,37 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+_ test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas[memory] _
+packages\mate-app-hub\tests\test_mp11_app_identity.py:170: in test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas
+    assert actual_owner.revision == before_owner.revision + 1
+E   AssertionError: assert 0 == (0 + 1)
+E    +  where 0 = ApphubApp(id='other-8a9125d60f0343468ee570f5ee7463d8', tenant_id='mp11-id-9e728fce09d2460d963e3c467cc3b5ed', name='A c...rsion-other-8a9125d60f0343468ee570f5ee7463d8', 'version': '1.0.0', 'status': 'PUBLISHED', 'modules': []}], releases=[]).revision
+E    +  and   0 = ApphubApp(id='other-8a9125d60f0343468ee570f5ee7463d8', tenant_id='mp11-id-9e728fce09d2460d963e3c467cc3b5ed', name='A c...rsion-other-8a9125d60f0343468ee570f5ee7463d8', 'version': '1.0.0', 'status': 'PUBLISHED', 'modules': []}], releases=[]).revision
+---------------------------- Captured stdout call -----------------------------
+{"page_save_http": 200, "parent_before": 0, "parent_after": 0, "unrelated_before": 0, "unrelated_after": 1}
+_ test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas[sqlite] _
+packages\mate-app-hub\tests\test_mp11_app_identity.py:170: in test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas
+    assert actual_owner.revision == before_owner.revision + 1
+E   AssertionError: assert 0 == (0 + 1)
+E    +  where 0 = ApphubApp(id='other-31c8cad3bbc24d9aa47385242a1dbbc7', tenant_id='mp11-id-708b9e24a4374d44a17e13d6380fb88c', name='A c...rsion-other-31c8cad3bbc24d9aa47385242a1dbbc7', 'version': '1.0.0', 'status': 'PUBLISHED', 'modules': []}], releases=[]).revision
+E    +  and   0 = ApphubApp(id='other-31c8cad3bbc24d9aa47385242a1dbbc7', tenant_id='mp11-id-708b9e24a4374d44a17e13d6380fb88c', name='A c...rsion-other-31c8cad3bbc24d9aa47385242a1dbbc7', 'version': '1.0.0', 'status': 'PUBLISHED', 'modules': []}], releases=[]).revision
+---------------------------- Captured stdout call -----------------------------
+{"page_save_http": 200, "parent_before": 0, "parent_after": 0, "unrelated_before": 0, "unrelated_after": 1}
+_ test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas[pg] _
+packages\mate-app-hub\tests\test_mp11_app_identity.py:170: in test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas
+    assert actual_owner.revision == before_owner.revision + 1
+E   AssertionError: assert 0 == (0 + 1)
+E    +  where 0 = ApphubApp(id='other-3137b4ae76b34287960a705c44e31da1', tenant_id='mp11-id-65e70fb504804e29922a942974fcbdbb', name='A c...rsion-other-3137b4ae76b34287960a705c44e31da1', 'version': '1.0.0', 'status': 'PUBLISHED', 'modules': []}], releases=[]).revision
+E    +  and   0 = ApphubApp(id='other-3137b4ae76b34287960a705c44e31da1', tenant_id='mp11-id-65e70fb504804e29922a942974fcbdbb', name='A c...rsion-other-3137b4ae76b34287960a705c44e31da1', 'version': '1.0.0', 'status': 'PUBLISHED', 'modules': []}], releases=[]).revision
+---------------------------- Captured stdout call -----------------------------
+{"page_save_http": 200, "parent_before": 0, "parent_after": 0, "unrelated_before": 0, "unrelated_after": 1}
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas[memory]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas[sqlite]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_signed_page_save_updates_only_code_parent_and_keeps_publication_cas[pg]
+3 failed, 1 warning in 4.50s

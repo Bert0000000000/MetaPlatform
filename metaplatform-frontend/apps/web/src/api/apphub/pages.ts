@@ -54,6 +54,8 @@ export interface PageScripts {
 }
 
 export interface PageDesignerConfig {
+  application_metadata_updated?: boolean;
+  binding?: OrderBinding;
   name: string;
   description?: string;
   widgets: DashboardWidget[];
@@ -73,6 +75,43 @@ export async function deletePage(id: string): Promise<void> {
   return del<void>(`/pages/${id}`);
 }
 
-export async function listPages(): Promise<PageResponse<{ id: string; name: string }>> {
-  return get<PageResponse<{ id: string; name: string }>>('/pages');
+export async function listPages(): Promise<PageResponse<{ id: string; name: string; module_code: string }>> {
+  return get<PageResponse<{ id: string; name: string; module_code: string }>>('/pages');
+}
+
+
+export interface OrderBinding {
+  object_type: string;
+  model_checksum: string;
+  customer_type: string;
+  customer_checksum: string;
+  fields: string[];
+  link_type: string;
+  action_rid: string;
+  action_checksum?: string;
+  link_checksum?: string;
+  object_set: { filter_expr: string; paging_limit: number };
+  field_metadata?: Array<{ rid: string; title?: string; format: string }>;
+  action_parameters?: Array<{ rid: string; title?: string; format: string; nullable: boolean }>;
+}
+
+
+export class OrderPageCreationError extends Error {
+  constructor(public readonly moduleCode: string, cause: unknown) {
+    super(`模块已创建（${moduleCode}），页面创建未确认成功：${cause instanceof Error ? cause.message : '请求失败'}。可重试并复用此模块。`);
+  }
+}
+
+export async function createOrderReviewPage(appCode: string, resumeModuleCode?: string): Promise<{ id: string }> {
+  const code = resumeModuleCode || 'review-' + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  if (!resumeModuleCode) {
+    await client.post('/modules', { name: '订单审核', code, app_code: appCode, description: '订单审核页面', entry_path: '' });
+  }
+  try {
+    if (resumeModuleCode) {
+      const existing = (await listPages()).items.find(p => p.module_code === code);
+      if (existing) return { id: existing.id };
+    }
+    return data(await client.post<{ id: string }>('/pages', { name: '订单审核', code, module_code: code, layout: 'grid' }));
+  } catch (error) { throw new OrderPageCreationError(code, error); }
 }

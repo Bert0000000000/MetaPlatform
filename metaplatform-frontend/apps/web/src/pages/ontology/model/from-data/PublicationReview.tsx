@@ -3,7 +3,8 @@ import { Banner, Button, Modal, Spin } from '@douyinfe/semi-ui';
 import type { KernelObjectType } from '@/api/ont/kernel';
 import { runModelingOperation, saveModelingSource, type ModelingSource } from '@/api/ont/modeling';
 import PublicationDecisions from './PublicationDecisions';
-import { localMatches, suggestResolution } from './candidateMatching';
+import { suggestResolution } from './candidateMatching';
+import { hasPublicationStarted } from './publicationState';
 
 export default function PublicationReview({ source, types, disabled, onPrepare, onChanged, onPublished }: {
   source: ModelingSource; types: KernelObjectType[]; disabled: boolean;
@@ -19,7 +20,7 @@ export default function PublicationReview({ source, types, disabled, onPrepare, 
   const pending = useRef(false);
   const publicationProgress = candidate?.publication?.completed.length ?? 0;
   const publicationTotal = (candidate?.plan?.types?.length ?? 0) + (candidate?.plan?.relationships?.length ?? 0);
-  const lockedPlan = Boolean(publicationProgress && candidate?.plan && candidate.publication?.configHash === candidate.plan.configHash);
+  const lockedPlan = Boolean(hasPublicationStarted(candidate?.publication) && candidate?.plan?.types && candidate.plan.relationships && candidate.publication?.configHash === candidate.plan.configHash);
   const publicationComplete = Boolean(lockedPlan && publicationTotal > 0 && publicationProgress >= publicationTotal);
   const acceptanceProblems = candidate?.publication?.acceptance
     ? [
@@ -39,16 +40,12 @@ export default function PublicationReview({ source, types, disabled, onPrepare, 
       const current = await onPrepare();
       // Old plans must be rechecked against the current native baseline.
       const next = structuredClone(current);
-      const resumable = Boolean(next.publication?.completed.length && next.plan && next.publication.configHash === next.plan.configHash);
+      const resumable = Boolean(hasPublicationStarted(next.publication) && next.plan?.types && next.plan.relationships && next.publication?.configHash === next.plan.configHash);
       if (!resumable) next.plan = null;
-      if (!resumable) {
+      if (!hasPublicationStarted(next.publication)) {
         next.draft?.classes.filter(cls => cls.included !== false).forEach(cls => {
-          const matches = localMatches(cls, types);
-          // Resolve the default against the current native baseline, not an old generated "new" choice.
-          if (!next.resolutions[cls.id]?.targetRid && matches.length === 1) {
-            next.resolutions[cls.id] = suggestResolution(cls, matches[0]);
-          }
-          const resolution = next.resolutions[cls.id] ??= { mode: 'new', propertyMap: {} };
+          const resolution = next.resolutions[cls.id];
+          if (!resolution) return;
           const target = types.find(type => type.rid === resolution.targetRid);
           if (target && resolution.mode !== 'new') {
             const suggested = suggestResolution(cls, target).propertyMap;
@@ -63,7 +60,6 @@ export default function PublicationReview({ source, types, disabled, onPrepare, 
   };
   const check = async () => {
     if (!candidate || pending.current) return;
-    if (lockedPlan) return candidate;
     pending.current = true; setWorking('校验发布操作…'); setError('');
     try {
       const saved = edited ? await saveModelingSource(candidate) : candidate;
@@ -76,7 +72,7 @@ export default function PublicationReview({ source, types, disabled, onPrepare, 
   const ready = Boolean(candidate?.plan && candidate.validation?.canPublish && !edited);
   const publish = async () => {
     if (!candidate || pending.current) return;
-    const prepared = ready || lockedPlan ? candidate : await check();
+    const prepared = ready ? candidate : await check();
     if (!prepared?.plan || !prepared.validation?.canPublish) return;
     pending.current = true; setWorking('正在发布本体…'); setError('');
     try {
@@ -97,9 +93,10 @@ export default function PublicationReview({ source, types, disabled, onPrepare, 
           ? `核验未通过：${acceptanceProblems.join('；')}` : !edited && candidate?.validation?.issues.some(i => i.severity === 'error')
           ? `校验未通过：${candidate.validation.issues.filter(i => i.severity === 'error').map(i => i.message).join('；')}`
           : publicationComplete ? '本方案资源已处理完毕，可重新核验并修复可安全恢复的发布差异。'
+          : lockedPlan && candidate?.publication?.inFlight && publicationProgress === 0 ? '首项发布结果仍需核验，可继续核验原方案。'
           : lockedPlan ? `已完成 ${publicationProgress}/${publicationTotal} 项，可继续发布剩余项。`
           : ready ? '方案已校验。确认发布将写入正式本体。' : '配置完成后可直接确认发布，系统会先校验；校验通过才写入正式本体。')}
-      </div><div className="fd-inline"><Button disabled={Boolean(working)} onClick={() => setVisible(false)}>关闭</Button>{!lockedPlan && <Button disabled={!candidate || Boolean(working)} onClick={() => void check()}>校验发布方案</Button>}<Button theme="solid" disabled={!candidate || Boolean(working)} onClick={() => void publish()}>{publicationComplete ? '重新核验发布结果' : lockedPlan ? '继续发布剩余项' : '确认发布本体'}</Button></div></div>}
+      </div><div className="fd-inline"><Button disabled={Boolean(working)} onClick={() => setVisible(false)}>关闭</Button>{(!lockedPlan || !candidate?.validation?.canPublish) && <Button disabled={!candidate || Boolean(working)} onClick={() => void check()}>校验发布方案</Button>}<Button theme="solid" disabled={!candidate || Boolean(working)} onClick={() => void publish()}>{publicationComplete ? '重新核验发布结果' : lockedPlan ? '继续发布剩余项' : '确认发布本体'}</Button></div></div>}
       closable={!working} maskClosable={!working} onCancel={() => setVisible(false)}>
       {working && <div role="status"><Spin size="small" />{working}</div>}
       {error && <Banner type="danger" description={error} closeIcon={null} />}

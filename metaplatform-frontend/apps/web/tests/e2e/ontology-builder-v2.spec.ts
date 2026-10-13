@@ -23,18 +23,25 @@ test('real Ont: model selection, dirty editor history restoration, binding sampl
   await page.getByRole('button', { name: '编辑模型', exact: true }).click();
   const editor = page.getByRole('dialog', { name: '模型编辑器' });
   await expect(editor).toBeVisible();
-  await editor.getByLabel('概念显示名').fill('浏览器未提交输入');
+  await editor.getByLabel('业务名称', { exact: true }).fill('浏览器未提交输入');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: '未保存的修改' })).toBeVisible();
   await page.getByRole('button', { name: '继续编辑' }).click();
-  await page.goBack();
+  await Promise.all([
+    page.waitForEvent('dialog').then(async dialog => {
+      expect(dialog.type()).toBe('confirm');
+      expect(dialog.message()).toBe('有未保存的更改，确定离开？');
+      await dialog.accept();
+    }),
+    page.goBack(),
+  ]);
   await expect(page).toHaveURL(/\/ontology\/model\/graph/);
   await page.goForward();
   await page.getByRole('button', { name: '编辑模型', exact: true }).click();
   const detailEditor = page.getByRole('dialog', { name: '模型编辑器' });
   // Returning and reopening restores the identity-isolated local input.
   await expect(detailEditor).toBeVisible();
-  await expect(detailEditor.getByLabel('概念显示名')).toHaveValue('浏览器未提交输入');
+  await expect(detailEditor.getByLabel('业务名称', { exact: true })).toHaveValue('浏览器未提交输入');
   await expect(detailEditor.getByRole('status')).toContainText('尚未提交后端');
   expect(mutations).toEqual([]);
   await detailEditor.getByRole('button', { name: '关闭', exact: true }).click();
@@ -94,8 +101,17 @@ test('real Ont + own PG: editor WIP, five-step publication, saved source sync an
   await editor.getByPlaceholder('例如：客户').fill(name);
   const domain = await editor.locator('select').first().inputValue();
   const rid = `ont.${auth.tenantId}.obj.${domain}.${slug}.v1`;
+  const checkedName = page.waitForResponse(r => pathOf(r.url()) === '/api/v1/ont/v2/object-types/precheck' && r.request().method() === 'POST');
+  await editor.getByPlaceholder('例如：客户').press('Tab');
+  expect((await checkedName).status(), 'Real name similarity precheck HTTP status').toBe(200);
+  const similarConcepts = page.getByRole('dialog', { name: '检测到相似概念' });
+  await expect(similarConcepts).toBeVisible();
+  await similarConcepts.getByRole('button', { name: '继续创建', exact: true }).click();
+  await expect(similarConcepts).toHaveCount(0);
+  await expect(editor.getByPlaceholder('例如：customer')).toHaveValue(slug);
+  await expect(editor.getByPlaceholder('例如：客户')).toHaveValue(name);
   const savedWip = page.waitForResponse(r => pathOf(r.url()) === '/api/v1/ont/v2/object-types/wip' && r.request().method() === 'POST');
-  await editor.getByRole('button', { name: '保存草稿（WIP）', exact: true }).click();
+  await editor.getByRole('button', { name: '保存草稿', exact: true }).click();
   const wipResponse = await savedWip;
   expect(wipResponse.status(), 'UI WIP save HTTP status').toBe(200);
   const definition = wipResponse.request().postDataJSON().payload;
@@ -107,6 +123,8 @@ test('real Ont + own PG: editor WIP, five-step publication, saved source sync an
   expect(definition.properties).toEqual(expect.arrayContaining([expect.objectContaining({ rid: property, primary_key: true, nullable: false, format: 'string' })]));
   expect(definition.confirm_name).toBeUndefined();
   expect(await wipResponse.json()).toEqual(expect.objectContaining({ rid, status: 'staged', base_checksum: '' }));
+  await expect(editor.getByRole('status').filter({ hasText: '草稿已保存，刷新后可恢复；尚未发布。' })).toBeVisible();
+  await editor.getByRole('button', { name: '关闭', exact: true }).click();
   await expect(editor).toHaveCount(0);
   // Name-blur precheck is an existing POST read; WIP is the only staged write.
   expect(writes).toEqual([{ method: 'POST', path: '/api/v1/ont/v2/object-types/precheck' }, { method: 'POST', path: '/api/v1/ont/v2/object-types/wip' }]);

@@ -5,9 +5,8 @@ Provides read + write for ``CdcTask``, ``DataSource`` and the
 (``config`` / ``connection_config`` / ``tags`` / ``history``) are
 JSON-serialised to TEXT on write and re-hydrated on read.
 
-Schema discovery (``get_source_schema``) and connection probing
-(``test_source_connection``) stay in ``in_memory`` because they are
-dynamic and not part of the persistence contract.
+Schema discovery and connection probing are provided by the repository facade
+using the selected persisted source and the real connector.
 """
 
 from __future__ import annotations
@@ -167,14 +166,14 @@ def list_sources(
 def get_source(tenant_id: str, source_id: str) -> DataSource | None:
     if not tenant_id:
         return None
-    s = _session()
-    row = s.execute(
-        select(models.DataSourceORM).where(
-            models.DataSourceORM.tenant_id == tenant_id,
-            models.DataSourceORM.id == source_id,
-        )
-    ).scalar_one_or_none()
-    return _orm_to_source(row) if row else None
+    with _session() as session:
+        row = session.execute(
+            select(models.DataSourceORM).where(
+                models.DataSourceORM.tenant_id == tenant_id,
+                models.DataSourceORM.id == source_id,
+            )
+        ).scalar_one_or_none()
+        return _orm_to_source(row) if row else None
 
 
 # ---------------------------------------------------------------------------
@@ -503,7 +502,7 @@ def create_source(
         name=name,
         type=type,
         connection_config=dict(connection_config or {}),
-        status="connected",
+        status="disconnected",
         created_at=now,
         updated_at=now,
     )
@@ -527,7 +526,9 @@ def update_source(
     if type is not None:
         source.type = type
     if connection_config is not None:
-        source.connection_config = dict(connection_config)
+        from ..services.source_connector import merge_config
+
+        source.connection_config = merge_config(source.connection_config, connection_config)
     source.updated_at = _now()
     return put_source(tenant_id, source)
 
@@ -766,13 +767,12 @@ def list_quality_results(tenant_id: str, limit: int = 50) -> list[QualityResult]
 
 def run_quality_rules(tenant_id: str) -> dict[str, Any]:
     """执行本租户全部 enabled 规则（对 source schema），结果落 PG。"""
-    from .in_memory import _quality_check, get_source_schema
+    from .in_memory import _quality_check_source
 
     rules = list_quality_rules(tenant_id, enabled_only=True)
     results: list[QualityResult] = []
     for rule in rules:
-        schema = get_source_schema(tenant_id, rule.entity_id)
-        results.append(_quality_check(rule, schema))
+        results.append(_quality_check_source(rule, get_source(tenant_id, rule.entity_id)))
     save_quality_results(tenant_id, results)
     return {
         "rules_executed": len(rules),

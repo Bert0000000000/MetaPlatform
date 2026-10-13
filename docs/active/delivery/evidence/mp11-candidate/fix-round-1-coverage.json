@@ -1,0 +1,95 @@
+{
+  "base": "67a0e34d1b8ea65f8c903f800a598d6a50451b19",
+  "source_commit": "726be90950e42d650bd6dc73f34cd9b8cceeef64",
+  "signed_red": {
+    "passed": 66,
+    "failed": 68,
+    "warnings": 1,
+    "log": "fix-round-1-signed-red.log"
+  },
+  "initial_green": {
+    "passed": 134,
+    "failed": 0,
+    "warnings": 1,
+    "log": "fix-round-1-signed-green.log"
+  },
+  "final_green": {
+    "passed": 188,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 1,
+    "log": "fix-round-1-signed-final-green.log"
+  },
+  "browser_runs": [
+    {
+      "fixture": {
+        "run_id": "bf7ce3d0ff0d",
+        "relationship_tenant": "mp11-rel-bf7ce3d0ff0d",
+        "empty_tenant": "mp11-empty-bf7ce3d0ff0d",
+        "object_types": 104,
+        "customers": 201,
+        "orders": 201,
+        "paged_links": 201,
+        "signed_grants": true,
+        "prior_inputs_retained": true
+      },
+      "result": {
+        "name": "actual-browser-bf7ce3d0ff0d",
+        "command": [
+          "pnpm.cmd",
+          "exec",
+          "playwright",
+          "test",
+          "--config",
+          "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\playwright.config.ts"
+        ],
+        "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+        "exit_code": 0,
+        "elapsed_seconds": 69.32,
+        "source_head": "67a0e34d1b8ea65f8c903f800a598d6a50451b19",
+        "fixture_run_id": "bf7ce3d0ff0d"
+      },
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0,
+      "warnings": 0,
+      "log": "actual-browser-bf7ce3d0ff0d.log"
+    },
+    {
+      "fixture": {
+        "run_id": "1194b651968c",
+        "relationship_tenant": "mp11-rel-1194b651968c",
+        "empty_tenant": "mp11-empty-1194b651968c",
+        "object_types": 104,
+        "customers": 201,
+        "orders": 201,
+        "paged_links": 201,
+        "signed_grants": true,
+        "prior_inputs_retained": true
+      },
+      "result": {
+        "name": "actual-browser-1194b651968c",
+        "command": [
+          "pnpm.cmd",
+          "exec",
+          "playwright",
+          "test",
+          "--config",
+          "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\playwright.config.ts"
+        ],
+        "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+        "exit_code": 0,
+        "elapsed_seconds": 58.49,
+        "source_head": "67a0e34d1b8ea65f8c903f800a598d6a50451b19",
+        "fixture_run_id": "1194b651968c"
+      },
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0,
+      "warnings": 0,
+      "log": "actual-browser-1194b651968c.log"
+    }
+  ],
+  "original_proof": "retained historical full/covering runs; no aggregate invention",
+  "review_status": "scoped re-review and whole-branch review pending"
+}

@@ -149,6 +149,31 @@ class OntologyProxyTool:
             self._bearer = ""
         return self._bearer
 
+    @property
+    def required_scopes(self) -> tuple[str, ...]:
+        # Concrete upstream operations, not UI/category labels. The preflight
+        # composite also calls ontValidateV2Shacl, whose contract requires write.
+        if self.operation_id in {
+            "ontListV2ObjectTypes",
+            "ontInspectV2Class",
+            "ontExecuteV2ObjectQuery",
+            "ontPreviewV2Proposal",
+            "ontListV2Individuals",
+            "ontSearchV2Objects",
+            "ontAgentMetricsSummary",
+            "ontListV2Interfaces",
+        }:
+            return ("ont.read", "platform.read")
+        if self.operation_id in {
+            "ontProposeV2ObjectType",
+            "ontProposeV2Instance",
+            "ontProposeV2ObjectTypeMerge",
+        }:
+            return ("ont.write", "platform.write")
+        if self.operation_id == "ontValidateV2Data":
+            return ("ont.read", "platform.read", "ont.write", "platform.write")
+        return ()
+
     async def _outbound_headers(self) -> dict[str, str]:
         """Auth + tenant for the outbound call.
 
@@ -166,6 +191,12 @@ class OntologyProxyTool:
         """
         caller = current_caller()
         if caller is not None:
+            if caller.scopes is not None and (
+                not self.agent_invokable
+                or not self.required_scopes
+                or not set(self.required_scopes) <= caller.scopes
+            ):
+                raise PermissionError("ontology tool is outside verified caller grants")
             headers = {"X-Tenant-Id": caller.tenant_id}
             if caller.bearer_token:
                 headers["Authorization"] = f"Bearer {caller.bearer_token}"
@@ -374,11 +405,13 @@ class OntProposeModelTypeTool(OntologyProxyTool):
         primary_key: list[str] | None = None,
         client_provenance: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        # 组装完整 ObjectTypeDTO 透传给 tech-ont。rid 由调用方在 type_def 里
-        # 显式给出（cross-tenant 校验在 tech-ont 侧做）；这里只负责构造
-        # 客户端 → server 的 payload shape。
+        # The RID and outbound headers use the same verified caller tenant.
+        # Trusted local invocation keeps its existing configured tenant only
+        # when no caller is bound; an empty bound tenant never falls back.
+        caller = current_caller()
+        tenant_id = caller.tenant_id if caller is not None else self._tenant
         type_def: dict[str, Any] = {
-            "rid": f"ont.__TENANT__.{slug}.v1",  # 占位，由 tech-ont 注入 tenant
+            "rid": f"ont.{tenant_id}.{slug}.v1",
             "primary_key": tuple(primary_key or ["id"]),
             "properties": list(properties or []),
             "display_name": name,
@@ -529,7 +562,7 @@ class OntPreviewProposalTool(OntologyProxyTool):
         "specific 字段（properties / merge_mapping / ...）。已 confirm / 已 "
         "apply / 已 reject 的 proposal 返回 409。"
     )
-    operation_id = "ontGetV2ProposalPreview"
+    operation_id = "ontPreviewV2Proposal"
     capabilities: ClassVar[tuple[str, ...]] = (
         "ontology.read",
         "proposal",

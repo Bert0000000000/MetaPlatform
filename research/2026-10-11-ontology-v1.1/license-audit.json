@@ -1,0 +1,122 @@
+[
+  {
+    "repo": "deepseek-ai/deepseek-harness",
+    "license": "MIT",
+    "file": "LICENSE",
+    "recommendation": "Agent 客户端；复用官方 MCP 接入，非本体替代品"
+  },
+  {
+    "repo": "appsmithorg/appsmith",
+    "license": "Apache-2.0（根许可；EE 另审）",
+    "file": "LICENSE",
+    "recommendation": "应用中心重点对标：绑定、预览、发布体验"
+  },
+  {
+    "repo": "HKUDS/LightRAG",
+    "license": "MIT",
+    "file": "LICENSE",
+    "recommendation": "当前栈已采用；优化现有接入，不重复新增 GraphRAG"
+  },
+  {
+    "repo": "directus/directus",
+    "license": "MSCL-1.0-GPL；限制竞争用途，4 年后 GPL",
+    "file": "license",
+    "recommendation": "source-available；不建议作为 MetaPlatform 商业底座 fork"
+  },
+  {
+    "repo": "getzep/graphiti",
+    "license": "Apache-2.0",
+    "file": "LICENSE",
+    "recommendation": "时态 Agent 记忆候选，1.2 后独立 PoC"
+  },
+  {
+    "repo": "Budibase/budibase",
+    "license": "总体 GPLv3；客户端 MPL；pro BSL",
+    "file": "LICENSE",
+    "recommendation": "操作流参考；源码嵌入按包审计"
+  },
+  {
+    "repo": "PrefectHQ/fastmcp",
+    "license": "Apache-2.0",
+    "file": "LICENSE",
+    "recommendation": "MCP 框架备选；先保留现有官方 SDK"
+  },
+  {
+    "repo": "modelcontextprotocol/python-sdk",
+    "license": "MIT",
+    "file": "LICENSE",
+    "recommendation": "现有协议基础，保持版本兼容"
+  },
+  {
+    "repo": "nocobase/nocobase",
+    "license": "Apache + 根补充协议；头部另有 AGPL 口径",
+    "file": "LICENSE.txt",
+    "recommendation": "业务模型与插件 UX 重点参考；不直接复制或整体 fork"
+  },
+  {
+    "repo": "neo4j/neo4j",
+    "license": "GPL-3.0（当前仓库）",
+    "file": "LICENSE.txt",
+    "recommendation": "图存储备选；1.1 不换内核"
+  },
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "license": "Apache-2.0",
+    "file": "LICENSE",
+    "recommendation": "数据体验首选；元数据 adapter 首选 PoC"
+  },
+  {
+    "repo": "datahub-project/datahub",
+    "license": "Apache-2.0",
+    "file": "LICENSE",
+    "recommendation": "数据目录/血缘强备选；不与 OpenMetadata 同时引入"
+  },
+  {
+    "repo": "terminusdb/terminusdb",
+    "license": "Apache-2.0",
+    "file": "LICENSE",
+    "recommendation": "数据版本思路参考；迁移成本需评估"
+  },
+  {
+    "repo": "apache/hugegraph",
+    "license": "Apache-2.0",
+    "file": "LICENSE",
+    "recommendation": "图数据库，测得容量瓶颈后才评估"
+  },
+  {
+    "repo": "protegeproject/protege",
+    "license": "BSD-2-Clause（license.txt）",
+    "file": "license.txt",
+    "recommendation": "专业桌面 OWL 编辑；专家互操作参考"
+  },
+  {
+    "repo": "apache/jena",
+    "license": "Apache-2.0",
+    "file": "LICENSE",
+    "recommendation": "RDF/SPARQL/SHACL 标准验证参考"
+  },
+  {
+    "repo": "VisualDataWeb/WebVOWL",
+    "license": "MIT",
+    "file": "license.txt",
+    "recommendation": "OWL 图交互参考；更新较久，非关键 UI 依赖"
+  },
+  {
+    "repo": "ontop/ontop",
+    "license": "Apache-2.0",
+    "file": "LICENSE.txt",
+    "recommendation": "关系数据库 → 虚拟 RDF 映射参考"
+  },
+  {
+    "repo": "protegeproject/webprotege",
+    "license": "BSD-2-Clause（license.txt）",
+    "file": "license.txt",
+    "recommendation": "本体编辑/权限/变更协作重点参考"
+  },
+  {
+    "repo": "ge-semtk/semtk",
+    "license": "Apache-2.0（LICENSE.txt）",
+    "file": "LICENSE.txt",
+    "recommendation": "2025 后未 push；本轮仅历史参考"
+  }
+]

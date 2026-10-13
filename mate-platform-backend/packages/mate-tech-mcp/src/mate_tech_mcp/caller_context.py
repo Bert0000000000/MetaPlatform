@@ -28,6 +28,8 @@ from dataclasses import dataclass
 class CallerContext:
     tenant_id: str
     bearer_token: str
+    scopes: frozenset[str] | None = None
+    auth_method: str = ""
 
 
 _caller: ContextVar[CallerContext | None] = ContextVar("mcp_caller", default=None)
@@ -39,9 +41,19 @@ def current_caller() -> CallerContext | None:
 
 
 @contextmanager
-def bind_caller(*, tenant_id: str, bearer_token: str) -> Iterator[None]:
+def bind_caller(
+    *,
+    tenant_id: str,
+    bearer_token: str,
+    scopes: frozenset[str] | None = None,
+    auth_method: str = "",
+) -> Iterator[None]:
     """Bind the calling identity for the duration of one tool invocation."""
-    token = _caller.set(CallerContext(tenant_id=tenant_id, bearer_token=bearer_token))
+    token = _caller.set(
+        CallerContext(
+            tenant_id=tenant_id, bearer_token=bearer_token, scopes=scopes, auth_method=auth_method
+        )
+    )
     try:
         yield
     finally:

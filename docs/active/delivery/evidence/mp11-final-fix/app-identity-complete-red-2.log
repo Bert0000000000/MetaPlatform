@@ -1,0 +1,164 @@
+FFFFFFFFFFFFFFF                                                          [100%]
+================================== FAILURES ===================================
+______ test_storage_and_loader_resolve_exact_id_then_local_code[memory] _______
+packages\mate-app-hub\tests\test_mp11_app_identity.py:62: in test_storage_and_loader_resolve_exact_id_then_local_code
+    assert repo.get_app(tenant, key).id == exact.id
+E   AssertionError: assert 'other-df657f...47c309d376eba' == 'collision-b1...774a631c24edb'
+E
+E     - collision-b1719e200a014df1a1a774a631c24edb
+E     + other-df657fae2db24790aa647c309d376eba
+______ test_storage_and_loader_resolve_exact_id_then_local_code[sqlite] _______
+packages\mate-app-hub\tests\test_mp11_app_identity.py:62: in test_storage_and_loader_resolve_exact_id_then_local_code
+    assert repo.get_app(tenant, key).id == exact.id
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\repositories\__init__.py:86: in operation
+    return getattr(store, name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\repositories\sql_store.py:184: in get_app
+    ).scalar_one_or_none()
+      ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:1541: in scalar_one_or_none
+    return self._only_one_row(
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:852: in _only_one_row
+    raise exc.MultipleResultsFound(
+E   sqlalchemy.exc.MultipleResultsFound: Multiple rows were found when one or none was required
+________ test_storage_and_loader_resolve_exact_id_then_local_code[pg] _________
+packages\mate-app-hub\tests\test_mp11_app_identity.py:62: in test_storage_and_loader_resolve_exact_id_then_local_code
+    assert repo.get_app(tenant, key).id == exact.id
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\repositories\__init__.py:86: in operation
+    return getattr(store, name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\repositories\sql_store.py:184: in get_app
+    ).scalar_one_or_none()
+      ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:1541: in scalar_one_or_none
+    return self._only_one_row(
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:852: in _only_one_row
+    raise exc.MultipleResultsFound(
+E   sqlalchemy.exc.MultipleResultsFound: Multiple rows were found when one or none was required
+_ test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory-detail] _
+packages\mate-app-hub\tests\test_mp11_app_identity.py:100: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert detail.json()['id'] == exact.id
+E   AssertionError: assert 'other-17a71f...af7db13977896' == 'collision-aa...3b6751366d982'
+E
+E     - collision-aaf151073e624aa79e73b6751366d982
+E     + other-17a71f6f03d54dc388eaf7db13977896
+_ test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory-patch] __
+packages\mate-app-hub\tests\test_mp11_app_identity.py:92: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert response.json()['id'] == exact.id
+E   AssertionError: assert 'other-011392...f882a051f8797' == 'collision-4c...df9840ec136a0'
+E
+E     - collision-4ce34b04362a4f93bbbdf9840ec136a0
+E     + other-011392f3f6f944e99abf882a051f8797
+_ test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory-runtime] _
+packages\mate-app-hub\tests\test_mp11_app_identity.py:97: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert response.json()['app_id'] == exact.id
+E   AssertionError: assert 'other-a5431a...9e8ea7c3b84fe' == 'collision-3b...fdf78031f2ca3'
+E
+E     - collision-3b869d21d20342f48e5fdf78031f2ca3
+E     + other-a5431abf28bd47aeacb9e8ea7c3b84fe
+_ test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite-detail] _
+packages\mate-app-hub\tests\test_mp11_app_identity.py:100: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert detail.json()['id'] == exact.id
+E   AssertionError: assert 'other-ff8782...55c32a755313d' == 'collision-8f...2a25d970e6076'
+E
+E     - collision-8f31e01100c242e28692a25d970e6076
+E     + other-ff87829a8acd4b86b3555c32a755313d
+_ test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite-patch] __
+packages\mate-app-hub\tests\test_mp11_app_identity.py:92: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert response.json()['id'] == exact.id
+E   AssertionError: assert 'other-bfc753...bb3e579c698dd' == 'collision-d5...ee6d879122af5'
+E
+E     - collision-d59eb117795f464d971ee6d879122af5
+E     + other-bfc7532ad3104e878ddbb3e579c698dd
+_ test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite-runtime] _
+packages\mate-app-hub\tests\test_mp11_app_identity.py:96: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+___ test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg-detail] ___
+packages\mate-app-hub\tests\test_mp11_app_identity.py:100: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert detail.json()['id'] == exact.id
+E   AssertionError: assert 'other-acd14f...de2ac4c25d5b6' == 'collision-69...124937b48f2a1'
+E
+E     - collision-69a3c76f617c451599e124937b48f2a1
+E     + other-acd14f8153054f01aaade2ac4c25d5b6
+___ test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg-patch] ____
+packages\mate-app-hub\tests\test_mp11_app_identity.py:92: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert response.json()['id'] == exact.id
+E   AssertionError: assert 'other-3ba1f0...81136d1a9c52b' == 'collision-0d...174e05f2876ee'
+E
+E     - collision-0d8444d301094377838174e05f2876ee
+E     + other-3ba1f08a829a437e97781136d1a9c52b
+__ test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg-runtime] ___
+packages\mate-app-hub\tests\test_mp11_app_identity.py:96: in test_http_detail_patch_runtime_delete_preserve_unrelated_app
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+______ test_published_loader_collision_preserves_exact_snapshot[memory] _______
+packages\mate-app-hub\tests\test_mp11_app_identity.py:118: in test_published_loader_collision_preserves_exact_snapshot
+    assert runtime.app_id == exact.id
+E   AssertionError: assert 'other-2b55a3...7b533d1cdf226' == 'collision-6c...29cb7c9ed31f6'
+E
+E     - collision-6c48fda5f73a49009e329cb7c9ed31f6
+E     + other-2b55a3165bc24b95af17b533d1cdf226
+______ test_published_loader_collision_preserves_exact_snapshot[sqlite] _______
+packages\mate-app-hub\tests\test_mp11_app_identity.py:117: in test_published_loader_collision_preserves_exact_snapshot
+    runtime = load_app_runtime(tenant, key, published_only=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\runtime\loader.py:36: in load_app_runtime
+    app = get_app(tenant_id, app_id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\repositories\__init__.py:86: in operation
+    return getattr(store, name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\repositories\sql_store.py:184: in get_app
+    ).scalar_one_or_none()
+      ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:1541: in scalar_one_or_none
+    return self._only_one_row(
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:852: in _only_one_row
+    raise exc.MultipleResultsFound(
+E   sqlalchemy.exc.MultipleResultsFound: Multiple rows were found when one or none was required
+________ test_published_loader_collision_preserves_exact_snapshot[pg] _________
+packages\mate-app-hub\tests\test_mp11_app_identity.py:117: in test_published_loader_collision_preserves_exact_snapshot
+    runtime = load_app_runtime(tenant, key, published_only=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\runtime\loader.py:36: in load_app_runtime
+    app = get_app(tenant_id, app_id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\repositories\__init__.py:86: in operation
+    return getattr(store, name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\.tmp\codex-mp11-candidate\baseline-apphub\mate_app_hub\repositories\sql_store.py:184: in get_app
+    ).scalar_one_or_none()
+      ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:1541: in scalar_one_or_none
+    return self._only_one_row(
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:852: in _only_one_row
+    raise exc.MultipleResultsFound(
+E   sqlalchemy.exc.MultipleResultsFound: Multiple rows were found when one or none was required
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_storage_and_loader_resolve_exact_id_then_local_code[memory]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_storage_and_loader_resolve_exact_id_then_local_code[sqlite]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_storage_and_loader_resolve_exact_id_then_local_code[pg]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory-detail]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory-patch]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[memory-runtime]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite-detail]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite-patch]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[sqlite-runtime]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg-detail]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg-patch]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_http_detail_patch_runtime_delete_preserve_unrelated_app[pg-runtime]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_published_loader_collision_preserves_exact_snapshot[memory]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_published_loader_collision_preserves_exact_snapshot[sqlite]
+FAILED packages/mate-app-hub/tests/test_mp11_app_identity.py::test_published_loader_collision_preserves_exact_snapshot[pg]
+15 failed, 1 warning in 33.97s

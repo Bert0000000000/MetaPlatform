@@ -17,18 +17,15 @@ GOVERN-05 扩展：
 
 from __future__ import annotations
 
+import os
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from ..sandbox.k8s import FunctionExecutor
-
-# F10：audit_id 此前是纯进程内计数器（`audit-<n>`），进程重启后从 1 重来，
-# 与库里既有行撞 `ont_action_audit` 主键 → execute 500。加进程唯一前缀。
-_AUDIT_TAG = uuid.uuid4().hex[:6]
 
 
 class SubmissionCriteriaFailed(RuntimeError):
@@ -57,6 +54,20 @@ class FunctionTimeout(FunctionExecutionError):
 
 class ProposalNotConfirmed(RuntimeError):
     """MP-SAL-04（ADR-0044 §2.1）：proposal 未确认/已拒绝/不匹配 —— 未确认的 proposal 永不落库。"""
+
+
+def approval_ttl_seconds() -> int:
+    value = int(os.getenv("ONT_APPROVAL_TTL_SECONDS", "900"))
+    if not 60 <= value <= 86400:
+        raise ValueError("ONT_APPROVAL_TTL_SECONDS must be between 60 and 86400")
+    return value
+
+
+def require_current_approval(deadline: datetime | None) -> None:
+    if deadline is None or deadline <= datetime.now(UTC):
+        raise ProposalNotConfirmed(
+            "approval expired or undated; create and approve a fresh proposal"
+        )
 
 
 class ProposalStatus(StrEnum):
@@ -169,6 +180,7 @@ class ActionProposal:
     expected_diff: dict[str, Any] = field(default_factory=dict)  # 预期 diff（staging 语义）
     confirmed_by: str | None = None
     confirmed_at: datetime | None = None
+    approval_expires_at: datetime | None = None
     # ONT-PROV-01：提案级溯源（source=ai|user、model、agent_id…；executed
     # 时 create_instance 落实例记录级 provenance，其它 kind 随提案存档）
     provenance: dict[str, Any] | None = None
@@ -303,13 +315,15 @@ class ActionService:
                 f"proposal {proposal_id} is {p.status.value}, only pending can transition "
                 f"(to {to_status.value})"
             )
+        now = datetime.now(UTC)
         updated = replace(
             p,
             status=to_status,
-            confirmed_by=by,
-            confirmed_at=datetime.now(UTC)
+            approval_expires_at=(now + timedelta(seconds=approval_ttl_seconds()))
             if to_status is ProposalStatus.CONFIRMED
-            else p.confirmed_at,
+            else p.approval_expires_at,
+            confirmed_by=by,
+            confirmed_at=now if to_status is ProposalStatus.CONFIRMED else p.confirmed_at,
         )
         self._proposals[proposal_id] = updated
         return updated
@@ -394,6 +408,8 @@ class ActionService:
                     "apply requires a confirmed proposal"
                 )
 
+            require_current_approval(proposal.approval_expires_at)
+
         # 1) submission_criteria 全部通过
         for expr in submission_criteria:
             if not self.evaluator.evaluate(expr, parameters, target_props or {}):
@@ -430,7 +446,7 @@ class ActionService:
             target_iid=target_iid,
             applied_at=datetime.now(UTC),
             side_effects_emitted=emitted,
-            audit_id=f"audit-{_AUDIT_TAG}-{len(self._audit) + 1}",
+            audit_id=f"audit-{uuid.uuid4().hex}",
             rolled_back=rolled_back,
             function_result=function_result,
             proposal_id=proposal_id,

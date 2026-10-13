@@ -205,7 +205,12 @@ async def save_source(ident: str, payload: Save, request: Request):
         ensure_idle(source)
         try:
             changes = payload.model_dump(exclude={"revision"})
-            if (source.get("publication") or {}).get("completed"):
+            if changes["draft"]:
+                changes["draft"]["semantics"].update(
+                    context=changes["context"], questions=changes["questions"]
+                )
+            publication_state = source.get("publication") or {}
+            if publication_state.get("completed") or publication_state.get("inFlight"):
 
                 def selected(value):
                     return {
@@ -221,10 +226,15 @@ async def save_source(ident: str, payload: Save, request: Request):
                     raise HTTPException(
                         409, "已有发布结果，本次发布范围已锁定；请保留当前范围完成重试"
                     )
-            if changes["draft"]:
-                changes["draft"]["semantics"].update(
-                    context=changes["context"], questions=changes["questions"]
-                )
+                if source["publication"].get("status") != "succeeded":
+                    # A partial run must resume the reviewed plan and its original
+                    # native baselines. Even a stale second browser cannot redirect it.
+                    if any(source.get(key) != value for key, value in changes.items()):
+                        raise HTTPException(
+                            409,
+                            "已有部分发布结果，方案和目标已锁定；请保留原方案重试，后续增量另建候选",
+                        )
+                    return source
             changes.update(
                 validation=None,
                 review=None,
@@ -248,7 +258,10 @@ async def begin_job(ident, payload, request, kind):
     with source_lock(store, ident):
         source, rows = read(store, ident, payload.revision, private=True)
         ensure_idle(source)
-        if kind == "generate" and (source.get("publication") or {}).get("completed"):
+        publication_state = source.get("publication") or {}
+        if kind == "generate" and (
+            publication_state.get("completed") or publication_state.get("inFlight")
+        ):
             raise HTTPException(
                 409, "已有发布结果，不能重新生成覆盖；请另建来源候选并复用已发布类型"
             )
@@ -521,6 +534,18 @@ async def validation_result(request, source, rows, *, prepare_publication=False)
         )
     preview = {"nodes": [], "edges": [], "totalNodes": 0, "totalEdges": 0, "limit": 100}
     plan = None
+    previous, reviewed = source.get("publication") or {}, source.get("plan") or {}
+    if (
+        prepare_publication
+        and (previous.get("completed") or previous.get("inFlight"))
+        and reviewed
+        and previous.get("configHash") == reviewed.get("configHash")
+        and previous.get("inputHash") == reviewed.get("inputHash")
+        and reviewed.get("inputHash")
+        == digest({k: source.get(k) for k in ("draft", "context", "questions", "resolutions")})
+    ):
+        # A failed native check blocks publishing without discarding recovery metadata.
+        plan = reviewed
     if not data_report["errors"]:
         nodes, edges = compile_graph(source["draft"], rows, require_review=False)
         selected = {n["key"] for n in nodes[:100]}
@@ -543,7 +568,10 @@ async def validation_result(request, source, rows, *, prepare_publication=False)
             report["errors"] += 1
             report["canPublish"] = False
             report["issues"].append({"severity": "error", "item": "native", "message": str(exc)})
-    return {"validation": report, "preview": preview, "plan": plan}
+    changes = {"validation": report, "preview": preview}
+    if prepare_publication:
+        changes["plan"] = plan
+    return changes
 
 
 @router.post("/sources/{ident}/validate", operation_id="ontValidateModelingCandidate")

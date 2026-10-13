@@ -1,7 +1,7 @@
 import { Avatar, Badge, Breadcrumb, Button, Dropdown, Input, Tag } from '@douyinfe/semi-ui';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Layers, LogOut, MessageSquare, Search, Settings, Sparkles } from 'lucide-react';
-import { useAuth } from '@mate/shared';
+import { useAuth, Api, getRefreshToken } from '@mate/shared';
 import { DOMAINS, navigationBreadcrumb, primaryDomains, resolveDomain } from './domains';
 import { useShell } from './ShellContext';
 
@@ -103,9 +103,15 @@ export default function TopBar() {
               </Dropdown.Item>
               <Dropdown.Divider />
               <Dropdown.Item
-                onClick={() => {
-                  logout();
-                  window.location.href = '/login';
+                onClick={async () => {
+                  let complete = false;
+                  try { const result = await Api.logout(getRefreshToken()); complete = result.blacklisted && result.providerLoggedOut; }
+                  catch { /* Local logout remains available when the server is unreachable. */ }
+                  finally {
+                    logout();
+                    if (!complete) window.alert('本机已退出；服务端会话未确认退出，请关闭此窗口并联系管理员。');
+                    window.location.href = '/login';
+                  }
                 }}
               >
                 <span className="mp-menu-item">

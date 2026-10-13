@@ -1,0 +1,451 @@
+{
+  "observed_utc": "2026-10-12T09:56:14.044361+00:00",
+  "head": "94277b97199f1823354fccbda07e772ef19081e8",
+  "containers": [
+    {
+      "ID": "cf6841182877ca84387d8deb21fb44ad25c1e5d666fb0d8fe31f798190f3ab2a",
+      "Names": "codex-mp11-candidate-keycloak",
+      "Image": "quay.io/keycloak/keycloak:25.0",
+      "State": "running",
+      "HealthStatus": "none",
+      "Ports": "127.0.0.1:55520->8080/tcp",
+      "Status": "Up 7 minutes"
+    },
+    {
+      "ID": "b80064cd2c1064fe696aaadedb75f8c0009c83787c863df9e4a0bcbc035e3573",
+      "Names": "codex-mp11-candidate-redis",
+      "Image": "redis:7-alpine",
+      "State": "running",
+      "HealthStatus": "none",
+      "Ports": "127.0.0.1:55521->6379/tcp",
+      "Status": "Up 7 minutes"
+    },
+    {
+      "ID": "d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+      "Names": "codex-mp11-relationship-pg",
+      "Image": "pgvector/pgvector:pg16",
+      "State": "running",
+      "HealthStatus": "none",
+      "Ports": "127.0.0.1:55497->5432/tcp",
+      "Status": "Up 7 minutes"
+    },
+    {
+      "ID": "0837d3ed4684df3b625e84dd1855c61adc3a3a70cdb3cf9a77a295f1308e3d6f",
+      "Names": "metaontoos-keycloak",
+      "Image": "quay.io/keycloak/keycloak:26.7.3@sha256:e03b95891c214fba3ab72f12f40c983211549e817c5fce8d0f37761db04ae185",
+      "State": "exited",
+      "HealthStatus": "none",
+      "Ports": "8080/tcp, 9000/tcp, 127.0.0.1:56480->8443/tcp",
+      "Status": "Exited (255) 14 hours ago"
+    },
+    {
+      "ID": "a91c78a8688d1d27c5ccd44f8da37b2ea7bc713fc58cf39fec4ba5b04f702dd7",
+      "Names": "supabase_kong_metaontoos",
+      "Image": "public.ecr.aws/supabase/kong:2.8.1",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "127.0.0.1:56421->8443/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "63aab943b8ef8e3f115b226be6f3f0a859925548d5ec04bf823f380d2d3233a8",
+      "Names": "supabase_db_metaontoos",
+      "Image": "public.ecr.aws/supabase/postgres:17.6.1.159",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "127.0.0.1:56422->5432/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "fdb3ac9d76e8897b2ee64cb2b079b8c09336364973ad9216356ed846c7f97f7f",
+      "Names": "supabase_auth_metaontoos",
+      "Image": "public.ecr.aws/supabase/gotrue:v2.195.0",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "9999/tcp",
+      "Status": "Up 16 minutes (healthy)"
+    },
+    {
+      "ID": "dbfd3872003339686142ba5e51cf44c59bd6ba45b19c72a266e080f42a88eda5",
+      "Names": "mate-tech-ont",
+      "Image": "mate-tech-ont:main-816684e7c664",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8007->8007/tcp, [::]:8007->8007/tcp",
+      "Status": "Up 16 minutes (healthy)"
+    },
+    {
+      "ID": "c96f2d6dbe70c52294ff17bee97afc6ed57bcceee14b5b136c1671a0ff86cdca",
+      "Names": "mate-tech-iam",
+      "Image": "mate-tech-iam:main-816684e7c664",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8102->8102/tcp, [::]:8102->8102/tcp",
+      "Status": "Up 16 minutes (healthy)"
+    },
+    {
+      "ID": "7e0b1c583253774572cd15d48b14e0fc9d1aceb2bcdba7be8d50f4b1489c8166",
+      "Names": "mate-auth-service",
+      "Image": "mate-auth-service:main-816684e7c664",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8101->8101/tcp, [::]:8101->8101/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "3be8955f91603fdda4b6b5589a47540184854ee95690f9fb8f9a41c00cfdb1bf",
+      "Names": "codex-242e-builder-v2-ont",
+      "Image": "mate-tech-ont:main-9646f018f60f",
+      "State": "exited",
+      "HealthStatus": "unhealthy",
+      "Ports": "",
+      "Status": "Exited (1) 3 days ago"
+    },
+    {
+      "ID": "edb077647920aa50ab9f0dbbf5ce76e6c45994384b7e19eb5a8d7218269cb327",
+      "Names": "codex-242e-builder-v2-auth",
+      "Image": "mate-auth-service:main-9646f018f60f",
+      "State": "exited",
+      "HealthStatus": "unhealthy",
+      "Ports": "",
+      "Status": "Exited (0) 3 days ago"
+    },
+    {
+      "ID": "eadf3b8ab676a61e3966a365d31089915d8bb4b7dc514e3456162a2bc0ba8f1c",
+      "Names": "codex-242e-builder-v2-gateway",
+      "Image": "mate-api-gateway:main-9646f018f60f",
+      "State": "exited",
+      "HealthStatus": "unhealthy",
+      "Ports": "",
+      "Status": "Exited (0) 3 days ago"
+    },
+    {
+      "ID": "f6c091eb66449e4e27da7e73c40df41baa40bce5ef271e50859aaa4acbbaa830",
+      "Names": "codex-242e-builder-v2-pg",
+      "Image": "pgvector/pgvector:pg16",
+      "State": "exited",
+      "HealthStatus": "starting",
+      "Ports": "127.0.0.1:55493->5432/tcp",
+      "Status": "Exited (255) 18 hours ago"
+    },
+    {
+      "ID": "9b26ae43d9f6c37e65e3da82cc52a8355d6d98d3d8934463a384e18517a05009",
+      "Names": "codex-242e-builder-v2-keycloak",
+      "Image": "quay.io/keycloak/keycloak:25.0",
+      "State": "exited",
+      "HealthStatus": "none",
+      "Ports": "8443/tcp, 9000/tcp, 127.0.0.1:55389->8080/tcp",
+      "Status": "Exited (255) 18 hours ago"
+    },
+    {
+      "ID": "6689bdfb52ee644e487de1799693c88106b8799d88a2b351e3ff85b5fe773d52",
+      "Names": "codex-242e-builder-v2-redis",
+      "Image": "redis:7-alpine",
+      "State": "exited",
+      "HealthStatus": "none",
+      "Ports": "127.0.0.1:55387->6379/tcp",
+      "Status": "Exited (255) 18 hours ago"
+    },
+    {
+      "ID": "fc080194833510147c52e4b14d2af9145fcbe4f324e2a3878fdda9a12297a39f",
+      "Names": "mate-api-gateway",
+      "Image": "mate-api-gateway:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8100->8100/tcp, [::]:8100->8100/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "dcb4037867e5776e113222b8f531e40a041aae051badbf99a4ea1e621c803a19",
+      "Names": "mate-tech-rag",
+      "Image": "mate-tech-rag:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8001->8001/tcp, [::]:8001->8001/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "048c91b12c80ced252cba84edb2ac5315403e4c9b6934d4b2d95d908d8177c55",
+      "Names": "mate-tech-llmgw",
+      "Image": "mate-tech-llmgw:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8008->8008/tcp, [::]:8008->8008/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "2eada08690bbdbedd28cc340585d48600eb9d55076e3d0cfe8f18dbefe257c6e",
+      "Names": "mate-tech-dw",
+      "Image": "mate-tech-dw:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8021->8021/tcp, [::]:8021->8021/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "e86f320e47c91598c9079a415f3a4a1756941c922621f9df30675bc9ae483ab1",
+      "Names": "mate-tech-etl",
+      "Image": "mate-tech-etl:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8022->8022/tcp, [::]:8022->8022/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "134c4d341db3658ae44171e31cb7dc4ee57b6323e9f7ff057a4964e897116f80",
+      "Names": "mate-app-kb",
+      "Image": "mate-app-kb:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8003->8003/tcp, [::]:8003->8003/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "ebb5a0375f498bee3cd65d06f43104b41ae6cf47e4d9de000951ffea5b964e09",
+      "Names": "metaplatform-mate-tech-agent-team-1",
+      "Image": "mate-tech-agent-team:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8013->8013/tcp, [::]:8013->8013/tcp",
+      "Status": "Up 16 minutes (healthy)"
+    },
+    {
+      "ID": "5bad1b6b54b1e283109dc3f51954db23bd4f0d52b142cab5a8ee5b9b5a1c440f",
+      "Names": "mate-app-hub",
+      "Image": "mate-app-hub:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8301->8301/tcp, [::]:8301->8301/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "8fd9670c1f773372b6ea45cd834bebe36d35b15106b8cb830ba47e5f36c14b0c",
+      "Names": "mate-tech-data",
+      "Image": "mate-tech-data:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8701->8701/tcp, [::]:8701->8701/tcp",
+      "Status": "Up 16 minutes (healthy)"
+    },
+    {
+      "ID": "dc0d47110fa15514a2868b98d79759cb96fe205ab9c701f3eee4f9dbf7c1b700",
+      "Names": "mate-app-arch",
+      "Image": "mate-app-arch:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8321->8321/tcp, [::]:8321->8321/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "9f316f48ce80c8f94cc097df3f0463a56ac458dee2d9cb16229d9e4339524822",
+      "Names": "mate-tech-mcp",
+      "Image": "mate-tech-mcp:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "63d9ef40c423b2e4dec32bc33aa01d42c6f9e07090adf9d627ab09c5fa4b4c1a",
+      "Names": "mate-app-copilot",
+      "Image": "mate-app-copilot:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8601->8601/tcp, [::]:8601->8601/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "946ce721e48c58e267bc861997464a234a7c511c1c9b656ee88d024bc2b6db72",
+      "Names": "mate-tech-agent",
+      "Image": "mate-tech-agent:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8002->8002/tcp, [::]:8002->8002/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "5861bc2e5fdf9301502e65e63db134f07c51a4b55a002f4c52f27c64c10390ee",
+      "Names": "mate-tech-scheduler",
+      "Image": "mate-tech-scheduler:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8023->8023/tcp, [::]:8023->8023/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "187a31b2fa83e6cf38e16211d2e579aa9621bef977d3cd5c837ad43a22f73eab",
+      "Names": "mate-tech-metrics",
+      "Image": "mate-tech-metrics:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8024->8024/tcp, [::]:8024->8024/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "7dcdd0e9e91aef2c1230437211f278b3c0e619d4678e3d4b81e9d2cdf2b567cf",
+      "Names": "mate-app-a2a",
+      "Image": "mate-app-a2a:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8502->8502/tcp, [::]:8502->8502/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "ee1c7c1d247b9cc500aa6fb8657f2df4c30a2a91bec030890389b25db019668f",
+      "Names": "mate-tech-msg",
+      "Image": "mate-tech-msg:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8082->8082/tcp, [::]:8082->8082/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "d4fe7821a6f17b3800d90c99b96fcbe9b7fadcb19d973a581e5a998e4f44156c",
+      "Names": "mate-tech-orchestrator",
+      "Image": "mate-tech-orchestrator:main-9646f018f60f",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8505->8505/tcp, [::]:8505->8505/tcp",
+      "Status": "Up 16 minutes (healthy)"
+    },
+    {
+      "ID": "5da585000de4b58ec5aa1fc84dbb63863c65a916d2c51b2d5cecc561504c2986",
+      "Names": "mate-agent-team-e2e-control-plane",
+      "Image": "kindest/node:v1.29.2",
+      "State": "running",
+      "HealthStatus": "none",
+      "Ports": "127.0.0.1:56879->6443/tcp",
+      "Status": "Up 17 minutes"
+    },
+    {
+      "ID": "5d92020f82638beb0e7d10946f87aa1e7814c6690f86427a237da254c00a63b3",
+      "Names": "mate-keycloak",
+      "Image": "quay.io/keycloak/keycloak:25.0",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8180->8080/tcp, [::]:8180->8080/tcp",
+      "Status": "Up 16 minutes (healthy)"
+    },
+    {
+      "ID": "d5e1a65a62c1519e04caa2355f0d20f574377a54cb65fc5a701aa5d3f9239db7",
+      "Names": "metaplatform-mate-app-wfe-1",
+      "Image": "sha256:70e17df575c0eaa5813efffa17e94b9a19f05c59af023130ce93f7fc703e965f",
+      "State": "exited",
+      "HealthStatus": "starting",
+      "Ports": "0.0.0.0:8510->8510/tcp, 8601/tcp",
+      "Status": "Exited (255) 4 days ago"
+    },
+    {
+      "ID": "c4a8e6867da84c4f4fbd0282e7cc4f93d7caa27bfd834e4410f0489e549d2d14",
+      "Names": "mate-milvus",
+      "Image": "milvusdb/milvus:v2.5.0",
+      "State": "exited",
+      "HealthStatus": "unhealthy",
+      "Ports": "",
+      "Status": "Exited (137) 3 weeks ago"
+    },
+    {
+      "ID": "2f112c0c7d31c0386b78d259ba40e5c82ec9133559f5c69e171e6e177ebdc737",
+      "Names": "mate-neo4j",
+      "Image": "neo4j:5.20-community",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:7474->7474/tcp, [::]:7474->7474/tcp, 0.0.0.0:7687->7687/tcp, [::]:7687->7687/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "4b215f906f6ff6b7a71d6bcde1f4123ecbb998ad997af192297f5b56be052787",
+      "Names": "mate-minio",
+      "Image": "minio/minio:RELEASE.2024-10-13T13-34-11Z",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:9000-9001->9000-9001/tcp, [::]:9000-9001->9000-9001/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "bf96983b97c7b4982f652aede543b2591c2697f796bc450079bfcf323bca56ca",
+      "Names": "mate-kafka",
+      "Image": "confluentinc/cp-kafka:7.8.0",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:9092->9092/tcp, [::]:9092->9092/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "05a15b8fafb8d6a979f09dbdb472c97cfb872be7abffcdd9cc1e9637b782377f",
+      "Names": "mate-postgres",
+      "Image": "pgvector/pgvector:pg16",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "3252d1a98b03f3fac8e3a2cc8210a641302d58803c0ea1e38bfc45a924f4f7c6",
+      "Names": "a2a-external-agent",
+      "Image": "a2a-external-agent:task5",
+      "State": "exited",
+      "HealthStatus": "starting",
+      "Ports": "0.0.0.0:8702->8701/tcp",
+      "Status": "Exited (255) 4 weeks ago"
+    },
+    {
+      "ID": "ebf475adcba2a2ae6587fd3380858896a370a71e74c98dffe19b31831d1e0a42",
+      "Names": "mate-rabbitmq",
+      "Image": "rabbitmq:3.13-management-alpine",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:5672->5672/tcp, [::]:5672->5672/tcp, 0.0.0.0:15672->15672/tcp, [::]:15672->15672/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "8c97e216131ecc6432a5f52a7c5fa05a074c8d63a051b67a28311170b4e7ff7c",
+      "Names": "mate-nacos",
+      "Image": "nacos/nacos-server:v2.4.3-slim",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:8848->8848/tcp, [::]:8848->8848/tcp, 0.0.0.0:9848->9848/tcp, [::]:9848->9848/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "66e0ca6d07dd4cac82e5aba5bb01cf857592513a9901b1be12c803645029e3d4",
+      "Names": "mate-redis",
+      "Image": "redis:7-alpine",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "fa59e25b001903cf0f0dacb22dcbbdcc6a0757223e826d5c07b22ed93ae159a9",
+      "Names": "mate-temporal-worker",
+      "Image": "sha256:13dea7edcc8bc925f4d584c7721c5180553632842ecfd8f94bda4f302b3fc7bc",
+      "State": "running",
+      "HealthStatus": "healthy",
+      "Ports": "8502/tcp",
+      "Status": "Up 17 minutes (healthy)"
+    },
+    {
+      "ID": "f79b22a21a17d5507fc98650c4310d847b6fdc54ec9e73bcf1843b5bf09f654e",
+      "Names": "temporal",
+      "Image": "temporalio/auto-setup:1.28",
+      "State": "exited",
+      "HealthStatus": "none",
+      "Ports": "6933-6935/tcp, 6939/tcp, 7233-7235/tcp, 7239/tcp",
+      "Status": "Exited (255) 4 weeks ago"
+    },
+    {
+      "ID": "7412b88cf4810913c7ffa7d05c18dafb877e3bfcfd5221e64f45b88d8b3453e0",
+      "Names": "temporal-db",
+      "Image": "postgres:16-alpine",
+      "State": "exited",
+      "HealthStatus": "none",
+      "Ports": "5432/tcp",
+      "Status": "Exited (255) 4 weeks ago"
+    }
+  ],
+  "original_running_container_ids": 37,
+  "missing_original_ids": [],
+  "original_now_stopped": [],
+  "no_controller_shared_container_action": true
+}

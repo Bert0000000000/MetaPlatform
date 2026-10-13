@@ -49,3 +49,32 @@ class InMemoryShortlinkStore:
 
     def reset(self) -> None:
         self._store.clear()
+
+
+class SQLShortlinkStore:
+    """Thin adapter over the existing tenant-scoped SQL shortlink repository."""
+
+    def put(self, entry: ShortlinkEntry) -> ShortlinkEntry:
+        from ..repositories import sql_store
+
+        return sql_store.put_shortlink(entry.tenant_id, entry)
+
+    def get_by_code(self, tenant_id: str, code: str) -> ShortlinkEntry | None:
+        from ..repositories import sql_store
+
+        return sql_store.get_shortlink_by_code(tenant_id, code)
+
+    def list(self, tenant_id: str) -> list[ShortlinkEntry]:
+        from ..repositories import sql_store
+
+        return sql_store.list_shortlinks(tenant_id)
+
+    def delete(self, tenant_id: str, code: str) -> bool:
+        from ..repositories import sql_store
+
+        return sql_store.delete_shortlink_by_code(tenant_id, code)
+
+    def exists(self, tenant_id: str, code: str) -> bool:
+        from ..repositories import sql_store
+
+        return sql_store.shortlink_exists(tenant_id, code)

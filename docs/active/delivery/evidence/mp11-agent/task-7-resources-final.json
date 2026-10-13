@@ -1,0 +1,44 @@
+{
+  "listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 55510,
+      "OwningProcess": 62164
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 55497,
+      "OwningProcess": 67984
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 9367,
+      "OwningProcess": 66080
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 9361,
+      "OwningProcess": 59928
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 9200,
+      "OwningProcess": 51708
+    }
+  ],
+  "owned_pg": {
+    "name": "/codex-mp11-relationship-pg",
+    "id": "d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+    "image": "pgvector/pgvector:pg16",
+    "status": "running",
+    "bindings": {
+      "5432/tcp": [
+        {
+          "HostIp": "127.0.0.1",
+          "HostPort": "55497"
+        }
+      ]
+    }
+  },
+  "temporary55517_absent": true
+}

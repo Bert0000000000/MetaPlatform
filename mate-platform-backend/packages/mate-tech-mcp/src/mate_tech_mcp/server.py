@@ -10,6 +10,8 @@ from typing import Any
 
 import structlog
 
+from .caller_context import current_caller
+
 logger = structlog.get_logger(__name__)
 
 
@@ -63,9 +65,8 @@ class MCPServer:
         """List registered tools.
 
         ``tenant_id`` filters out tools registered for a *different* tenant.
-        Omitted (the REST bridge's behaviour) returns the full platform
-        surface; the MCP protocol surface always passes the authenticated
-        tenant so an external client never sees another tenant's tools.
+        External REST/protocol surfaces also bind verified scopes and always
+        pass the authenticated tenant; internal callers may omit it.
         """
         return [
             {
@@ -80,8 +81,19 @@ class MCPServer:
                 "readonlyByUser": bool(getattr(t, "readonly_by_user", False)),
             }
             for t in self._tools
-            if self._visible_to(getattr(t, "name", "?"), tenant_id)
+            if self._visible_to(getattr(t, "name", "?"), tenant_id) and self.tool_allowed(t)
         ]
+
+    @staticmethod
+    def tool_allowed(tool: Any) -> bool:
+        if not bool(getattr(tool, "agent_invokable", True)):
+            return False
+        caller = current_caller()
+        if caller is None or caller.scopes is None:
+            return True  # trusted in-process compatibility; HTTP always binds scopes
+        required = getattr(tool, "required_scope", None)
+        required_scopes = getattr(tool, "required_scopes", (required,))
+        return bool(required_scopes) and set(required_scopes) <= caller.scopes
 
     def _visible_to(self, tool_name: str, tenant_id: str | None) -> bool:
         owner = self._tool_tenants.get(tool_name)
@@ -109,12 +121,12 @@ class MCPServer:
     ) -> Any:
         """调用已注册工具.
 
-        MP-SAL-04 / ADR-0044 HITL 边界：若 ``agent_invokable=False``，必须由
-        caller 显式声明 ``__caller__="user"``；agent 调用（默认）会被拒。
+        HITL tools are unavailable through Agent dispatch, including forged
+        ``__caller__="user"``. Human decisions use authenticated HTTP routes.
 
         ``tenant_id`` mirrors :meth:`list_tools` — a tool registered for
         another tenant is indistinguishable from an unknown tool (KeyError),
-        so the caller's dynamic/federation fallbacks still run.
+        and external surfaces deny it without an unscoped fallback.
         """
         if isinstance(arguments, dict):
             caller = arguments.pop("__caller__", None)
@@ -124,13 +136,15 @@ class MCPServer:
             if getattr(tool, "name", None) == name:
                 if not self._visible_to(name, tenant_id):
                     raise KeyError(f"Tool '''{name}''' not found")
-                # HITL 闸门：agent_invokable=False 仅允许 user caller
+                # Legacy diagnostic only; tool_allowed still denies every HITL tool.
                 if not bool(getattr(tool, "agent_invokable", True)):
                     if caller != "user":
                         raise PermissionError(
                             f"Tool {name!r} is HITL-bound (agent_invokable=False); "
                             f"only user caller can invoke. Got __caller__={caller!r}",
                         )
+                if not self.tool_allowed(tool):
+                    raise PermissionError("tool is outside verified caller grants")
                 handler = getattr(tool, "handler", None)
                 if handler is None:
                     # Fallback: 工具本身即 handler（ontology_proxy 风格）

@@ -11,6 +11,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY mate-platform-backend/packages/ /app/packages/
 COPY mate-platform-backend/services/ /app/services/
 COPY infra/demo-cloud/run_service.py /app/demo/run_service.py
+COPY infra/demo-cloud/configure_schema.py /app/demo/configure_schema.py
+COPY mate-platform-backend/alembic/versions/20261011_0021_apphub_publication.py /app/demo/migrations/20261011_0021_apphub_publication.py
+COPY mate-platform-backend/alembic/versions/20261012_0022_mcp_key_scopes.py /app/demo/migrations/20261012_0022_mcp_key_scopes.py
 RUN useradd --uid 10001 --create-home appuser && mkdir /data && chown appuser /data
 USER appuser
 ENTRYPOINT ["python", "/app/demo/run_service.py"]

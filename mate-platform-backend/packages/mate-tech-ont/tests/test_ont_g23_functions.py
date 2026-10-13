@@ -94,87 +94,198 @@ class TestStubAndInvoke:
         assert raised
 
 
+def _setup_g25(r, OBJ2, P2, ACT2, T2):
+    from mate_kernel.ontology.types.action_type import ActionType
+    from mate_kernel.ontology.types.object_type import ObjectType
+    from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+
+    r.upsert_object_type(
+        ObjectType(
+            rid=ClassRef(OBJ2),
+            primary_key=(ClassRef(P2),),
+            properties=(
+                Property(
+                    rid=ClassRef(P2),
+                    type_id="string",
+                    nullable=False,
+                    primary_key=True,
+                    title="id",
+                    format=PropertyFormat.STRING,
+                ),
+            ),
+            display_name="task",
+        )
+    )
+    r.upsert_action_type(
+        ActionType(
+            rid=ClassRef(ACT2),
+            parameters=(),
+            submission_criteria=(),
+            side_effects=("task.closed",),
+            function_ref=ClassRef(f"ont.{T2}.fn.x.v1"),
+            on=(ClassRef(OBJ2),),
+            title="Close Task",
+        )
+    )
+
+
 class TestWebSocketSubscription:
+    def test_memory_edit_set_preserves_task_closed_side_effect(self):
+        r = InMemoryOntologyRepository()
+        tenant = "g25-memory"
+        obj = f"ont.{tenant}.obj.task"
+        prop = f"ont.{tenant}.prop.id"
+        action = f"ont.{tenant}.act.close"
+        _setup_g25(r, obj, prop, action, tenant)
+        r.set_outbox_writer(lambda *args: "evt-task-closed")
+        r.apply_edit_set_now(
+            action,
+            None,
+            {},
+            [{"op": "create_object", "class_rid": obj, "primary_key": "t1", "props": {prop: "t1"}}],
+            actor="ops-1",
+        )
+        events = r.list_outbox_events("0", 20)
+        assert any(e["event_type"] == "task.closed" for e in events)
+
     """G25：WS 订阅 —— edit-set 触发 outbox 事件推送到连接客户端。"""
 
     def test_ws_receives_outbox_event(self) -> None:
+        import os
+        import uuid
+        from urllib.parse import urlparse
+
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
 
-        from mate_kernel.ontology.types.action_type import ActionType
-        from mate_kernel.ontology.types.object_type import ObjectType
-        from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+        from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
-        T2 = "g25"
+        dsn = os.environ.get("MP11_WS_PG_DSN", "")
+        if not dsn:
+            import pytest
+
+            pytest.fail("Explicit owned MP11_WS_PG_DSN is required", pytrace=False)
+        target = urlparse(dsn)
+        if (
+            target.hostname != "127.0.0.1"
+            or target.port != 55497
+            or not target.path.startswith("/codex_mp11_")
+        ):
+            raise RuntimeError("G23 requires explicit owned MP11_WS_PG_DSN on127.0.0.1:55497")
+        T2 = "g25-" + uuid.uuid4().hex[:8]
         OBJ2 = f"ont.{T2}.obj.ops.task.v1"
         P2 = f"ont.{T2}.prop.tid.v1"
         ACT2 = f"ont.{T2}.act.ops.close-task.v1"
-        r = InMemoryOntologyRepository()
-        r.upsert_object_type(
-            ObjectType(
-                rid=ClassRef(OBJ2),
-                primary_key=(ClassRef(P2),),
-                properties=(
-                    Property(
-                        rid=ClassRef(P2),
-                        type_id="string",
-                        nullable=False,
-                        primary_key=True,
-                        title="id",
-                        format=PropertyFormat.STRING,
-                    ),
-                ),
-                display_name="task",
-            )
-        )
-        r.upsert_action_type(
-            ActionType(
-                rid=ClassRef(ACT2),
-                parameters=(),
-                submission_criteria=(),
-                side_effects=("task.closed",),
-                function_ref=ClassRef(f"ont.{T2}.fn.x.v1"),
-                on=(ClassRef(OBJ2),),
-                title="Close Task",
-            )
-        )
-        r.set_outbox_writer(lambda et, tid, payload: f"evt-{et}-{tid}")
+        r = PgOntologyRepository(dsn=dsn)
+        r._ensure_schema()
+        _setup_g25(r, OBJ2, P2, ACT2, T2)
 
         app = FastAPI()
         app.state.kernel_repo = r
         app.include_router(__import__("mate_tech_ont.v2_kernel.api", fromlist=["router"]).router)
         client = TestClient(app)
-        with client.websocket_connect("/api/v1/ont/v2/ws/object-changes") as ws:
+        import json
+        import time
+
+        import jwt
+        from cryptography.hazmat.primitives.asymmetric import rsa
+
+        from mate_platform.auth.config import AuthConfig
+        from mate_platform.auth.middleware import install_auth
+
+        class SignedFixture:
+            def __repr__(self):
+                return "<LocalRSAWebSocketFixture>"
+
+            def __init__(self):
+                self.key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+            def headers(self):
+                now = int(time.time())
+                claims = {
+                    "sub": "reader",
+                    "azp": "web",
+                    "sid": "fixture",
+                    "preferred_username": "reader",
+                    "tenant_id": T2,
+                    "iss": config.issuer,
+                    "aud": config.audience,
+                    "iat": now,
+                    "exp": now + 60,
+                    "scope": "platform.read ont.read",
+                }
+                return {
+                    "Authorization": "Bearer "
+                    + jwt.encode(claims, self.key, algorithm="RS256", headers={"kid": "fixture"})
+                }
+
+        fixture = SignedFixture()
+        config = AuthConfig(
+            "https://issuer.invalid",
+            "mp11",
+            "backend",
+            "backend",
+            "fixture-only",
+            300,
+            5,
+            0,
+            False,
+            False,
+        )
+        verifier = install_auth(app, config=config)
+        verifier._cache._by_kid = {
+            "fixture": json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(fixture.key.public_key()))
+        }
+        with client.websocket_connect(
+            "/api/v1/ont/v2/ws/object-changes", headers=fixture.headers()
+        ) as ws:
             hello = ws.receive_json()
             assert hello["type"] == "subscribed"
-            # 触发事件（同线程 —— InMemory 同步执行）
-            r.apply_edit_set_now(
-                ACT2,
-                None,
-                {},
-                [
-                    {
-                        "op": "create_object",
-                        "class_rid": OBJ2,
-                        "primary_key": "t1",
-                        "props": {P2: "t1"},
-                    }
-                ],
-                actor="ops-1",
-                impact_summary="",
-            )
-            import time
+            # Real PG producer commits edit-set, audit and outbox under the signed tenant.
+            with r.tenant_scope(T2):
+                r.apply_edit_set_now(
+                    ACT2,
+                    None,
+                    {},
+                    [
+                        {
+                            "op": "create_object",
+                            "class_rid": OBJ2,
+                            "primary_key": "t1",
+                            "props": {P2: "t1"},
+                        }
+                    ],
+                    actor="ops-1",
+                    impact_summary="",
+                )
+            # Bound receive independently of the 60-second JWT lifetime.
+            import queue
+            import threading
 
-            got = None
-            deadline = time.time() + 6
-            while time.time() < deadline and got is None:
-                # TestClient receive 阻塞 —— 用线程触发已发生，直接收
+            received = queue.Queue()
+
+            def receive():
                 try:
-                    msg = ws.receive_json()
-                    if msg.get("event_type") == "task.closed":
-                        got = msg
-                        break
+                    received.put(ws.receive_json())
                 except Exception:
-                    break
+                    received.put(None)
+
+            threading.Thread(target=receive, daemon=True).start()
+            try:
+                got = received.get(timeout=6)
+            finally:
+                hub = getattr(app.state, "notify_hub", None)
+                if hub:
+                    hub.stop()
             assert got is not None
-            assert got["event_type"] == "task.closed"
+            assert got["event_type"] == "edit_set.applied"
+            assert got["payload"]["action_rid"] == ACT2
+            assert got["payload"]["applied_count"] == 1
+            with r.tenant_scope(T2):
+                events = r.list_outbox_events("0", 20)
+            assert any(
+                e["event_id"] == got["event_id"]
+                and e["event_type"] == "edit_set.applied"
+                and e["payload"] == got["payload"]
+                for e in events
+            )

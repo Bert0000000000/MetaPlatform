@@ -1,0 +1,65 @@
+.........F.............................................................. [ 32%]
+FF...................................................................... [ 64%]
+........................................................................ [ 96%]
+.......                                                                  [100%]
+================================== FAILURES ===================================
+_____________________________ test_no_tenant_400 ______________________________
+packages\mate-app-hub\tests\test_app_hub_tenant_integration.py:94: in test_no_tenant_400
+    assert r.status_code == 400, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: malformed signed tenant"}
+E   assert 401 == 400
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout setup ----------------------------
+2026-10-12 16:09:10 [info     ] marketplace.state.installed
+_ test_actual_pg_history_filters_before_limit_and_survives_new_process[action] _
+packages\mate-app-hub\tests\test_apphub_order_binding.py:197: in test_actual_pg_history_filters_before_limit_and_survives_new_process
+    p = repo.propose_action(ClassRef(f'ont.{tenant}.act.review'), {}, f'ont.{tenant}.ind.order.2', 'History fixture', provenance=provenance)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:5935: in propose_action
+    at = self.get_action_type(action_rid)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:3214: in get_action_type
+    raise KeyError(f"ActionType not found: {rid.rid}")
+E   KeyError: 'ActionType not found: ont.mp11-app-ui.act.review'
+_ test_actual_pg_history_filters_before_limit_and_survives_new_process[edit_set] _
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:6915: in _execute_edit_set_proposal
+    assembly = assemble_unified_edits(
+packages\mate-kernel\src\mate_kernel\action\unified.py:161: in assemble_unified_edits
+    raise EditSetError(
+E   mate_kernel.action.edit_set.EditSetError: unified executor assembled an empty edit set (no declarative edits, no body edits, no function output)
+
+The above exception was the direct cause of the following exception:
+packages\mate-app-hub\tests\test_apphub_order_binding.py:201: in test_actual_pg_history_filters_before_limit_and_survives_new_process
+    receipts.append(repo.execute_proposal(p.proposal_id, actor_id='history-user', idempotency_key='execute-' + uuid.uuid4().hex))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:7160: in execute_proposal
+    return self._execute_proposal_command(proposal_id, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:7260: in _execute_proposal_command
+    result = self._execute_edit_set_proposal(
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:6926: in _execute_edit_set_proposal
+    raise ValueError(str(e)) from e  # API 层统一 422
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ValueError: unified executor assembled an empty edit set (no declarative edits, no body edits, no function output)
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+packages/mate-app-hub/tests/test_app_hub.py: 7 warnings
+packages/mate-app-hub/tests/test_app_hub_tenant_integration.py: 4 warnings
+packages/mate-app-hub/tests/test_apphub_business.py: 33 warnings
+packages/mate-app-hub/tests/test_apphub_otel_01.py: 2 warnings
+packages/mate-app-hub/tests/test_apphub_publication.py: 21 warnings
+packages/mate-app-hub/tests/test_apphub_releases.py: 1 warning
+packages/mate-app-hub/tests/test_apphub_runtime_01.py: 5 warnings
+packages/mate-app-hub/tests/test_apphub_shortlink_01.py: 5 warnings
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\jwt\api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 11 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED packages/mate-app-hub/tests/test_app_hub_tenant_integration.py::test_no_tenant_400
+FAILED packages/mate-app-hub/tests/test_apphub_order_binding.py::test_actual_pg_history_filters_before_limit_and_survives_new_process[action]
+FAILED packages/mate-app-hub/tests/test_apphub_order_binding.py::test_actual_pg_history_filters_before_limit_and_survives_new_process[edit_set]
+3 failed, 220 passed, 79 warnings in 147.03s (0:02:27)

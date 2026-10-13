@@ -6,7 +6,7 @@ export type SourceType =
   | 'HIVE' | 'HBASE' | 'CLICKHOUSE' | 'DORIS' | 'STARROCKS'
   | 'ICEBERG' | 'HUDI' | 'DELTA' | 'PRESTO' | 'TRINO'
   | 'KAFKA' | 'PULSAR' | 'HDFS'
-  | 'MYSQL' | 'POSTGRES';
+  | 'MYSQL' | 'POSTGRES' | 'CSV';
 
 export type AuthType = 'NONE' | 'USER_PASSWORD' | 'KERBERY' | 'LDAP' | 'OAUTH2';
 
@@ -44,6 +44,11 @@ export interface BigDataSource {
   description?: string;
   host: string;
   port: number;
+  username?: string;
+  password?: string;
+  csvContent?: string;
+  table?: string;
+  credentialsConfigured?: boolean;
   database?: string;
   schema?: string;
   authType: AuthType;
@@ -205,6 +210,7 @@ export interface DataProduct {
 
 // ==================== 显示辅助 ====================
 export const SOURCE_TYPE_META: Record<SourceType, { label: string; color: string; icon: string }> = {
+  CSV: { label: 'CSV', color: '#16a34a', icon: 'CSV' },
   HIVE:        { label: 'Hive',         color: '#f59e0b', icon: 'Hi' },
   HBASE:       { label: 'HBase',        color: '#ef4444', icon: 'Hb️' },
   CLICKHOUSE:  { label: 'ClickHouse',   color: '#facc15', icon: 'CK' },
@@ -236,3 +242,10 @@ export const METRIC_TYPE_META: Record<MetricType, { label: string; color: string
   COMPOSITE:  { label: '复合指标', color: '#a855f7' },
   REALTIME:   { label: '实时指标', color: '#ef4444' },
 };
+
+export interface SourceSchema {
+  source_id: string;
+  tables: { name: string; schema?: string; columns: { name: string; type: string; nullable?: boolean; primary_key?: boolean }[] }[];
+  discovered_at: string;
+  trace_id: string;
+}

@@ -18,12 +18,21 @@ async function del<T>(url: string): Promise<T> {
 
 import type { ModuleItem, ModuleCreateRequest, ModuleUpdateRequest, PageResponse } from './types';
 
+interface ModuleRaw {
+  id: string; code: string; app_code: string; app_id?: string; name: string;
+  type?: ModuleItem['type']; description?: string; created_at?: string; updated_at?: string;
+}
+const mapModule = (m: ModuleRaw): ModuleItem => ({ moduleId: m.id, code: m.code, appCode: m.app_code,
+  appId: m.app_id || '', name: m.name, type: m.type, description: m.description,
+  createdAt: m.created_at || '', updatedAt: m.updated_at || '' });
+
 export async function listModules(appId?: string): Promise<PageResponse<ModuleItem>> {
-  return get<PageResponse<ModuleItem>>('/modules', appId ? { app_code: appId } : undefined);
+  const result = await get<{ items: ModuleRaw[]; total: number }>('/modules', appId ? { app_code: appId } : undefined);
+  return { items: result.items.map(mapModule), total: result.total, page: 1, pageSize: result.items.length, totalPages: 1 };
 }
 
 export async function getModule(moduleId: string): Promise<ModuleItem> {
-  return get<ModuleItem>(`/modules/${moduleId}`);
+  return mapModule(await get<ModuleRaw>(`/modules/${moduleId}`));
 }
 
 export async function createModule(request: ModuleCreateRequest): Promise<ModuleItem> {

@@ -1,0 +1,7 @@
+{
+  "decorators": 7,
+  "AST_equal_after_removing_operation_id": true,
+  "signed_target_probe_exit": 0,
+  "live_operation_comparison": "canonical-handlers.json",
+  "full_unchanged_behavior_suite": "mate-tech-data.log:129 passed"
+}

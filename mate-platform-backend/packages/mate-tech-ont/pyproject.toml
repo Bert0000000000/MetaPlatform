@@ -7,6 +7,7 @@ readme = "README.md"
 license = { text = "Proprietary" }
 authors = [{ name = "Mate Platform Team" }]
 dependencies = [
+    "mate-tech-data",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.13.0",
@@ -40,6 +41,7 @@ dependencies = [
 
 
 [tool.uv.sources]
+mate-tech-data = { workspace = true }
 mate-common = { workspace = true }
 mate-platform = { workspace = true }
 mate-clients = { workspace = true }

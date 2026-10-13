@@ -795,9 +795,13 @@ def validate_ontology(value, require_review=True):
         if not scoped["classes"]:
             report.issue("error", "draft", "请至少选择一个对象类型用于本次发布")
         else:
-            model = Draft.model_validate(scoped)
-            report.class_counts = {c.id: 0 for c in model.classes}
-            _check_model(model, {}, {}, report, require_review, model_only=True)
+            try:
+                model = Draft.model_validate(scoped)
+            except (ValidationError, ValueError, TypeError):
+                report.issue("error", "draft", "发布范围的属性或依赖无效，请保留有效身份和标签属性")
+            else:
+                report.class_counts = {c.id: 0 for c in model.classes}
+                _check_model(model, {}, {}, report, require_review, model_only=True)
     result = report.finish()[0]
     result["scope"] = "ontology"
     if not result["errors"]:
@@ -825,7 +829,11 @@ def _evaluate(value, rows, require_review, quarantine=None):
     if not scoped["classes"]:
         report.issue("error", "draft", "请至少选择一个对象类型用于本次发布")
         return report.finish()
-    model = Draft.model_validate(scoped)
+    try:
+        model = Draft.model_validate(scoped)
+    except (ValidationError, ValueError, TypeError):
+        report.issue("error", "draft", "发布范围的属性或依赖无效，请保留有效身份和标签属性")
+        return report.finish()
     report.class_counts = {c.id: 0 for c in model.classes}
     try:
         rows, headers = _input_rows(rows)

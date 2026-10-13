@@ -1,0 +1,86 @@
+# One unified final fix wave — MetaPlatform1.1.0 candidate
+
+Read this first: it is your complete requirements for the ONE final fix wave, with exact review findings below. Original final review BASE2c13952c..HEAD38ff1190 is finished; this wave FIX_BASE is38ff11900b9d72560afe20db4715d344c1370a23. All four Important findings must be fixed together; no separate per-finding agent or second broad review. Full original final-review.md remains immutable. M1 and M2 controller rulings below close their triage without lowering I1-I4.
+
+You are a fresh integration implementer on gpt-6.1-sol/xhigh, the capable available tier after recorded gpt-6-astra quota failure. Do not spawn agents/reviewers, touch user WIP/other worktrees, push/merge/deploy, reset/drop data, bypass signed identity or weaken old assertions. Root performs the single scoped re-review after your full report.
+
+Scope authorized before edits:
+
+- I1: existing AppHub SQL/in-memory lookup and only necessary existing repository/loader/detail/PATCH resolver call sites; one consistent exact-ID-first then tenant-local-code rule. Preserve old identities/snapshots and the accepted DELETE behavior. Meaningful SQL/HTTP/runtime/detail/PATCH collision and tenant regressions, including real owned PG lookup/persistence rather than only a mocked return.
+- I2: exact three existing ONT proposal-create handlers named in the review, using runtime platform.write just like existing action/edit-set paths. Preserve proposal kinds, allowed scoped USER/SERVICE/delegated use, tenant checks and normal human/deadline/idempotent execution boundaries. Cover direct signed readonly denial and unchanged stored proposal count; allowed scoped proposals and existing action behavior. Exercise affected authorized MCP proposal forwarding as needed, without widening delegated scopes.
+- I3: the three named frontend consumers and src/api/ont/kernel.ts or one small related shared reader as necessary. Honor existing authorized limit/offset; detect no progress/failing later pages, preserve selection/error/loading and tenant context. Focused >100-type behavior must show late-page Order/Customer available for source mapping/app binding and retained onboarding selection; not just relation picker coverage. Include a real current signed API/browser late-page consumer proof for those three consumers, using additive fresh owned fixtures and preserving old data. Explicit additional acceptance ownership: new metaplatform-frontend/apps/web/tests/e2e/mp11-catalog-pagination.spec.ts, scripts/acceptance/mp11/playwright.config.ts for inclusion and verify.py only required additive fresh late-page fixture preparation/evidence. Record the new full selection count separately from historical44-case runs. If an obstacle needs any other ownership, ask controller with precise reason before touching it. Existing browser runner has no authenticated trace/video/screenshots and must remain so.
+- I4: manage.py owned stop guard and a focused harmless mocked PowerShell process-query test. Recheck full recorded PID/executable/command/CreationTicks in the immediate termination loop; absent processes stay harmless. Simulated PID reuse must never invoke actual Stop-Process. No live unowned process fault.
+- Evidence: new sanitized docs/active/delivery/evidence/mp11-final-fix records, your report, test commands/cwd/counts/outputs, source SHA256 and source-commit mapping, necessary matching candidate runtime-handoff after the exact API restart. Existing historical artifacts must not be overwritten or counted as new tests.
+- M2 documentation: reconcile only the implementation plan's uniform sample against controller's explicit equivalent-sample ruling; preserve the historical original C001/O001/O002 illustration as an illustration and make actual id/name/id/total/status numeric sample the candidate's fixed acceptance sample. Explain explicit relation creation and original receipt differences. Do not change generic schema/fixtures to pretend earlier literal coverage. M1 remains maintenance, no blanket warnings filters.
+- Existing acceptance/release README status wording may be updated only truthfully to final fix implementation handoff with scoped/whole-branch closure pending; earlier reports/receipts remain historical. Root finalizes global acceptance/audit/cleanup after re-review.
+
+Validation discipline: write meaningful focused regression failures before fixes. Run covering tests while iterating; once ready, run each affected package/selection once, frontend typecheck/build for amended UI/client code and relevant actual candidate browser flows. Full unrelated packages or repeated unchanged builds are not required. Preserve all failures/fixture issues/counts as historical, no aggregate invented all-green tally. If an older positive test fixture now has insufficient scope, request exact test/fixture ownership with reproduction before changing it; never weaken runtime guards or globally authorize readonly.
+
+Current runtime: source candidate API55522/Auth55523/Web9368, owned KC55520/Redis55521, exact GoalPG d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa/name codex-mp11-relationship-pg/image pgvector:pg16/digest9b05db12a354/loopback55497. Private inputs/resources in ignored ACL-protected .tmp/codex-mp11-candidate outside Scratch. Latest known API listener57396/launcher10756/Auth45364/40756/Web22216 are historical hints: re-query exact full identities before any action. Only API needs deliberate source reload if necessary; use guarded existing stop/start, keep Auth/Web/KC/Redis/PG and original30healthycontainers running. Retain original app app-5214d2501e8f5c76b706dea3f69670af/version ver-ad5edf1f07054feaa2dfd3632b0236cf/proposal prop-47f32dc6 and receipt/audit count1; verify normal signed readonly/service denials and positive retained business GET after reload. Prior browser fixtures and every database remain retained. Old Task6API55510/PIDs62164/65568 are currently absent; do not revive/stop them or remove Scratch.
+
+Report contract: full final-fix-report.md in this plan Scratch, not a chat dump. Record complete I1-I4 changes, RED/GREEN exact commands/results/skip and warning boundaries, all owned files, current worktree source SHA256 to eventual commit mapping, private runtime/resource guards and retained business continuity. Self-review your own full owned diff, commit only explicit owned paths (including sample documentation), keep index empty. Return Status/commit(s)/one-line tests/concerns/report path under15 lines. No Task8/Goal complete or final whole-branch approval from implementation alone.
+
+## Complete findings from the single final review (verbatim)
+
+### Important (Should Fix)
+
+1. **I1 — App ID/code collisions still break or select the wrong application outside deletion.**
+
+   - Files: `mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py:174` (`OR` predicate at 182); `repositories/in_memory.py:413`; `runtime/loader.py:36`; `api/app.py:193` and `:343`.
+   - Trigger: same-tenant app A has code `collision-key`, while app B has ID `collision-key` and a different code. Both are allowed identities; a user can also register a new code equal to an existing returned app ID. SQL `get_app` combines ID and code then calls `scalar_one_or_none`, so two matches raise `MultipleResultsFound`. Memory returns the first ID-or-code match, which can be A. Detail and update likewise resolve the first mixed match. The accepted deletion fix gives exact IDs precedence, but that rule is not shared by runtime/detail/update.
+   - Evidence: a narrowly scoped current-source SQLite `:memory:` probe inserted these two records and returned `MultipleResultsFound`; the process-local memory probe selected `different-id` instead of exact ID `collision-key`. No file database, live service or external data was used. Runtime calls that same SQL lookup; source establishes the resulting unhandled 500. Memory/wrong mixed lookup can load or update another app in the same tenant.
+   - Impact: valid identities can make a published shortlink/runtime unavailable or resolve a different application, contrary to APP-02/04 and the precise publication-attribution boundary. This is not a demonstrated cross-tenant escape.
+   - Fix: one exact-ID-first, then tenant-local-code resolver, used consistently by SQL/memory, loader, detail and update. Keep old IDs/codes and existing data. Add collision regressions for runtime/detail/PATCH as well as the already covered DELETE, preserving the unrelated app.
+
+2. **I2 — Direct non-action Proposal routes bypass the new write-scope boundary.**
+
+   - Files: `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py:3482` (propose_instance), `:3518` (propose_object_type), `:3926` (merge proposal); `api.py:350` shows that `_ctx` checks tenant, not write scopes. PG persistence: `pg_repo.py:5963`, `:6007`, `:6028`.
+   - Trigger: a normally verified same-tenant USER with only `platform.read ont.read` posts to `/classes/{rid}/propose-instance` or `/object-types/propose`. Unlike ordinary Action and edit-set proposals, these handlers never require `platform.write` before persisting a Proposal. The merge-proposal handler has the same missing guard by source inspection. MCP filters the corresponding tools, but the same caller can use the HTTP routes directly.
+   - Evidence: a process-local FastAPI app used the actual installed AuthMiddleware/TokenVerifier, a synthetic RSA-signed readonly token, and the actual Ontology router with InMemory repository. Both named routes returned HTTP 200 and added one stored proposal each; the ordinary Action proposal returned 403 and added none. PG methods call the same persisted `propose_action` INSERT. This is signed negative-guard evidence, not a new real-provider/PG acceptance run.
+   - Impact: read-only authority can mutate persistent proposal state and bypass the intended shared API/tool capability distinction. No unauthorized execution or business-data mutation was demonstrated; existing human execution guards remain intact. The current `ont.write` contract metadata and MCP scope map do not enforce these ordinary handlers.
+   - Fix: apply the same runtime `platform.write` check to all three proposal-creation handlers; preserve the existing documented metadata/runtime distinction and tenant checks. Cover direct signed readonly denial with no stored proposal, permitted scoped proposals, and the unchanged human/deadline/replay boundaries. Do not make readonly scopes writable or remove the tools.
+
+3. **I3 — New downstream catalog consumers silently stop at the first 100 object types.**
+
+   - Files: `metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.tsx:33`; `pages/apphub/components/OrderReviewBinding.tsx:17`; `pages/dashboard/components/ProductOnboarding.tsx:62`. Existing client/API contract: `src/api/ont/kernel.ts:102`; backend `v2_kernel/api.py:1961`.
+   - Trigger: authorized Order/Customer models fall after the default first 100 entries. All three new consumers call `listObjectTypes()` once without limit/offset or a continuation/search control. App binding filters that already truncated result for active models, so even fewer eligible models may appear.
+   - Impact: the relation editor now correctly supports later-page types, but those same models cannot be selected for source mapping or the object-driven order app, and saved onboarding selection is treated as missing after refresh. This leaves a cross-task break in DATA-02 / APP-03 / UX-01. The 104-type Browser fixture verifies the relationship editor, not these consumers.
+   - Fix: use the existing authorized pagination contract to read all pages, or offer real paged/search selection and resolve saved selections explicitly. Reuse a small shared catalog reader where appropriate, with no-progress/failed-page handling. Add focused UI/HTTP behavior coverage with >100 types and late-page Order/Customer; retain loading/error states and tenant filtering. Raising a hardcoded cap alone just moves the failure.
+
+4. **I4 — Stop re-fetches a PID without rechecking its identity at the termination point.**
+
+   - File: `scripts/acceptance/mp11/manage.py:248`.
+   - Trigger: its first PowerShell loop validates every recorded PID/executable/command/CreationTicks. Its second loop fetches the PID again but checks only existence before `Stop-Process`. If an owned process exits and its PID is reused between the loops, the second loop can terminate the replacement process without comparing its identity. Several records are handled, so the first validation is not the immediate termination guard.
+   - Impact: the new lifecycle launcher promises to stop only exactly owned processes and preserve user/shared services. This source-visible race weakens that specific safeguard. No process was stopped or live PID reuse attempted in this review.
+   - Fix: revalidate the full recorded identity immediately in the same guarded termination loop, fail closed on mismatch and preserve the absent-process behavior. A harmless mocked process-query regression can change CreationTicks/executable between observations and assert no termination occurs; no real service stop is needed for that negative case.
+
+#### Minor (Nice to Have)
+
+1. **M1 — Consolidated inherited fixture/dependency/build warning follow-up remains open.**
+
+   - Evidence: `docs/active/delivery/evidence/mp11-candidate/fix-round-1-signed-final-green.log:4`; `mate-tech-data.log:12`; `mate-tech-mcp.log:34` and `:38`; `web-build.log:264`.
+   - Remaining categories: Starlette/httpx and FastAPI lifecycle deprecations, short HMAC/class-shaped fixtures outside the repaired scopes, and large SPA chunks. These are disclosed local validation/maintenance issues, not proven product authentication defects or failed assertions. The focused reviewer probe emitted the same inherited Starlette warning.
+   - Triage: keep shared fixture cleanup, supported dependency/lifespan migration and bundle/performance work with their respective owners. Do not blanket-filter warnings, demand unchanged full reruns, or imply P95/user-study measurements from a successful build. This one consolidated Minor represents the repeated Task1/2/3/4/5/6/7/8 warning entries, not eight duplicate findings.
+
+2. **M2 — The end-to-end sample differs from the plan's declared uniform sample.**
+
+   - Files: implementation plan's “统一验收样例”; `scripts/acceptance/mp11/verify.py:118`–120; `docs/active/delivery/evidence/mp11-candidate/acceptance.json:63`.
+   - Actual retained PG/fresh/upgrade chain uses Customer `id/name`, Order `id/total/status`, numeric identities 1/2 and explicit relationship instances. It does not use the plan's exact Order `customer_id/amount` fields and C001/O001/O002 identifiers. The relationship Browser fixtures exercise other identifiers separately.
+   - Impact: the generic actual-column/typed binding and same-object/provider chain are substantive; this difference alone does not demonstrate missing generic functionality. However, those receipts should not be described as literal coverage of every field/ID in the uniform declared example.
+   - Triage: add a single canonical retained fixture for the declared sample, or obtain an explicit documented equivalent-sample ruling and reconcile the sample description without rewriting historical evidence. Keep `customer_id` as an ordinary field and an explicit LinkInstance as the business relationship; do not imply foreign-key text automatically created the relationship.
+
+## Controller M1/M2 rulings
+
+Ruling: Consolidate inherited fixture/dependency/lifecycle/bundle warnings into final M1 and defer their maintenance to the named shared-fixture, dependency/lifespan and frontend performance work — the final reviewer found no authentication defect or failed assertion from this noise, and all warnings remain disclosed — if wrong, prioritize the affected dependency or bundle work before formal rollout; do not suppress warnings or infer performance/SLO from build success.
+Ruling: Use the retained actual-column Customer(id,name)/Order(id,total,status), numeric1/2 and explicit customer_orders LinkInstances as the candidate's documented equivalent fixed sample, while keeping C001/O001/O002 and customer_id/amount as a separately identified business illustration — the binding spec requires typed actual data and the complete same-object chain, not these literal field names, and final M2 found substantive behavior with a documentation mismatch — if wrong, add the literal canonical fixture and its real PG/CSV/app proof; reconcile only this product plan/example and never relabel historical receipts or imply a customer_id field creates a relation.
+
+## Global constraints (verbatim)
+
+- 当前用户指定仓库为 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform；保留截图、工作树和其他在途修改，仅暂存本计划拥有的文件。
+- 产品 1.1 不改写 v3.x 架构版本、已 Accepted 的 PRD/ADR、Gate 或历史验收状态。
+- 保留现有数据库、Keycloak、9200 预览和运行容器；验证使用 codex-mp11- 前缀的独立服务、独立端口及一次性数据库，不连接生产库跑写测试。
+- 官网公开，业务入口 /home 由既有认证处理；凭据不进入官网、配置导出、报告或截图。
+- 未实现和不可用必须可辨认；失败不得转换为 0 条、已连接、已发布或演示成功。
+- 写操作保持租户、权限、类型、基数和幂等边界；新建与更新语义要明确，关系定义不会自动生成业务关系实例。
+- 使用既有 OpenAPI / operationId / DTO；不直接复制 NocoBase、Directus 或未核验许可的源码。
+- 测试以用户可观察行为和完整业务链为准；Mock UI 测试、真实 API/数据库验收、正式发布分别记录。

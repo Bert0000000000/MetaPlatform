@@ -1,0 +1,41 @@
+
+ RUN  v3.2.7 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/metaplatform-frontend/apps/web
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  16:01:21
+   Duration  5.88s (transform 2.03s, setup 0ms, collect 0ms, tests 0ms, environment 427ms, prepare 121ms)
+
+
+stderr | src/api/ont/catalog-consumers.test.tsx
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\node_modules\.pnpm\jsdom@26.1.0_supports-color@10.2.2\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\node_modules\.pnpm\jsdom@26.1.0_supports-color@10.2.2\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\node_modules\.pnpm\jsdom@26.1.0_supports-color@10.2.2\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\node_modules\.pnpm\lottie-web@5.13.0\node_modules\lottie-web\build\player\lottie.js:1118:24
+    at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\node_modules\.pnpm\lottie-web@5.13.0\node_modules\lottie-web\build\player\lottie.js:1122:6
+    at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\node_modules\.pnpm\lottie-web@5.13.0\node_modules\lottie-web\build\player\lottie.js:1301:4
+    at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\node_modules\.pnpm\lottie-web@5.13.0\node_modules\lottie-web\build\player\lottie.js:2:83
+    at Object.<anonymous> (D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\node_modules\.pnpm\lottie-web@5.13.0\node_modules\lottie-web\build\player\lottie.js:5:3)
+    at Module._compile (node:internal/modules/cjs/loader:1873:14)
+    at Object..js (node:internal/modules/cjs/loader:2013:10) undefined
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx [ src/api/ont/catalog-consumers.test.tsx ]
+TypeError: Cannot set properties of null (setting 'fillStyle')
+ ❯ ../../node_modules/.pnpm/lottie-web@5.13.0/node_modules/lottie-web/build/player/lottie.js:1119:21
+    1117|       canvas.height = 1;
+    1118|       var ctx = canvas.getContext('2d');
+    1119|       ctx.fillStyle = 'rgba(0,0,0,0)';
+       |                     ^
+    1120|       ctx.fillRect(0, 0, 1, 1);
+    1121|       return canvas;
+ ❯ ../../node_modules/.pnpm/lottie-web@5.13.0/node_modules/lottie-web/build/player/lottie.js:1122:6
+ ❯ ../../node_modules/.pnpm/lottie-web@5.13.0/node_modules/lottie-web/build/player/lottie.js:1301:4
+ ❯ ../../node_modules/.pnpm/lottie-web@5.13.0/node_modules/lottie-web/build/player/lottie.js:2:83
+ ❯ Object.<anonymous> ../../node_modules/.pnpm/lottie-web@5.13.0/node_modules/lottie-web/build/player/lottie.js:5:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯

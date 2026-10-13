@@ -3,7 +3,7 @@ name = "mate-tech-db"
 version = "0.1.0"
 description = "SQLAlchemy 2.0 persistence layer for Mate Platform"
 requires-python = ">=3.12"
-dependencies = ["sqlalchemy>=2.0", "pydantic>=2.0"]
+dependencies = ["sqlalchemy>=2.0", "pydantic>=2.0", "alembic>=1.14"]
 
 [build-system]
 requires = ["hatchling"]

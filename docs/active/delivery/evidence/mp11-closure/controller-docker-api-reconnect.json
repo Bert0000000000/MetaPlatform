@@ -1,0 +1,259 @@
+{
+  "observed_utc": "2026-10-12T09:53:43.321580+00:00",
+  "head": "94277b97199f1823354fccbda07e772ef19081e8",
+  "reason": "Normal signed login recovered, but retained app GET500 and API log OperationalError after Docker outage.",
+  "scope": "Only the current candidate API; exact process/exe/command/ticks/ancestry guards. Auth/Web unchanged; no source/container/database mutation.",
+  "actions": [
+    "Stopped exact recorded candidate API",
+    "Started source candidate API with existing owned configuration"
+  ],
+  "before_processes": {
+    "api": [
+      {
+        "ProcessId": 41356,
+        "ParentProcessId": 50968,
+        "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+        "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"api\" ",
+        "CreationTicks": 639273933718179600
+      },
+      {
+        "ProcessId": 50968,
+        "ParentProcessId": 46588,
+        "ExecutablePath": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+        "CommandLine": "\"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"api\" ",
+        "CreationTicks": 639273933716373330
+      }
+    ],
+    "auth": [
+      {
+        "ProcessId": 45364,
+        "ParentProcessId": 40756,
+        "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+        "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"auth\" ",
+        "CreationTicks": 639273835528245250
+      },
+      {
+        "ProcessId": 40756,
+        "ParentProcessId": 17440,
+        "ExecutablePath": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+        "CommandLine": "\"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"auth\" ",
+        "CreationTicks": 639273835527503280
+      }
+    ],
+    "web": [
+      {
+        "ProcessId": 22216,
+        "ParentProcessId": 67120,
+        "ExecutablePath": "C:\\Program Files\\nodejs\\node.exe",
+        "CommandLine": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\node_modules\\vite\\bin\\vite.js\" \"--config\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\vite.config.ts\" ",
+        "CreationTicks": 639273825553506960
+      }
+    ]
+  },
+  "before_dependencies": [
+    {
+      "name": "codex-mp11-relationship-pg",
+      "id": "d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+      "image": "pgvector/pgvector:pg16",
+      "image_id": "sha256:9b05db12a35460fff0587e009f9326e414a53e9484555547f96d214a2ba98ef7",
+      "owner": null,
+      "bindings": {
+        "5432/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55497"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "volume",
+          "Source": "/var/lib/docker/volumes/c1ae099cafc9c7ef01fe69cd11755a23ef0977d50411d5e5baa203cac430265c/_data",
+          "Destination": "/var/lib/postgresql/data",
+          "RW": true
+        }
+      ],
+      "running": true
+    },
+    {
+      "name": "codex-mp11-candidate-redis",
+      "id": "b80064cd2c1064fe696aaadedb75f8c0009c83787c863df9e4a0bcbc035e3573",
+      "image": "redis:7-alpine",
+      "image_id": "sha256:5509c0097c6064aa8a3b1df58f1d950e67090fffa6678ae8f3f1dc2385f12deb",
+      "owner": "mp11-candidate",
+      "bindings": {
+        "6379/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55521"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "volume",
+          "Source": "/var/lib/docker/volumes/75dc93239bbc9586a2cedb6c093b8355b87c49944fc07933ba7a5b8c35515215/_data",
+          "Destination": "/data",
+          "RW": true
+        }
+      ],
+      "running": true
+    },
+    {
+      "name": "codex-mp11-candidate-keycloak",
+      "id": "cf6841182877ca84387d8deb21fb44ad25c1e5d666fb0d8fe31f798190f3ab2a",
+      "image": "quay.io/keycloak/keycloak:25.0",
+      "image_id": "sha256:9813af49a39c5b0e8aedc5219e6b72fb7f20c0816656313e17e929ef6f871678",
+      "owner": "mp11-candidate",
+      "bindings": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55520"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\codex-mp11-realm.json",
+          "Destination": "/opt/keycloak/data/import/codex-mp11-realm.json",
+          "RW": false
+        }
+      ],
+      "running": true
+    }
+  ],
+  "active_database": "codex_mp11_candidate_20261012",
+  "private_log_backup": [
+    {
+      "name": "api.err.log",
+      "sha256": "5f7742cb88f980fffe607e20618d43175313b74aa1ee6f997843a235cb142e4a",
+      "bytes": 10897
+    },
+    {
+      "name": "api.out.log",
+      "sha256": "7202617017cfdf2add0f199c5dd1c561a6d89515ffa366e38418d2d773232e16",
+      "bytes": 1468
+    }
+  ],
+  "after_processes": {
+    "api": [
+      {
+        "ProcessId": 32392,
+        "ParentProcessId": 34044,
+        "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+        "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"api\" ",
+        "CreationTicks": 639273956322060390
+      },
+      {
+        "ProcessId": 34044,
+        "ParentProcessId": 35684,
+        "ExecutablePath": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+        "CommandLine": "\"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"api\" ",
+        "CreationTicks": 639273956321361580
+      }
+    ],
+    "auth": [
+      {
+        "ProcessId": 45364,
+        "ParentProcessId": 40756,
+        "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+        "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"auth\" ",
+        "CreationTicks": 639273835528245250
+      },
+      {
+        "ProcessId": 40756,
+        "ParentProcessId": 17440,
+        "ExecutablePath": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+        "CommandLine": "\"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"auth\" ",
+        "CreationTicks": 639273835527503280
+      }
+    ],
+    "web": [
+      {
+        "ProcessId": 22216,
+        "ParentProcessId": 67120,
+        "ExecutablePath": "C:\\Program Files\\nodejs\\node.exe",
+        "CommandLine": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\node_modules\\vite\\bin\\vite.js\" \"--config\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\vite.config.ts\" ",
+        "CreationTicks": 639273825553506960
+      }
+    ]
+  },
+  "after_dependencies": [
+    {
+      "name": "codex-mp11-relationship-pg",
+      "id": "d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+      "image": "pgvector/pgvector:pg16",
+      "image_id": "sha256:9b05db12a35460fff0587e009f9326e414a53e9484555547f96d214a2ba98ef7",
+      "owner": null,
+      "bindings": {
+        "5432/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55497"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "volume",
+          "Source": "/var/lib/docker/volumes/c1ae099cafc9c7ef01fe69cd11755a23ef0977d50411d5e5baa203cac430265c/_data",
+          "Destination": "/var/lib/postgresql/data",
+          "RW": true
+        }
+      ],
+      "running": true
+    },
+    {
+      "name": "codex-mp11-candidate-redis",
+      "id": "b80064cd2c1064fe696aaadedb75f8c0009c83787c863df9e4a0bcbc035e3573",
+      "image": "redis:7-alpine",
+      "image_id": "sha256:5509c0097c6064aa8a3b1df58f1d950e67090fffa6678ae8f3f1dc2385f12deb",
+      "owner": "mp11-candidate",
+      "bindings": {
+        "6379/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55521"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "volume",
+          "Source": "/var/lib/docker/volumes/75dc93239bbc9586a2cedb6c093b8355b87c49944fc07933ba7a5b8c35515215/_data",
+          "Destination": "/data",
+          "RW": true
+        }
+      ],
+      "running": true
+    },
+    {
+      "name": "codex-mp11-candidate-keycloak",
+      "id": "cf6841182877ca84387d8deb21fb44ad25c1e5d666fb0d8fe31f798190f3ab2a",
+      "image": "quay.io/keycloak/keycloak:25.0",
+      "image_id": "sha256:9813af49a39c5b0e8aedc5219e6b72fb7f20c0816656313e17e929ef6f871678",
+      "owner": "mp11-candidate",
+      "bindings": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55520"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\codex-mp11-realm.json",
+          "Destination": "/opt/keycloak/data/import/codex-mp11-realm.json",
+          "RW": false
+        }
+      ],
+      "running": true
+    }
+  ],
+  "auth_web_and_dependency_identity_retained": true,
+  "readiness_http": 200
+}

@@ -133,6 +133,7 @@ export default function ProposalConfirmDrawer({
       await confirmProposal(proposalId);
       const confirmed = await getProposal(proposalId);
       if (confirmed.status !== 'confirmed') throw new Error(`服务端确认状态异常：${confirmed.status}`);
+      if (!confirmed.approval_expires_at || Date.parse(confirmed.approval_expires_at) <= Date.now()) throw new Error("批准已过期或缺少期限，请创建新提案重新批准");
       setAuthoritativeProposal(confirmed);
     } catch (e) {
       const msg = (e as Error).message || '确认失败';
@@ -207,6 +208,7 @@ export default function ProposalConfirmDrawer({
           </button>
         </div>
 
+        <p className="mp-px-6">批准有效期：{preview?.approval_ttl_seconds ? `${preview.approval_ttl_seconds / 60} 分钟` : "服务端尚未返回"}；批准截止：{authoritativeProposal?.approval_expires_at ?? preview?.approval_expires_at ?? "尚未批准 / 历史未定期批准需重新发起"}</p>
         {/* Body */}
         <div className="mp-flex-1 mp-overflow-y-auto mp-py-5 mp-px-6" >
           {state === 'loading' && (

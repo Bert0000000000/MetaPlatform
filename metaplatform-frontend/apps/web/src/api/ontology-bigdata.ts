@@ -5,7 +5,7 @@
 import axios from 'axios';
 import { getToken } from '@/utils/auth';
 import {
-  BigDataSource, CDCTask, ETLTask, SchedulerTask, Metric, DataProduct,
+  BigDataSource, SourceSchema, CDCTask, ETLTask, SchedulerTask, Metric, DataProduct,
   SourceType, CDCSyncMode, CDCStartPosition, CDCTargetType,
   ETLMode, ETLPriority, ETLWriteMode, ETLTargetType, ETLTriggerType, ETLStatus,
   SchedulerTaskType, SchedulerTriggerType,
@@ -102,12 +102,17 @@ function adaptSource(s: BackendSource): BigDataSource {
     sourceType: s.type.toUpperCase() as SourceType,
     host: typeof cfg.host === 'string' ? cfg.host : '',
     port: typeof cfg.port === 'number' ? cfg.port : 0,
-    authType: 'NONE',
+    database: String(cfg.database ?? cfg.dbname ?? ''),
+    schema: String(cfg.schema ?? 'public'),
+    username: String(cfg.username ?? cfg.user ?? ''),
+    table: String(cfg.table ?? ''),
+    credentialsConfigured: cfg.credentials_configured === true,
+    authType: cfg.username || cfg.user ? 'USER_PASSWORD' : 'NONE',
     sslEnabled: false,
     poolSize: 1,
     queryTimeout: 60,
     batchSize: 1000,
-    status: SOURCE_STATUS_MAP[s.status ?? ''] ?? 'ACTIVE',
+    status: SOURCE_STATUS_MAP[s.status ?? ''] ?? 'DRAFT',
     createdAt: s.created_at ?? '',
     updatedAt: s.updated_at ?? '',
     ownerOrgId: '',
@@ -252,7 +257,7 @@ export function deriveLineageGraph(
 // ==================== 大数据源 ====================
 export async function listBigDataSources(params: { keyword?: string; sourceType?: SourceType; status?: BigDataSourceStatus } = {}): Promise<BigDataSource[]> {
   try {
-    const resp = await apiClient.get('/data/sources', { params });
+    const resp = await apiClient.get('/data/sources', { params: { type: params.sourceType?.toLowerCase(), size: 100 } });
     return unwrapItems<BackendSource>(resp.data).map(adaptSource);
   } catch (e) { throw e; }
 }
@@ -266,15 +271,15 @@ export async function getBigDataSource(sourceId: string): Promise<BigDataSource 
 
 export async function createBigDataSource(data: Partial<BigDataSource>): Promise<BigDataSource> {
   try {
-    const resp = await apiClient.post('/data/sources', data);
-    return resp.data;
+    const resp = await apiClient.post('/data/sources', sourcePayload(data));
+    return adaptSource(resp.data);
   } catch (e) { throw e; }
 }
 
 export async function updateBigDataSource(sourceId: string, data: Partial<BigDataSource>): Promise<BigDataSource | undefined> {
   try {
-    const resp = await apiClient.put('/data/sources/' + sourceId, data);
-    return resp.data;
+    const resp = await apiClient.put('/data/sources/' + sourceId, sourcePayload(data));
+    return adaptSource(resp.data);
   } catch (e) { throw e; }
 }
 
@@ -282,29 +287,25 @@ export async function deleteBigDataSource(sourceId: string): Promise<void> {
   await apiClient.delete('/data/sources/' + sourceId);
 }
 
-export async function testBigDataSourceConnection(sourceId: string): Promise<{ success: boolean; latency?: number; message?: string }> {
-  try {
-    const resp = await apiClient.post('/data/sources/' + sourceId + '/test');
-    return resp.data;
-  } catch (e) {
-    return { success: Math.random() > 0.2, latency: Math.floor(Math.random() * 200) + 10 };
-  }
+export async function testBigDataSourceConnection(sourceId: string): Promise<{ success: boolean; latency?: number; message?: string; trace_id: string; error_code?: string }> {
+  const { data } = await apiClient.post('/data/sources/' + sourceId + '/test');
+  return { ...data, success: data.ok === true, latency: data.latency_ms };
 }
 
-export async function discoverBigDataSchema(sourceId: string): Promise<{ databases: { name: string; tables: { name: string; rows: number; columns: number }[] }[] } | null> {
-  try {
-    const resp = await apiClient.get('/data/sources/' + sourceId + '/schema');
-    return resp.data;
-  } catch (e) {
-    return {
-      databases: [
-        { name: 'default', tables: [
-          { name: 'sample_table_1', rows: 12345, columns: 12 },
-          { name: 'sample_table_2', rows: 67890, columns: 8 },
-        ]},
-      ],
-    };
+export async function discoverBigDataSchema(sourceId: string): Promise<SourceSchema> {
+  const { data } = await apiClient.get('/data/sources/' + sourceId + '/schema');
+  if (!data?.discovered_at || !data?.trace_id || !Array.isArray(data.tables)) throw new Error('Schema discovery evidence is missing');
+  return data as SourceSchema;
+}
+
+function sourcePayload(data: Partial<BigDataSource>) {
+  const config: Record<string, unknown> = {};
+  for (const key of ['host', 'port', 'database', 'schema', 'username', 'table'] as const) {
+    if (data[key] !== undefined) config[key] = data[key];
   }
+  if (data.password && !['********', '***'].includes(data.password)) config.password = data.password;
+  if (data.csvContent !== undefined) config.csv_content = data.csvContent;
+  return { name: data.name, type: data.sourceType?.toLowerCase(), connection_config: config };
 }
 
 // ==================== CDC 任务 ====================

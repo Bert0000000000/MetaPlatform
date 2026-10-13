@@ -11,14 +11,14 @@ from datetime import UTC, datetime
 
 from ..telemetry import get_tracer
 from .generator import generate_code
-from .repository import InMemoryShortlinkStore, ShortlinkEntry
+from .repository import InMemoryShortlinkStore, ShortlinkEntry, SQLShortlinkStore
 from .resolver import resolve
 
 _MAX_COLLISION_RETRIES = 3
 
 
 def create_shortlink(
-    store: InMemoryShortlinkStore,
+    store: InMemoryShortlinkStore | SQLShortlinkStore,
     tenant_id: str,
     app_id: str,
     role: str | None = None,
@@ -58,7 +58,7 @@ def create_shortlink(
 
 
 def resolve_shortlink(
-    store: InMemoryShortlinkStore,
+    store: InMemoryShortlinkStore | SQLShortlinkStore,
     tenant_id: str,
     code: str,
 ) -> dict:
@@ -67,7 +67,7 @@ def resolve_shortlink(
 
 
 def list_shortlinks(
-    store: InMemoryShortlinkStore,
+    store: InMemoryShortlinkStore | SQLShortlinkStore,
     tenant_id: str,
 ) -> list[ShortlinkEntry]:
     """Return all shortlinks for a tenant."""
@@ -75,7 +75,7 @@ def list_shortlinks(
 
 
 def revoke_shortlink(
-    store: InMemoryShortlinkStore,
+    store: InMemoryShortlinkStore | SQLShortlinkStore,
     tenant_id: str,
     code: str,
 ) -> bool:
@@ -89,5 +89,7 @@ def revoke_shortlink(
 _default_store = InMemoryShortlinkStore()
 
 
-def get_default_store() -> InMemoryShortlinkStore:
-    return _default_store
+def get_default_store() -> InMemoryShortlinkStore | SQLShortlinkStore:
+    from ..repositories import uses_sql
+
+    return SQLShortlinkStore() if uses_sql() else _default_store

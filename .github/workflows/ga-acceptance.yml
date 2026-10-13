@@ -93,22 +93,60 @@ jobs:
   ga-001-openapi:
     name: ga-001 oasdiff (no unapproved breaking)
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Extract base spec
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install exact oasdiff 1.33.0
+        shell: bash
         run: |
-          mkdir -p .ci
-          git show origin/main:mate-platform-backend/contracts/openapi/generated/bundled.yaml > .ci/base.yaml 2>/dev/null || echo "{}" > .ci/base.yaml
-      - uses: oasdiff/oasdiff-action/breaking@v0.1.11
+          set -euo pipefail
+          mkdir -p .ci/oasdiff-tool
+          curl --fail --location --retry 3 --max-time 60 \
+            https://github.com/oasdiff/oasdiff/releases/download/v1.33.0/oasdiff_1.33.0_linux_amd64.tar.gz \
+            --output .ci/oasdiff-1.33.0.tar.gz
+          echo "43a4e328e2d13ba1552d760aa68d2485c75c5621f309f6ff64ae895188345247  .ci/oasdiff-1.33.0.tar.gz" | sha256sum --check --strict
+          tar --extract --gzip --file .ci/oasdiff-1.33.0.tar.gz --directory .ci/oasdiff-tool oasdiff
+          echo "fa65aae43c867e9f79da9cb121d3c1a113637883afe014c0680fd5b50696f416  .ci/oasdiff-tool/oasdiff" | sha256sum --check --strict
+          chmod 700 .ci/oasdiff-tool/oasdiff
+          python -m pip install PyYAML pytest
+      - name: Extract canonical base contract
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          git show "origin/${BASE_REF}:mate-platform-backend/contracts/openapi/generated/bundled.yaml" > .ci/base.yaml
+      - name: Verify exact approval guard against real oasdiff
+        env:
+          OASDIFF_BIN: ${{ github.workspace }}/.ci/oasdiff-tool/oasdiff
+          OASDIFF_SHA256: fa65aae43c867e9f79da9cb121d3c1a113637883afe014c0680fd5b50696f416
+        run: |
+          python -m pytest mate-platform-backend/contracts/scripts/tests/test_mp11_oasdiff_review.py \
+            -q --basetemp .ci/oasdiff-regression-temp
+      - name: Compare contracts with exact reviewed approvals
+        shell: bash
+        run: |
+          python mate-platform-backend/contracts/scripts/check_mp11_oasdiff.py \
+            --base .ci/base.yaml \
+            --revision mate-platform-backend/contracts/openapi/generated/bundled.yaml \
+            --manifest mate-platform-backend/contracts/openapi/oasdiff-mp11-diagnostics-review.yaml \
+            --repo-root . \
+            --oasdiff .ci/oasdiff-tool/oasdiff \
+            --oasdiff-sha256 fa65aae43c867e9f79da9cb121d3c1a113637883afe014c0680fd5b50696f416 \
+            --report .ci/mp11-oasdiff-review.json
+      - name: Upload bounded contract review report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          base: .ci/base.yaml
-          revision: mate-platform-backend/contracts/openapi/generated/bundled.yaml
-          fail-on: "ERR"
-          # ADR-0082 §2.7: only eight exact required-plan diagnostics are approved.
-          err-ignore: mate-platform-backend/contracts/openapi/oasdiff-r1-approved-errors.txt
+          name: mp11-oasdiff-ga-${{ github.run_id }}
+          path: .ci/mp11-oasdiff-review.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
 
   # rule 8: helm template + kubeconform
   ga-008-helm:
@@ -231,54 +269,124 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - name: install uv + pytest
-        run: python -m pip install uv pytest pytest-asyncio pyyaml sqlalchemy pydantic httpx structlog fastapi tenacity pyjwt python-multipart opentelemetry-api opentelemetry-sdk temporalio alembic
-      # 依赖闭包一次性安装：uv sync --frozen 从 workspace 锁文件解全部
-      # runtime+dev 依赖（手工 pip 清单连续 6 轮暴露缺口：fastapi→pyjwt→
-      # otel→temporalio→alembic…），与 ga-014 同一验证过的路径
-      - name: sync workspace deps (frozen, complete closure)
-        run: uv sync --directory mate-platform-backend --package mate-platform --package mate-app-kb --dev --frozen
+      - name: Install uv
+        run: python -m pip install uv
+      # Selected packages supply runtime dependencies; the root dev group
+      # supplies pytest. Install both frozen closures into the same environment.
+      - name: Install locked platform and KB runtime and test dependencies
+        working-directory: mate-platform-backend
+        run: |
+          uv sync --frozen --python 3.12 --package mate-platform --package mate-app-kb --package mate-tech-db
+          uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
+          uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
+          .venv/bin/python -c "import sys, cryptography, pytest; print('test interpreter:', sys.executable); print('locked runtime cryptography:', cryptography.__version__); print('locked test runner pytest:', pytest.__version__)"
       - name: infra/tests (PLATFORM-K8S-01 regression, rule 8 contract)
-        run: pytest -q
+        run: '"${{ github.workspace }}/mate-platform-backend/.venv/bin/python" -m pytest -q'
         working-directory: infra/tests
-      # 后端两套件走 uv venv（完整闭包；系统 pip 只保 infra tests）
+      # Explicit interpreter and suite paths prevent PATH fallback or a child
+      # uv run from resynchronizing the selected runtime/test environment.
       - name: mate-platform/tests (SEC-IAM-01 + SEC-TENANT-01 + PLATFORM-EVENT-01)
-        run: uv run --directory mate-platform-backend/packages/mate-platform pytest -q
+        run: .venv/bin/python -m pytest packages/mate-platform/tests -q
+        working-directory: mate-platform-backend
       - name: mate-app-kb/tests (TECH-SERVICES canonical)
-        run: pytest -q
-        working-directory: mate-platform-backend/packages/mate-app-kb
+        run: .venv/bin/python -m pytest packages/mate-app-kb/tests -q
+        working-directory: mate-platform-backend
       - name: GOVERN-02 forbid_iam_dep_imports (rule 5 DEPRECATED mate_tech_iam)
         run: python scripts/ci/forbid_iam_dep_imports.py
       - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
         run: python scripts/ci/forbid_legacy_artifacts.py
 
-  # Broad unit/import coverage. Mandatory database evidence is reported by
-  # ont-postgres-required below, independently of this job's optional PG cases.
+  # The broad suite executes every newly introduced MP11/modeling PG case.
+  # The six mandatory native groups and forced RLS retain separate full gates.
   ont-kernel-tests:
     name: ont-kernel pytest (mate-kernel + mate-tech-ont)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: meta
+          POSTGRES_PASSWORD: meta
+          POSTGRES_DB: postgres
+        ports:
+          - 55497:5432
+        options: >-
+          --health-cmd "pg_isready -U meta -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      # Minimal import-closure-verified dependency set for the two suites:
-      # pytest-asyncio -> @pytest.mark.asyncio under --strict-markers;
-      # sqlalchemy -> mate_tech_db sqlite in-memory store (test_ont_sql_store);
-      # neo4j -> legacy repo imported at module level by mate_tech_ont.main;
-      # rdflib -> owl/io.py lazy import exercised by test_owl.py assertions;
-      # psycopg2-binary -> import-time + PG-gated tests (skips without PG);
-      # pyyaml -> tests/contracts/test_lint_sunset_headers.py (CI 上一轮实跑暴露).
-      - name: install minimal deps
-        run: >
-          pip install pytest pytest-asyncio fastapi httpx pydantic pydantic-settings
-          structlog tenacity psycopg2-binary "pyjwt[crypto]" sqlalchemy neo4j rdflib
-          pyyaml openpyxl python-multipart
-      # Root pyproject [tool.pytest.ini_options] provides pythonpath +
-      # --import-mode=importlib; test files also bootstrap sys.path themselves.
-      - name: mate-kernel/tests + mate-tech-ont/tests
-        run: python -m pytest packages/mate-kernel/tests packages/mate-tech-ont/tests -q
+      - name: Install locked ontology runtime and test dependencies
         working-directory: mate-platform-backend
+        run: |
+          python -m pip install uv
+          uv sync --frozen --python 3.12 --package mate-tech-ont --package mate-tech-data --no-install-workspace
+          uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
+          uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
+      - name: Prepare the owned nonprivileged ontology database
+        run: |
+          mate-platform-backend/.venv/bin/python - <<'PY'
+          import os
+          import secrets
+          import tomllib
+          from pathlib import Path
+          import psycopg2
+          from psycopg2 import sql
+
+          database = 'codex_mp11_ontology_ci'
+          password = secrets.token_hex(24)
+          print(f'::add-mask::{password}')
+          conn = psycopg2.connect('postgresql://meta:meta@127.0.0.1:55497/postgres')
+          conn.autocommit = True
+          try:
+              with conn.cursor() as cursor:
+                  cursor.execute(sql.SQL('CREATE ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE').format(sql.Identifier(database), sql.Literal(password)))
+                  cursor.execute(sql.SQL('CREATE DATABASE {} OWNER {}').format(sql.Identifier(database), sql.Identifier(database)))
+          finally:
+              conn.close()
+          admin_dsn = f'postgresql://meta:meta@127.0.0.1:55497/{database}'
+          with psycopg2.connect(admin_dsn) as conn, conn.cursor() as cursor:
+              cursor.execute('CREATE EXTENSION IF NOT EXISTS vector')
+          dsn = f'postgresql://{database}:{password}@127.0.0.1:55497/{database}'
+          with psycopg2.connect(dsn) as conn, conn.cursor() as cursor:
+              cursor.execute('SELECT current_database(), rolsuper, rolbypassrls, rolcreatedb, rolcreaterole FROM pg_roles WHERE rolname = current_user')
+              identity = cursor.fetchone()
+              assert identity == (database, False, False, False, False), identity
+          with Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8') as env:
+              # Child Python workers need the same workspace imports as pytest.
+              backend = Path('mate-platform-backend').resolve()
+              with (backend / 'pyproject.toml').open('rb') as config_file:
+                  config = tomllib.load(config_file)
+              source_paths = [str((backend / path).resolve()) for path in config['tool']['pytest']['ini_options']['pythonpath']]
+              env.write(f'PYTHONPATH={os.pathsep.join(source_paths)}\n')
+              for name in ('MP11_OBJECT_PG_DSN', 'MP11_RELATIONSHIP_PG_DSN', 'MP11_PROPOSAL_PG_DSN', 'MP11_WS_PG_DSN', 'MODELING_TEST_DSN'):
+                  env.write(f'{name}={dsn}\n')
+              env.write('MP11_WS_PG_REQUIRED=1\n')
+          Path('.ci').mkdir(exist_ok=True)
+          print('Ontology database: owned CI fixture, NOSUPERUSER, NOBYPASSRLS, NOCREATEDB, NOCREATEROLE')
+          PY
+      - name: mate-kernel/tests + mate-tech-ont/tests
+        run: .venv/bin/python -m pytest packages/mate-kernel/tests packages/mate-tech-ont/tests -q --junitxml=../.ci/ontology-broad.xml
+        working-directory: mate-platform-backend
+      - name: Require every new ontology and modeling case to execute
+        run: |
+          python - <<'PY'
+          from xml.etree import ElementTree as ET
+          cases = [case for case in ET.parse('.ci/ontology-broad.xml').getroot().iter('testcase') if 'test_mp11_' in case.get('classname', '') or 'test_modeling_' in case.get('classname', '')]
+          assert cases, 'New ontology and modeling cases were not collected'
+          assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error')), 'New ontology and modeling cases must all execute and pass'
+          print(f'New ontology/modeling cases: {len(cases)} executed, 0 skipped')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ontology-broad-results
+          include-hidden-files: true
+          path: .ci/ontology-broad.xml
+          if-no-files-found: error
+          retention-days: 14
 
   # rule 6 + GOVERN-06: PostgreSQL FORCE RLS must execute as a real
   # non-superuser. The dedicated test database is created inside this job and
@@ -375,7 +483,7 @@ jobs:
         env:
           MODELING_TEST_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
         run: |
-          .venv/bin/python -m pytest packages/mate-tech-ont/tests/test_modeling_integration.py -q --junitxml=../.ci/modeling-postgres.xml
+          .venv/bin/python -m pytest packages/mate-tech-ont/tests/test_modeling_integration.py packages/mate-tech-ont/tests/test_modeling_merge_regressions.py -q --junitxml=../.ci/modeling-postgres.xml
           .venv/bin/python -c "from xml.etree import ElementTree as ET; root=ET.parse('../.ci/modeling-postgres.xml').getroot(); cases=root.findall('.//testcase'); assert cases and all(c.find('skipped') is None for c in cases), 'Modeling PostgreSQL tests must execute without skips'"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -385,6 +493,112 @@ jobs:
             .ci/ont-postgres.xml
             .ci/ont-postgres.collection.json
             .ci/modeling-postgres.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  # MP11 provider-to-consumer database cases use a separate ephemeral database.
+  # The business role cannot manage roles/databases; only guarded test fixtures
+  # receive the management identity for their UUID-prefixed child resources.
+  mp11-product-postgres:
+    name: MP11 data, AppHub and MCP PostgreSQL acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: meta
+          POSTGRES_PASSWORD: meta
+          POSTGRES_DB: postgres
+        ports:
+          - 55497:5432
+        options: >-
+          --health-cmd "pg_isready -U meta -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install locked product runtime and test dependencies
+        working-directory: mate-platform-backend
+        run: |
+          python -m pip install uv
+          uv sync --frozen --python 3.12 --package mate-tech-data --package mate-app-hub --package mate-tech-mcp --package mate-tech-ont --package mate-tech-orchestrator --no-install-workspace
+          uv export --frozen --only-group dev --no-hashes --no-emit-workspace --output-file .venv/ci-dev-requirements.txt
+          uv pip install --python .venv/bin/python -r .venv/ci-dev-requirements.txt
+      - name: Prepare the owned nonprivileged product database
+        run: |
+          mate-platform-backend/.venv/bin/python - <<'PY'
+          import os
+          import secrets
+          import tomllib
+          from pathlib import Path
+          import psycopg2
+          from psycopg2 import sql
+
+          database = 'codex_mp11_other_ci'
+          password = secrets.token_hex(24)
+          print(f'::add-mask::{password}')
+          conn = psycopg2.connect('postgresql://meta:meta@127.0.0.1:55497/postgres')
+          conn.autocommit = True
+          try:
+              with conn.cursor() as cursor:
+                  cursor.execute(sql.SQL('CREATE ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE').format(sql.Identifier(database), sql.Literal(password)))
+                  cursor.execute(sql.SQL('CREATE DATABASE {} OWNER {}').format(sql.Identifier(database), sql.Identifier(database)))
+          finally:
+              conn.close()
+          admin_dsn = f'postgresql://meta:meta@127.0.0.1:55497/{database}'
+          with psycopg2.connect(admin_dsn) as conn, conn.cursor() as cursor:
+              cursor.execute('CREATE EXTENSION IF NOT EXISTS vector')
+          dsn = f'postgresql://{database}:{password}@127.0.0.1:55497/{database}'
+          with psycopg2.connect(dsn) as conn, conn.cursor() as cursor:
+              cursor.execute('SELECT current_database(), rolsuper, rolbypassrls, rolcreatedb, rolcreaterole FROM pg_roles WHERE rolname = current_user')
+              identity = cursor.fetchone()
+              assert identity == (database, False, False, False, False), identity
+          with Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8') as env:
+              # Child Python workers need the same workspace imports as pytest.
+              backend = Path('mate-platform-backend').resolve()
+              with (backend / 'pyproject.toml').open('rb') as config_file:
+                  config = tomllib.load(config_file)
+              source_paths = [str((backend / path).resolve()) for path in config['tool']['pytest']['ini_options']['pythonpath']]
+              env.write(f'PYTHONPATH={os.pathsep.join(source_paths)}\n')
+              for name in ('MP11_SOURCE_PG_DSN', 'MP11_APPHUB_PG_DSN', 'MP11_APP_ID_PG_DSN', 'ORDER_REVIEW_POSTGRES_URL'):
+                  env.write(f'{name}={dsn}\n')
+              env.write(f'MP11_SOURCE_ADMIN_DSN={admin_dsn}\nMP11_OWNED_PG_DATABASE={database}\n')
+          Path('.ci').mkdir(exist_ok=True)
+          print('Product database: owned CI fixture, NOSUPERUSER, NOBYPASSRLS, NOCREATEDB, NOCREATEROLE')
+          PY
+      - name: Execute data source and schema acceptance
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-tech-data/tests/test_mp11_connection_schema.py packages/mate-tech-data/tests/test_mp11_read_scope.py -q --junitxml=../.ci/mp11-data-postgres.xml
+      - name: Execute application identity and order binding acceptance
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-app-hub/tests/test_mp11_app_identity.py packages/mate-app-hub/tests/test_apphub_order_binding.py packages/mate-app-hub/tests/test_mp11_read_scope.py -q --junitxml=../.ci/mp11-apphub-postgres.xml
+      - name: Execute additive demo schema upgrade on SQLite and real PostgreSQL
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-app-hub/tests/test_demo_schema_upgrade.py -q --junitxml=../.ci/mp11-demo-schema-postgres.xml
+      - name: Execute MCP business client acceptance
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-tech-mcp/tests/test_mp11_client_contract.py -q --junitxml=../.ci/mp11-mcp-postgres.xml
+      - name: Execute PostgreSQL order-review concurrency regression
+        working-directory: mate-platform-backend
+        run: .venv/bin/python -m pytest packages/mate-tech-orchestrator/tests/test_order_review_postgres_concurrency.py -q --junitxml=../.ci/mp11-order-review-postgres.xml
+      - name: Require executed product database cases with zero skips
+        run: |
+          python - <<'PY'
+          from xml.etree import ElementTree as ET
+          for suite in ('data', 'apphub', 'demo-schema', 'mcp', 'order-review'):
+              cases = list(ET.parse(f'.ci/mp11-{suite}-postgres.xml').getroot().iter('testcase'))
+              assert cases, f'{suite}: no executed tests'
+              assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error')), f'{suite}: every case must execute and pass'
+              print(f'{suite}: {len(cases)} executed, 0 skipped')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mp11-product-postgres-results
+          include-hidden-files: true
+          path: .ci/mp11-*-postgres.xml
           if-no-files-found: error
           retention-days: 14
 

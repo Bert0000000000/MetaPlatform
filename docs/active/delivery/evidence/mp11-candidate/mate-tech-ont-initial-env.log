@@ -1,0 +1,815 @@
+........................................................................ [ 10%]
+...............................................................F........ [ 20%]
+........................................................................ [ 31%]
+..................F...........ssssssss...................FFFFF.......... [ 41%]
+......FFFFFFFFFFFFFFFFss..FFFFs.FFFFFFFFFFFFFFFFs.FFs.FF.FFFFFFFFFFFFFFF [ 52%]
+FFFFFFFFF....FF.F..F...............................................F.FFF [ 62%]
+FF...................................FFFFFF............................. [ 72%]
+................................FFFF...................F................ [ 83%]
+......................FFFFF............................................. [ 93%]
+...................................FF......F                             [100%]
+================================== FAILURES ===================================
+___________ TestLinkTypeInterfaceE2E.test_link_type_upsert_list_get ___________
+packages\mate-tech-ont\tests\integration\test_v2_kernel_e2e.py:414: in test_link_type_upsert_list_get
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"src object type not found: ont.acme.obj.employee.v1"}
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+__________ test_vector2_payload_namespace_cannot_override_ctx_tenant __________
+packages\mate-tech-ont\tests\security\test_cypher_tenant_guard.py:139: in test_vector2_payload_namespace_cannot_override_ctx_tenant
+    assert resp.status_code == 200, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-10-12 04:22:13 [info     ] instance.created               class_id=Order id=25841f95-ff4 ns=ont.acme.default tenant_id=acme
+2026-10-12 04:22:13 [info     ] instance.created               class_id=Order id=55c1a238-12c ns=ont.other.default tenant_id=other
+____________________________ test_create_ontology _____________________________
+packages\mate-tech-ont\tests\test_api.py:28: in test_create_ontology
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________________ test_create_ontology_conflict ________________________
+packages\mate-tech-ont\tests\test_api.py:36: in test_create_ontology_conflict
+    assert resp.status_code == 409
+E   assert 401 == 409
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_________________________ test_get_ontology_not_found _________________________
+packages\mate-tech-ont\tests\test_api.py:41: in test_get_ontology_not_found
+    assert resp.status_code == 404
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________________________ test_create_class ______________________________
+packages\mate-tech-ont\tests\test_api.py:56: in test_create_class
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________________________ test_get_class_404 ______________________________
+packages\mate-tech-ont\tests\test_api.py:62: in test_get_class_404
+    assert resp.status_code == 404
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________ test_new_refuses_existing_but_default_update_survives[memory] ________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:51: in test_new_refuses_existing_but_default_update_survives
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test9a5313ee3733499bb6ae757e7ea3cf8c.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC11476C30>.post
+__________ test_new_refuses_existing_but_default_update_survives[pg] __________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:51: in test_new_refuses_existing_but_default_update_survives
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test9d427dec7e1346faa7ff338fff16b43e.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC148B8E00>.post
+_________________ test_concurrent_new_has_one_winner[memory] __________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:65: in test_concurrent_new_has_one_winner
+    assert sorted(r.status_code for r in results) == [200, 409]
+E   assert [401, 401] == [200, 409]
+E
+E     At index 0 diff: 401 != 200
+E     Use -v to get more diff
+___________________ test_concurrent_new_has_one_winner[pg] ____________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:65: in test_concurrent_new_has_one_winner
+    assert sorted(r.status_code for r in results) == [200, 409]
+E   assert [401, 401] == [200, 409]
+E
+E     At index 0 diff: 401 != 200
+E     Use -v to get more diff
+___ test_new_wip_restore_competing_create_publish_preserves_winner[memory] ____
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:72: in test_new_wip_restore_competing_create_publish_preserves_winner
+    assert staged.status_code == 200, staged.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____ test_new_wip_restore_competing_create_publish_preserves_winner[pg] ______
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:72: in test_new_wip_restore_competing_create_publish_preserves_winner
+    assert staged.status_code == 200, staged.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_________________ test_read_only_cannot_mutate[memory-create] _________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:91: in test_read_only_cannot_mutate
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________________ test_read_only_cannot_mutate[memory-save] __________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:91: in test_read_only_cannot_mutate
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_________________ test_read_only_cannot_mutate[memory-apply] __________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:91: in test_read_only_cannot_mutate
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________ test_read_only_cannot_mutate[memory-discard] _________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:91: in test_read_only_cannot_mutate
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________ test_read_only_cannot_mutate[pg-create] ___________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:91: in test_read_only_cannot_mutate
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________ test_read_only_cannot_mutate[pg-save] ____________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:91: in test_read_only_cannot_mutate
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________ test_read_only_cannot_mutate[pg-apply] ____________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:91: in test_read_only_cannot_mutate
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________________ test_read_only_cannot_mutate[pg-discard] ___________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:91: in test_read_only_cannot_mutate
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________ test_wip_checksum_is_rechecked_at_write[memory] _______________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:95: in test_wip_checksum_is_rechecked_at_write
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test11d3e65863714b8dbd7ddec0fcf69cd8.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14934C80>.post
+_________________ test_wip_checksum_is_rechecked_at_write[pg] _________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:95: in test_wip_checksum_is_rechecked_at_write
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test18df586fea3246998735259825e48012.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14936CC0>.post
+_____ test_wip_discard_is_reachable_and_does_not_delete_live_type[memory] _____
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:147: in test_wip_discard_is_reachable_and_does_not_delete_live_type
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test0e3e867b0ff34b00b35608a7eb9a54d1.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC148FAAB0>.post
+_______ test_wip_discard_is_reachable_and_does_not_delete_live_type[pg] _______
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:147: in test_wip_discard_is_reachable_and_does_not_delete_live_type
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test55708b4b1e5f4b2ca1fdc81325f76a00.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14922090>.post
+_____________ test_wip_rejects_metadata_change_after_save[memory] _____________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:164: in test_wip_rejects_metadata_change_after_save
+    assert result.status_code == 409, result.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 409
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________ test_wip_rejects_metadata_change_after_save[pg] _______________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:164: in test_wip_rejects_metadata_change_after_save
+    assert result.status_code == 409, result.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 409
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________ test_readonly_object_mutation_routes[memory-branch-POST] ___________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.testf6702ea8725348bfb5fb1b357836bc31.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC1599D6A0>.post
+_________ test_readonly_object_mutation_routes[memory-rollback-POST] __________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test0b13e856bfad488592d347ee0c1eb941.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC148BA4E0>.post
+_________ test_readonly_object_mutation_routes[memory-lifecycle-POST] _________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test793553e45ec04aecaefb2140a94b465b.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14868B90>.post
+____________ test_readonly_object_mutation_routes[memory--DELETE] _____________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test5b4cb69346e048f2b3b3df70131803f1.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14851100>.post
+________ test_readonly_object_mutation_routes[memory-properties-POST] _________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.teste6d092cc9ce1418ab76a673d5fd7d3f9.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14851640>.post
+____________ test_readonly_object_mutation_routes[pg-branch-POST] _____________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.testd69bd1ea6e4344d7a849190ef85d5409.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14852B70>.post
+___________ test_readonly_object_mutation_routes[pg-rollback-POST] ____________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test8bbcb02205434c408e5111b9d56e66c1.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14869730>.post
+___________ test_readonly_object_mutation_routes[pg-lifecycle-POST] ___________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.testcc5fc16958da479c92e23fc1ad8d40fa.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC148BB1A0>.post
+______________ test_readonly_object_mutation_routes[pg--DELETE] _______________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test9ad4361187234cccb0144f8a3c26bd55.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC148BA210>.post
+__________ test_readonly_object_mutation_routes[pg-properties-POST] ___________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:199: in test_readonly_object_mutation_routes
+    assert client.post(f'{BASE}/object-types', json=payload).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test8515aa870326405fa92e74bc025adcd8.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC14922030>.post
+_______________ test_wip_cross_tenant_mutations_denied[memory] ________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:210: in test_wip_cross_tenant_mutations_denied
+    assert client.post(f'{BASE}/object-types/wip?create_only=true',json={'payload':payload}).status_code == 403
+E   AssertionError: assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types/wip?create_only=true', json={'payload': {'rid': 'ont.other.obj.crm.customer.v1', 'display_name': 'Original', 'primary_key': ['ont.tenant-acme.prop...s': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...}})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC149362A0>.post
+_________________ test_wip_cross_tenant_mutations_denied[pg] __________________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:210: in test_wip_cross_tenant_mutations_denied
+    assert client.post(f'{BASE}/object-types/wip?create_only=true',json={'payload':payload}).status_code == 403
+E   AssertionError: assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types/wip?create_only=true', json={'payload': {'rid': 'ont.other.obj.crm.customer.v1', 'display_name': 'Original', 'primary_key': ['ont.tenant-acme.prop...s': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...}})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC13187C80>.post
+____________ test_open_editor_baseline_survives_first_save[memory] ____________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:217: in test_open_editor_baseline_survives_first_save
+    baseline=client.post(f'{BASE}/object-types',json=payload).json()['checksum']
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'checksum'
+______________ test_open_editor_baseline_survives_first_save[pg] ______________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:217: in test_open_editor_baseline_survives_first_save
+    baseline=client.post(f'{BASE}/object-types',json=payload).json()['checksum']
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'checksum'
+______ test_class_inspection_filters_actions_to_verified_tenant[memory] _______
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:234: in test_class_inspection_filters_actions_to_verified_tenant
+    assert result.status_code == 200, result.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________ test_class_inspection_filters_actions_to_verified_tenant[pg] _________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:234: in test_class_inspection_filters_actions_to_verified_tenant
+    assert result.status_code == 200, result.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________ test_explicit_compared_checksum_can_retry_stale_draft[memory] ________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:287: in test_explicit_compared_checksum_can_retry_stale_draft
+    assert client.post(f'{BASE}/object-types', json=original).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test071319a96deb42b8849ae94dd9351fc3.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC13245D30>.post
+__________ test_explicit_compared_checksum_can_retry_stale_draft[pg] __________
+packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:287: in test_explicit_compared_checksum_can_retry_stale_draft
+    assert client.post(f'{BASE}/object-types', json=original).status_code == 200
+E   AssertionError: assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/object-types', json={'rid': 'ont.tenant-acme.obj.crm.test9b0f53bfb3ed45ec8452c35341ae4e85.v1', 'display_name': 'Original', 'primary_key': ...es': [{'rid': 'ont.tenant-acme.prop.crm.id.v1', 'type_id': 'string', 'format': 'string', 'nullable': False, ...}], ...})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC13247980>.post
+____ test_http_list_never_returns_a_neighbor_tenants_relationship[memory] _____
+packages\mate-tech-ont\tests\test_mp11_relationship_reads.py:61: in test_http_list_never_returns_a_neighbor_tenants_relationship
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______ test_http_list_never_returns_a_neighbor_tenants_relationship[pg] _______
+packages\mate-tech-ont\tests\test_mp11_relationship_reads.py:61: in test_http_list_never_returns_a_neighbor_tenants_relationship
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________ test_valid_relationship_and_replay_preserve_dto _______________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:122: in test_valid_relationship_and_replay_preserve_dto
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ test_definition_rejects_cross_tenant_endpoints[src] _____________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:137: in test_definition_rejects_cross_tenant_endpoints
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ test_definition_rejects_cross_tenant_endpoints[dst] _____________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:137: in test_definition_rejects_cross_tenant_endpoints
+    assert response.status_code == 403, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________ test_definition_requires_existing_endpoints[src] _______________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:146: in test_definition_requires_existing_endpoints
+    assert response.status_code == 404, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________ test_definition_requires_existing_endpoints[dst] _______________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:146: in test_definition_requires_existing_endpoints
+    assert response.status_code == 404, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______ test_invalid_definition_enums_are_readable_422[cardinality-many] _______
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:153: in test_invalid_definition_enums_are_readable_422
+    assert response.status_code == 422, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 422
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____ test_invalid_definition_enums_are_readable_422[directionality-out] ______
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:153: in test_invalid_definition_enums_are_readable_422
+    assert response.status_code == 422, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 422
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________ test_instance_rejects_cross_tenant_endpoints[src] ______________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:159: in test_instance_rejects_cross_tenant_endpoints
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________ test_instance_rejects_cross_tenant_endpoints[dst] ______________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:159: in test_instance_rejects_cross_tenant_endpoints
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_instance_requires_type_and_endpoints[link_type_rid-ont.tenant-acme.link.missing] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:176: in test_instance_requires_type_and_endpoints
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_instance_requires_type_and_endpoints[src-ont.tenant-acme.ind.customer.missing] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:176: in test_instance_requires_type_and_endpoints
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_instance_requires_type_and_endpoints[dst-ont.tenant-acme.ind.order.missing] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:176: in test_instance_requires_type_and_endpoints
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_instance_endpoint_class_must_match_definition[src-ont.tenant-acme.ind.order.2] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:184: in test_instance_endpoint_class_must_match_definition
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_instance_endpoint_class_must_match_definition[dst-ont.tenant-acme.ind.customer.2] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:184: in test_instance_endpoint_class_must_match_definition
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________ test_one_order_cannot_belong_to_two_customers ________________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:191: in test_one_order_cannot_belong_to_two_customers
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_definition_structure_with_instances_cannot_change[src-ont.tenant-acme.obj.other] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:205: in test_definition_structure_with_instances_cannot_change
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_definition_structure_with_instances_cannot_change[dst-ont.tenant-acme.obj.other] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:205: in test_definition_structure_with_instances_cannot_change
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___ test_definition_structure_with_instances_cannot_change[cardinality-N:N] ___
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:205: in test_definition_structure_with_instances_cannot_change
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_definition_structure_with_instances_cannot_change[directionality-bidirectional] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:205: in test_definition_structure_with_instances_cannot_change
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______ test_definition_names_and_description_can_change_with_instances _______
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:213: in test_definition_names_and_description_can_change_with_instances
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_________________ test_unused_definition_structure_can_change _________________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:226: in test_unused_definition_structure_can_change
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________________ test_self_link_is_readable_422 ________________________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:233: in test_self_link_is_readable_422
+    _create_type(client)
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:118: in _create_type
+    assert response.status_code == 200, response.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ test_relationship_write_requires_authenticated_write_scope[link-types-payload0] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:248: in test_relationship_write_requires_authenticated_write_scope
+    assert client.post(f"{BASE}/{path}", json=payload, headers=headers).status_code == 403
+E   AssertionError: assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/link-types', json={'rid': 'ont.tenant-acme.link.customer_orders', 'src': 'ont.tenant-acme.obj.customer', 'dst': 'ont.tenant-acme.obj.order', 'cardinality': '1:N', ...}, headers={'Authorization': 'Bearer [REDACTED_TOKEN]'})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC12E534D0>.post
+_ test_relationship_write_requires_authenticated_write_scope[link-instances-payload1] _
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:248: in test_relationship_write_requires_authenticated_write_scope
+    assert client.post(f"{BASE}/{path}", json=payload, headers=headers).status_code == 403
+E   AssertionError: assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+E    +    where <Response [401 Unauthorized]> = post('/api/v1/ont/v2/link-instances', json={'rid': 'ont.tenant-acme.lnk.customer_orders.1', 'link_type_rid': 'ont.tenant-acme.link.customer_orders', 'src': 'ont.tenant-acme.ind.customer.1', 'dst': 'ont.tenant-acme.ind.order.1'}, headers={'Authorization': 'Bearer [REDACTED_TOKEN]'})
+E    +      where post = <starlette.testclient.TestClient object at 0x000002CC15988DD0>.post
+____________ test_pg_http_rejects_endpoint_deleted_after_api_reads ____________
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:513: in test_pg_http_rejects_endpoint_deleted_after_api_reads
+    assert api_read.wait(5)
+E   assert False
+E    +  where False = wait(5)
+E    +    where wait = <threading.Event at 0x2cc11996120: unset>.wait
+______ test_pg_delete_waits_before_cascade_scan_for_validated_http_write ______
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:548: in test_pg_delete_waits_before_cascade_scan_for_validated_http_write
+    assert validated.wait(5)
+E   assert False
+E    +  where False = wait(5)
+E    +    where wait = <threading.Event at 0x2cc11607320: unset>.wait
+____ test_create_only_duplicate_definition_is_conflict_and_keeps_original _____
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:593: in test_create_only_duplicate_definition_is_conflict_and_keeps_original
+    assert first.status_code == 200, first.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______ test_pg_http_create_only_refuses_rid_claimed_after_catalog_read _______
+packages\mate-tech-ont\tests\test_mp11_relationship_writes.py:653: in test_pg_http_create_only_refuses_rid_claimed_after_catalog_read
+    assert rid not in {row["rid"] for row in catalog}
+                       ^^^^^^^^^^
+E   TypeError: string indices must be integers, not 'str'
+____________ TestS2PgUnified.test_pg_legacy_path_is_compat_marker _____________
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:647: in test_pg_legacy_path_is_compat_marker
+    result = pg_repo.execute_proposal(pid, idempotency_key=f"leg-{pid}")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:7160: in execute_proposal
+    return self._execute_proposal_command(proposal_id, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:7252: in _execute_proposal_command
+    return self._execute_action_kind_proposal(
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:6594: in _execute_action_kind_proposal
+    cur.execute(
+.venv\Lib\site-packages\psycopg2\extras.py:236: in execute
+    return super().execute(query, vars)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "ont_action_audit_pkey"
+E   DETAIL:  Key (audit_id)=(audit-9cbc10-1) already exists.
+_________ TestS3ApiDispatch.test_declarative_via_propose_endpoint_e2e _________
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:752: in test_declarative_via_propose_endpoint_e2e
+    assert resp.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+_______ TestS3ApiDispatch.test_propose_edit_set_on_function_only_action _______
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:789: in test_propose_edit_set_on_function_only_action
+    assert resp.status_code == 200, resp.text
+E   AssertionError: {"detail":"platform.write required"}
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+_______________ TestS3ApiDispatch.test_inmemory_revert_restores _______________
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:812: in test_inmemory_revert_restores
+    pid = resp.json()["proposal_id"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'proposal_id'
+___________ TestS3ApiDispatch.test_function_not_registered_maps_422 ___________
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:845: in test_function_not_registered_maps_422
+    assert resp.status_code == 200, resp.text
+E   AssertionError: {"detail":"platform.write required"}
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+___ TestS3ApiDispatch.test_execute_gate_denial_maps_422_with_scoped_header ____
+packages\mate-tech-ont\tests\test_ont_act05_unified.py:874: in test_execute_gate_denial_maps_422_with_scoped_header
+    pid = resp.json()["proposal_id"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'proposal_id'
+_________________ TestVersionApi.test_version_create_and_get __________________
+packages\mate-tech-ont\tests\test_ont_business.py:214: in test_version_create_and_get
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________________ TestVersionApi.test_version_list _______________________
+packages\mate-tech-ont\tests\test_ont_business.py:246: in test_version_list
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________________ TestVersionApi.test_version_delete ______________________
+packages\mate-tech-ont\tests\test_ont_business.py:261: in test_version_delete
+    vid = resp.json()["version_id"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'version_id'
+_________________ TestVersionApi.test_version_create_conflict _________________
+packages\mate-tech-ont\tests\test_ont_business.py:279: in test_version_create_conflict
+    assert resp.status_code == 409
+E   assert 401 == 409
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________ TestInferenceApi.test_inference_path_endpoint ________________
+packages\mate-tech-ont\tests\test_ont_business.py:304: in test_inference_path_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-10-12 04:22:38 [info     ] instance.created               class_id=N id=e0ac42dd-fc2 ns=ont.tenant-acme.default tenant_id=tenant-acme
+2026-10-12 04:22:38 [info     ] instance.created               class_id=N id=4fb19675-f0e ns=ont.tenant-acme.default tenant_id=tenant-acme
+2026-10-12 04:22:38 [info     ] instance.created               class_id=N id=caec1738-045 ns=ont.tenant-acme.default tenant_id=tenant-acme
+_____________ TestInferenceApi.test_inference_neighbors_endpoint ______________
+packages\mate-tech-ont\tests\test_ont_business.py:323: in test_inference_neighbors_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-10-12 04:22:38 [info     ] instance.created               class_id=N id=b2722517-951 ns=ont.tenant-acme.default tenant_id=tenant-acme
+2026-10-12 04:22:38 [info     ] instance.created               class_id=N id=77d33c92-b4c ns=ont.tenant-acme.default tenant_id=tenant-acme
+___________ TestFederationEndpoints.test_federation_query_endpoint ____________
+packages\mate-tech-ont\tests\test_ont_federation.py:248: in test_federation_query_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________ TestFederationEndpoints.test_create_mapping_endpoint _____________
+packages\mate-tech-ont\tests\test_ont_federation.py:274: in test_create_mapping_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ TestFederationEndpoints.test_list_mappings_endpoint _____________
+packages\mate-tech-ont\tests\test_ont_federation.py:295: in test_list_mappings_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ TestFederationEndpoints.test_cross_tenant_isolation _____________
+packages\mate-tech-ont\tests\test_ont_federation.py:318: in test_cross_tenant_isolation
+    assert resp_acme.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________ TestWebSocketSubscription.test_ws_receives_outbox_event ___________
+packages\mate-tech-ont\tests\test_ont_g23_functions.py:147: in test_ws_receives_outbox_event
+    with client.websocket_connect("/api/v1/ont/v2/ws/object-changes") as ws:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\testclient.py:123: in __enter__
+    self._raise_on_close(message)
+.venv\Lib\site-packages\starlette\testclient.py:152: in _raise_on_close
+    raise WebSocketDisconnect(code=message.get("code", 1000), reason=message.get("reason", ""))
+E   starlette.websockets.WebSocketDisconnect
+__________________________ test_ontology_create_get ___________________________
+packages\mate-tech-ont\tests\test_ont_integration.py:31: in test_ontology_create_get
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________________ test_class_lifecycle _____________________________
+packages\mate-tech-ont\tests\test_ont_integration.py:50: in test_class_lifecycle
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________________ test_sparql_endpoint _____________________________
+packages\mate-tech-ont\tests\test_ont_integration.py:62: in test_sparql_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________________ test_explain_endpoint ____________________________
+packages\mate-tech-ont\tests\test_ont_integration.py:76: in test_explain_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________________ test_instance_lifecycle ___________________________
+packages\mate-tech-ont\tests\test_ont_integration.py:91: in test_instance_lifecycle
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________ test_shacl_validate_endpoint_happy_path ___________________
+packages\mate-tech-ont\tests\test_shacl_engine.py:136: in test_shacl_validate_endpoint_happy_path
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________ test_shacl_validate_endpoint_with_violations _________________
+packages\mate-tech-ont\tests\test_shacl_engine.py:156: in test_shacl_validate_endpoint_with_violations
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________________ test_relation_to_missing_src_raises _____________________
+packages\mate-tech-ont\tests\test_tenant_integration.py:90: in test_relation_to_missing_src_raises
+    real_id = resp.json()["id"]
+              ^^^^^^^^^^^^^^^^^
+E   KeyError: 'id'
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+packages\mate-tech-ont\src\mate_tech_ont\main.py:218
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:218: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("startup")  # pyright: ignore[reportDeprecated]
+
+.venv\Lib\site-packages\fastapi\applications.py:4675
+.venv\Lib\site-packages\fastapi\applications.py:4675
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+packages\mate-tech-ont\src\mate_tech_ont\main.py:302
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-ont\src\mate_tech_ont\main.py:302: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("shutdown")  # pyright: ignore[reportDeprecated]
+
+packages/mate-tech-ont/tests/security/test_cypher_tenant_guard.py: 1 warning
+packages/mate-tech-ont/tests/test_mp11_object_type_creation.py: 8 warnings
+packages/mate-tech-ont/tests/test_mp11_relationship_writes.py: 2 warnings
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\jwt\api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 11 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:156: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:172: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:197: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:239: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:269: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:291: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:322: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [1] packages\mate-tech-ont\tests\security\test_tenant_isolation_hard.py:332: PG not reachable at '[REDACTED_DSN]' or role bypasses RLS (superuser / BYPASSRLS). GOVERN-09 will provision a non-privileged app role; until then this suite is skipped on the privileged meta role.
+SKIPPED [2] packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:113: PG supersede publication regression
+SKIPPED [1] packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:169: PG schema-lock regression
+SKIPPED [1] packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:241: SQL conflict race requires PostgreSQL
+SKIPPED [1] packages\mate-tech-ont\tests\test_mp11_object_type_creation.py:300: PG transactional edit-set lock regression
+FAILED packages/mate-tech-ont/tests/integration/test_v2_kernel_e2e.py::TestLinkTypeInterfaceE2E::test_link_type_upsert_list_get - AssertionError: {"detail":"src object type not found: ont.acme.obj.employee...
+FAILED packages/mate-tech-ont/tests/security/test_cypher_tenant_guard.py::test_vector2_payload_namespace_cannot_override_ctx_tenant - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_api.py::test_create_ontology - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_api.py::test_create_ontology_conflict - assert 401 == 409
+FAILED packages/mate-tech-ont/tests/test_api.py::test_get_ontology_not_found - assert 401 == 404
+FAILED packages/mate-tech-ont/tests/test_api.py::test_create_class - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_api.py::test_get_class_404 - assert 401 == 404
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_new_refuses_existing_but_default_update_survives[memory] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_new_refuses_existing_but_default_update_survives[pg] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_concurrent_new_has_one_winner[memory] - assert [401, 401] == [200, 409]
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_concurrent_new_has_one_winner[pg] - assert [401, 401] == [200, 409]
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_new_wip_restore_competing_create_publish_preserves_winner[memory] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_new_wip_restore_competing_create_publish_preserves_winner[pg] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_read_only_cannot_mutate[memory-create] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_read_only_cannot_mutate[memory-save] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_read_only_cannot_mutate[memory-apply] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_read_only_cannot_mutate[memory-discard] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_read_only_cannot_mutate[pg-create] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_read_only_cannot_mutate[pg-save] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_read_only_cannot_mutate[pg-apply] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_read_only_cannot_mutate[pg-discard] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_wip_checksum_is_rechecked_at_write[memory] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_wip_checksum_is_rechecked_at_write[pg] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_wip_discard_is_reachable_and_does_not_delete_live_type[memory] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_wip_discard_is_reachable_and_does_not_delete_live_type[pg] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_wip_rejects_metadata_change_after_save[memory] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_wip_rejects_metadata_change_after_save[pg] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[memory-branch-POST] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[memory-rollback-POST] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[memory-lifecycle-POST] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[memory--DELETE] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[memory-properties-POST] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[pg-branch-POST] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[pg-rollback-POST] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[pg-lifecycle-POST] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[pg--DELETE] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_readonly_object_mutation_routes[pg-properties-POST] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_wip_cross_tenant_mutations_denied[memory] - AssertionError: assert 401 == 403
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_wip_cross_tenant_mutations_denied[pg] - AssertionError: assert 401 == 403
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_open_editor_baseline_survives_first_save[memory] - KeyError: 'checksum'
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_open_editor_baseline_survives_first_save[pg] - KeyError: 'checksum'
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_class_inspection_filters_actions_to_verified_tenant[memory] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_class_inspection_filters_actions_to_verified_tenant[pg] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_explicit_compared_checksum_can_retry_stale_draft[memory] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_object_type_creation.py::test_explicit_compared_checksum_can_retry_stale_draft[pg] - AssertionError: assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_reads.py::test_http_list_never_returns_a_neighbor_tenants_relationship[memory] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_reads.py::test_http_list_never_returns_a_neighbor_tenants_relationship[pg] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_valid_relationship_and_replay_preserve_dto - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_rejects_cross_tenant_endpoints[src] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_rejects_cross_tenant_endpoints[dst] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_requires_existing_endpoints[src] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_requires_existing_endpoints[dst] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_invalid_definition_enums_are_readable_422[cardinality-many] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_invalid_definition_enums_are_readable_422[directionality-out] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_instance_rejects_cross_tenant_endpoints[src] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_instance_rejects_cross_tenant_endpoints[dst] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_instance_requires_type_and_endpoints[link_type_rid-ont.tenant-acme.link.missing] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_instance_requires_type_and_endpoints[src-ont.tenant-acme.ind.customer.missing] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_instance_requires_type_and_endpoints[dst-ont.tenant-acme.ind.order.missing] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_instance_endpoint_class_must_match_definition[src-ont.tenant-acme.ind.order.2] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_instance_endpoint_class_must_match_definition[dst-ont.tenant-acme.ind.customer.2] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_one_order_cannot_belong_to_two_customers - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_structure_with_instances_cannot_change[src-ont.tenant-acme.obj.other] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_structure_with_instances_cannot_change[dst-ont.tenant-acme.obj.other] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_structure_with_instances_cannot_change[cardinality-N:N] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_structure_with_instances_cannot_change[directionality-bidirectional] - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_definition_names_and_description_can_change_with_instances - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_unused_definition_structure_can_change - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_self_link_is_readable_422 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_relationship_write_requires_authenticated_write_scope[link-types-payload0] - AssertionError: assert 401 == 403
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_relationship_write_requires_authenticated_write_scope[link-instances-payload1] - AssertionError: assert 401 == 403
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_pg_http_rejects_endpoint_deleted_after_api_reads - assert False
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_pg_delete_waits_before_cascade_scan_for_validated_http_write - assert False
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_create_only_duplicate_definition_is_conflict_and_keeps_original - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages/mate-tech-ont/tests/test_mp11_relationship_writes.py::test_pg_http_create_only_refuses_rid_claimed_after_catalog_read - TypeError: string indices must be integers, not 'str'
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS2PgUnified::test_pg_legacy_path_is_compat_marker - psycopg2.errors.UniqueViolation: duplicate key value violates unique constr...
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_declarative_via_propose_endpoint_e2e - assert 403 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_propose_edit_set_on_function_only_action - AssertionError: {"detail":"platform.write required"}
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_inmemory_revert_restores - KeyError: 'proposal_id'
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_function_not_registered_maps_422 - AssertionError: {"detail":"platform.write required"}
+FAILED packages/mate-tech-ont/tests/test_ont_act05_unified.py::TestS3ApiDispatch::test_execute_gate_denial_maps_422_with_scoped_header - KeyError: 'proposal_id'
+FAILED packages/mate-tech-ont/tests/test_ont_business.py::TestVersionApi::test_version_create_and_get - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_business.py::TestVersionApi::test_version_list - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_business.py::TestVersionApi::test_version_delete - KeyError: 'version_id'
+FAILED packages/mate-tech-ont/tests/test_ont_business.py::TestVersionApi::test_version_create_conflict - assert 401 == 409
+FAILED packages/mate-tech-ont/tests/test_ont_business.py::TestInferenceApi::test_inference_path_endpoint - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_business.py::TestInferenceApi::test_inference_neighbors_endpoint - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_federation.py::TestFederationEndpoints::test_federation_query_endpoint - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_federation.py::TestFederationEndpoints::test_create_mapping_endpoint - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_federation.py::TestFederationEndpoints::test_list_mappings_endpoint - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_federation.py::TestFederationEndpoints::test_cross_tenant_isolation - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_g23_functions.py::TestWebSocketSubscription::test_ws_receives_outbox_event - starlette.websockets.WebSocketDisconnect
+FAILED packages/mate-tech-ont/tests/test_ont_integration.py::test_ontology_create_get - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_integration.py::test_class_lifecycle - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_integration.py::test_sparql_endpoint - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_integration.py::test_explain_endpoint - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_ont_integration.py::test_instance_lifecycle - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_shacl_engine.py::test_shacl_validate_endpoint_happy_path - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_shacl_engine.py::test_shacl_validate_endpoint_with_violations - assert 401 == 200
+FAILED packages/mate-tech-ont/tests/test_tenant_integration.py::test_relation_to_missing_src_raises - KeyError: 'id'
+100 failed, 579 passed, 13 skipped, 16 warnings in 155.38s (0:02:35)

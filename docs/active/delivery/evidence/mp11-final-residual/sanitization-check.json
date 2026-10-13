@@ -1,0 +1,8 @@
+{
+  "scope": "local residual evidence/report only; actual private JSON values plus JWT/private-key/credential-URL patterns",
+  "public_files": 37,
+  "private_json_files": 39,
+  "actual_sensitive_variants": 44,
+  "findings": 0,
+  "pg_runtime_env_scan": "not queried due root pause/Docker unresponsiveness; root global authoritative scan still required"
+}

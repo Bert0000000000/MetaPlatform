@@ -1,0 +1,14 @@
+[
+  {
+    "database": "codex_mp11_apphub_fresh_20261011_2345",
+    "fresh_or_upgrade": "fresh head",
+    "CAS": "PASS",
+    "head": "0021_apphub_publication"
+  },
+  {
+    "database": "codex_mp11_apphub_upgrade_20261011_2345",
+    "fresh_or_upgrade": "0020 with legacy rows",
+    "CAS": "PASS",
+    "head": "0021_apphub_publication"
+  }
+]

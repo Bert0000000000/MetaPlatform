@@ -28,3 +28,14 @@ it('草稿身份修改取消对象和相关关系确认；已发布身份不可�
  view.rerender(<DraftEditor {...props} identityLocked />);
  expect(screen.getByLabelText('批次 工厂 作为身份')).toBeDisabled();
 });
+
+it('发布已开始时普通属性的纳入范围也不可更改', () => {
+ const draft = { schemaVersion: 2 as const, name: '模型', classes: [{...cls,properties:[...cls.properties,{id:'level',name:'等级',dataType:'text' as const}]}], mappings: [], relationships: [], instances: [], instanceEdits: [], links: [], notes: [], semantics: { context: '', questions: [], definitions: [] } };
+ const onChange = vi.fn();
+ render(<DraftEditor draft={draft} profile={profile} types={[]} resolutions={{}} onChange={onChange} onResolve={vi.fn()} onRename={vi.fn()} identityLocked />);
+ const scope = screen.getByRole('checkbox',{name:'批次 等级 纳入本次发布'});
+ expect(scope).toBeChecked();
+ expect(scope).toBeDisabled();
+ fireEvent.click(scope);
+ expect(onChange).not.toHaveBeenCalled();
+});

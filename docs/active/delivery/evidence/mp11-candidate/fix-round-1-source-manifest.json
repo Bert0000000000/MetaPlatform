@@ -1,0 +1,36 @@
+{
+  "base": "67a0e34d1b8ea65f8c903f800a598d6a50451b19",
+  "scope": "six owned I1/I2 source files; original47 manifests preserved",
+  "files": [
+    {
+      "path": "mate-platform-backend/packages/mate-platform/src/mate_platform/auth/verifier.py",
+      "tested_worktree_sha256": "2cbd510ba4091a65a89868196669fe3d89ecda96638eed24c9e4565ed981ce08",
+      "base_blob_sha256": "8ede0f786c6d1508b9923d39a01a9ace24138b72354d288ba9739fdd8b0e6cae"
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-platform/tests/test_mp11_signed_identity.py",
+      "tested_worktree_sha256": "6b40a73b639ce631dfe6276a9491d690b1e2bc5aba3b6f297498d017ea9c1d14",
+      "base_blob_sha256": "4aa5b9db3f0ae34c8db3e990286d55316d1cdb5358fc5a13cb4b40765e7cd40d"
+    },
+    {
+      "path": "mate-platform-backend/services/auth-service/tests/test_mp11_login_tenant.py",
+      "tested_worktree_sha256": "44dee47af569fdbd20eeaad21e55893dcf8941242f3fb3cde64294264648cdaf",
+      "base_blob_sha256": "cb1f72f2d4e057de203fdee2d135dfe35bb035695a2d33a884e83f44a8baef9f"
+    },
+    {
+      "path": "scripts/acceptance/mp11/verify.py",
+      "tested_worktree_sha256": "a19095d13a98e30048e13d7f5b7b026d94e153e3725046f0e1d7eadfe52d1cd3",
+      "base_blob_sha256": "87741a65c0d8315bf59adb32c0b71641510ae66cfe262bb32b761363c9a7684b"
+    },
+    {
+      "path": "scripts/acceptance/run-mp11-acceptance.ps1",
+      "tested_worktree_sha256": "dde440f62a4348c3239ed3cefa6dfcc3df4423bb3dcb09f9aae52628d4cbeefa",
+      "base_blob_sha256": "216b53bda08f4b91c3b05beb6eab5a44172078d1403fcb34089d4700c5355d5b"
+    },
+    {
+      "path": "scripts/acceptance/mp11/README.md",
+      "tested_worktree_sha256": "59ccdd448c9d6e021cd837e496e77453fd3053f42dc0c755255fc4659daf6885",
+      "base_blob_sha256": "8ba7b8e8096b4c1f3200fdbd93a025dddf1f2d2a704ccba50544a1f3adf5f120"
+    }
+  ]
+}

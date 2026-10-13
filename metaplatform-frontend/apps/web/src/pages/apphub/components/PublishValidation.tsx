@@ -141,3 +141,24 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
     </Card>
   );
 }
+
+
+import type { PublicationCheck } from '@/api/apphub/runtime';
+const CHECK_LABELS: Record<string, string> = { bindings: '数据绑定', reference_versions: '引用版本', access: '访问权限', components: '必要组件', action_policy: '动作策略', runtime: '可加载运行页' };
+export function ApplicationPublishValidation({ result, error, publishing, onPublish, onRetry }: {
+  result: PublicationCheck | null; error: string; publishing: boolean; onPublish: () => void; onRetry: () => void;
+}) {
+  return <section aria-label="应用发布检查" className="mp-mb-4">
+    <h3>应用发布检查</h3>
+    {result && <p>草稿版本 {result.draft_version} · 检查时间 {result.checked_at} · 发布时将再次验证</p>}
+    {error && <p role="alert">{error}；当前保存内容保留，请重试检查。</p>}
+    <ul>{Object.entries(CHECK_LABELS).map(([key, label]) => {
+      const check = result?.checks.find(item => item.key === key);
+      const status = error ? 'unknown' : check?.status ?? 'unknown';
+      return <li key={key}>{label}：{({ pass: '通过', fail: '失败', unknown: '未知' })[status]} — {check?.message ?? '等待服务端检查'}
+        {check?.next_step && <p>下一步：{check.next_step}</p>}</li>;
+    })}</ul>
+    <button onClick={onRetry} disabled={publishing}>重新检查</button>
+    <button onClick={onPublish} disabled={publishing || !!error || !result?.can_publish}>确认发布</button>
+  </section>;
+}

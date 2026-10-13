@@ -9,6 +9,9 @@ async function confirmPublication(page: Page) {
   await page.getByRole('button', {name: '发布本体', exact: true}).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('button', {name: '确认发布本体', exact: true})).toBeEnabled();
+  for (const operation of await dialog.getByRole('combobox', {name: / 发布操作$/}).all()) {
+    if (await operation.inputValue() === '') await operation.selectOption('new');
+  }
   await dialog.getByRole('button', {name: '校验发布方案', exact: true}).click();
   await expect(dialog.getByText('发布方案校验通过，请核对操作及属性对应后确认发布。')).toBeVisible();
   await dialog.getByRole('button', {name: '确认发布本体', exact: true}).click();
@@ -67,6 +70,9 @@ test('普通用户令牌不包含管理员角色且不能上传建模来源', as
   const token = await fetchAccessToken(request, { username: 'metaplatform', password: 'metaplatform' });
   expect(decodeJwtPayload(token).realm_access?.roles).toContain('user');
   expect(decodeJwtPayload(token).realm_access?.roles).not.toContain('PLATFORM_ADMIN');
+  const scopes = (decodeJwtPayload(token).scope ?? '').split(/\s+/);
+  expect(scopes).toContain('platform.read');
+  expect(scopes).not.toContain('platform.write');
   const fs = await import('node:fs/promises');
   const response = await request.post(`${gateway}/ont/v2/modeling/sources`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -79,6 +85,7 @@ test('普通用户令牌不包含管理员角色且不能上传建模来源', as
 test('统一审核 → 暂缓无效关系 → 保存重开 → 所选图谱及原生发布一致', async ({ page, context, request }) => {
   const token = await injectAuth(context, page);
   expect(decodeJwtPayload(token).realm_access?.roles).toContain('PLATFORM_ADMIN');
+  expect((decodeJwtPayload(token).scope ?? '').split(/\s+/)).toContain('platform.write');
   const headers = { Authorization: `Bearer ${token}` };
   const prefix = `scope${Date.now().toString(36)}`;
   const fs = await import('node:fs/promises');
@@ -218,7 +225,7 @@ test('390px 独立入口可访问且保留正向建模入口', async ({ page, co
   const dimensions = await page.locator('.fd-page').evaluate(element => ({ width: element.clientWidth, scroll: element.scrollWidth }));
   expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width + 1);
   await page.goto('/ontology/model/object-types');
-  await expect(page.getByRole('button', { name: '新建本体', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '新建对象类型', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '逆向发现本体', exact: true })).toBeVisible();
 });
 

@@ -159,6 +159,7 @@ services:
     command: [uvicorn, mate_app_hub.main:app, --host, 0.0.0.0, --port, "8301"]
     environment:
       <<: *demo-env
+      MATE_DB_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/metaplatform
   mate-tech-data:
     <<: *demo-app
     mem_limit: 512m

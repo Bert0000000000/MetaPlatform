@@ -10,9 +10,9 @@ The 5 spec endpoints (``contracts/openapi/services/mcp.yaml``):
 
 W2 adds a runtime (dynamic) tool registry so digital-employee roles /
 external workers can register their capabilities as MCP tools with a
-forwarding endpoint. The registry is tenant-scoped and merges into the
-``GET /tools`` list; ``POST /tools/{name}`` resolves a call via
-local handler → dynamic forwarding → federation → 404.
+forwarding endpoint. Registration is tenant-scoped. External discovery and
+invocation expose only local tools with verified capabilities; dynamic and
+federated records remain unavailable until their authority metadata is defined.
 """
 
 from __future__ import annotations
@@ -25,16 +25,12 @@ from pydantic import BaseModel, Field
 
 from ..auth import AuthError, verify_jwt_token
 from ..caller_context import bind_caller
-from ..federation_routes import federation_router
 from ..prompts.templates import list_prompts, render_prompt
 from ..repositories import (
-    get_tool_by_name,
-    list_dynamic_tools,
     register_tool,
     unregister_tool,
     update_tool,
 )
-from ..tools.forwarding import get_dynamic_invoker
 from ..tools.rate_limit import RateLimitExceeded
 
 router = APIRouter(prefix="/api/v1/mcp", tags=["mcp"])
@@ -146,21 +142,19 @@ async def _tenant_id(request: Request) -> str:
 
 @router.get("/tools")
 async def list_tools_endpoint(request: Request) -> dict[str, list]:
-    """ST-5.3.8.2: list registered tools (static + tenant dynamic)."""
+    """ST-5.3.8.2: list tenant-visible tools allowed by verified caller grants."""
     server = _mcp_server(request)
-    static = await server.list_tools()
-    dynamic = [
-        {
-            "name": t.name,
-            "description": t.description,
-            "inputSchema": t.input_schema,
-        }
-        for t in list_dynamic_tools(await _tenant_id(request))
-        if t.enabled
-    ]
-    known = {t.get("name") for t in static}
-    dynamic = [t for t in dynamic if t["name"] not in known]
-    return {"tools": [*static, *dynamic]}
+    ctx = getattr(request.state, "ctx", None)
+    tenant = str(getattr(ctx, "tenant_id", "") or "")
+    if not tenant:
+        raise HTTPException(status_code=401, detail="verified caller required")
+    with bind_caller(
+        tenant_id=tenant,
+        bearer_token=_bearer_token(request),
+        scopes=frozenset(getattr(ctx, "scopes", ())),
+        auth_method=getattr(ctx, "auth_method", ""),
+    ):
+        return {"tools": await server.list_tools(tenant)}
 
 
 class RegisterToolRequest(BaseModel):
@@ -304,8 +298,8 @@ async def call_tool_endpoint(
     Body: ``{"arguments": {"query": "...", "top_k": 5}}``
     Headers: ``Authorization: Bearer <JWT>``, ``X-Tenant-Id: <tenant>``
 
-    Resolution order (W2): local handler → tenant dynamic tool
-    (forwarding endpoint) → federated remote server → 404.
+    Only a tenant-visible local handler with verified capability metadata is
+    available. Unknown dynamic/federated invocation fails closed.
     """
     claims = await _require_bearer(request)
     tenant_id = claims.get("tenant_id", "default")
@@ -325,40 +319,22 @@ async def call_tool_endpoint(
         raise HTTPException(status_code=422, detail="arguments must be an object")
 
     server = _mcp_server(request)
-    # 1.1 task 1c: downstream proxies (ontology) must go out as the caller —
-    # their token and their tenant — not as this service's identity.
-    with bind_caller(tenant_id=tenant_id, bearer_token=_bearer_token(request)):
+    ctx = getattr(request.state, "ctx", None)
+    tenant_id = str(getattr(ctx, "tenant_id", "") or "")
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="verified caller required")
+    arguments = dict(arguments)
+    arguments.pop("__caller__", None)
+    with bind_caller(
+        tenant_id=tenant_id,
+        bearer_token=_bearer_token(request),
+        scopes=frozenset(getattr(ctx, "scopes", ())),
+        auth_method=getattr(ctx, "auth_method", ""),
+    ):
         try:
-            result = await server.call_tool(name, arguments)
+            result = await server.call_tool(name, arguments, tenant_id=tenant_id)
             return {"tool": name, "result": result, "source": "local"}
-        except KeyError:
-            pass  # not a local handler — try dynamic / federation below
-
-    # W2: tenant dynamic tool (forwarding endpoint).
-    dynamic = get_tool_by_name(tenant_id, name)
-    if dynamic is not None and dynamic.enabled and dynamic.endpoint:
-        invoker = getattr(request.app.state, "dynamic_invoker", None) or get_dynamic_invoker()
-        try:
-            result = await invoker.invoke(
-                tenant_id=tenant_id,
-                name=name,
-                endpoint=dynamic.endpoint,
-                arguments=arguments,
-            )
-            return {"tool": name, "result": result, "source": "dynamic"}
-        except RuntimeError as e:
-            raise HTTPException(status_code=502, detail=str(e)) from e
-
-    # W2: federation fallback (cross-server routing).
-    try:
-        remote = await federation_router.route(
-            tenant_id=tenant_id,
-            tool_name=name,
-            arguments=arguments,
-        )
-    except RuntimeError as e:
-        raise HTTPException(status_code=502, detail=str(e)) from e
-    if remote is not None:
-        return {"tool": name, "result": remote, "source": "federation"}
-
-    raise HTTPException(status_code=404, detail=f"Tool '{name}' not found")
+        except (KeyError, PermissionError) as exc:
+            raise HTTPException(
+                status_code=403, detail="tool is outside verified external agent grants"
+            ) from exc

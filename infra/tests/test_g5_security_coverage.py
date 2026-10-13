@@ -48,11 +48,13 @@ WRITE_METHODS = frozenset({"post", "put", "delete", "patch"})
 # this guard merely by adding ``x-required-scopes`` to itself.
 READ_POST_ENDPOINT_IDS = frozenset(
     {
+        "apphub.yaml::POST /api/v1/apphub/apps/{app_id}/runtime/proposal-context",
         "copilot.yaml::POST /api/v1/copilot/analysis/explain-sql",
         "copilot.yaml::POST /api/v1/copilot/generate/process",
         "copilot.yaml::POST /api/v1/copilot/ontology/graph/query",
         "copilot.yaml::POST /api/v1/copilot/scheduling/employees/match",
         "copilot.yaml::POST /api/v1/copilot/search",
+        "data.yaml::POST /api/v1/data/sources/{id}/test",
         "ont.yaml::POST /api/v1/ont/federation/query",
         "ont.yaml::POST /api/v1/ont/v2/object-sets/query",
         "ont.yaml::POST /api/v1/ont/v2/object-query",

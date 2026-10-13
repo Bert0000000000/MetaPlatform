@@ -219,7 +219,10 @@ beforeEach(() => {
       if (pendingSave) await pendingSave();
       const saved = {
         ...source(rid, String(body.name)),
-        dsn_env: String(body.dsn_env),
+        ...bindings[rid]?.find(row => row.name === body.name),
+        dsn_env: typeof body.dsn_env === 'string' ? body.dsn_env : '',
+        ...(body.source_id ? { source_id: String(body.source_id) } : {}),
+        ...(body.ts_column ? { ts_column: String(body.ts_column) } : {}),
         table_name: String(body.table),
         pk_column: String(body.pk_column),
         priority: Number(body.priority),
@@ -676,4 +679,21 @@ it('preserves the latest same-resource URL return context across an in-flight sa
   const actual = new URLSearchParams(router.state.location.search);
   expect(actual.get('returnTo')).toBe(returnTo);
   expect(actual.get('changeRef')).toBe('real-change');
+});
+
+it('edits a registered binding without losing its source identity or custom time column', async () => {
+  bindings[a.rid] = [{ ...source(), source_id: 'registered-pg', dsn_env: '', ts_column: 'modified_at', last_synced_pk: 'c7' }];
+  mount();
+  await ready();
+  fireEvent.change(screen.getByLabelText('客户名称 来源列'), { target: { value: 'display_name' } });
+  const save = screen.getByRole('button', { name: '保存映射' });
+  expect(save).toBeEnabled();
+  fireEvent.click(save);
+  await screen.findByText('映射已保存并回读');
+  expect(writes()).toHaveLength(1);
+  expect(writes()[0].body).toMatchObject({ source_id: 'registered-pg', ts_column: 'modified_at', kind: 'pg_table' });
+  expect(writes()[0].body).not.toHaveProperty('dsn_env');
+  expect(writes()[0].body).not.toHaveProperty('last_synced_at');
+  expect(writes()[0].body).not.toHaveProperty('last_synced_pk');
+  expect(bindings[a.rid][0]).toMatchObject({ source_id: 'registered-pg', ts_column: 'modified_at', last_synced_pk: 'c7' });
 });

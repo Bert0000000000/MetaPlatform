@@ -1,0 +1,168 @@
+{
+  "observed_utc": "2026-10-12T09:48:36.428759+00:00",
+  "head": "94277b97199f1823354fccbda07e772ef19081e8",
+  "scope": "Official Desktop start, then guarded docker start of exact three existing candidate dependencies. No create/recreate/reset/remove/pull/schema operation.",
+  "before": [
+    {
+      "name": "codex-mp11-relationship-pg",
+      "id": "d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+      "image": "pgvector/pgvector:pg16",
+      "image_id": "sha256:9b05db12a35460fff0587e009f9326e414a53e9484555547f96d214a2ba98ef7",
+      "owner": null,
+      "bindings": {
+        "5432/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55497"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "volume",
+          "Source": "/var/lib/docker/volumes/c1ae099cafc9c7ef01fe69cd11755a23ef0977d50411d5e5baa203cac430265c/_data",
+          "Destination": "/var/lib/postgresql/data",
+          "RW": true
+        }
+      ],
+      "running": false
+    },
+    {
+      "name": "codex-mp11-candidate-redis",
+      "id": "b80064cd2c1064fe696aaadedb75f8c0009c83787c863df9e4a0bcbc035e3573",
+      "image": "redis:7-alpine",
+      "image_id": "sha256:5509c0097c6064aa8a3b1df58f1d950e67090fffa6678ae8f3f1dc2385f12deb",
+      "owner": "mp11-candidate",
+      "bindings": {
+        "6379/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55521"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "volume",
+          "Source": "/var/lib/docker/volumes/75dc93239bbc9586a2cedb6c093b8355b87c49944fc07933ba7a5b8c35515215/_data",
+          "Destination": "/data",
+          "RW": true
+        }
+      ],
+      "running": false
+    },
+    {
+      "name": "codex-mp11-candidate-keycloak",
+      "id": "cf6841182877ca84387d8deb21fb44ad25c1e5d666fb0d8fe31f798190f3ab2a",
+      "image": "quay.io/keycloak/keycloak:25.0",
+      "image_id": "sha256:9813af49a39c5b0e8aedc5219e6b72fb7f20c0816656313e17e929ef6f871678",
+      "owner": "mp11-candidate",
+      "bindings": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55520"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\codex-mp11-realm.json",
+          "Destination": "/opt/keycloak/data/import/codex-mp11-realm.json",
+          "RW": false
+        }
+      ],
+      "running": false
+    }
+  ],
+  "actions": [
+    {
+      "command": "docker start d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+      "container": "codex-mp11-relationship-pg"
+    },
+    {
+      "command": "docker start b80064cd2c1064fe696aaadedb75f8c0009c83787c863df9e4a0bcbc035e3573",
+      "container": "codex-mp11-candidate-redis"
+    },
+    {
+      "command": "docker start cf6841182877ca84387d8deb21fb44ad25c1e5d666fb0d8fe31f798190f3ab2a",
+      "container": "codex-mp11-candidate-keycloak"
+    }
+  ],
+  "after": [
+    {
+      "name": "codex-mp11-relationship-pg",
+      "id": "d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+      "image": "pgvector/pgvector:pg16",
+      "image_id": "sha256:9b05db12a35460fff0587e009f9326e414a53e9484555547f96d214a2ba98ef7",
+      "owner": null,
+      "bindings": {
+        "5432/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55497"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "volume",
+          "Source": "/var/lib/docker/volumes/c1ae099cafc9c7ef01fe69cd11755a23ef0977d50411d5e5baa203cac430265c/_data",
+          "Destination": "/var/lib/postgresql/data",
+          "RW": true
+        }
+      ],
+      "running": true
+    },
+    {
+      "name": "codex-mp11-candidate-redis",
+      "id": "b80064cd2c1064fe696aaadedb75f8c0009c83787c863df9e4a0bcbc035e3573",
+      "image": "redis:7-alpine",
+      "image_id": "sha256:5509c0097c6064aa8a3b1df58f1d950e67090fffa6678ae8f3f1dc2385f12deb",
+      "owner": "mp11-candidate",
+      "bindings": {
+        "6379/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55521"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "volume",
+          "Source": "/var/lib/docker/volumes/75dc93239bbc9586a2cedb6c093b8355b87c49944fc07933ba7a5b8c35515215/_data",
+          "Destination": "/data",
+          "RW": true
+        }
+      ],
+      "running": true
+    },
+    {
+      "name": "codex-mp11-candidate-keycloak",
+      "id": "cf6841182877ca84387d8deb21fb44ad25c1e5d666fb0d8fe31f798190f3ab2a",
+      "image": "quay.io/keycloak/keycloak:25.0",
+      "image_id": "sha256:9813af49a39c5b0e8aedc5219e6b72fb7f20c0816656313e17e929ef6f871678",
+      "owner": "mp11-candidate",
+      "bindings": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55520"
+          }
+        ]
+      },
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\codex-mp11-realm.json",
+          "Destination": "/opt/keycloak/data/import/codex-mp11-realm.json",
+          "RW": false
+        }
+      ],
+      "running": true
+    }
+  ],
+  "exact_id_images_bindings_mounts_retained": true
+}

@@ -1,0 +1,419 @@
+..............FFFFFF.FFFFFFFFF.FFF.....F....FFFFFF.FFFFFFFFF.FFF.....F.. [ 53%]
+..........................FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF......           [100%]
+================================== FAILURES ===================================
+__________ test_malformed_signed_tenant_fails_closed[login-top-None] __________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_________ test_malformed_signed_tenant_fails_closed[login-top-value1] _________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_________ test_malformed_signed_tenant_fails_closed[login-top-value2] _________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_________ test_malformed_signed_tenant_fails_closed[login-top-value3] _________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_________ test_malformed_signed_tenant_fails_closed[login-top-value4] _________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+__________ test_malformed_signed_tenant_fails_closed[login-top-   ] ___________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_________ test_malformed_signed_tenant_fails_closed[login-top-value7] _________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_________ test_malformed_signed_tenant_fails_closed[login-top-value8] _________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+___________ test_malformed_signed_tenant_fails_closed[login-top-42] ___________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+______ test_malformed_signed_tenant_fails_closed[login-attributes-None] _______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_____ test_malformed_signed_tenant_fails_closed[login-attributes-value1] ______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_____ test_malformed_signed_tenant_fails_closed[login-attributes-value2] ______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_____ test_malformed_signed_tenant_fails_closed[login-attributes-value3] ______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_____ test_malformed_signed_tenant_fails_closed[login-attributes-value4] ______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_______ test_malformed_signed_tenant_fails_closed[login-attributes-   ] _______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_____ test_malformed_signed_tenant_fails_closed[login-attributes-value7] ______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_____ test_malformed_signed_tenant_fails_closed[login-attributes-value8] ______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_______ test_malformed_signed_tenant_fails_closed[login-attributes-42] ________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+________ test_malformed_signed_tenant_fails_closed[login-fallback-   ] ________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_________ test_malformed_signed_tenant_fails_closed[refresh-top-None] _________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+________ test_malformed_signed_tenant_fails_closed[refresh-top-value1] ________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+________ test_malformed_signed_tenant_fails_closed[refresh-top-value2] ________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+________ test_malformed_signed_tenant_fails_closed[refresh-top-value3] ________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+________ test_malformed_signed_tenant_fails_closed[refresh-top-value4] ________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_________ test_malformed_signed_tenant_fails_closed[refresh-top-   ] __________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+________ test_malformed_signed_tenant_fails_closed[refresh-top-value7] ________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+________ test_malformed_signed_tenant_fails_closed[refresh-top-value8] ________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+__________ test_malformed_signed_tenant_fails_closed[refresh-top-42] __________
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_____ test_malformed_signed_tenant_fails_closed[refresh-attributes-None] ______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+____ test_malformed_signed_tenant_fails_closed[refresh-attributes-value1] _____
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+____ test_malformed_signed_tenant_fails_closed[refresh-attributes-value2] _____
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+____ test_malformed_signed_tenant_fails_closed[refresh-attributes-value3] _____
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+____ test_malformed_signed_tenant_fails_closed[refresh-attributes-value4] _____
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+______ test_malformed_signed_tenant_fails_closed[refresh-attributes-   ] ______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+____ test_malformed_signed_tenant_fails_closed[refresh-attributes-value7] _____
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+____ test_malformed_signed_tenant_fails_closed[refresh-attributes-value8] _____
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+______ test_malformed_signed_tenant_fails_closed[refresh-attributes-42] _______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_______ test_malformed_signed_tenant_fails_closed[refresh-fallback-   ] _______
+services\auth-service\tests\test_mp11_login_tenant.py:102: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <SanitizedLoginResponse>.status_code
+_____________ test_malformed_signed_tenant_fails_closed[top-None] _____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____________ test_malformed_signed_tenant_fails_closed[top-value1] ____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____________ test_malformed_signed_tenant_fails_closed[top-value2] ____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____________ test_malformed_signed_tenant_fails_closed[top-value3] ____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____________ test_malformed_signed_tenant_fails_closed[top-value4] ____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_____________ test_malformed_signed_tenant_fails_closed[top-   ] ______________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____________ test_malformed_signed_tenant_fails_closed[top-value6] ____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____________ test_malformed_signed_tenant_fails_closed[top-value7] ____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____________ test_malformed_signed_tenant_fails_closed[top-value8] ____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+______________ test_malformed_signed_tenant_fails_closed[top-42] ______________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_________ test_malformed_signed_tenant_fails_closed[attributes-None] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+________ test_malformed_signed_tenant_fails_closed[attributes-value1] _________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+________ test_malformed_signed_tenant_fails_closed[attributes-value2] _________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+________ test_malformed_signed_tenant_fails_closed[attributes-value3] _________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+________ test_malformed_signed_tenant_fails_closed[attributes-value4] _________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+__________ test_malformed_signed_tenant_fails_closed[attributes-   ] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+________ test_malformed_signed_tenant_fails_closed[attributes-value6] _________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+________ test_malformed_signed_tenant_fails_closed[attributes-value7] _________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+________ test_malformed_signed_tenant_fails_closed[attributes-value8] _________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+__________ test_malformed_signed_tenant_fails_closed[attributes-42] ___________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+__________ test_malformed_signed_tenant_fails_closed[fallback-None] ___________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_________ test_malformed_signed_tenant_fails_closed[fallback-value1] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_________ test_malformed_signed_tenant_fails_closed[fallback-value2] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_________ test_malformed_signed_tenant_fails_closed[fallback-value3] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_________ test_malformed_signed_tenant_fails_closed[fallback-value4] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+___________ test_malformed_signed_tenant_fails_closed[fallback-   ] ___________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_________ test_malformed_signed_tenant_fails_closed[fallback-value6] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_________ test_malformed_signed_tenant_fails_closed[fallback-value7] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_________ test_malformed_signed_tenant_fails_closed[fallback-value8] __________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+___________ test_malformed_signed_tenant_fails_closed[fallback-42] ____________
+packages\mate-platform\tests\test_mp11_signed_identity.py:75: in test_malformed_signed_tenant_fails_closed
+    assert response.status_code==401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-None]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-value1]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-value2]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-value3]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-value4]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-   ]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-value7]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-value8]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-top-42]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-None]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-value1]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-value2]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-value3]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-value4]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-   ]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-value7]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-value8]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-attributes-42]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[login-fallback-   ]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-None]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-value1]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-value2]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-value3]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-value4]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-   ]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-value7]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-value8]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-top-42]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-None]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-value1]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-value2]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-value3]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-value4]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-   ]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-value7]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-value8]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-attributes-42]
+FAILED services/auth-service/tests/test_mp11_login_tenant.py::test_malformed_signed_tenant_fails_closed[refresh-fallback-   ]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-None]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-value1]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-value2]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-value3]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-value4]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-   ]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-value6]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-value7]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-value8]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[top-42]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-None]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-value1]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-value2]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-value3]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-value4]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-   ]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-value6]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-value7]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-value8]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[attributes-42]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-None]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-value1]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-value2]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-value3]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-value4]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-   ]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-value6]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-value7]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-value8]
+FAILED packages/mate-platform/tests/test_mp11_signed_identity.py::test_malformed_signed_tenant_fails_closed[fallback-42]
+68 failed, 66 passed, 1 warning in 7.77s

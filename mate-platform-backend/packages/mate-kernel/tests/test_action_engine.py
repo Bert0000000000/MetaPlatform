@@ -118,9 +118,14 @@ class TestActionService:
         )
         audit = s.get_audit()
         assert len(audit) == 2
-        # F10：audit_id 现为 audit-<进程唯一前缀>-<计数器>，保证跨进程/重启不撞主键
-        assert audit[0].audit_id.startswith("audit-") and audit[0].audit_id.endswith("-1")
-        assert audit[1].audit_id.startswith("audit-") and audit[1].audit_id.endswith("-2")
+        # Each audit has a full UUID, independent of service/process counters.
+        import uuid
+
+        for record in audit:
+            assert record.audit_id.startswith("audit-")
+            assert uuid.UUID(
+                hex=record.audit_id.removeprefix("audit-")
+            ).hex == record.audit_id.removeprefix("audit-")
         assert audit[0].audit_id != audit[1].audit_id
 
     def test_rollback_on_failure(self) -> None:

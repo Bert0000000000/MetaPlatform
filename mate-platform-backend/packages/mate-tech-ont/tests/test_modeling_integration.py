@@ -17,7 +17,12 @@ from mate_tech_ont.v2_kernel import api as native
 from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
 DSN = os.environ.get("MODELING_TEST_DSN", "")
-pytestmark = pytest.mark.skipif(not DSN, reason="MODELING_TEST_DSN requires isolated PostgreSQL")
+
+
+@pytest.fixture(autouse=True)
+def require_modeling_test_dsn():
+    if not DSN:
+        pytest.fail("MODELING_TEST_DSN requires isolated PostgreSQL", pytrace=False)
 
 
 @pytest.mark.asyncio
@@ -976,6 +981,9 @@ def app(monkeypatch):
             user_id="admin",
             roles=frozenset({request.headers.get("x-test-role", "PLATFORM_ADMIN")}),
             permissions=frozenset(),
+            scopes=frozenset({"platform.read", "platform.write"})
+            if request.headers.get("x-test-role", "PLATFORM_ADMIN") == "PLATFORM_ADMIN"
+            else frozenset({"platform.read"}),
             auth_method=AuthMethod.USER,
         )
         return await call_next(request)
@@ -1106,8 +1114,14 @@ async def test_modeling_cardinality_native_acceptance_and_read_only_drift_detect
 
         with repo.tenant_scope(app.state.test_tenant):
             live_link = repo.get_link_type(ClassRef(relation["rid"]))
-            repo.upsert_link_type(replace(live_link, description="stale description"))
-        repaired = await client.post(
+            repo.upsert_link_type(
+                replace(
+                    live_link,
+                    description="human-reviewed relationship description",
+                    src_display_name="human-reviewed relationship display",
+                )
+            )
+        repeated = await client.post(
             prefix + "/publish",
             json={
                 "revision": source["revision"],
@@ -1115,10 +1129,17 @@ async def test_modeling_cardinality_native_acceptance_and_read_only_drift_detect
                 "acknowledgeWarnings": True,
             },
         )
-        assert repaired.status_code == 200, repaired.text
-        source = repaired.json()
+        assert repeated.status_code == 200, repeated.text
+        source = repeated.json()
         assert source["publication"]["status"] == "succeeded"
-        assert any(result["status"] == "repaired" for result in source["publication"]["results"])
+        assert (
+            sum(result["rid"] == relation["rid"] for result in source["publication"]["results"])
+            == 1
+        )
+        with repo.tenant_scope(app.state.test_tenant):
+            retained = repo.get_link_type(ClassRef(relation["rid"]))
+            assert retained.description == "human-reviewed relationship description"
+            assert retained.src_display_name == "human-reviewed relationship display"
         changed = {**relation["payload"], "cardinality": "N:N"}
         response = await client.post("/api/v1/ont/v2/link-types", json=changed)
         assert response.status_code == 200, response.text

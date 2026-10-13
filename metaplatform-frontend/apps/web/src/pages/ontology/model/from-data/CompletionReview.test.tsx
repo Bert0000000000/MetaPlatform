@@ -80,6 +80,18 @@ it('批量审批弹窗不要求选择新建或复用', async () => {
   expect(saveModelingSource).not.toHaveBeenCalled();
 });
 
+it('首项 inFlight 且完成列表为空时不能重新审批候选', () => {
+  const current = {...source,publication:{status:'failed',configHash:'flight-hash',completed:[],inFlight:'ont.test.obj.customer.v1',results:[]}} as ModelingSource;
+  const prepare = vi.fn();
+  render(<CompletionReview source={current} disabled={false} onPrepare={prepare} onApplied={vi.fn()} />);
+  const button = screen.getByRole('button', {name:'一次处理并确认'});
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  expect(prepare).not.toHaveBeenCalled();
+  expect(prepareModelingCompletion).not.toHaveBeenCalled();
+  expect(confirmModelingCompletion).not.toHaveBeenCalled();
+});
+
 it('兼容尚未返回暂缓属性字段的旧服务数据', async () => {
   vi.mocked(prepareModelingCompletion).mockResolvedValue({
     ...plan,

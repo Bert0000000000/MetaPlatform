@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/metaplatform-frontend/apps/web
+
+ ✓ src/pages/apphub/components/OrderReviewBinding.test.tsx (2 tests) 146ms
+ ✓ src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx (1 test) 170ms
+ ✓ src/pages/dashboard/components/ProductOnboarding.test.tsx (4 tests) 167ms
+ ✓ src/api/ont/catalog-consumers.test.tsx (9 tests) 514ms
+
+ Test Files  4 passed (4)
+      Tests  16 passed (16)
+   Start at  16:07:38
+   Duration  1.76s (transform 212ms, setup 0ms, collect 1.06s, tests 997ms, environment 1.86s, prepare 539ms)

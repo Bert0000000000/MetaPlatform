@@ -35,8 +35,8 @@ function normalizeStatus(status: string): McpClient['status'] {
 }
 
 const STATUS_MAP: Record<McpClient['status'], { label: string; color: 'green' | 'grey' | 'red' }> = {
-  connected: { label: '已连接', color: 'green' },
-  CONNECTED: { label: '已连接', color: 'green' },
+  connected: { label: '远端连接记录（未验证业务查询）', color: 'green' },
+  CONNECTED: { label: '远端连接记录（未验证业务查询）', color: 'green' },
   disconnected: { label: '未连接', color: 'grey' },
   DISCONNECTED: { label: '未连接', color: 'grey' },
   error: { label: '异常', color: 'red' },
@@ -159,6 +159,7 @@ export default function ClientListPage() {
         }
       />
 
+      <p>外部 Agent 接入请前往 <a href="/ki/mcp/ide-config">Agent 配置与连接验证</a>，完成 initialize、工具发现和同一已发布对象查询。</p>
       <Card>
         {clients.length === 0 && !loading ? (
           <EmptyState

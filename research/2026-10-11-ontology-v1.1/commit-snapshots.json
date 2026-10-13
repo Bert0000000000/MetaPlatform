@@ -1,0 +1,102 @@
+[
+  {
+    "full_name": "deepseek-ai/deepseek-harness",
+    "sha": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "commit_date": "2026-10-09T09:31:32Z"
+  },
+  {
+    "full_name": "appsmithorg/appsmith",
+    "sha": "fb3eb95595936113995bc04bc3933570c46c392d",
+    "commit_date": "2026-10-08T19:24:47Z"
+  },
+  {
+    "full_name": "HKUDS/LightRAG",
+    "sha": "453dce83d6d0354a06e46c8d4029a0895c4e054b",
+    "commit_date": "2026-09-26T08:33:35Z"
+  },
+  {
+    "full_name": "directus/directus",
+    "sha": "8e140f94250834cea0a0fb6eb822cac39ed9faec",
+    "commit_date": "2026-10-09T18:50:24Z"
+  },
+  {
+    "full_name": "getzep/graphiti",
+    "sha": "964bb11d1e7020e3cc67fab244268b0736b6c219",
+    "commit_date": "2026-10-10T15:14:15Z"
+  },
+  {
+    "full_name": "Budibase/budibase",
+    "sha": "b2e164ceb76e2ffbff3f632536bc4d8081eeb254",
+    "commit_date": "2026-10-09T15:53:08Z"
+  },
+  {
+    "full_name": "PrefectHQ/fastmcp",
+    "sha": "e2fcc412001ff7414095c5dc282f94c70299a612",
+    "commit_date": "2026-10-09T04:49:04Z"
+  },
+  {
+    "full_name": "modelcontextprotocol/python-sdk",
+    "sha": "91941ed4d3985d59def99e090baa3f880c626cc8",
+    "commit_date": "2026-10-05T13:22:35Z"
+  },
+  {
+    "full_name": "nocobase/nocobase",
+    "sha": "e9a8cbd4ae03d68a5bbc1bd2c6d3a9ba7704bc7c",
+    "commit_date": "2026-10-10T02:12:54Z"
+  },
+  {
+    "full_name": "neo4j/neo4j",
+    "sha": "54a7dcf7c2501b31866199143364c5332da8936f",
+    "commit_date": "2026-09-14T12:54:54Z"
+  },
+  {
+    "full_name": "open-metadata/OpenMetadata",
+    "sha": "12f9e16ed2693af671179c81ce847438d44d3ceb",
+    "commit_date": "2026-10-11T01:07:24Z"
+  },
+  {
+    "full_name": "datahub-project/datahub",
+    "sha": "1634c4f8f7d30eaeb6b1afaf81f1f3a18a54e3e5",
+    "commit_date": "2026-10-10T16:17:34Z"
+  },
+  {
+    "full_name": "terminusdb/terminusdb",
+    "sha": "06eb243b0a298b728157d10166b2da4f933fab44",
+    "commit_date": "2026-10-10T00:09:46Z"
+  },
+  {
+    "full_name": "apache/hugegraph",
+    "sha": "36bc1c64ba2db23c40965ad952f3942cca31b1a7",
+    "commit_date": "2026-10-10T17:34:01Z"
+  },
+  {
+    "full_name": "protegeproject/protege",
+    "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+    "commit_date": "2026-09-23T21:12:40Z"
+  },
+  {
+    "full_name": "apache/jena",
+    "sha": "3014246b382d2439f4cd81aa72a7383ba0f9b3d5",
+    "commit_date": "2026-10-10T08:33:55Z"
+  },
+  {
+    "full_name": "VisualDataWeb/WebVOWL",
+    "sha": "28e7dd9540622e8cb723dc000824b5eef5ae775f",
+    "commit_date": "2026-06-04T19:08:56Z"
+  },
+  {
+    "full_name": "ontop/ontop",
+    "sha": "b529b39db0519aa2db3200095b24f705135d75f3",
+    "commit_date": "2026-09-17T07:54:43Z"
+  },
+  {
+    "full_name": "protegeproject/webprotege",
+    "sha": "1e84fa02aef68be45f18c08dbeae94bec9b04a41",
+    "commit_date": "2026-07-28T20:56:32Z"
+  },
+  {
+    "full_name": "ge-semtk/semtk",
+    "sha": "07c7d5cf29ae4b5f29d6898454585f66a7489a95",
+    "commit_date": "2025-03-13T16:34:50Z"
+  }
+]

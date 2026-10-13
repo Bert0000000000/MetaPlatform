@@ -332,44 +332,20 @@ def get_source(tenant_id: str, source_id: str) -> DataSource | None:
     return _SOURCES[tenant_id].get(source_id)
 
 
-def get_source_schema(
-    tenant_id: str,
-    source_id: str,
-) -> dict[str, Any] | None:
-    """Return the discovered schema for a source, or None if not found."""
-    if not tenant_id:
-        return None
-    _ensure_tenant(tenant_id)
-    return _SCHEMAS[tenant_id].get(source_id)
+def get_source_schema(tenant_id: str, source_id: str):
+    from ..services.source_connector import discover
 
-
-def test_source_connection(
-    tenant_id: str,
-    source_id: str,
-) -> dict[str, Any] | None:
-    """Probe a source connection. Returns None if the source is unknown.
-
-    The in-memory stub simulates a successful probe for connected
-    sources and a failure for disconnected/error sources; the real
-    CDC engine integration lands in a later batch.
-    """
     source = get_source(tenant_id, source_id)
-    if source is None:
-        return None
-    started = time.monotonic()
-    latency_ms = int((time.monotonic() - started) * 1000) + 1
-    ok = source.status == "connected"
-    return {
-        "source_id": source_id,
-        "ok": ok,
-        "latency_ms": latency_ms,
-        "error": "" if ok else f"source status is {source.status}",
-    }
+    return discover(source) if source is not None else None
 
 
-# ---------------------------------------------------------------------------
-# Public write API — CDC tasks
-# ---------------------------------------------------------------------------
+def test_source_connection(tenant_id: str, source_id: str):
+    from ..services.source_connector import probe
+
+    source = get_source(tenant_id, source_id)
+    return probe(source) if source is not None else None
+
+
 def create_cdc_task(
     tenant_id: str,
     name: str,
@@ -462,7 +438,7 @@ def create_source(
         name=name,
         type=type,
         connection_config=dict(connection_config or {}),
-        status="connected",
+        status="disconnected",
         created_at=now,
         updated_at=now,
     )
@@ -488,7 +464,9 @@ def update_source(
     if type is not None:
         source.type = type
     if connection_config is not None:
-        source.connection_config = dict(connection_config)
+        from ..services.source_connector import merge_config
+
+        source.connection_config = merge_config(source.connection_config, connection_config)
     source.updated_at = _now()
     return source
 
@@ -662,13 +640,15 @@ def task_to_dict(task: CdcTask) -> dict[str, Any]:
 
 
 def source_to_dict(source: DataSource) -> dict[str, Any]:
-    """Serialize a DataSource to a JSON-friendly dict."""
+    """Serialize public source metadata without server-only credentials."""
+    from ..services.source_connector import public_config
+
     return {
         "id": source.id,
         "tenant_id": source.tenant_id,
         "name": source.name,
         "type": source.type,
-        "connection_config": dict(source.connection_config),
+        "connection_config": public_config(source.connection_config),
         "status": source.status,
         "created_at": source.created_at,
         "updated_at": source.updated_at,
@@ -885,13 +865,23 @@ def _quality_check(rule: QualityRule, schema: dict[str, Any] | None) -> QualityR
     )
 
 
+def _quality_check_source(rule: QualityRule, source: DataSource | None) -> QualityResult:
+    from ..services.source_connector import SourceError, discover
+
+    try:
+        return _quality_check(rule, discover(source) if source else None)
+    except SourceError as exc:
+        result = _quality_check(rule, None)
+        result.detail = f"{exc.code}: {exc}; trace {exc.trace_id}"
+        return result
+
+
 def run_quality_rules(tenant_id: str) -> dict[str, Any]:
     """执行本租户全部 enabled 规则（对 source schema），结果持久化。"""
     rules = list_quality_rules(tenant_id, enabled_only=True)
     results: list[QualityResult] = []
     for rule in rules:
-        schema = get_source_schema(tenant_id, rule.entity_id)
-        result = _quality_check(rule, schema)
+        result = _quality_check_source(rule, get_source(tenant_id, rule.entity_id))
         results.append(result)
     _QUALITY_RESULTS.setdefault(tenant_id, []).extend(results)
     return {

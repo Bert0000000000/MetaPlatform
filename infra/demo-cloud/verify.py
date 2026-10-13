@@ -22,6 +22,28 @@ def require(condition: bool, message: str) -> None:
         raise RuntimeError(message)
 
 
+def verify_platform_access(call, claims: dict, checks: list) -> None:
+    scope = claims.get("scope")
+    require(
+        isinstance(scope, str) and {"platform.read", "platform.write"} <= set(scope.split()),
+        "Administrator token is missing required platform scopes",
+    )
+    username = claims.get("preferred_username")
+    session = claims.get("sid") or claims.get("session_state")
+    client = claims.get("azp")
+    require(
+        all(
+            isinstance(value, str) and bool(value.strip()) for value in (username, session, client)
+        ),
+        "Login token is missing signed human identity metadata",
+    )
+    checks.append("Keycloak platform read/write scopes and signed human identity metadata verified")
+    call("GET", "/api/v1/data/sources")
+    checks.append("Data sources read through gateway")
+    call("GET", "/api/v1/apphub/apps")
+    checks.append("AppHub applications read through gateway")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default="http://127.0.0.1:8080")
@@ -70,6 +92,7 @@ def main() -> None:
     require(claims.get("tenant_id") == TENANT, "Login tenant does not match the demo tenant")
     require(bool(claims.get("sub")), "Login token has no subject")
     checks.append("Keycloak login through gateway with tenant-bound subject")
+    verify_platform_access(call, claims, checks)
 
     state_path = HERE / "artifacts/acceptance-state.json"
     if args.read_only:

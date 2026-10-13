@@ -725,7 +725,8 @@ paths:
       security:
         - bearerAuth: []
           tenantHeader: []
-          oidcScopes: [platform.read]
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 列出本租户已签发的 MCP API Key
       tags:
         - mcp
@@ -740,8 +741,13 @@ paths:
                   $ref: "#/components/schemas/McpApiKey"
         "401":
           description: 缺少有效凭证
+        "403":
+          description: Non-USER, tenant mismatch, or requested grants exceed issuer authority
       operationId: mcpGetMcpApiKeys
-      description: 列出当前租户的长期 MCP API Key。仅返回前缀，明文不可再获取。
+      description:
+        列出当前租户的长期 MCP API Key。仅返回前缀，明文不可再获取。 AuthMethod.USER required. Issuance
+        grants must be a nonempty supported subset of verified issuer scopes; roles do
+        not imply scopes.
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.get
       x-mate-requirements:
@@ -751,7 +757,8 @@ paths:
       security:
         - bearerAuth: []
           tenantHeader: []
-          oidcScopes: [platform.write]
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 签发 MCP API Key（明文仅返回一次）
       tags:
         - mcp
@@ -771,11 +778,14 @@ paths:
         "401":
           description: 缺少有效凭证
         "403":
-          description: 非用户身份（API Key 不能自我繁殖）或跨租户
+          description: Non-USER, tenant mismatch, or requested grants exceed issuer authority
         "503":
           description: 密钥存储未启用
       operationId: mcpPostMcpApiKeys
-      description: 为当前租户签发长期 API Key，供外部 MCP 客户端替代 1 小时 JWT 使用。
+      description:
+        为当前租户签发长期 API Key，供外部 MCP 客户端替代 1 小时 JWT 使用。 AuthMethod.USER required.
+        Issuance grants must be a nonempty supported subset of verified issuer scopes;
+        roles do not imply scopes.
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
@@ -793,7 +803,8 @@ paths:
       security:
         - bearerAuth: []
           tenantHeader: []
-          oidcScopes: [platform.write]
+      x-mate-required-auth-method: USER
+      x-mate-required-tenant: true
       summary: 吊销 MCP API Key
       tags:
         - mcp
@@ -810,13 +821,15 @@ paths:
         "401":
           description: 缺少有效凭证
         "403":
-          description: 非用户身份或跨租户
+          description: Non-USER, tenant mismatch, or requested grants exceed issuer authority
         "404":
           description: key 不存在
         "503":
           description: 密钥存储未启用
       operationId: mcpDeleteMcpApiKeysKid
-      description: 吊销指定 API Key；吊销后立即失效。
+      description:
+        吊销指定 API Key；吊销后立即失效。 AuthMethod.USER required. Issuance grants must
+        be a nonempty supported subset of verified issuer scopes; roles do not imply scopes.
       x-mate-owner: ai-protocols
       x-mate-permission: mcp.post
       x-mate-requirements:
@@ -1017,60 +1030,126 @@ components:
         arguments:
           type: object
     McpApiKey:
-      type: object
+      properties:
+        id:
+          title: Id
+          type: string
+        name:
+          title: Name
+          type: string
+        prefix:
+          title: Prefix
+          type: string
+        scopes:
+          items:
+            type: string
+          title: Scopes
+          type: array
+          description:
+            "Explicit subset of verified issuer scopes: platform.read, platform.write,
+            ont.read, ont.write. Legacy empty grants authorize no external tools; reissue
+            required."
+        createdAt:
+          title: Createdat
+          type: string
+        lastUsedAt:
+          type:
+            - string
+            - "null"
+          default: null
+          title: Lastusedat
+        expiresAt:
+          type:
+            - string
+            - "null"
+          default: null
+          title: Expiresat
+        enabled:
+          title: Enabled
+          type: boolean
       required:
         - id
         - name
         - prefix
+        - scopes
         - createdAt
         - enabled
+      title: McpApiKeyResponse
+      type: object
+    McpApiKeyCreated:
       properties:
         id:
+          title: Id
           type: string
         name:
+          title: Name
           type: string
         prefix:
+          title: Prefix
           type: string
-          description: 密钥前缀，用于在列表中辨识；完整明文不落库、不可再取
         scopes:
-          type: array
           items:
             type: string
-          description: 预留字段。当前版本不对 per-key scope 做强制。
+          title: Scopes
+          type: array
+          description:
+            "Explicit subset of verified issuer scopes: platform.read, platform.write,
+            ont.read, ont.write. Legacy empty grants authorize no external tools; reissue
+            required."
         createdAt:
+          title: Createdat
           type: string
         lastUsedAt:
-          type: ["string", "null"]
+          type:
+            - string
+            - "null"
+          default: null
+          title: Lastusedat
         expiresAt:
-          type: ["string", "null"]
-          description: null 表示永不过期
+          type:
+            - string
+            - "null"
+          default: null
+          title: Expiresat
         enabled:
+          title: Enabled
           type: boolean
-    McpApiKeyCreated:
-      allOf:
-        - $ref: "#/components/schemas/McpApiKey"
-        - type: object
-          required:
-            - key
-          properties:
-            key:
-              type: string
-              description: 唯一一次返回的完整明文密钥，仅存 sha256，遗失只能重新签发
-    CreateMcpApiKeyRequest:
-      type: object
+        key:
+          title: Key
+          type: string
       required:
+        - id
         - name
+        - prefix
+        - scopes
+        - createdAt
+        - enabled
+        - key
+      title: McpApiKeyCreatedResponse
+      type: object
+    CreateMcpApiKeyRequest:
       properties:
         name:
-          type: string
-          minLength: 1
           maxLength: 128
-          description: 人类可读备注，例如 cursor-ide
+          minLength: 1
+          title: Name
+          type: string
         scopes:
-          type: array
           items:
             type: string
-          description: 预留字段。当前版本忽略该字段——签发即授予与 JWT 同等的权限范围（只读 + 提案），HITL 工具仍被门禁拒绝。
+          title: Scopes
+          type: array
+          description:
+            "Explicit subset of verified issuer scopes: platform.read, platform.write,
+            ont.read, ont.write. Legacy empty grants authorize no external tools; reissue
+            required."
         expiresAt:
-          type: ["string", "null"]
-          description: ISO 8601；省略或缺省表示永不过期
+          anyOf:
+            - type: string
+            - type: "null"
+          default: null
+          title: Expiresat
+      required:
+        - name
+      title: CreateMcpApiKeyRequest
+      type: object

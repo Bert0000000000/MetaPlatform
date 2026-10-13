@@ -1,0 +1,38 @@
+{
+  "observed_at": "2026-10-12T04:45:13.3681295+08:00",
+  "candidate_public_urls": [
+    "http://127.0.0.1:9368/website/",
+    "http://127.0.0.1:9368/login"
+  ],
+  "checks": [
+    {
+      "bytes": 29096,
+      "status": 200,
+      "url": "http://127.0.0.1:9368/website/"
+    },
+    {
+      "bytes": 1115,
+      "status": 200,
+      "url": "http://127.0.0.1:9368/login"
+    },
+    {
+      "bytes": 33,
+      "status": 200,
+      "url": "http://127.0.0.1:8100/healthz"
+    },
+    {
+      "bytes": 33,
+      "status": 200,
+      "url": "http://127.0.0.1:8101/healthz"
+    }
+  ],
+  "source_tool_chunk": "d552bc",
+  "open_in_codex_status": "queued",
+  "boundaries": [
+    "HTTP readiness only; not final business-chain gate",
+    "Queued browser request is not evidence that a tab was displayed",
+    "Original Docker images are not a current-source backend deployment",
+    "Signed current-source candidate uses isolated host API55522/Auth55523/Web9368",
+    "No continuous uptime or 72-hour SLO claim"
+  ]
+}

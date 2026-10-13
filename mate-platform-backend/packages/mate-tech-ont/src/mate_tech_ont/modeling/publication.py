@@ -39,6 +39,28 @@ async def current_link(request, rid):
         return None
 
 
+async def datasource_baseline(request, rid):
+    """Snapshot mapping configuration without mutable sync progress fields."""
+    fields = (
+        "rid",
+        "class_rid",
+        "name",
+        "kind",
+        "dsn_env",
+        "table_name",
+        "pk_column",
+        "ts_column",
+        "field_mapping",
+        "priority",
+        "source_id",
+    )
+    declarations = await native.list_backing_datasources(rid, request)
+    return sorted(
+        [{field: declaration.get(field) for field in fields} for declaration in declarations],
+        key=lambda declaration: declaration["rid"],
+    )
+
+
 def link_structure_matches(live, expected):
     """Compare fields that affect native link creation and data synchronization."""
     structural_fields = (
@@ -102,6 +124,18 @@ async def new_type_conflicts(request, source):
         if rid in previous.get("completed", []) and previous.get("inputHash") == input_hash:
             continue
         existing = await current_type(request, rid)
+        reviewed = next(
+            (item for item in (source.get("plan") or {}).get("types", []) if item["rid"] == rid),
+            {},
+        )
+        if (
+            previous.get("inputHash") == input_hash
+            and previous.get("inFlight") == rid
+            and existing
+            and existing["checksum"] == reviewed.get("expectedChecksum")
+        ):
+            # The native write committed before its progress acknowledgment.
+            continue
         if not existing:
             if native_types is None:
                 native_types = []
@@ -130,6 +164,35 @@ async def new_type_conflicts(request, source):
 
 async def prepare(request, source):
     tenant = str(native._ctx(request).tenant_id)
+    previous, reviewed = source.get("publication") or {}, source.get("plan") or {}
+    input_hash = digest(
+        {k: source.get(k) for k in ("draft", "context", "questions", "resolutions")}
+    )
+    if (
+        (previous.get("completed") or previous.get("inFlight"))
+        and reviewed
+        and previous.get("configHash") == reviewed.get("configHash")
+        and previous.get("inputHash") == input_hash
+    ):
+        # Keep absence/checksum baselines from the reviewed plan when reopening
+        # a partial publication. Rebaselining a completed new type would lose its
+        # progress and attempt a second create-only write.
+        published = {item["rid"]: item.get("checksum") for item in previous.get("results", [])}
+        for item in reviewed["types"]:
+            live = await current_type(request, item["rid"])
+            expected = (
+                published.get(item["rid"])
+                if item["rid"] in previous["completed"]
+                else item["baselineChecksum"]
+            )
+            recoverable = (
+                previous.get("inFlight") == item["rid"]
+                and live
+                and live["checksum"] == item["expectedChecksum"]
+            )
+            if (live or {}).get("checksum", "") != expected and not recoverable:
+                raise ValueError("原生类型已被修改，请核对原方案；部分发布不会重新选择基线")
+        return reviewed
     draft, resolutions = publication_scope(source["draft"]), source.get("resolutions") or {}
     ordered_classes = hierarchy_order(draft["classes"])
     target_rids = {
@@ -297,6 +360,7 @@ async def prepare(request, source):
                 "mode": mode,
                 "propertyMap": prop_map,
                 "baselineChecksum": (existing or {}).get("checksum", ""),
+                "baselineSources": await datasource_baseline(request, rid),
                 "payload": body,
                 "expectedChecksum": native.definition_checksum(
                     native._ot_to_row(native._dto_to_ot(native.ObjectTypeDTO(**body)))
@@ -339,10 +403,10 @@ async def prepare(request, source):
         }
         body = native.LinkTypeDTO(**body).model_dump()
         existing_rel = await current_link(request, rid)
-        if existing_rel and any(
-            existing_rel[k] != body[k] for k in ("src", "dst", "cardinality", "directionality")
-        ):
+        if existing_rel and not link_structure_matches(existing_rel, body):
             raise ValueError("已有关系定义冲突，需在原生关系编辑器审核")
+        if existing_rel:
+            body = existing_rel  # Reuse retains native names and human-authored descriptions.
         relationships.append(
             {
                 "relationId": rel["id"],
@@ -462,6 +526,8 @@ async def _publish_locked(request, source, store):
                     ),
                     request,
                     preserve_existing=True,
+                    create_only=item["mode"] == "new",
+                    expected_checksum=item["baselineChecksum"],
                 )
                 await native.apply_schema_wip(
                     item["rid"],
@@ -480,24 +546,21 @@ async def _publish_locked(request, source, store):
             store.update(source["id"], revision, {"publication": state}, increment=False)
         for item in plan["relationships"]:
             live_link = await current_link(request, item["rid"])
-            if item["rid"] in state["completed"] and live_link != item["payload"]:
-                # Older repository versions did not update relationship descriptions on
-                # conflict. Repair that exact metadata-only drift without overwriting
-                # any structural or naming change made after publication.
-                repairable = live_link is not None and {
-                    key: value for key, value in live_link.items() if key != "description"
-                } == {key: value for key, value in item["payload"].items() if key != "description"}
-                if not repairable:
+            if item["rid"] in state["completed"]:
+                if not link_structure_matches(live_link, item["payload"]):
                     raise ValueError("已发布关系被修改，请重新预检")
-                await native.upsert_link_type(native.LinkTypeDTO(**item["payload"]), request)
-                state["results"] = [
-                    result for result in state["results"] if result["rid"] != item["rid"]
-                ] + [{"rid": item["rid"], "status": "repaired"}]
-                store.update(source["id"], revision, {"publication": state}, increment=False)
-            if item["rid"] not in state["completed"]:
-                if live_link != item["baseline"] and live_link != item["payload"]:
+            else:
+                if item["baseline"] is not None:
+                    if not link_structure_matches(live_link, item["payload"]):
+                        raise ValueError("原生关系已变化，请重新预检")
+                elif live_link is not None and live_link != item["payload"]:
                     raise ValueError("原生关系已变化，请重新预检")
-                await native.upsert_link_type(native.LinkTypeDTO(**item["payload"]), request)
+                if live_link is None:
+                    await native.upsert_link_type(
+                        native.LinkTypeDTO(**item["payload"]),
+                        request,
+                        create_only=item["baseline"] is None,
+                    )
                 state["completed"].append(item["rid"])
                 state["results"].append({"rid": item["rid"], "status": "succeeded"})
                 store.update(source["id"], revision, {"publication": state}, increment=False)

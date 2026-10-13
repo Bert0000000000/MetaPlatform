@@ -99,6 +99,15 @@ def test_empty_scope_invalid_ids_and_published_candidates_cannot_apply():
         propose(source, rows)
 
 
+def test_first_publication_intent_locks_batch_approval_without_completed_types():
+    source, rows = fixture()
+    source["publication"] = {"status": "failed", "completed": [], "inFlight": "native-type"}
+    original = deepcopy(source)
+    with pytest.raises(ValueError, match="已有发布"):
+        propose(source, rows, ["line"])
+    assert source == original
+
+
 def test_inheritance_completion_requires_existing_identity_bindings_and_preserves_source():
     source, rows = fixture()
     child = deepcopy(source["draft"]["classes"][0])
@@ -161,6 +170,64 @@ def test_conflicting_ordinary_property_is_deferred_without_dropping_stable_insta
     ]
     assert "amount" not in {p["id"] for p in scoped_line["properties"]}
     assert "amount" not in scoped_mapping["bindings"]
+
+
+@pytest.mark.parametrize("inherited", [False, True])
+def test_child_local_property_conflict_does_not_defer_sibling_local_property(inherited):
+    def cls(ident, parent=None):
+        return {
+            "id": ident,
+            "name": ident,
+            "properties": [{"id": "code", "name": "code", "dataType": "text"}],
+            "identity": ["code"],
+            "labelProperty": "code",
+            "accepted": True,
+            "identityStatus": "confirmed",
+            "identityReason": "The code identifies one business entity",
+            "parentClassId": parent,
+            "inheritanceReason": "A declared business subtype" if parent else "",
+        }
+
+    parent, left, right = cls("parent"), cls("left", "parent"), cls("right", "parent")
+    if inherited:
+        parent["properties"].append({"id": "amount", "name": "amount", "dataType": "number"})
+    for child in (left, right):
+        child["properties"].append({"id": "amount", "name": "amount", "dataType": "number"})
+    rows = [
+        {"sheet": "left", "row": 2, "values": {"code": "A", "amount": 100}},
+        {"sheet": "left", "row": 3, "values": {"code": "A", "amount": 200}},
+        {"sheet": "right", "row": 2, "values": {"code": "B", "amount": 300}},
+    ]
+    source = {
+        "id": "source",
+        "revision": 1,
+        "profile": profile_rows(rows),
+        "resolutions": {},
+        "draft": {
+            "name": "subtypes",
+            "classes": [parent, left, right],
+            "mappings": [
+                {
+                    "id": child["id"] + "_rows",
+                    "classId": child["id"],
+                    "sheet": child["id"],
+                    "bindings": {"code": "code", "amount": "amount"},
+                    "accepted": True,
+                }
+                for child in (left, right)
+            ],
+            "relationships": [],
+        },
+    }
+
+    plan = propose(source, rows)
+
+    assert plan["canApply"] and plan["data"]["canSync"]
+    left, right = (
+        next(c for c in plan["draft"]["classes"] if c["id"] == cid) for cid in ("left", "right")
+    )
+    assert not next(p for p in left["properties"] if p["id"] == "amount")["included"]
+    assert next(p for p in right["properties"] if p["id"] == "amount")["included"] is not inherited
 
 
 def test_deferred_classes_do_not_consume_completion_record_capacity(monkeypatch):

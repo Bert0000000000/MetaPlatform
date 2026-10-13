@@ -1,0 +1,16 @@
+{
+  "label": "retained-business-check",
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "-B",
+    "-X",
+    "utf8",
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\final-residual-business.py",
+    "retained"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform",
+  "exit_code": 1,
+  "elapsed_seconds": 21.17,
+  "head": "3e844b844a201731b8170bd40b22580a83103771",
+  "private_script_sha256": "976e49956e79b33cb4c61d66465f673e0d5d4f38133e31de1ac171fdaf34dd3a"
+}

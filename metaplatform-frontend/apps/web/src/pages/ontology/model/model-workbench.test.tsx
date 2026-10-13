@@ -38,7 +38,7 @@ vi.mock('@/api/ont/kernel', async (original) => ({
   listInterfaces: vi.fn(),
   createObjectType: vi.fn(),
   saveSchemaWip: vi.fn(),
-  validateObjectTypeModel: vi.fn(),
+  validateObjectTypeModel: vi.fn(), applySchemaWip: vi.fn(), listSchemaWip: vi.fn(), assessMigration: vi.fn(), inspectObjectType: vi.fn(), getObjectBindingUsage: vi.fn(),
 }));
 vi.mock('@/utils/auth', () => ({ getTenantId: () => 'tenant' }));
 vi.mock('@mate/shared', () => ({
@@ -96,6 +96,13 @@ const customer: api.KernelObjectType = {
 beforeEach(() => {
   setEditorSessionIdentity('');
   vi.clearAllMocks();
+  vi.mocked(api.listSchemaWip).mockResolvedValue([]);
+  vi.mocked(api.validateObjectTypeModel).mockResolvedValue({ rid: customer.rid, valid: true, errors: [], warnings: [], destructive: [], references: { resolved: [], unresolved: [], dependencies: [] } });
+  vi.mocked(api.assessMigration).mockResolvedValue({ counts: { instances_affected: 0 }, changes: [], warnings: [] } as never);
+  vi.mocked(api.inspectObjectType).mockResolvedValue({ actions: [] });
+  vi.mocked(api.getObjectBindingUsage).mockResolvedValue([]);
+  vi.mocked(api.saveSchemaWip).mockResolvedValue({ rid: customer.rid, status: 'staged', base_checksum: 'live-sum' });
+  vi.mocked(api.applySchemaWip).mockResolvedValue({} as never);
   HTMLElement.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal(
     'ResizeObserver',
@@ -208,11 +215,26 @@ it('selects real card DTO, preserves RID when opening complete editor detail', a
   );
 });
 it('clears the selected model when the blank canvas is clicked', async () => {
+  vi.stubGlobal('PointerEvent', class extends MouseEvent {
+    readonly pointerId: number;
+    readonly isPrimary: boolean;
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 0;
+      this.isPrimary = init.isPrimary ?? false;
+    }
+  });
   const router = mount(`/ontology/model/graph?typeRef=${encodeURIComponent(customer.rid)}`);
   const canvas = await screen.findByRole('img', { name: '本体类与关系结构图' });
+  const captured = new Set<number>();
+  canvas.setPointerCapture = vi.fn((id: number) => { captured.add(id); });
+  canvas.hasPointerCapture = vi.fn((id: number) => captured.has(id));
+  canvas.releasePointerCapture = vi.fn((id: number) => { captured.delete(id); });
   expect(screen.getByRole('button', { name: '查看本体类 客户' })).toHaveClass('is-selected');
   fireEvent.pointerDown(canvas, { button: 0, pointerId: 1, isPrimary: true, clientX: 20, clientY: 20 });
   fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
+  expect(canvas.setPointerCapture).toHaveBeenCalledExactlyOnceWith(1);
+  expect(canvas.releasePointerCapture).toHaveBeenCalledExactlyOnceWith(1);
   await waitFor(() => expect(router.state.location.search).not.toContain('typeRef='));
   expect(screen.getByRole('complementary', { name: '资源属性' })).toHaveTextContent('选择模型查看属性与关系');
 });
@@ -228,15 +250,15 @@ it('edits complete metadata, stages true WIP and keeps failed input', async () =
     `/ontology/model/object-types/${encodeURIComponent(customer.rid)}/properties`,
   );
   fireEvent.click(await screen.findByRole('button', { name: '编辑模型' }));
-  fireEvent.change(screen.getByLabelText('概念显示名'), {
+  fireEvent.change(screen.getByLabelText('业务名称'), {
     target: { value: '客户新名' },
   });
   vi.mocked(api.saveSchemaWip).mockRejectedValueOnce({
     response: { status: 422, data: { detail: '定义无效' } },
   });
-  fireEvent.click(screen.getByRole('button', { name: '保存草稿（WIP）' }));
+  fireEvent.click(screen.getByRole('button', { name: '保存草稿' }));
   expect(await screen.findByText(/422.*定义无效/)).toBeVisible();
-  expect(screen.getByLabelText('概念显示名')).toHaveValue('客户新名');
+  expect(screen.getByLabelText('业务名称')).toHaveValue('客户新名');
   expect(api.saveSchemaWip).toHaveBeenCalledWith(
     expect.objectContaining({
       display_name: '客户新名',
@@ -249,12 +271,14 @@ it('edits complete metadata, stages true WIP and keeps failed input', async () =
         expect.objectContaining({ struct_fields: [nested] }),
       ],
     }),
+    false,
+    'live-sum',
   );
   expect(api.createObjectType).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '关闭' }));
   expect(screen.getByRole('dialog', { name: '未保存的修改' })).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
-  expect(screen.getByLabelText('概念显示名')).toHaveValue('客户新名');
+  expect(screen.getByLabelText('业务名称')).toHaveValue('客户新名');
 });
 it('reads snapshot history rather than live family and separates binding from samples', async () => {
   const router = mount(
@@ -363,13 +387,13 @@ it('does not discard clean editor and explicitly handles Escape on dirty fields'
   fireEvent.click(screen.getByRole('button', { name: '关闭' }));
   expect(screen.queryByRole('dialog', { name: '未保存的修改' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '编辑模型' }));
-  fireEvent.change(screen.getByLabelText('概念显示名'), {
+  fireEvent.change(screen.getByLabelText('业务名称'), {
     target: { value: '修改' },
   });
   fireEvent.keyDown(window, { key: 'Escape' });
   expect(screen.getByRole('dialog', { name: '未保存的修改' })).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: '放弃修改并关闭' }));
-  expect(screen.queryByLabelText('概念显示名')).toBeNull();
+  expect(screen.queryByLabelText('业务名称')).toBeNull();
 });
 it('rejects unsafe return URLs while preserving identifiers and legacy class', () => {
   for (const value of [
@@ -395,7 +419,7 @@ it('restores FULL unsaved input after navigation away and back without any mutat
   const path = `/ontology/model/object-types/${encodeURIComponent(customer.rid)}/properties`;
   const router = mount(path);
   fireEvent.click(await screen.findByRole('button', { name: '编辑模型' }));
-  fireEvent.change(screen.getByLabelText('概念显示名'), {
+  fireEvent.change(screen.getByLabelText('业务名称'), {
     target: { value: '未保存名称' },
   });
   fireEvent.click(screen.getAllByRole('button', { name: '添加属性' }).at(-1)!);
@@ -412,7 +436,7 @@ it('restores FULL unsaved input after navigation away and back without any mutat
   await screen.findByRole('heading',{name:'客户'});
   await waitFor(()=>expect(screen.getByRole('button',{name:'编辑模型'})).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: '编辑模型' }));
-  expect(screen.getByLabelText('概念显示名')).toHaveValue('未保存名称');
+  expect(screen.getByLabelText('业务名称')).toHaveValue('未保存名称');
   expect(screen.getByPlaceholderText('例如 dept_name')).toHaveValue(
     'invalid property !',
   );
@@ -424,7 +448,7 @@ it('restores FULL unsaved input after navigation away and back without any mutat
   fireEvent.click(screen.getByRole('button', { name: '关闭' }));
   fireEvent.click(screen.getByRole('button', { name: '放弃修改并关闭' }));
   fireEvent.click(screen.getByRole('button', { name: '编辑模型' }));
-  expect(screen.getByLabelText('概念显示名')).toHaveValue('客户');
+  expect(screen.getByLabelText('业务名称')).toHaveValue('客户');
   expect(screen.queryByText(/未保存输入已保留/)).toBeNull();
 });
 it('clears session input on logout and identity changes', () => {
@@ -560,4 +584,24 @@ it('does not label a failed relationship read as an empty selected model', async
   const inspector = screen.getByRole('complementary', { name: '资源属性' });
   expect(inspector).toHaveTextContent('关系读取未完成');
   expect(inspector).not.toHaveTextContent('关联模型 · 0');
+});
+
+it('publishes detail edits through WIP using the compared checksum and clears only the submitted input', async () => {
+  const updated = { ...customer, display_name: '客户发布名', checksum: 'published-sum' };
+  vi.mocked(api.applySchemaWip).mockImplementation(async () => {
+    vi.mocked(api.getObjectType).mockResolvedValue(updated);
+    return {} as never;
+  });
+  mount('/ontology/model/object-types/' + encodeURIComponent(customer.rid) + '/properties');
+  fireEvent.click(await screen.findByRole('button', { name: '编辑模型' }));
+  fireEvent.change(screen.getByLabelText('业务名称'), { target: { value: '客户发布名' } });
+  fireEvent.click(screen.getByRole('button', { name: '发布对象类型' }));
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: '模型编辑器' })).toBeNull());
+  expect(api.saveSchemaWip).toHaveBeenCalledWith(expect.objectContaining({ rid: customer.rid, display_name: '客户发布名' }), false, 'live-sum');
+  expect(api.applySchemaWip).toHaveBeenCalledWith(customer.rid, '', 'live-sum');
+  expect(api.createObjectType).not.toHaveBeenCalled();
+  await screen.findByRole('heading', { name: '客户发布名' });
+  fireEvent.click(screen.getByRole('button', { name: '编辑模型' }));
+  expect(screen.getByLabelText('业务名称')).toHaveValue('客户发布名');
+  expect(screen.queryByText(/当前生效定义已变化/)).toBeNull();
 });

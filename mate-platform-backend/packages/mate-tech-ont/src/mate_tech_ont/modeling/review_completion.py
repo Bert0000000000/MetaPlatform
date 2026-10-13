@@ -10,7 +10,8 @@ from .scope import publication_scope
 
 
 def propose(source, rows, defer_classes=()):
-    if (source.get("publication") or {}).get("completed"):
+    publication = source.get("publication") or {}
+    if publication.get("completed") or publication.get("inFlight"):
         raise ValueError("已有发布结果，请使用原生迁移或另建来源；不能批量改变本次发布范围")
     draft = Draft.model_validate(source["draft"]).model_dump()
     original = deepcopy(draft)
@@ -107,17 +108,27 @@ def propose(source, rows, defer_classes=()):
         return protected
 
     def defer_property(cls_id, prop_id, reason):
-        family = {cls_id}
+        # A same-named local property on a sibling is a different native field.
+        # Only the actual declaring ancestor and its descendants share this field.
+        owner, visited = cls_id, {cls_id}
+        while True:
+            parent_id = classes[owner].get("parentClassId")
+            parent = classes.get(parent_id)
+            if (
+                not parent
+                or parent_id in visited
+                or not any(prop["id"] == prop_id for prop in parent["properties"])
+            ):
+                break
+            owner = parent_id
+            visited.add(owner)
+        family = {owner}
         changed = True
         while changed:
             before = len(family)
             for candidate in classes.values():
-                if candidate.get("parentClassId") in family or (
-                    candidate["id"] in family and candidate.get("parentClassId")
-                ):
+                if candidate.get("parentClassId") in family:
                     family.add(candidate["id"])
-                    if candidate.get("parentClassId"):
-                        family.add(candidate["parentClassId"])
             changed = len(family) != before
         affected = [
             (candidate, next((p for p in candidate["properties"] if p["id"] == prop_id), None))

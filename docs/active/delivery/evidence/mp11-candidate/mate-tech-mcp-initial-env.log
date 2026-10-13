@@ -1,0 +1,709 @@
+FFFFF..FFFFF.F..FFF..................................................... [ 26%]
+......FFFFFFFFFFFFF..................F.....F...F........................ [ 52%]
+........F.......EEEEEF.EFFFF...F.........F.F............................ [ 78%]
+.........................................FFF.FFFFFFFFFFF....
+WARNING: Failed to generate report: No data to report.
+
+                                                                         [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of test_key_grants_subset_of_verified_issuer[issuer0-requested0-201] _
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:107: in _fresh_store
+    from mate_tech_mcp.repositories import sql_models
+packages\mate-tech-mcp\src\mate_tech_mcp\repositories\sql_models.py:15: in <module>
+    class McpClientORM(Base):
+.venv\Lib\site-packages\sqlalchemy\orm\decl_api.py:849: in __init_subclass__
+    _as_declarative(cls._sa_registry, cls, cls.__dict__)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:245: in _as_declarative
+    return _MapperConfig.setup_mapping(registry, cls, dict_, None, {})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:326: in setup_mapping
+    return _ClassScanMapperConfig(
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:577: in __init__
+    self._setup_table(table)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:1762: in _setup_table
+    table_cls(
+<string>:2: in __new__
+    ???
+.venv\Lib\site-packages\sqlalchemy\util\deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:430: in __new__
+    return cls._new(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:462: in _new
+    raise exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined for this MetaData instance.  Specify 'extend_existing=True' to redefine options and columns on an existing Table object.
+_ ERROR at setup of test_key_grants_subset_of_verified_issuer[issuer1-requested1-403] _
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:107: in _fresh_store
+    from mate_tech_mcp.repositories import sql_models
+packages\mate-tech-mcp\src\mate_tech_mcp\repositories\sql_models.py:15: in <module>
+    class McpClientORM(Base):
+.venv\Lib\site-packages\sqlalchemy\orm\decl_api.py:849: in __init_subclass__
+    _as_declarative(cls._sa_registry, cls, cls.__dict__)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:245: in _as_declarative
+    return _MapperConfig.setup_mapping(registry, cls, dict_, None, {})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:326: in setup_mapping
+    return _ClassScanMapperConfig(
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:577: in __init__
+    self._setup_table(table)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:1762: in _setup_table
+    table_cls(
+<string>:2: in __new__
+    ???
+.venv\Lib\site-packages\sqlalchemy\util\deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:430: in __new__
+    return cls._new(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:462: in _new
+    raise exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined for this MetaData instance.  Specify 'extend_existing=True' to redefine options and columns on an existing Table object.
+_ ERROR at setup of test_key_grants_subset_of_verified_issuer[issuer2-requested2-403] _
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:107: in _fresh_store
+    from mate_tech_mcp.repositories import sql_models
+packages\mate-tech-mcp\src\mate_tech_mcp\repositories\sql_models.py:15: in <module>
+    class McpClientORM(Base):
+.venv\Lib\site-packages\sqlalchemy\orm\decl_api.py:849: in __init_subclass__
+    _as_declarative(cls._sa_registry, cls, cls.__dict__)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:245: in _as_declarative
+    return _MapperConfig.setup_mapping(registry, cls, dict_, None, {})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:326: in setup_mapping
+    return _ClassScanMapperConfig(
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:577: in __init__
+    self._setup_table(table)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:1762: in _setup_table
+    table_cls(
+<string>:2: in __new__
+    ???
+.venv\Lib\site-packages\sqlalchemy\util\deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:430: in __new__
+    return cls._new(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:462: in _new
+    raise exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined for this MetaData instance.  Specify 'extend_existing=True' to redefine options and columns on an existing Table object.
+_ ERROR at setup of test_key_grants_subset_of_verified_issuer[issuer3-requested3-201] _
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:107: in _fresh_store
+    from mate_tech_mcp.repositories import sql_models
+packages\mate-tech-mcp\src\mate_tech_mcp\repositories\sql_models.py:15: in <module>
+    class McpClientORM(Base):
+.venv\Lib\site-packages\sqlalchemy\orm\decl_api.py:849: in __init_subclass__
+    _as_declarative(cls._sa_registry, cls, cls.__dict__)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:245: in _as_declarative
+    return _MapperConfig.setup_mapping(registry, cls, dict_, None, {})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:326: in setup_mapping
+    return _ClassScanMapperConfig(
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:577: in __init__
+    self._setup_table(table)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:1762: in _setup_table
+    table_cls(
+<string>:2: in __new__
+    ???
+.venv\Lib\site-packages\sqlalchemy\util\deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:430: in __new__
+    return cls._new(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:462: in _new
+    raise exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined for this MetaData instance.  Specify 'extend_existing=True' to redefine options and columns on an existing Table object.
+_ ERROR at setup of test_key_grants_subset_of_verified_issuer[issuer4-requested4-403] _
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:107: in _fresh_store
+    from mate_tech_mcp.repositories import sql_models
+packages\mate-tech-mcp\src\mate_tech_mcp\repositories\sql_models.py:15: in <module>
+    class McpClientORM(Base):
+.venv\Lib\site-packages\sqlalchemy\orm\decl_api.py:849: in __init_subclass__
+    _as_declarative(cls._sa_registry, cls, cls.__dict__)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:245: in _as_declarative
+    return _MapperConfig.setup_mapping(registry, cls, dict_, None, {})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:326: in setup_mapping
+    return _ClassScanMapperConfig(
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:577: in __init__
+    self._setup_table(table)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:1762: in _setup_table
+    table_cls(
+<string>:2: in __new__
+    ???
+.venv\Lib\site-packages\sqlalchemy\util\deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:430: in __new__
+    return cls._new(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:462: in _new
+    raise exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined for this MetaData instance.  Specify 'extend_existing=True' to redefine options and columns on an existing Table object.
+_______ ERROR at setup of test_key_rejects_requested_foreign_workspace ________
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:107: in _fresh_store
+    from mate_tech_mcp.repositories import sql_models
+packages\mate-tech-mcp\src\mate_tech_mcp\repositories\sql_models.py:15: in <module>
+    class McpClientORM(Base):
+.venv\Lib\site-packages\sqlalchemy\orm\decl_api.py:849: in __init_subclass__
+    _as_declarative(cls._sa_registry, cls, cls.__dict__)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:245: in _as_declarative
+    return _MapperConfig.setup_mapping(registry, cls, dict_, None, {})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:326: in setup_mapping
+    return _ClassScanMapperConfig(
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:577: in __init__
+    self._setup_table(table)
+.venv\Lib\site-packages\sqlalchemy\orm\decl_base.py:1762: in _setup_table
+    table_cls(
+<string>:2: in __new__
+    ???
+.venv\Lib\site-packages\sqlalchemy\util\deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:430: in __new__
+    return cls._new(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\schema.py:462: in _new
+    raise exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined for this MetaData instance.  Specify 'extend_existing=True' to redefine options and columns on an existing Table object.
+================================== FAILURES ===================================
+_____________________ test_register_tool_appears_in_list ______________________
+packages\mate-tech-mcp\tests\test_dynamic_registry.py:63: in test_register_tool_appears_in_list
+    assert lst.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________ test_register_tool_then_invoke_forwards ___________________
+packages\mate-tech-mcp\tests\test_dynamic_registry.py:86: in test_register_tool_then_invoke_forwards
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"verified caller required"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_________________________ test_update_and_delete_tool _________________________
+packages\mate-tech-mcp\tests\test_dynamic_registry.py:109: in test_update_and_delete_tool
+    assert "hr_tool" not in {t["name"] for t in lst.json()["tools"]}
+                                                ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tools'
+____________________________ test_unknown_tool_404 ____________________________
+packages\mate-tech-mcp\tests\test_dynamic_registry.py:123: in test_unknown_tool_404
+    assert r.status_code == 404, r.text
+E   AssertionError: {"detail":"verified caller required"}
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________________ test_tenant_isolation ____________________________
+packages\mate-tech-mcp\tests\test_dynamic_registry.py:129: in test_tenant_isolation
+    assert "acme_only_tool" not in {t["name"] for t in lst.json()["tools"]}
+                                                       ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tools'
+______________________ test_prompts_summarize_with_token ______________________
+packages\mate-tech-mcp\tests\test_edge.py:30: in test_prompts_summarize_with_token
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________________________ test_prompts_extract_entities ________________________
+packages\mate-tech-mcp\tests\test_edge.py:41: in test_prompts_extract_entities
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________________ test_prompts_plan_task ____________________________
+packages\mate-tech-mcp\tests\test_edge.py:52: in test_prompts_plan_task
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________________________ test_resources_endpoint ___________________________
+packages\mate-tech-mcp\tests\test_edge.py:61: in test_resources_endpoint
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________________________ test_tools_endpoint_empty __________________________
+packages\mate-tech-mcp\tests\test_edge.py:74: in test_tools_endpoint_empty
+    assert resp.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________________ test_case1_unregistered_tool_returns_404 ___________________
+packages\mate-tech-mcp\tests\test_llm_adv_mcp.py:63: in test_case1_unregistered_tool_returns_404
+    assert resp.status_code in (404, 405), resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 in (404, 405)
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout setup ----------------------------
+{"version": "0.1.0", "transport": "stdio", "event": "mate-tech-mcp.startup", "level": "info", "timestamp": "2026-10-11T20:19:15.538312Z"}
+{"reason": "MATE_DB_URL unset", "event": "mcp.api_keys.disabled", "level": "info", "timestamp": "2026-10-11T20:19:15.539312Z"}
+_____________ test_case4_federation_unauthorized_upstream_denied ______________
+packages\mate-tech-mcp\tests\test_llm_adv_mcp.py:120: in test_case4_federation_unauthorized_upstream_denied
+    assert resp.status_code in (200, 400, 403, 404), resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 in (200, 400, 403, 404)
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________ test_case5_kb_tool_argument_sql_injection_safe ________________
+packages\mate-tech-mcp\tests\test_llm_adv_mcp.py:136: in test_case5_kb_tool_argument_sql_injection_safe
+    assert resp.status_code in (200, 400), resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 in (200, 400)
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_________________ test_case6_resource_path_traversal_rejected _________________
+packages\mate-tech-mcp\tests\test_llm_adv_mcp.py:150: in test_case6_resource_path_traversal_rejected
+    assert resp.status_code in (200, 400, 404, 422), resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 in (200, 400, 404, 422)
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________ TestFederationEndpoints.test_register_server_endpoint ____________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:516: in test_register_server_endpoint
+    srv = self._register_server(client, auth_headers)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________ TestFederationEndpoints.test_register_rejects_invalid_url __________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:533: in test_register_rejects_invalid_url
+    assert r.status_code == 400
+E   assert 401 == 400
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ TestFederationEndpoints.test_list_servers_endpoint ______________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:536: in test_list_servers_endpoint
+    self._register_server(client, auth_headers, name="srv-a", tools=["tool1"])
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________ TestFederationEndpoints.test_get_server_endpoint _______________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:545: in test_get_server_endpoint
+    srv = self._register_server(client, auth_headers)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________ TestFederationEndpoints.test_get_returns_404_for_unknown ___________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:558: in test_get_returns_404_for_unknown
+    assert r.status_code == 404
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ TestFederationEndpoints.test_update_server_endpoint _____________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:561: in test_update_server_endpoint
+    srv = self._register_server(client, auth_headers)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________ TestFederationEndpoints.test_deregister_server_endpoint ___________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:573: in test_deregister_server_endpoint
+    srv = self._register_server(client, auth_headers)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________ TestFederationEndpoints.test_list_remote_tools_endpoint ___________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:588: in test_list_remote_tools_endpoint
+    self._register_server(client, auth_headers, name="srv-a", tools=["tool1", "tool2"])
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________ TestFederationEndpoints.test_invoke_remote_tool_endpoint ___________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:605: in test_invoke_remote_tool_endpoint
+    srv = self._register_server(client, auth_headers)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___ TestFederationEndpoints.test_invoke_remote_tool_returns_404_for_unknown ___
+packages\mate-tech-mcp\tests\test_mcp_federation.py:623: in test_invoke_remote_tool_returns_404_for_unknown
+    assert r.status_code == 404
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________ TestFederationEndpoints.test_cross_tenant_get_returns_404 __________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:628: in test_cross_tenant_get_returns_404
+    srv = self._register_server(client, auth_headers)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______ TestFederationEndpoints.test_cross_tenant_deregister_returns_404 _______
+packages\mate-tech-mcp\tests\test_mcp_federation.py:638: in test_cross_tenant_deregister_returns_404
+    srv = self._register_server(client, auth_headers)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+________ TestFederationEndpoints.test_cross_tenant_invoke_returns_404 _________
+packages\mate-tech-mcp\tests\test_mcp_federation.py:655: in test_cross_tenant_invoke_returns_404
+    self._register_server(client, auth_headers, tools=["private.tool"])
+packages\mate-tech-mcp\tests\test_mcp_federation.py:512: in _register_server
+    assert r.status_code == 201, r.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_ TestMcpHttpEndpointsWired.test_list_endpoints_reachable[GET-/api/v1/mcp/tools] _
+packages\mate-tech-mcp\tests\test_mcp_http_endpoints.py:109: in test_list_endpoints_reachable
+    assert any(k in body for k in ("tools", "resources", "prompts"))
+E   assert False
+E    +  where False = any(<generator object TestMcpHttpEndpointsWired.test_list_endpoints_reachable.<locals>.<genexpr> at 0x00000241CA5B1D80>)
+___________ TestMcpOriginRoutes.test_origin_list_tools_returns_200 ____________
+packages\mate-tech-mcp\tests\test_mcp_http_endpoints.py:194: in test_origin_list_tools_returns_200
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"verified caller required"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______ TestMcpOriginRoutes.test_origin_invoke_tool_returns_200_or_404 ________
+packages\mate-tech-mcp\tests\test_mcp_http_endpoints.py:226: in test_origin_invoke_tool_returns_200_or_404
+    assert r.status_code in (200, 404, 500), r.text
+E   AssertionError: {"detail":"verified caller required"}
+E   assert 401 in (200, 404, 500)
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________________ test_confirm_has_server_deadline _______________________
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:21: in test_confirm_has_server_deadline
+    assert timedelta(seconds=899) <= deadline - c.confirmed_at <= timedelta(seconds=901)
+E   AssertionError: assert datetime.timedelta(seconds=899) <= (datetime.datetime(2026, 10, 11, 20, 21, 14, 110417, tzinfo=datetime.timezone.utc) - datetime.datetime(2026, 10, 11, 20, 20, 14, 110417, tzinfo=datetime.timezone.utc))
+E    +  where datetime.timedelta(seconds=899) = timedelta(seconds=899)
+E    +  and   datetime.datetime(2026, 10, 11, 20, 20, 14, 110417, tzinfo=datetime.timezone.utc) = ActionProposal(proposal_id='prop-dcff1234', action_rid='action', target_iid=None, parameters={}, impact_summary='revie...approval_expires_at=datetime.datetime(2026, 10, 11, 20, 21, 14, 110417, tzinfo=datetime.timezone.utc), provenance=None).confirmed_at
+______________ test_protocol_filters_discovery_and_all_fallbacks ______________
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:128: in test_protocol_filters_discovery_and_all_fallbacks
+    assert names == {'ont_object_query'}
+E   AssertionError: assert {'ont_object_...ose_instance'} == {'ont_object_query'}
+E
+E     Extra items in the left set:
+E     'ont_propose_instance'
+E     Use -v to get more diff
+---------------------------- Captured stdout call -----------------------------
+{"name": "ont_object_query", "tenant": "*", "event": "mcp.tool.registered", "level": "info", "timestamp": "2026-10-11T20:20:16.397662Z"}
+{"name": "ont_propose_instance", "tenant": "*", "event": "mcp.tool.registered", "level": "info", "timestamp": "2026-10-11T20:20:16.397662Z"}
+{"name": "ont_confirm_proposal", "tenant": "*", "event": "mcp.tool.registered", "level": "info", "timestamp": "2026-10-11T20:20:16.397662Z"}
+_____________ test_actual_pg_deadline_guards_and_completed_replay _____________
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:163: in test_actual_pg_deadline_guards_and_completed_replay
+    p=proposal(False)
+      ^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:161: in proposal
+    p=r.propose_action(ClassRef(f'ont.{tenant}.act.review'),{},f'ont.{tenant}.ind.order.2','Task7 deadline')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:5935: in propose_action
+    at = self.get_action_type(action_rid)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:3214: in get_action_type
+    raise KeyError(f"ActionType not found: {rid.rid}")
+E   KeyError: 'ActionType not found: ont.mp11-app-ui.act.review'
+__________ test_actual_pg_legacy_proposal_rolls_back_before_receipt ___________
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:5941: in propose_action
+    self.get_object_type(action_rid)
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:2689: in get_object_type
+    raise KeyError(f"ObjectType not found: {rid.rid}")
+E   KeyError: 'ObjectType not found: ont.mp11-app-ui.obj.order'
+
+The above exception was the direct cause of the following exception:
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:197: in test_actual_pg_legacy_proposal_rolls_back_before_receipt
+    p=r.propose_create_instance(f'ont.{tenant}.obj.order',{'id':number,'total':5,'status':'pending'},'Task7 rollback')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:6007: in propose_create_instance
+    return self.propose_action(
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:5943: in propose_action
+    raise KeyError(str(e)) from e
+E   KeyError: "'ObjectType not found: ont.mp11-app-ui.obj.order'"
+_________ test_actual_pg_legacy_guard_replay_and_ordinary_connection __________
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:5941: in propose_action
+    self.get_object_type(action_rid)
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:2689: in get_object_type
+    raise KeyError(f"ObjectType not found: {rid.rid}")
+E   KeyError: 'ObjectType not found: ont.mp11-app-ui.obj.order'
+
+The above exception was the direct cause of the following exception:
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:220: in test_actual_pg_legacy_guard_replay_and_ordinary_connection
+    p=new();r.confirm_proposal(p.proposal_id,'human')
+      ^^^^^
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:217: in new
+    return r.propose_create_instance(f'ont.{tenant}.obj.order',{'id':number,'total':5,'status':'pending'},'Task7 legacy deadline')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:6007: in propose_create_instance
+    return self.propose_action(
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:5943: in propose_action
+    raise KeyError(str(e)) from e
+E   KeyError: "'ObjectType not found: ont.mp11-app-ui.obj.order'"
+____________ test_actual_pg_legacy_state_rechecked_after_row_lock _____________
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:5941: in propose_action
+    self.get_object_type(action_rid)
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:2689: in get_object_type
+    raise KeyError(f"ObjectType not found: {rid.rid}")
+E   KeyError: 'ObjectType not found: ont.mp11-app-ui.obj.order'
+
+The above exception was the direct cause of the following exception:
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:248: in test_actual_pg_legacy_state_rechecked_after_row_lock
+    p=r.propose_create_instance(f'ont.{tenant}.obj.order',{'id':int(uuid.uuid4().hex[:7],16),'total':5,'status':'pending'},'Task7 state race')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:6007: in propose_create_instance
+    return self.propose_action(
+packages\mate-tech-ont\src\mate_tech_ont\v2_kernel\pg_repo.py:5943: in propose_action
+    raise KeyError(str(e)) from e
+E   KeyError: "'ObjectType not found: ont.mp11-app-ui.obj.order'"
+___________ test_concrete_operation_authority_and_preview_metadata ____________
+packages\mate-tech-mcp\tests\test_mp11_client_contract.py:333: in test_concrete_operation_authority_and_preview_metadata
+    with pytest.raises(PermissionError):await tool._outbound_headers()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PermissionError
+---------------------------- Captured stdout call -----------------------------
+{"name": "ont_validate_preflight", "tenant": "*", "event": "mcp.tool.registered", "level": "info", "timestamp": "2026-10-11T20:20:23.356869Z"}
+{"name": "?", "tenant": "*", "event": "mcp.tool.registered", "level": "info", "timestamp": "2026-10-11T20:20:23.356869Z"}
+____________ test_api_key_caller_requests_the_tenant_switch_scope _____________
+packages\mate-tech-mcp\tests\test_ontology_bus_passthrough.py:209: in test_api_key_caller_requests_the_tenant_switch_scope
+    assert "tenant_switch_enabled" in _scope_of(kc)
+                                      ^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_ontology_bus_passthrough.py:184: in _scope_of
+    body = parse_qs(route.calls.last.request.content.decode())
+                    ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\respx\models.py:78: in last
+    return self[-1]
+           ^^^^^^^^
+E   IndexError: list index out of range
+---------------------------- Captured stdout call -----------------------------
+{"error": "RESPX: <Request('POST', 'http://keycloak.test:8080/realms/codex-mp11/protocol/openid-connect/token')> not mocked!", "event": "mcp.ont_proxy.token_failed", "level": "warning", "timestamp": "2026-10-11T20:20:24.389519Z"}
+______________________ test_switch_scope_is_configurable ______________________
+packages\mate-tech-mcp\tests\test_ontology_bus_passthrough.py:249: in test_switch_scope_is_configurable
+    assert _scope_of(kc) == "openid"
+           ^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_ontology_bus_passthrough.py:184: in _scope_of
+    body = parse_qs(route.calls.last.request.content.decode())
+                    ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\respx\models.py:78: in last
+    return self[-1]
+           ^^^^^^^^
+E   IndexError: list index out of range
+---------------------------- Captured stdout call -----------------------------
+{"error": "RESPX: <Request('POST', 'http://keycloak.test:8080/realms/codex-mp11/protocol/openid-connect/token')> not mocked!", "event": "mcp.ont_proxy.token_failed", "level": "warning", "timestamp": "2026-10-11T20:20:24.516439Z"}
+___________________ TestListToolCategories.test_list_empty ____________________
+packages\mate-tech-mcp\tests\test_tool_categories.py:57: in test_list_empty
+    assert resp.status_code == 200, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________ TestListToolCategories.test_list_returns_created _______________
+packages\mate-tech-mcp\tests\test_tool_categories.py:61: in test_list_returns_created
+    _create(client)
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______ TestListToolCategories.test_list_sorted_by_sort_order_then_name _______
+packages\mate-tech-mcp\tests\test_tool_categories.py:71: in test_list_sorted_by_sort_order_then_name
+    _create(client, code="z-last", sort_order=2, name="Z 分类")
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________ TestCreateToolCategory.test_create_returns_camelcase _____________
+packages\mate-tech-mcp\tests\test_tool_categories.py:84: in test_create_returns_camelcase
+    cat = _create(client)
+          ^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________ TestCreateToolCategory.test_create_with_parent ________________
+packages\mate-tech-mcp\tests\test_tool_categories.py:90: in test_create_with_parent
+    cat = _create(client, parent_id="cat-root")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________ TestCreateToolCategory.test_create_duplicate_code_400 ____________
+packages\mate-tech-mcp\tests\test_tool_categories.py:94: in test_create_duplicate_code_400
+    _create(client)
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ TestCreateToolCategory.test_create_missing_name_422 _____________
+packages\mate-tech-mcp\tests\test_tool_categories.py:108: in test_create_missing_name_422
+    assert resp.status_code == 422
+E   assert 401 == 422
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________ TestUpdateToolCategory.test_update_ok ____________________
+packages\mate-tech-mcp\tests\test_tool_categories.py:113: in test_update_ok
+    cat = _create(client)
+          ^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________ TestUpdateToolCategory.test_update_missing_404 ________________
+packages\mate-tech-mcp\tests\test_tool_categories.py:131: in test_update_missing_404
+    assert resp.status_code == 404
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________ TestUpdateToolCategory.test_update_duplicate_code_400 ____________
+packages\mate-tech-mcp\tests\test_tool_categories.py:134: in test_update_duplicate_code_400
+    _create(client, code="first")
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________ TestDeleteToolCategory.test_delete_ok ____________________
+packages\mate-tech-mcp\tests\test_tool_categories.py:146: in test_delete_ok
+    cat = _create(client)
+          ^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_______________ TestDeleteToolCategory.test_delete_missing_404 ________________
+packages\mate-tech-mcp\tests\test_tool_categories.py:154: in test_delete_missing_404
+    assert resp.status_code == 404
+E   assert 401 == 404
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+___________ TestTenantIsolation.test_tenant_b_does_not_see_tenant_a ___________
+packages\mate-tech-mcp\tests\test_tool_categories.py:159: in test_tenant_b_does_not_see_tenant_a
+    _create(client, tenant="tenant-acme")
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________ TestTenantIsolation.test_tenant_b_cannot_update_tenant_a ___________
+packages\mate-tech-mcp\tests\test_tool_categories.py:164: in test_tenant_b_cannot_update_tenant_a
+    cat = _create(client, tenant="tenant-acme")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\mate-tech-mcp\tests\test_tool_categories.py:50: in _create
+    assert resp.status_code == 201, resp.text
+E   AssertionError: {"error":"unauthorized","detail":"token rejected: unsupported alg 'HS256'; only RS256/RS384/RS512 are accepted"}
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+packages\mate-tech-mcp\src\mate_tech_mcp\main.py:247
+tests/test_ontology_mcp_tools.py::TestHitlBoundaryHardening::test_streamable_strips_external_caller_and_blocks_hitl
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-mcp\src\mate_tech_mcp\main.py:247: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("startup")  # pyright: ignore[reportDeprecated]
+
+.venv\Lib\site-packages\fastapi\applications.py:4675
+tests/test_ontology_mcp_tools.py::TestHitlBoundaryHardening::test_streamable_strips_external_caller_and_blocks_hitl
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+tests/test_edge.py: 5 warnings
+tests/test_llm_adv_mcp.py: 6 warnings
+tests/test_mcp_federation.py: 13 warnings
+tests/test_tool_categories.py: 14 warnings
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\jwt\api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 11 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+tests/test_mcp_http_endpoints.py::TestMcpHttpEndpointsWired::test_list_endpoints_reachable[GET-/api/v1/mcp/tools]
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+tests/test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer0-requested0-201]
+tests/test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer1-requested1-403]
+tests/test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer2-requested2-403]
+tests/test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer3-requested3-201]
+tests/test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer4-requested4-403]
+tests/test_mp11_client_contract.py::test_key_rejects_requested_foreign_workspace
+  D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-mcp\src\mate_tech_mcp\repositories\sql_models.py:15: SAWarning: This declarative base already contains a class with the same class name and module name as mate_tech_mcp.repositories.sql_models.McpClientORM, and will be replaced in the string-lookup table.
+    class McpClientORM(Base):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED packages\mate-tech-mcp\tests\test_dynamic_registry.py::test_register_tool_appears_in_list - assert 401 == 200
+FAILED packages\mate-tech-mcp\tests\test_dynamic_registry.py::test_register_tool_then_invoke_forwards - AssertionError: {"detail":"verified caller required"}
+FAILED packages\mate-tech-mcp\tests\test_dynamic_registry.py::test_update_and_delete_tool - KeyError: 'tools'
+FAILED packages\mate-tech-mcp\tests\test_dynamic_registry.py::test_unknown_tool_404 - AssertionError: {"detail":"verified caller required"}
+FAILED packages\mate-tech-mcp\tests\test_dynamic_registry.py::test_tenant_isolation - KeyError: 'tools'
+FAILED packages\mate-tech-mcp\tests\test_edge.py::test_prompts_summarize_with_token - assert 401 == 200
+FAILED packages\mate-tech-mcp\tests\test_edge.py::test_prompts_extract_entities - assert 401 == 200
+FAILED packages\mate-tech-mcp\tests\test_edge.py::test_prompts_plan_task - assert 401 == 200
+FAILED packages\mate-tech-mcp\tests\test_edge.py::test_resources_endpoint - assert 401 == 200
+FAILED packages\mate-tech-mcp\tests\test_edge.py::test_tools_endpoint_empty - assert 401 == 200
+FAILED packages\mate-tech-mcp\tests\test_llm_adv_mcp.py::test_case1_unregistered_tool_returns_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_llm_adv_mcp.py::test_case4_federation_unauthorized_upstream_denied - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_llm_adv_mcp.py::test_case5_kb_tool_argument_sql_injection_safe - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_llm_adv_mcp.py::test_case6_resource_path_traversal_rejected - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_register_server_endpoint - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_register_rejects_invalid_url - assert 401 == 400
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_list_servers_endpoint - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_get_server_endpoint - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_get_returns_404_for_unknown - assert 401 == 404
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_update_server_endpoint - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_deregister_server_endpoint - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_list_remote_tools_endpoint - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_invoke_remote_tool_endpoint - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_invoke_remote_tool_returns_404_for_unknown - assert 401 == 404
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_cross_tenant_get_returns_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_cross_tenant_deregister_returns_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_federation.py::TestFederationEndpoints::test_cross_tenant_invoke_returns_404 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_mcp_http_endpoints.py::TestMcpHttpEndpointsWired::test_list_endpoints_reachable[GET-/api/v1/mcp/tools] - assert False
+FAILED packages\mate-tech-mcp\tests\test_mcp_http_endpoints.py::TestMcpOriginRoutes::test_origin_list_tools_returns_200 - AssertionError: {"detail":"verified caller required"}
+FAILED packages\mate-tech-mcp\tests\test_mcp_http_endpoints.py::TestMcpOriginRoutes::test_origin_invoke_tool_returns_200_or_404 - AssertionError: {"detail":"verified caller required"}
+FAILED packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_confirm_has_server_deadline - AssertionError: assert datetime.timedelta(seconds=899) <= (datetime.datetim...
+FAILED packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_protocol_filters_discovery_and_all_fallbacks - AssertionError: assert {'ont_object_...ose_instance'} == {'ont_object_query'}
+FAILED packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_actual_pg_deadline_guards_and_completed_replay - KeyError: 'ActionType not found: ont.mp11-app-ui.act.review'
+FAILED packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_actual_pg_legacy_proposal_rolls_back_before_receipt - KeyError: "'ObjectType not found: ont.mp11-app-ui.obj.order'"
+FAILED packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_actual_pg_legacy_guard_replay_and_ordinary_connection - KeyError: "'ObjectType not found: ont.mp11-app-ui.obj.order'"
+FAILED packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_actual_pg_legacy_state_rechecked_after_row_lock - KeyError: "'ObjectType not found: ont.mp11-app-ui.obj.order'"
+FAILED packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_concrete_operation_authority_and_preview_metadata - Failed: DID NOT RAISE PermissionError
+FAILED packages\mate-tech-mcp\tests\test_ontology_bus_passthrough.py::test_api_key_caller_requests_the_tenant_switch_scope - IndexError: list index out of range
+FAILED packages\mate-tech-mcp\tests\test_ontology_bus_passthrough.py::test_switch_scope_is_configurable - IndexError: list index out of range
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestListToolCategories::test_list_empty - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestListToolCategories::test_list_returns_created - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestListToolCategories::test_list_sorted_by_sort_order_then_name - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestCreateToolCategory::test_create_returns_camelcase - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestCreateToolCategory::test_create_with_parent - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestCreateToolCategory::test_create_duplicate_code_400 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestCreateToolCategory::test_create_missing_name_422 - assert 401 == 422
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestUpdateToolCategory::test_update_ok - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestUpdateToolCategory::test_update_missing_404 - assert 401 == 404
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestUpdateToolCategory::test_update_duplicate_code_400 - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestDeleteToolCategory::test_delete_ok - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestDeleteToolCategory::test_delete_missing_404 - assert 401 == 404
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestTenantIsolation::test_tenant_b_does_not_see_tenant_a - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+FAILED packages\mate-tech-mcp\tests\test_tool_categories.py::TestTenantIsolation::test_tenant_b_cannot_update_tenant_a - AssertionError: {"error":"unauthorized","detail":"token rejected: unsupport...
+ERROR packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer0-requested0-201] - sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined ...
+ERROR packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer1-requested1-403] - sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined ...
+ERROR packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer2-requested2-403] - sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined ...
+ERROR packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer3-requested3-201] - sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined ...
+ERROR packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_key_grants_subset_of_verified_issuer[issuer4-requested4-403] - sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined ...
+ERROR packages\mate-tech-mcp\tests\test_mp11_client_contract.py::test_key_rejects_requested_foreign_workspace - sqlalchemy.exc.InvalidRequestError: Table 'mcp_clients' is already defined ...
+
+D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\coverage\inorout.py:561: CoverageWarning: Module src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.15.2/messages.html#warning-module-not-imported
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\coverage\control.py:955: CoverageWarning: No data was collected. (no-data-collected); see https://coverage.readthedocs.io/en/7.15.2/messages.html#warning-no-data-collected
+  self._warn("No data was collected.", slug="no-data-collected")
+D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\pytest_cov\plugin.py:366: CovReportWarning: Failed to generate report: No data to report.
+
+  warnings.warn(CovReportWarning(message), stacklevel=1)

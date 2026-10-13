@@ -31,12 +31,15 @@ import asyncio
 import os
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import quote
 
+import httpx
 import structlog
 from fastapi import APIRouter, HTTPException, Request, WebSocket
 from pydantic import BaseModel, Field
 
-from mate_kernel.action.engine import ProposalNotConfirmed
+from mate_clients.security.outgoing import user_async_client
+from mate_kernel.action.engine import ProposalNotConfirmed, approval_ttl_seconds
 from mate_kernel.objectset.ir import (
     Aggregation,
     Condition,
@@ -47,7 +50,11 @@ from mate_kernel.objectset.ir import (
     SortKey,
     TraversalStep,
 )
-from mate_kernel.ontology.api import OntologyRepository
+from mate_kernel.ontology.api import (
+    LinkTypeAlreadyExistsError,
+    ObjectTypeAlreadyExistsError,
+    OntologyRepository,
+)
 from mate_kernel.ontology.function_resolver import FunctionNotFoundError
 from mate_kernel.ontology.identity import ClassRef, definition_checksum
 from mate_kernel.ontology.instances import Individual, LinkInstance
@@ -64,6 +71,7 @@ from mate_platform.runtime import is_production_profile, runtime_profile
 from mate_platform.tenancy.guards import require_tenant
 
 from .pg_repo import (  # 409 翻译 + 定义指纹的行形态（版本快照与 live 同源）
+    LinkTypeInUseError,
     MigrationPkConflict,
     MigrationPkMissing,
     MigrationRenameConflict,
@@ -738,6 +746,8 @@ class BackingDatasourceDTO(BaseModel):
     class_rid: str
     name: str
     kind: str = "pg_table"
+    source_id: str | None = None
+    ts_column: str | None = None
     dsn_env: str = "ONT_SOURCE_DSN"
     table: str
     pk_column: str
@@ -776,6 +786,8 @@ async def discard_schema_wip(rid: str, request: Request) -> dict:
     ObjectType DELETE catch-all so the compatibility route cannot delete a type.
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
     ok = await _call_scoped(request, "delete_schema_wip", rid)
@@ -794,6 +806,8 @@ async def delete_object_type(rid: str, request: Request, hard: bool = False) -> 
     保护：近 30 天有读量 → 409（先 Deprecate）；hard 且仍有实例 → 409。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant object type denied")
     try:
@@ -837,10 +851,38 @@ async def upsert_backing_datasource(
     tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not rid.startswith(f"ont.{tenant}."):
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
+    from mate_tech_data.services.source_connector import SourceError
+
+    from .backing_datasources import BackingDatasource, preflight
+
+    try:
+        ds = BackingDatasource(
+            name=payload.name,
+            kind=payload.kind,
+            table=payload.table,
+            pk_column=payload.pk_column,
+            field_mapping=payload.field_mapping,
+            source_id=payload.source_id,
+            tenant_id=tenant,
+            ts_column=payload.ts_column,
+        )
+        if ds.source_id:
+            ot = await _call_scoped(request, "get_object_type", ClassRef(rid))
+            preflight(ds, ot)
+    except (SourceError, ValueError, KeyError) as exc:
+        detail = exc.detail() if isinstance(exc, SourceError) else str(exc)
+        raise HTTPException(status_code=422, detail=detail) from None
     decl = payload.model_dump()
     decl["class_rid"] = rid
     decl["tenant_id"] = tenant
-    return await _call_scoped(request, "upsert_backing_datasource", decl)
+    from .backing_datasources import BackingSyncBusyError
+
+    try:
+        return await _call_scoped(request, "upsert_backing_datasource", decl)
+    except BackingSyncBusyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
 
 
 @router.get(
@@ -878,11 +920,11 @@ async def delete_security_policy(rid: str, request: Request) -> dict:
 )
 async def get_sync_status(request: Request) -> list[dict]:
     """P1-4：数据源同步健康面（per-class last_ok/last_error/duration/failures）。"""
-    _ctx(request)
+    ctx = _ctx(request)
     sched = getattr(request.app.state, "sync_scheduler", None)
     if sched is None:
         return []
-    return sched.status()
+    return [row for row in sched.status() if row.get("tenant_id") == str(ctx.tenant_id)]
 
 
 @router.post(
@@ -899,12 +941,37 @@ async def sync_backing_datasources(
     ctx = _ctx(request)
     if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
+    from .backing_datasources import BackingSyncBusyError
+
     try:
         return await _call_scoped(request, "sync_backing_datasources", rid, incremental)
+    except BackingSyncBusyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+@router.get(
+    "/object-types/{rid:path}/datasources/runs/{run_id}",
+    response_model=dict,
+    operation_id="ontGetV2BackingSyncRun",
+)
+async def get_backing_sync_run(rid: str, run_id: str, request: Request) -> dict:
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant access denied")
+    declarations = await _call_scoped(request, "list_backing_datasources", rid)
+    for declaration in declarations:
+        for run in declaration.get("run_history") or []:
+            if run.get("run_id") == run_id:
+                return run
+    raise HTTPException(
+        status_code=404, detail="Sync run is outside the retained 20-run history or does not exist"
+    )
 
 
 class CdcApplyDTO(BaseModel):
@@ -973,9 +1040,26 @@ async def list_action_audit(
     request: Request,
     limit: int = 100,
     action_rid: str | None = None,
+    app_id: str | None = None,
+    page_id: str | None = None,
+    app_version_id: str | None = None,
 ) -> list[dict]:
-    """UI-04：Action 执行历史（actor/参数/结果/审计链，倒序）。"""
+    """UI-04：Action history; optional exact application provenance before LIMIT."""
     _ctx(request)
+    if any((app_id, page_id, app_version_id)):
+        if not all((app_id, page_id, app_version_id)):
+            raise HTTPException(
+                status_code=422, detail="Complete application/page/version attribution required"
+            )
+        return await _call_scoped(
+            request,
+            "list_action_audit",
+            limit,
+            action_rid,
+            app_id=app_id,
+            page_id=page_id,
+            app_version_id=app_version_id,
+        )
     return await _call_scoped(request, "list_action_audit", limit, action_rid)
 
 
@@ -1112,12 +1196,34 @@ async def invoke_function(
 
 @router.websocket("/ws/object-changes")
 async def ws_object_changes(websocket: WebSocket) -> None:
-    """G25：对象变更 WebSocket 订阅（outbox 事件推送）。
+    """Verified tenant-bound recent outbox updates; no credentials in URLs.
 
-    连接即订阅：服务端轮询 repo outbox 增量（~1.5s）推 JSON 事件
-    {event_id, event_type, payload}；客户端断开即退订。WS 不经过 HTTP
-    认证中间件 —— 鉴权由网关层 WS 透传承担（dev 直连）。
+    HTTP middleware does not run for WebSockets. Verify a bearer header with
+    the installed verifier before accepting. Header-capable clients are
+    supported; native browser WebSocket requires a trusted gateway integration. This bounded refresh
+    stream does not promise indefinite historical delivery.
     """
+    from mate_platform.auth.middleware import _extract_bearer
+    from mate_platform.auth.tenant import TenantError, resolve_tenant
+    from mate_platform.auth.verifier import TokenError
+
+    verifier = getattr(websocket.app.state, "token_verifier", None)
+    token = _extract_bearer(websocket.headers.get("authorization"))
+    if verifier is None or not token:
+        await websocket.close(code=4401)
+        return
+    try:
+        claims = await asyncio.to_thread(verifier.verify, token)
+        # Event subscriptions never switch tenant, even for cross-tenant admins.
+        binding = resolve_tenant(
+            claims, header_tenant=websocket.headers.get("x-tenant-id"), allow_switch=False
+        )
+        if not binding.tenant_id or not {"platform.read", "ont.read"} <= claims.scopes:
+            await websocket.close(code=4403)
+            return
+    except (TokenError, TenantError):
+        await websocket.close(code=4403)
+        return
     await websocket.accept()
     repo = getattr(websocket.app.state, "kernel_repo", None)
     if repo is None:
@@ -1126,22 +1232,30 @@ async def ws_object_changes(websocket: WebSocket) -> None:
         return
     await websocket.send_json({"type": "subscribed", "topic": "object-changes"})
     sent: set[str] = set()
-    import asyncio
 
     # P1-5：PG repo 时接 LISTEN/NOTIFY hub（毫秒级推）；memory/PG 缺位回退轮询。
     from .notify_hub import hub_for, parse_event_id
 
     dsn = getattr(repo, "_dsn", None) or ""
     hub = hub_for(websocket.app.state, dsn) if dsn else None
+    if hub is not None:
+        hub.bind_loop(asyncio.get_running_loop())
     queue = hub.subscribe() if hub is not None else None
-    pending: set[str] = set()
 
-    async def _send_event(eid: str) -> None:
+    def _events(limit: int) -> list[dict]:
+        # Bind in the worker that reads SQL; filtering also protects superusers.
+        scope = getattr(repo, "tenant_scope", None)
+        if scope is None:
+            return []
+        with scope(binding.tenant_id):
+            return repo.list_outbox_events("0", limit)
+
+    async def _send_event(eid: str) -> bool:
         # 取事件体（按 event_id 精确定位；outbox list 后匹配）
         try:
-            events = await asyncio.to_thread(repo.list_outbox_events, "0", 100)
+            events = await asyncio.to_thread(_events, 100)
         except Exception:
-            return
+            return False
         for ev in events:
             if str(ev.get("event_id", "")) == eid:
                 await websocket.send_json(
@@ -1151,23 +1265,31 @@ async def ws_object_changes(websocket: WebSocket) -> None:
                         "payload": ev.get("payload") or {},
                     }
                 )
-                return
+                return True
+
+        return False
 
     try:
         while True:
+            # Existing sockets cannot outlive their signed access grant.
+            import time
+
+            if claims.expires_at <= int(time.time()):
+                await websocket.close(code=4401)
+                return
             if queue is not None:
                 # LISTEN/NOTIFY 唤醒路径：等 hub 队列（秒级超时 → 兜底轮询对齐）
                 try:
                     payload = await asyncio.wait_for(queue.get(), timeout=1.0)
                     eid = parse_event_id(payload)
                     if eid and eid not in sent:
-                        sent.add(eid)
-                        await _send_event(eid)
+                        if await _send_event(eid):
+                            sent.add(eid)
                     continue
                 except TimeoutError:
                     pass
             try:
-                events = await asyncio.to_thread(repo.list_outbox_events, "0", 20)
+                events = await asyncio.to_thread(_events, 20)
             except Exception:
                 events = []
             for ev in events:
@@ -1182,7 +1304,8 @@ async def ws_object_changes(websocket: WebSocket) -> None:
                         "payload": ev.get("payload") or {},
                     }
                 )
-            await asyncio.sleep(1.5)
+            if queue is None:
+                await asyncio.sleep(1.5)
     except Exception:
         # 客户端断开 / 发送失败 → 退订
         try:
@@ -1532,6 +1655,8 @@ async def apply_lifecycle(
 ) -> dict:
     """GOV-17：Cleanup 三级处置（Snooze/Deprecate/Delete）+ 使用量删除保护。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
@@ -1618,10 +1743,14 @@ class SchemaWipDTO(BaseModel):
 async def save_schema_wip(
     payload: SchemaWipDTO,
     request: Request,
+    create_only: bool = False,
+    expected_checksum: str | None = None,
     preserve_existing: bool = False,
 ) -> dict:
-    """G33：schema 变更暂存（他人不可见；不落正式表、不做门禁）。"""
+    """G33：schema 变更暂存（租户内草稿；不落正式表、不做发布门禁）。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not payload.payload.rid.startswith(f"ont.{tenant}."):
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
@@ -1631,7 +1760,9 @@ async def save_schema_wip(
             "save_schema_wip",
             payload.payload.rid,
             payload.payload.model_dump(exclude={"confirm_name"}),
-            payload.author,
+            str(ctx.user_id),
+            create_only=create_only,
+            expected_checksum=expected_checksum,
             **({"preserve_existing": True} if preserve_existing else {}),
         )
     except ValueError as exc:
@@ -1644,8 +1775,9 @@ async def save_schema_wip(
     operation_id="ontListV2SchemaWip",
 )
 async def list_schema_wip(request: Request) -> list[dict]:
-    _ctx(request)
-    return await _call_scoped(request, "list_schema_wip")
+    ctx = _ctx(request)
+    rows = await _call_scoped(request, "list_schema_wip")
+    return [row for row in rows if row["rid"].startswith(f"ont.{ctx.tenant_id}.")]
 
 
 @router.post(
@@ -1669,9 +1801,16 @@ async def apply_schema_wip(
       不一致 → 409。客户端可用 ``expected_checksum`` 显式声明"我已看过新状态"来覆盖。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant schema-wip denied")
-    wip = await _call_scoped(request, "get_schema_wip", rid)
+    try:
+        wip = await _call_scoped(request, "get_schema_wip", rid)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=404, detail="Draft no longer exists; reload the model"
+        ) from e
     payload = dict(wip["payload"])
     # 显式确认优先于草稿载荷里的值（草稿可能是旧/空确认）
     if confirm_name:
@@ -1687,26 +1826,14 @@ async def apply_schema_wip(
         )
     # 显式 expected_checksum 优先；否则用草稿基线（自动发现"我编辑期间别人已改过"）
     declared = expected_checksum or str(wip.get("base_checksum") or "")
-    if declared:
-        try:
-            current = await _call_scoped(request, "definition_checksum", ClassRef(rid))
-        except KeyError:
-            current = ""  # 该类型尚不存在 → 与任何非空声明冲突
-        if current != declared:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "E409_VERSION_CONFLICT",
-                    "message": (
-                        f"草稿基线已过期：模型已被他人改动（当前 {current or '<不存在>'}，"
-                        f"草稿基线 {declared}）；请重新打开并保存草稿后再发布"
-                    ),
-                    "current_checksum": current,
-                    "declared_checksum": declared,
-                },
-            )
-    # 复用主 upsert 端点的门禁逻辑：直接调内部实现
-    saved = await _upsert_object_type_gated(dto, request, ctx)
+    # The repository compares under the same lock/transaction as the write.
+    saved = await _upsert_object_type_gated(
+        dto,
+        request,
+        ctx,
+        create_only=bool(wip.get("create_only")),
+        expected_checksum=declared if declared else ("" if wip.get("create_only") else None),
+    )
     if expected_payload_checksum:
         await _call_scoped(request, "delete_schema_wip", rid, expected_payload=wip["payload"])
     else:
@@ -1739,6 +1866,9 @@ async def _upsert_object_type_gated(
     payload: ObjectTypeDTO,
     request: Request,
     ctx: Any,
+    *,
+    create_only: bool = False,
+    expected_checksum: str | None = None,
 ) -> ObjectType:
     """G33：与 POST /object-types 相同的门禁 + upsert（WIP apply 复用）。"""
     from mate_kernel.ontology.types.object_type import detect_destructive_changes
@@ -1747,9 +1877,25 @@ async def _upsert_object_type_gated(
     _assert_publishable(ot)
     try:
         existing = await _call_scoped(request, "get_object_type", ClassRef(payload.rid))
-        destructive = detect_destructive_changes(existing, ot)
     except KeyError:
-        destructive = []
+        existing = None
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Model comparison unavailable; retry") from e
+    if expected_checksum is not None and not create_only:
+        current = definition_checksum(_ot_to_row(existing)) if existing is not None else ""
+        if current != expected_checksum:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "E409_VERSION_CONFLICT",
+                    "message": "草稿基线已过期，请比较最新模型后重试",
+                    "current_checksum": current,
+                    "declared_checksum": expected_checksum,
+                },
+            )
+    destructive = (
+        detect_destructive_changes(existing, ot) if existing is not None and not create_only else []
+    )
     if destructive and payload.confirm_name != existing.display_name:
         raise HTTPException(
             status_code=409,
@@ -1760,9 +1906,42 @@ async def _upsert_object_type_gated(
             },
         )
     try:
-        return await _call_scoped(request, "upsert_object_type", ot)
+        options: dict[str, Any] = {}
+        if create_only:
+            options["create_only"] = True
+        if expected_checksum is not None:
+            options["expected_checksum"] = expected_checksum
+        return await _call_scoped(request, "upsert_object_type", ot, **options)
+    except ObjectTypeAlreadyExistsError as e:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "object_type_exists",
+                "message": "该对象类型已存在，请打开已有类型或修改标识",
+                "existing_rid": payload.rid,
+            },
+        ) from e
+    except VersionConflict as e:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "E409_VERSION_CONFLICT",
+                "message": "草稿基线已过期，请比较最新模型后重新编辑",
+                "existing_rid": payload.rid,
+            },
+        ) from e
     except SlugConflictError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "slug_conflict",
+                "message": str(e),
+                "existing_rid": e.existing_rid,
+                "existing_display_name": e.existing_display_name,
+                "slug": e.slug,
+                "hint": "Call precheck to locate the existing type; merge requires two persisted types.",
+            },
+        ) from e
     except ModelValidationUnavailable as e:
         # 一致性校验所需读取失败 → 503（依赖不可用，可重试），**不得**视为通过
         raise HTTPException(status_code=503, detail=str(e)) from e
@@ -1867,61 +2046,19 @@ async def list_interface_implementations(rid: str, request: Request) -> list[str
 async def upsert_object_type(
     payload: ObjectTypeDTO,
     request: Request,
+    create_only: bool = False,
 ) -> ObjectTypeResponse:
     """Upsert an ObjectType — registers Property + Class in kernel repo.
 
     MP-DEDUP-01：DB UNIQUE (tenant_id, slug) 触发 → 409 + 建议合并到已有 rid。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not payload.rid.startswith(f"ont.{ctx.tenant_id}."):
         # GOVERN-06 第一道防线：外租户前缀 rid 一律拒绝写入
         raise HTTPException(status_code=403, detail="cross-tenant rid denied")
-    ot = _dto_to_ot(payload)
-    _assert_publishable(ot)
-    # G33：破坏性变更门禁 —— 删属性/改 format/改主键/改 parent 须 confirm_name
-    from mate_kernel.ontology.types.object_type import detect_destructive_changes
-
-    try:
-        existing = await _call_scoped(request, "get_object_type", ClassRef(payload.rid))
-        destructive = detect_destructive_changes(existing, ot)
-    except KeyError:
-        destructive = []  # 类型不存在 → 无破坏性变更可言
-    except HTTPException:
-        raise
-    except Exception as e:
-        # 读取失败**不得**视为「无破坏性变更」（fail-closed）
-        raise HTTPException(
-            status_code=503, detail=f"destructive-change check unavailable: {e}"
-        ) from e
-    if destructive and payload.confirm_name != existing.display_name:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "error": "destructive_confirm_required",
-                "changes": destructive,
-                "confirm_with": existing.display_name,
-                "hint": "resend with confirm_name == 该类型当前 display_name",
-            },
-        )
-    try:
-        saved = await _call_scoped(request, "upsert_object_type", ot)
-    except SlugConflictError as e:
-        # 409 + 让前端引导用户 precheck / merge
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "error": "slug_conflict",
-                "message": str(e),
-                "existing_rid": e.existing_rid,
-                "existing_display_name": e.existing_display_name,
-                "slug": e.slug,
-                "hint": "Call POST /v2/object-types/precheck to find similar types, "
-                "or POST /v2/object-types/merge to merge into the existing one.",
-            },
-        ) from e
-    except ModelValidationUnavailable as e:
-        # 一致性校验读取失败 → 503（不得视为通过）
-        raise HTTPException(status_code=503, detail=str(e)) from e
+    saved = await _upsert_object_type_gated(payload, request, ctx, create_only=create_only)
     return _ot_to_dto(saved)
 
 
@@ -2012,6 +2149,8 @@ async def export_object_type(rid: str, request: Request, format: str = "jsonld")
 async def import_object_type(request: Request, payload: dict) -> ObjectTypeResponse:
     """ONT-G9/G20：从 export 的 JSON-LD content 回灌类型（同 rid upsert 语义）。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     content = payload.get("content") or {}
     rid = str(content.get("@id") or payload.get("rid") or "")
     if not rid.startswith(f"ont.{ctx.tenant_id}.obj."):
@@ -2449,6 +2588,8 @@ async def branch_object_type(
     发布下线（`archived=TRUE`，定义已先入不可变快照），家族在生效集合里保持唯一。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     body = payload or {}
     new_rid = str((body or {}).get("new_rid") or "")
     note = str((body or {}).get("note") or "")
@@ -2512,6 +2653,8 @@ async def rollback_object_type(
     （实例 / 关系实例），**不**补偿已发生的副作用（Action side effects / 外联写入）。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     body = payload or {}
     from_rid = str((body or {}).get("from_rid") or "")
     tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
@@ -2630,6 +2773,8 @@ async def run_migration_endpoint(
       与 ADR-0080 §2.5 同口径 —— 重新 assess 后再执行）。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant migration run denied")
     key = _require_idempotency_key(request)
@@ -2732,6 +2877,8 @@ async def append_object_type_property(
     5. 返回更新后的 OT
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant object type denied")
     try:
@@ -2984,8 +3131,18 @@ async def propose_edit_set(
     function 产物（执行时两规约解释）；三者全空才 422。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
+    parameters, provenance = await _validated_app_provenance(
+        request, rid, payload.target_iid, payload.parameters, edits=payload.edits
+    )
+    if provenance:
+        parameters = {
+            **parameters,
+            "provenance": {**parameters.get("provenance", {}), **provenance},
+        }
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError:
@@ -3006,7 +3163,7 @@ async def propose_edit_set(
             "propose_edit_set",
             rid,
             payload.target_iid or None,
-            dict(payload.parameters),
+            parameters,
             list(payload.edits),
             payload.impact_summary or f"edit-set proposal for {rid}",
         )
@@ -3037,10 +3194,20 @@ async def apply_edit_set(
     markings 非空 → 安全闸门（行/列策略 + G6 合取门 + X-Scope-Markings 收窄）。
     """
     ctx = _ctx(request)
+    if str(ctx.auth_method) != "user" or not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="Human USER with platform.write required")
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
-    actor = str(ctx.user_id if hasattr(ctx, "user_id") else "") or "human-operator"
+    actor = str(ctx.user_id)
     viewer = _app_scoped_markings(request, markings) if markings else ()
+    parameters, provenance = await _validated_app_provenance(
+        request, rid, payload.target_iid, payload.parameters, edits=payload.edits
+    )
+    if provenance:
+        parameters = {
+            **parameters,
+            "provenance": {**parameters.get("provenance", {}), **provenance},
+        }
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError:
@@ -3063,7 +3230,7 @@ async def apply_edit_set(
             "apply_edit_set_now",
             rid,
             payload.target_iid or None,
-            dict(payload.parameters),
+            parameters,
             list(payload.edits),
             actor,
             payload.impact_summary,
@@ -3118,6 +3285,8 @@ class ProposalResponse(BaseModel):
     confirmed_by: str | None = None
     created_at: str = ""
     confirmed_at: str | None = None
+    approval_expires_at: str | None = None
+    approval_ttl_seconds: int
     # ONT-GATE-01：三闸门预检报告（schema×SHACL×Axiom）。propose 时算一份
     # 快照供 UI 展示；execute 时重算为权威判定（快照不作准）。
     preflight: dict[str, Any] | None = None
@@ -3407,6 +3576,8 @@ def _proposal_to_dto(p: Any, preflight: dict[str, Any] | None = None) -> Proposa
         confirmed_by=p.confirmed_by,
         created_at=p.created_at.isoformat() if p.created_at else "",
         confirmed_at=p.confirmed_at.isoformat() if p.confirmed_at else None,
+        approval_expires_at=p.approval_expires_at.isoformat() if p.approval_expires_at else None,
+        approval_ttl_seconds=approval_ttl_seconds(),
         preflight=preflight,
     )
 
@@ -3464,6 +3635,8 @@ async def propose_instance(
 ) -> ProposalResponse:
     """MP-SAL-04b：AI 从文本抽取的字段 → 新建实例提议（kind=create_instance，不落库）。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     if not class_rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
     _logger.info(
@@ -3499,6 +3672,8 @@ async def propose_object_type(
 ) -> ProposalResponse:
     """MP-SAL-04b：AI 辅助建模提议（kind=model_type；确认后经 execute 落库）。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     type_def = payload.type_def.model_dump()
     if not type_def["rid"].startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
@@ -3522,6 +3697,11 @@ async def withdraw_proposal(
     request: Request,
 ) -> dict:
     """PRD-02 FR-ACT-CONFIRM-001：pending → withdrawn（作者确认前撤回；终态）。"""
+    ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(
+            status_code=403, detail="Authenticated human platform.write capability required"
+        )
     _logger.info(
         "ont.proposal.withdraw",
         proposal_id=proposal_id,
@@ -3557,6 +3737,10 @@ async def revert_proposal(
     partial；7 天窗口外拒绝（409）。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(
+            status_code=403, detail="Authenticated human platform.write capability required"
+        )
     idempotency_key = _require_idempotency_key(request)
     _logger.info(
         "ont.proposal.revert",
@@ -3604,6 +3788,10 @@ async def execute_proposal(
       X-Scope-Markings 收窄）；FunctionNotRegistered / 闸门拒写 → 422（不再 500）。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(
+            status_code=403, detail="Authenticated human platform.write capability required"
+        )
     idempotency_key = _require_idempotency_key(request)
     viewer = _app_scoped_markings(request, markings) if markings else ()
     try:
@@ -3669,6 +3857,93 @@ async def execute_proposal(
     return ProposalExecuteResultDTO(**out)
 
 
+async def _validated_app_provenance(
+    request: Request,
+    action_rid: str,
+    target_iid: str,
+    parameters: dict,
+    provenance: dict | None = None,
+    *,
+    edits: list | None = None,
+) -> tuple[dict, dict]:
+    """Application attribution is verified against the actual AppHub snapshot, never caller asserted."""
+    nested = parameters.get("provenance", {})
+    if not isinstance(nested, dict):
+        raise HTTPException(status_code=422, detail="provenance must be an object")
+    outer = provenance or {}
+    keys = ("app_id", "page_id", "app_version_id", "app_version")
+    if not any(key in nested or key in outer for key in keys):
+        return parameters, outer
+    if edits:
+        raise HTTPException(
+            status_code=422,
+            detail="Application attribution requires the registered Action, without custom edits",
+        )
+    if any(key in nested and key in outer for key in keys):
+        raise HTTPException(
+            status_code=422, detail="Duplicate or conflicting application attribution"
+        )
+    merged = {**nested, **outer}
+    if not all(isinstance(merged.get(key), str) and merged[key] for key in keys[:3]):
+        raise HTTPException(
+            status_code=422,
+            detail="Complete application/page/published-version attribution required",
+        )
+    authorization = request.headers.get("authorization", "")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=403, detail="Verified caller Bearer required")
+    try:
+        async with user_async_client(
+            authorization,
+            tenant_id=str(_ctx(request).tenant_id),
+            base_url=(os.getenv("APPHUB_URL") or "http://localhost:8100").rstrip("/"),
+            timeout=20,
+        ) as client:
+            response = await client.post(
+                "/api/v1/apphub/apps/"
+                + quote(merged["app_id"], safe="")
+                + "/runtime/proposal-context",
+                json={
+                    "page_id": merged["page_id"],
+                    "version_id": merged["app_version_id"],
+                    "action_rid": action_rid,
+                    "target_iid": target_iid,
+                },
+            )
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=503, detail="Application attribution validation unavailable"
+        ) from None
+    if response.status_code >= 400:
+        raise HTTPException(
+            status_code=response.status_code
+            if response.status_code in {401, 403, 404, 409, 422}
+            else 503,
+            detail="Application attribution rejected or unavailable",
+        )
+    try:
+        verified = response.json()
+        if (
+            not isinstance(verified, dict)
+            or any(verified.get(key) != merged[key] for key in keys[:3])
+            or not isinstance(verified.get("app_version"), str)
+        ):
+            raise ValueError("invalid attribution response")
+    except ValueError:
+        raise HTTPException(
+            status_code=503, detail="Invalid application attribution response"
+        ) from None
+    if "app_version" in merged and merged["app_version"] != verified["app_version"]:
+        raise HTTPException(
+            status_code=422, detail="Application version attribution conflicts with snapshot"
+        )
+    trusted = {key: verified[key] for key in keys}
+    checked_parameters = dict(parameters)
+    if "provenance" in checked_parameters:
+        checked_parameters["provenance"] = {**nested, **trusted}
+    return checked_parameters, {**outer, **trusted}
+
+
 @router.post(
     "/action-types/{rid:path}/propose",
     response_model=ProposalResponse,
@@ -3681,20 +3956,25 @@ async def propose_action(
 ) -> ProposalResponse:
     """AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。"""
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     rid_ref = ClassRef(rid)
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
+    parameters, provenance = await _validated_app_provenance(
+        request, rid, payload.target_iid, payload.parameters, payload.provenance
+    )
     try:
         prop = await _call_scoped(
             request,
             "propose_action",
             rid_ref,
-            payload.parameters,
+            parameters,
             payload.target_iid or None,
             payload.impact_summary,
             payload.expected_diff or None,
             "action",
-            payload.provenance or None,
+            provenance or None,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -3798,6 +4078,8 @@ async def merge_object_types(
     source 设置 archived=true，UNIQUE INDEX 自动让出 slug，可后续复用。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not payload.source_rid.startswith(f"ont.{tenant_id}."):
         raise HTTPException(status_code=403, detail="cross-tenant merge denied")
@@ -3844,6 +4126,8 @@ async def propose_object_type_merge(
     user confirm → 自动调 ``execute_proposal`` → 触发 merge_object_types。
     """
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write required")
     tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
     if not payload.source_rid.startswith(f"ont.{tenant_id}."):
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
@@ -3963,6 +4247,10 @@ async def confirm_proposal(
         actor_id=str(getattr(_ctx(request), "user_id", "")),
     )
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(
+            status_code=403, detail="Authenticated human platform.write capability required"
+        )
     idempotency_key = _require_idempotency_key(request)
     try:
         prop = await _call_scoped(
@@ -3991,6 +4279,10 @@ async def reject_proposal(
 ) -> ProposalResponse:
     del payload  # identity comes exclusively from the authenticated context
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write") or str(ctx.auth_method) != "user":
+        raise HTTPException(
+            status_code=403, detail="Authenticated human platform.write capability required"
+        )
     idempotency_key = _require_idempotency_key(request)
     _logger.info(
         "ont.proposal.reject",
@@ -4077,6 +4369,8 @@ class ProposalPreviewResponse(BaseModel):
     created_at: str = ""
     confirmed_by: str | None = None
     confirmed_at: str | None = None
+    approval_expires_at: str | None = None
+    approval_ttl_seconds: int
 
 
 _PREVIEW_LOCK_STATES = {"confirmed", "executed", "rejected"}
@@ -4429,6 +4723,10 @@ async def get_proposal_preview(
         created_at=created_at.isoformat() if created_at else "",
         confirmed_by=confirmed_by,
         confirmed_at=confirmed_at.isoformat() if confirmed_at else None,
+        approval_expires_at=prop.approval_expires_at.isoformat()
+        if prop.approval_expires_at
+        else None,
+        approval_ttl_seconds=approval_ttl_seconds(),
     )
 
 
@@ -4620,12 +4918,61 @@ async def get_action_type(rid: str, request: Request) -> ActionTypeDTO:
 async def upsert_link_type(
     payload: LinkTypeDTO,
     request: Request,
+    create_only: bool = False,
 ) -> LinkTypeDTO:
     ctx = _ctx(request)
-    lt = _dto_to_link_type(payload)
-    if not lt.rid.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
-        raise HTTPException(status_code=403, detail="cross-tenant link denied")
-    saved = await _call_scoped(request, "upsert_link_type", lt)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope is required")
+    tenant = str(ctx.tenant_id)
+    for field_name, rid in (("rid", payload.rid), ("src", payload.src), ("dst", payload.dst)):
+        if not rid.startswith(f"ont.{tenant}."):
+            raise HTTPException(
+                status_code=403, detail=f"{field_name} must be under tenant {tenant}"
+            )
+    try:
+        lt = _dto_to_link_type(payload)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    for field_name, ref in (("src", lt.src), ("dst", lt.dst)):
+        try:
+            await _call_scoped(request, "get_object_type", ref)
+        except KeyError as e:
+            raise HTTPException(
+                status_code=404, detail=f"{field_name} object type not found: {ref}"
+            ) from e
+    try:
+        existing = await _call_scoped(request, "get_link_type", lt.rid)
+    except KeyError:
+        existing = None
+    if existing is not None and any(
+        getattr(existing, field) != getattr(lt, field)
+        for field in ("src", "dst", "cardinality", "directionality")
+    ):
+        if hasattr(_repo(request), "count_link_instances_by_type"):
+            counts = await _call_scoped(request, "count_link_instances_by_type", tenant_id=tenant)
+            has_instances = counts.get(payload.rid, 0) > 0
+        else:
+            instances = await _call_scoped(request, "list_link_instances", tenant_id=tenant)
+            has_instances = any(instance.link_type_rid == lt.rid for instance in instances)
+        if has_instances:
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot change src/dst/cardinality/directionality while link instances exist",
+            )
+    try:
+        saved = await _call_scoped(
+            request,
+            "upsert_link_type",
+            lt,
+            require_endpoints=True,
+            **({"create_only": True} if create_only else {}),
+        )
+    except (LinkTypeInUseError, LinkTypeAlreadyExistsError) as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
     return _link_type_to_dto(saved)
 
 
@@ -4637,9 +4984,11 @@ async def upsert_link_type(
 async def list_link_types(
     request: Request,
 ) -> list[LinkTypeDTO]:
-    _ctx(request)
+    ctx = _ctx(request)
     items = await _call_scoped(request, "list_link_types")
-    return [_link_type_to_dto(i) for i in items]
+    prefix = f"ont.{ctx.tenant_id}."
+    # Repository adapters without RLS must never leak neighboring tenant definitions.
+    return [_link_type_to_dto(i) for i in items if str(i.rid).startswith(prefix)]
 
 
 @router.get(
@@ -5020,7 +5369,10 @@ async def execute_object_query(
 )
 async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
     """Type introspection for agents (ADR-0043 §2.2)."""
-    _ctx(request)
+    ctx = _ctx(request)
+    prefix = f"ont.{ctx.tenant_id}."
+    if not class_rid.startswith(prefix):
+        raise HTTPException(status_code=403, detail="cross-tenant class inspection denied")
     try:
         ot = await _call_scoped(request, "get_object_type", ClassRef(class_rid))
     except KeyError as e:
@@ -5028,6 +5380,8 @@ async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
     link_types = await _call_scoped(request, "list_link_types")
     links: list[InspectLinkDTO] = []
     for lt in link_types:
+        if not all(ref.rid.startswith(prefix) for ref in (lt.rid, lt.src, lt.dst)):
+            continue
         if lt.src.rid == class_rid:
             links.append(
                 InspectLinkDTO(
@@ -5046,7 +5400,9 @@ async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
             )
     action_types = await _call_scoped(request, "list_action_types")
     actions = [
-        at.rid.rid for at in action_types if class_rid in [str(r) for r in getattr(at, "on", ())]
+        at.rid.rid
+        for at in action_types
+        if at.rid.rid.startswith(prefix) and class_rid in [r.rid for r in getattr(at, "on", ())]
     ]
     return ClassInspectDTO(
         rid=ot.rid.rid,
@@ -5264,6 +5620,8 @@ async def create_link_instance(
     request: Request,
 ) -> LinkInstanceResponse:
     ctx = _ctx(request)
+    if not ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope is required")
     tenant_id = ctx.tenant_id  # type: ignore[attr-defined]
     expected_prefix = f"ont.{tenant_id}.lnk."
     if not payload.rid.startswith(expected_prefix):
@@ -5271,30 +5629,58 @@ async def create_link_instance(
             status_code=403,
             detail=f"rid prefix must be {expected_prefix} for tenant {tenant_id}",
         )
-    if not payload.link_type_rid.startswith(f"ont.{tenant_id}."):
-        raise HTTPException(
-            status_code=403,
-            detail=f"link_type_rid must be under tenant {tenant_id}",
-        )
-    now = datetime.now(UTC)
-    props_tuple = tuple(
-        (ClassRef(p_rid), payload.props[p_rid].get("value")) for p_rid in payload.props
-    )
-    li = LinkInstance(
-        rid=payload.rid,
-        link_type_rid=ClassRef(payload.link_type_rid),
-        src=payload.src,
-        dst=payload.dst,
-        props=props_tuple,
-        created_at=now,
-        tenant_id=tenant_id,
-        marking=tuple(payload.marking),
-    )
+    for field_name, rid in (
+        ("link_type_rid", payload.link_type_rid),
+        ("src", payload.src),
+        ("dst", payload.dst),
+    ):
+        if not rid.startswith(f"ont.{tenant_id}."):
+            raise HTTPException(
+                status_code=403, detail=f"{field_name} must be under tenant {tenant_id}"
+            )
     try:
-        saved = await _call_scoped(request, "create_link_instance", li)
+        lt = await _call_scoped(request, "get_link_type", ClassRef(payload.link_type_rid))
+    except KeyError as e:
+        raise HTTPException(
+            status_code=404, detail=f"Link type not found: {payload.link_type_rid}"
+        ) from e
     except ValueError as e:
-        # F6：值错误此前冒泡成 500。基数违规是"冲突"语义 → 409；
-        # 其余 LinkInstance 校验（如 src == dst）是"入参非法" → 422。
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    for field_name, rid, expected_class in (
+        ("src", payload.src, lt.src),
+        ("dst", payload.dst, lt.dst),
+    ):
+        try:
+            endpoint = await _call_scoped(request, "get_individual", rid)
+        except KeyError as e:
+            raise HTTPException(
+                status_code=404, detail=f"{field_name} individual not found: {rid}"
+            ) from e
+        if str(endpoint.tenant_id) != str(tenant_id):
+            raise HTTPException(status_code=403, detail=f"{field_name} belongs to another tenant")
+        if endpoint.class_rid != expected_class:
+            raise HTTPException(
+                status_code=422,
+                detail=f"{field_name} class_rid must be {expected_class}, got {endpoint.class_rid}",
+            )
+    try:
+        props_tuple = tuple(
+            (ClassRef(p_rid), payload.props[p_rid].get("value")) for p_rid in payload.props
+        )
+        li = LinkInstance(
+            rid=payload.rid,
+            link_type_rid=ClassRef(payload.link_type_rid),
+            src=payload.src,
+            dst=payload.dst,
+            props=props_tuple,
+            created_at=datetime.now(UTC),
+            tenant_id=tenant_id,
+            marking=tuple(payload.marking),
+        )
+        saved = await _call_scoped(request, "create_link_instance", li, require_endpoints=True)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
         msg = str(e)
         status = 409 if "cardinality" in msg else 422
         raise HTTPException(status_code=status, detail=msg) from e

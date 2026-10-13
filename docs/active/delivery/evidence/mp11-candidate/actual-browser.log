@@ -1,0 +1,72 @@
+
+Running 43 tests using 1 worker
+
+  ok  1 [web] › tests\e2e\mp11-order-app-flow.spec.ts:9:3 › MP11 actual order application › empty tenant explicitly creates its own business group and order page (2.0s)
+  ok  2 [web] › tests\e2e\mp11-order-app-flow.spec.ts:26:3 › MP11 actual order application › actual metadata preview save publish shortlink and human receipt survive reopening (11.8s)
+  ok  3 [web] › tests\e2e\mp11-order-app-flow.spec.ts:107:3 › MP11 actual order application › onboarding resumes selected real artifacts and treats query failures as unknown (6.0s)
+  ok  4 [web] › tests\e2e\mp11-order-app-flow.spec.ts:138:1 › anonymous website to signed human home, server logout, relogin and persisted receipt (2.6s)
+  ok  5 [web] › tests\e2e\ontology-ia-v2-data-flow.spec.ts:27:3 › Ontology IA v2 · 数据映射（IA2-3） › 三个子页有独立 URL 且容器内部 Tab 消亡 (2.8s)
+  ok  6 [web] › tests\e2e\ontology-ia-v2-data-flow.spec.ts:52:3 › Ontology IA v2 · 数据映射（IA2-3） › 数据映射组子 tab「同步任务」可达（planned → active） (1.3s)
+  ok  7 [web] › tests\e2e\ontology-ia-v2-data-flow.spec.ts:62:3 › Ontology IA v2 · 数据映射（IA2-3） › 资产清单不再是本体路由（容器旧路径 301 到对象映射） (1.2s)
+  ok  8 [web] › tests\e2e\ontology-ia-v2-data-flow.spec.ts:78:3 › MP11 verified PG and CSV ingestion › real fields feed modeling, confirmed mappings synchronize and CSV retry is idempotent (7.1s)
+  ok  9 [web] › tests\e2e\ontology-migration-plan.spec.ts:124:3 › Ontology · 存量适配（ADR-0082） › 评估 → 执行（默认 preserve）→ 记录；家族发布自动携带实例 (1.9s)
+  ok 10 [web] › tests\e2e\ontology-migration-plan.spec.ts:179:3 › Ontology · 存量适配（ADR-0082） › 无幂等键执行被拒（400）——后端守卫 (1.4s)
+  x  11 [web] › tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication (2.1s)
+  ok 12 [web] › tests\e2e\ontology-relationship-flow.spec.ts:4:1 › real API/PostgreSQL: definition, association, cardinality, reload and both endpoint queries (7.5s)
+  ok 13 [web] › tests\e2e\website-entry.spec.ts:12:1 › product introduction leads visitors through capabilities, scenarios, development updates and version planning (525ms)
+  ok 14 [web] › tests\e2e\website-entry.spec.ts:32:1 › anonymous website directory and index expose real platform links (286ms)
+  ok 15 [web] › tests\e2e\website-entry.spec.ts:50:1 › platform entry hands anonymous visitors to existing AuthGuard login (1.2s)
+  ok 16 [web] › tests\e2e\website-entry.spec.ts:58:1 › default entry remains available with JavaScript disabled (367ms)
+  ok 17 [web] › tests\e2e\website-entry.spec.ts:83:3 › website navigation and layout at 360px (589ms)
+  ok 18 [web] › tests\e2e\website-entry.spec.ts:83:3 › website navigation and layout at 390px (553ms)
+  ok 19 [web] › tests\e2e\website-entry.spec.ts:83:3 › website navigation and layout at 768px (604ms)
+  ok 20 [web] › tests\e2e\website-entry.spec.ts:83:3 › website navigation and layout at 1440px (585ms)
+  ok 21 [web] › tests\e2e\website-entry.spec.ts:122:1 › reduced motion removes animated effects (240ms)
+  ok 22 [web] › tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: javascript:alert(1) (228ms)
+  ok 23 [web] › tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: data:text/html,unsafe (207ms)
+  ok 24 [web] › tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: //unsafe.example/home (226ms)
+  ok 25 [web] › tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://public-user:public-pass@platform.example.com/home (216ms)
+  ok 26 [web] › tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: https://platform.example.com/home (220ms)
+  ok 27 [web] › tests\e2e\website-entry.spec.ts:130:3 › standalone destination configuration: /workspace/home (226ms)
+  ok 28 [web] › tests\e2e\website-entry.spec.ts:142:1 › standalone generated links work without JavaScript (265ms)
+  ok 29 [web] › tests\e2e\website-entry.spec.ts:154:1 › static generator rejects unsafe credentials without leaking input (53ms)
+  ok 30 [web] › tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $& (273ms)
+  ok 31 [web] › tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $` (281ms)
+  ok 32 [web] › tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $' (301ms)
+  ok 33 [web] › tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $$ (268ms)
+  ok 34 [web] › tests\e2e\website-entry.spec.ts:164:3 › generated standalone URL preserves literal replacement token $1 (276ms)
+  ok 35 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:86:1 › 建模：ObjectType（含层级）→ LinkType → ActionType，读回一致 (357ms)
+  ok 36 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:135:1 › 数据映射与同步：声明背挂源 → 同步 → 逐字段对账 (328ms)
+  ok 37 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:172:1 › 对象与关系查询：个体列表 + 关系写入 + 一跳遍历 (181ms)
+  ok 38 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:212:1 › Proposal：提议（预检通过）→ 确认 → 执行 → 落库 + 审计可见 (2.8s)
+  ok 39 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:247:1 › 违规数据：schema 违规被预检阻断（409）且不落库 (215ms)
+  ok 40 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:274:1 › 重复提交：同 Idempotency-Key 重放不产生第二次效果 (355ms)
+  ok 41 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:307:1 › 失败恢复：失败显式且无副作用，随后有效请求仍成功（含 Action 审计） (516ms)
+  ok 42 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:360:1 › 跨租户拒绝：异租户 rid / 关联写入一律 4xx (16ms)
+  ok 43 [core] › ..\..\tests\e2e\ontology-loop\ontology-core.spec.ts:392:1 › 前端：本体页面在真实后端下无未捕获错误 (1.5s)
+
+
+  1) [web] › tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: '恢复草稿：浏览器草稿' }) resolved to 2 elements:
+        1) <button type="button">恢复草稿：浏览器草稿</button> aka getByRole('button', { name: '恢复草稿：浏览器草稿' }).first()
+        2) <button type="button">恢复草稿：浏览器草稿</button> aka getByRole('button', { name: '恢复草稿：浏览器草稿' }).nth(1)
+
+    Call log:
+      - waiting for getByRole('button', { name: '恢复草稿：浏览器草稿' })
+
+
+      26 |   expect((await request.get(base+'/object-types/'+rid,{headers})).status()).toBe(404);
+      27 |   await page.reload(); await open();
+    > 28 |   await page.getByRole('button',{name:'恢复草稿：浏览器草稿'}).click();
+         |                                                      ^
+      29 |   await expect(page.getByLabel('业务标识',{exact:true})).toHaveValue(draftSlug);
+      30 |   const wips=await (await request.get(base+'/object-types/wip',{headers})).json();
+      31 |   const draft=wips.find((w:{rid:string})=>w.rid===rid);
+        at D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-frontend\apps\web\tests\e2e\ontology-object-creation-flow.spec.ts:28:54
+
+    Error Context: ..\..\..\.tmp\codex-mp11-candidate\playwright-results\ontology-object-creation-f-70dc9--and-successful-publication-web\error-context.md
+
+  1 failed
+    [web] › tests\e2e\ontology-object-creation-flow.spec.ts:4:1 › real UI/API/PG: save, refresh, restore, competing creation and successful publication
+  42 passed (1.1m)

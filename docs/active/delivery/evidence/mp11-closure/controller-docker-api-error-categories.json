@@ -1,0 +1,15 @@
+{
+  "log_tail_sha256": "b313befe456cabf4e2119018a5a8ab959d89ca31054bf3173908f50014f2bf72",
+  "tail_lines": 118,
+  "categories": {
+    "OperationalError": 2,
+    "server closed the connection unexpectedly": 0,
+    "connection already closed": 0,
+    "InterfaceError": 0,
+    "SSL SYSCALL error": 0,
+    "UndefinedTable": 0,
+    "ProgrammingError": 0,
+    "RuntimeError": 0,
+    "ImportError": 0
+  }
+}

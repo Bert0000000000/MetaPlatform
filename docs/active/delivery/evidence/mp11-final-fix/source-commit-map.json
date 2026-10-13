@@ -1,0 +1,380 @@
+{
+  "validated_base": "38ff11900b9d72560afe20db4715d344c1370a23",
+  "implementation_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+  "note": "tests executed on equivalent validated WIP; no doc-only commit counted as fresh execution",
+  "files": [
+    {
+      "path": "docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md",
+      "worktree_sha256": "4ba862f407b6b663970e356da26642168dc87e5c7622bbfdadd80658301ba96f",
+      "normalized_lf_sha256": "27a8a0471c601bb89b90d8ff54f00cff21029f277232b27c59e356a0a4c41e3c",
+      "bytes": 27924,
+      "evidence": [
+        "documentation self-review; no runtime claim"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "27a8a0471c601bb89b90d8ff54f00cff21029f277232b27c59e356a0a4c41e3c",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py",
+      "worktree_sha256": "f8c48dd29dcd2d5a3312916c95ccd3bfa9242f11da6ec545f5cde5a39b30bf96",
+      "normalized_lf_sha256": "6987fa50cfc6c3f2ad762d6827825d9e59aaec3ca1f3b5a8064bf46a7595218f",
+      "bytes": 60165,
+      "evidence": [
+        "apphub-package-final",
+        "app-identity-complete-red-2"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "6987fa50cfc6c3f2ad762d6827825d9e59aaec3ca1f3b5a8064bf46a7595218f",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/in_memory.py",
+      "worktree_sha256": "2afc7dd05e8913944a668b887f9405cc024d6e6fc587b80d049bf48768f5faed",
+      "normalized_lf_sha256": "083a3f066fcf641ef3861141c62137d400972f3440c715f0c4e8bed4cd3d2e10",
+      "bytes": 20681,
+      "evidence": [
+        "apphub-package-final",
+        "app-identity-complete-red-2"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "083a3f066fcf641ef3861141c62137d400972f3440c715f0c4e8bed4cd3d2e10",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/repositories/sql_store.py",
+      "worktree_sha256": "dbc06768e0b6e5c95cfc1306b2c95b501a440f8a2259d460d64275a83581d5f0",
+      "normalized_lf_sha256": "d1e24dff9d48dd8f795c5cc291fb66a1b79377badc5e80f0f3dfee69ec2cfeaf",
+      "bytes": 27748,
+      "evidence": [
+        "apphub-package-final",
+        "app-identity-complete-red-2"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "d1e24dff9d48dd8f795c5cc291fb66a1b79377badc5e80f0f3dfee69ec2cfeaf",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/test_app_hub_tenant_integration.py",
+      "worktree_sha256": "7384833a2ee58f3b3cc2c2ecdeb222f97833edacb7d235cd2dfec265f5334506",
+      "normalized_lf_sha256": "e8204c1342966f3c6c849fb03e4a1310eb3b63c72ef4a1c2cc0504e2cffc4b59",
+      "bytes": 4767,
+      "evidence": [
+        "apphub-package-final",
+        "app-identity-complete-red-2"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "7384833a2ee58f3b3cc2c2ecdeb222f97833edacb7d235cd2dfec265f5334506",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py",
+      "worktree_sha256": "cee7d3efb9e3c9db553c2f3d8805b1ee18a44bf0e06c545c6087df94170dd44a",
+      "normalized_lf_sha256": "43c0c0c99757a763527cf710be9bcb49e6ba6164360c7a73e4e05bb568dd5922",
+      "bytes": 6347,
+      "evidence": [
+        "apphub-package-final",
+        "app-identity-complete-red-2"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "43c0c0c99757a763527cf710be9bcb49e6ba6164360c7a73e4e05bb568dd5922",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/tools/ontology_proxy.py",
+      "worktree_sha256": "3e5834838985cbd839e0457a3204f914a59a6b29641d0b8e5a1bdba2897818d9",
+      "normalized_lf_sha256": "3e5834838985cbd839e0457a3204f914a59a6b29641d0b8e5a1bdba2897818d9",
+      "bytes": 36029,
+      "evidence": [
+        "mcp-model-tenant-red",
+        "mcp-write-tools-green",
+        "mcp-package",
+        "actual-proposal-scopes-da9c5eef585a"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "3e5834838985cbd839e0457a3204f914a59a6b29641d0b8e5a1bdba2897818d9",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-mcp/tests/test_ontology_write_tools.py",
+      "worktree_sha256": "78b7e0b54628f1bb587aa0f749771295ffaadcde3b2c0dda45009121f68e27ba",
+      "normalized_lf_sha256": "78b7e0b54628f1bb587aa0f749771295ffaadcde3b2c0dda45009121f68e27ba",
+      "bytes": 21163,
+      "evidence": [
+        "mcp-model-tenant-red",
+        "mcp-write-tools-green",
+        "mcp-package",
+        "actual-proposal-scopes-da9c5eef585a"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "78b7e0b54628f1bb587aa0f749771295ffaadcde3b2c0dda45009121f68e27ba",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py",
+      "worktree_sha256": "52589555f37a70ced274cff75064afa9254f661792c2e07c39575da6c02ed10d",
+      "normalized_lf_sha256": "9bdc9513f6316edff3406d7d072d21a28ff6a7e4b841c2d49281944daba4c732",
+      "bytes": 211457,
+      "evidence": [
+        "backend-red-3",
+        "backend-focused-green",
+        "ont-package",
+        "actual-proposal-scopes-da9c5eef585a"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "9bdc9513f6316edff3406d7d072d21a28ff6a7e4b841c2d49281944daba4c732",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py",
+      "worktree_sha256": "d27c811abcc4988ded689c57969cdc7ece1121afbb1100a007dd1412f5a5340a",
+      "normalized_lf_sha256": "f0497e1b55835a7c64c47eb995d611dcb528c95a5c18f694952434b139490cf5",
+      "bytes": 5070,
+      "evidence": [
+        "backend-red-3",
+        "backend-focused-green",
+        "ont-package",
+        "actual-proposal-scopes-da9c5eef585a"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "f0497e1b55835a7c64c47eb995d611dcb528c95a5c18f694952434b139490cf5",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/api/ont/kernel.ts",
+      "worktree_sha256": "33e58cde390b3dfa97e505ef6559efa07be4a248debeacd4b74de8e07fdee976",
+      "normalized_lf_sha256": "ec3b18f87256b7537f8ac9c70f6abbb51db0cbff5dae68262db107e6f7b85899",
+      "bytes": 52762,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "ec3b18f87256b7537f8ac9c70f6abbb51db0cbff5dae68262db107e6f7b85899",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/api/ont/catalog-consumers.test.tsx",
+      "worktree_sha256": "577ee6f67b3d310b210309bfc0c5caeeab35031b6ebe5bc04ab92e12b52ddc50",
+      "normalized_lf_sha256": "596607f483f1b11585c0f5930ce84d465a94a75ae20deae4a705d3464375bb04",
+      "bytes": 4768,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "596607f483f1b11585c0f5930ce84d465a94a75ae20deae4a705d3464375bb04",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.tsx",
+      "worktree_sha256": "dfe546ebeb028171dc3a1ea96886300c77229e596e869b6cf8f8eb11827430ea",
+      "normalized_lf_sha256": "517482dd263b65002e27662857a2dd4ce3c7a4f6efabae48693b1f8098538dd7",
+      "bytes": 10989,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "517482dd263b65002e27662857a2dd4ce3c7a4f6efabae48693b1f8098538dd7",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/pages/ontology/data/mappings/BackingDatasourcePanel.test.tsx",
+      "worktree_sha256": "4fbddeb2f02e3a43ab76d44eeb2473f750aea2f3623063952f48e398e08c1e41",
+      "normalized_lf_sha256": "cf78324d37a9f83f6ea4796bb41930614507238607655a964bdf10195cd25820",
+      "bytes": 2887,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "cf78324d37a9f83f6ea4796bb41930614507238607655a964bdf10195cd25820",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/pages/apphub/components/OrderReviewBinding.tsx",
+      "worktree_sha256": "55d40176d6c508dded702835dcb0559aa8cbb77967cadce670585ada766e9fbb",
+      "normalized_lf_sha256": "c9fd076b9824c3f032f51936616754315cc041ddce0a9fa857c19757242835f1",
+      "bytes": 4865,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "c9fd076b9824c3f032f51936616754315cc041ddce0a9fa857c19757242835f1",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/pages/apphub/components/OrderReviewBinding.test.tsx",
+      "worktree_sha256": "bc47e278fb7883859eea881f9b9eea49038bf4a76ca62e94c3f7f1b6ecfabaf5",
+      "normalized_lf_sha256": "74dd9ef629aa25c7d244e6861b507f408749e4bb0c0d948a4c6ae55f13cabe8d",
+      "bytes": 1591,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "74dd9ef629aa25c7d244e6861b507f408749e4bb0c0d948a4c6ae55f13cabe8d",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.tsx",
+      "worktree_sha256": "cc4e9dd08cb9523d2b7f27622a0b5f91b1e3c2001860b7406a3fa601362ef997",
+      "normalized_lf_sha256": "164bc1abf1f480c3f954e7093365d52eae70ad4940f95ee8aac11cc5cad1d1b2",
+      "bytes": 9974,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "164bc1abf1f480c3f954e7093365d52eae70ad4940f95ee8aac11cc5cad1d1b2",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.test.tsx",
+      "worktree_sha256": "ccc06a0028db6433f2cded4fc85c788dc9ddf4da0e2ba0bf81ae96dd97b40a81",
+      "normalized_lf_sha256": "6cc045814a7cca084674ddd9674515ef335dcbd5b40ea920176033f72018ce39",
+      "bytes": 4716,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "6cc045814a7cca084674ddd9674515ef335dcbd5b40ea920176033f72018ce39",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/mp11-catalog-pagination.spec.ts",
+      "worktree_sha256": "4254724ff741b1413a8d1b388b704c5eab73189a99fc9b0f1e5b69d784fa4032",
+      "normalized_lf_sha256": "9591ae025561ffc5c25cc7b9f6d7210b6c473fcf32aed2a715317fae8f3e9c7c",
+      "bytes": 6450,
+      "evidence": [
+        "frontend-red-4",
+        "frontend-focused-green-2",
+        "web-types",
+        "web-build",
+        "actual-browser-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "9591ae025561ffc5c25cc7b9f6d7210b6c473fcf32aed2a715317fae8f3e9c7c",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/manage.py",
+      "worktree_sha256": "ebd69ee00c892dc7cb404b10e2203b03e3b661aea75a4613c5d35e47188efbfa",
+      "normalized_lf_sha256": "77266242611681effcd4e02526e79c3d9b6e1a5a81746061d4c488b521e7e6f6",
+      "bytes": 18726,
+      "evidence": [
+        "backend-red-3",
+        "backend-focused-green",
+        "resources-after-api-reload-mcp",
+        "resource-continuity"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "77266242611681effcd4e02526e79c3d9b6e1a5a81746061d4c488b521e7e6f6",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/verify.py",
+      "worktree_sha256": "8942f9621abbf69cde9316c9578850d850fc8d60ba902e979d1406b04e1d43b5",
+      "normalized_lf_sha256": "0f11b99a60032cebf18b5f7fc49aa1c9f23a82d113eaf44aba33addc357bd853",
+      "bytes": 71329,
+      "evidence": [
+        "actual-browser-fd816e17f27b",
+        "catalog-fixture-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "0f11b99a60032cebf18b5f7fc49aa1c9f23a82d113eaf44aba33addc357bd853",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/playwright.config.ts",
+      "worktree_sha256": "c77843027201780c4f058de95ff100bb0d0b6146a89b7db646841334050d2003",
+      "normalized_lf_sha256": "847c4a09befdb836e99fb5bd6cdb3a48f4dfb6c3af43d9dd8473506fd4c1af62",
+      "bytes": 2032,
+      "evidence": [
+        "actual-browser-fd816e17f27b",
+        "catalog-fixture-fd816e17f27b"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "847c4a09befdb836e99fb5bd6cdb3a48f4dfb6c3af43d9dd8473506fd4c1af62",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/README.md",
+      "worktree_sha256": "428fc885897e7a9ccd07f3644a10c4e4d71960545a8599a89fe8c2619c42f259",
+      "normalized_lf_sha256": "b669b0e32b0348b47f765c4c7688dd6a1a914ddad1b8ab2c1a17c885795f75f7",
+      "bytes": 5862,
+      "evidence": [
+        "documentation self-review; no runtime claim"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "b669b0e32b0348b47f765c4c7688dd6a1a914ddad1b8ab2c1a17c885795f75f7",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/tests/test_manage_stop.py",
+      "worktree_sha256": "7fbdaba48c2937fbabcdfe1b073314c1882a4a36269e4995029349cb06e298c0",
+      "normalized_lf_sha256": "69443a114501647caade7c10f4a4e9ccfa282a46b222ea18af02c503c7844429",
+      "bytes": 2921,
+      "evidence": [
+        "backend-red-3",
+        "backend-focused-green",
+        "resources-after-api-reload-mcp",
+        "resource-continuity"
+      ],
+      "source_commit": "ee52a20037efca995808c930e12b10741a9afe12",
+      "committed_blob_sha256": "69443a114501647caade7c10f4a4e9ccfa282a46b222ea18af02c503c7844429",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "scripts/acceptance/mp11/candidate.py",
+      "worktree_sha256": "9d99789f1d9876a9c35eb538d208c84d6d34b4a69ec381f3e53a11a5822db747",
+      "normalized_lf_sha256": "0e5c867b36e50a5fb1ede84663661b491d40a465354372073b8be9296946f25b",
+      "bytes": 4203,
+      "evidence": [
+        "unchanged composition/loader source; actual Browser/runtime proof"
+      ],
+      "source_commit": "658d2522f2d8f2d0e2e19133ac2de83affdcd069",
+      "committed_blob_sha256": "0e5c867b36e50a5fb1ede84663661b491d40a465354372073b8be9296946f25b",
+      "normalized_source_equal": true
+    },
+    {
+      "path": "mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/runtime/loader.py",
+      "worktree_sha256": "bdad62dc7db59c157bbf89626af472ea62d3d104a79112d57b23d4610185820c",
+      "normalized_lf_sha256": "bdad62dc7db59c157bbf89626af472ea62d3d104a79112d57b23d4610185820c",
+      "bytes": 3625,
+      "evidence": [
+        "unchanged composition/loader source; actual Browser/runtime proof"
+      ],
+      "source_commit": "e6eb1564565ca6df0efa9fd263505809eec9f09a",
+      "committed_blob_sha256": "bdad62dc7db59c157bbf89626af472ea62d3d104a79112d57b23d4610185820c",
+      "normalized_source_equal": true
+    }
+  ]
+}

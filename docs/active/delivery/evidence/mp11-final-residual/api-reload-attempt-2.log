@@ -1,0 +1,25 @@
+PASS full identities/Goal PG/dependency guards resources-before-api-reload
+Stopped exact owned resource api data retained
+Started owned api PID 50968 port 55522
+
+Traceback (most recent call last):
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-residual-business.py", line 41, in <module>
+    snapshot('resources-after-api-reload'+tag)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.tmp\codex-mp11-candidate\final-residual-business.py", line 13, in snapshot
+    value=manage.inspect_dependency(role)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\scripts\acceptance\mp11\manage.py", line 216, in inspect_dependency
+    image_id=json.loads(command(['docker','image','inspect',expected['image']]))[0]['Id']
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\scripts\acceptance\mp11\manage.py", line 19, in command
+    result = subprocess.run(args,capture_output=True,text=True,encoding='utf-8',errors='replace',cwd=ROOT,timeout=20)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\subprocess.py", line 1630, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['docker', 'image', 'inspect', 'quay.io/keycloak/keycloak:25.0']' timed out after 20 seconds

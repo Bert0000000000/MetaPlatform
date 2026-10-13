@@ -1,0 +1,9 @@
+{
+  "removed_test_owned_red_orphans": [
+    {
+      "proposal": "prop-6db1d907",
+      "object": "ont.mp11-app-ui.ind.order.72889257"
+    }
+  ],
+  "scope": "exact Task7 rollback confirmed proposals without receipt; no other objects"
+}

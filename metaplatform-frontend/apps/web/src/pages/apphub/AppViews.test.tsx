@@ -1,7 +1,7 @@
 import '@douyinfe/semi-ui/react19-adapter';
 import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { Toast } from '@douyinfe/semi-ui';
 import AppDetailPage from './AppDetailPage';
@@ -32,11 +32,12 @@ vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ resolvedThe
 vi.mock('@/api/apphub/apps', async (original) => ({ ...(await original<typeof import('@/api/apphub/apps')>()), getApp: vi.fn() }));
 vi.mock('@/api/apphub/modules', async (original) => ({ ...(await original<typeof import('@/api/apphub/modules')>()), listModules: vi.fn(), getModule: vi.fn(), createModule: vi.fn(), updateModule: vi.fn(), deleteModule: vi.fn() }));
 vi.mock('@/api/apphub/versions', async (original) => ({ ...(await original<typeof import('@/api/apphub/versions')>()), listVersions: vi.fn() }));
-vi.mock('@/api/apphub/pages', async (original) => ({ ...(await original<typeof import('@/api/apphub/pages')>()), getPage: vi.fn() }));
+vi.mock('@/api/apphub/pages', async (original) => ({ ...(await original<typeof import('@/api/apphub/pages')>()), getPage: vi.fn(), listPages: vi.fn() }));
 vi.mock('@/api/apphub/release', async (original) => ({ ...(await original<typeof import('@/api/apphub/release')>()), listReleases: vi.fn() }));
 vi.mock('@/api/apphub/forms', async (original) => ({ ...(await original<typeof import('@/api/apphub/forms')>()), getFormDefinition: vi.fn() }));
 vi.mock('@/api/apphub/flows', async (original) => ({ ...(await original<typeof import('@/api/apphub/flows')>()), getFlow: vi.fn(), listFormModules: vi.fn() }));
 vi.mock('@/api/apphub/marketplace', async (original) => ({ ...(await original<typeof import('@/api/apphub/marketplace')>()), listTemplates: vi.fn(), listInstalled: vi.fn() }));
+beforeEach(() => { vi.mocked(pages.listPages).mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }); });
 afterEach(async () => { cleanup(); await act(async () => Toast.destroyAll()); vi.resetAllMocks(); });
 
 const app: AppItem = { appId: 'app-real', name: '实际应用', code: 'real', businessDomain: '', status: 'DESIGNING', moduleCount: 0, createdAt: '', updatedAt: '' };

@@ -8,7 +8,7 @@
  * 隔离与确定性（目标 §3）：全程只用**专用命名空间** `core-e2e-*`；schema 走 upsert
  *   （幂等重跑）；断言不依赖"库里只有一行"。
  *
- * 认证：真实 Keycloak 登录（admin/admin123）；租户由 JWT 决定（本环境 realm 仅
+ * 认证：真实 Keycloak 用户会话登录；租户由 JWT 决定（本环境 realm 仅
  *   tenant-default → 跨租户用例以"异租户 rid 前缀"驱动 403/4xx 守门）。
  */
 
@@ -16,8 +16,11 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 
 import { pgQuery } from '../helpers/pg';
 
+// This suite holds real access/refresh tokens; never retain authentication media.
+test.use({trace:'off',video:'off',screenshot:'off'});
+
 const GW = process.env.E2E_GATEWAY_URL ?? 'http://localhost:8100/api/v1';
-const T = 'tenant-default';
+const T = process.env.E2E_TENANT ?? 'tenant-default';
 const OTHER = 'other-tenant';
 const NS = 'core-e2e';
 
@@ -49,13 +52,33 @@ const h = (extra: Record<string, string> = {}): Record<string, string> => ({
 });
 
 async function login(request: APIRequestContext): Promise<string> {
-  const resp = await request.post(`${GW}/iam/auth/login`, {
-    data: { username: 'admin', password: 'admin123' },
+  const resp = await request.post(process.env.E2E_IAM_LOGIN_URL ?? `${GW}/iam/auth/login`, {
+    data: { username: process.env.E2E_USERNAME ?? 'admin', password: process.env.E2E_PASSWORD ?? 'admin123' },
   });
   expect(resp.ok(), `login failed: ${resp.status()} ${await resp.text()}`).toBeTruthy();
   const body = await resp.json();
   const t = body.accessToken ?? body.token;
   expect(t, 'no accessToken in login response').toBeTruthy();
+  const parts = (t as string).split('.');
+  const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString());
+  const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+  const nonempty = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
+  const scopes = typeof claims.scope === 'string' ? claims.scope.split(/\s+/) : [];
+  // Report only booleans: no session, subject or token values in failure artifacts.
+  expect({
+    signedByKeycloak: header.alg === 'RS256',
+    subject: nonempty(claims.sub),
+    authorizedParty: nonempty(claims.azp),
+    userName: nonempty(claims.preferred_username),
+    userSession: nonempty(claims.sid),
+    humanAccount: nonempty(claims.preferred_username) && !claims.preferred_username.startsWith('service-account-') && !claims.service_account_client_id,
+    tenant: claims.tenant_id === T,
+    canRead: scopes.includes('platform.read'),
+    canWrite: scopes.includes('platform.write'),
+  }, 'Real Keycloak human writer claims required').toEqual({
+    signedByKeycloak: true, subject: true, authorizedParty: true, userName: true,
+    userSession: true, humanAccount: true, tenant: true, canRead: true, canWrite: true,
+  });
   return t as string;
 }
 

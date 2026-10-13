@@ -32,6 +32,13 @@ class ApphubAppORM(Base):
     tags: Mapped[str] = mapped_column(Text, default="")  # newline-separated
     # 业务域码，指向 ApphubDomainORM.code；空串表示未归类。
     business_domain: Mapped[str] = mapped_column(String(64), default="")
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    status: Mapped[str] = mapped_column(String(32), default="DESIGNING")
+    created_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    published_version_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    versions: Mapped[str] = mapped_column(Text, default="[]")
+    releases: Mapped[str] = mapped_column(Text, default="[]")
 
 
 class ApphubGroupORM(Base):
@@ -78,6 +85,7 @@ class ApphubPageORM(Base):
     module_code: Mapped[str] = mapped_column(String(64), default="")
     layout: Mapped[str] = mapped_column(String(32), default="single")
     schema_version: Mapped[int] = mapped_column(Integer, default=1)
+    definition: Mapped[str] = mapped_column(Text, default="{}")
 
 
 class ApphubTemplateORM(Base):

@@ -1,0 +1,291 @@
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_list_classes tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_inspect_class tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_object_query tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_list_individuals tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_search_objects tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_validate_preflight tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_agent_metrics tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_list_interfaces tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_propose_model_type tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_propose_instance tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_merge_objects tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_preview_proposal tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_confirm_proposal tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_reject_proposal tenant=*
+2026-10-12 02:37:18 [info     ] mcp.tool.registered            name=ont_execute_proposal tenant=*
+StreamableHTTP session manager started
+2026-10-12 02:37:18 [info     ] mcp.api_key.created            key_id=key-aa173316545966e4 tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/api-keys "HTTP/1.1 201 Created"
+2026-10-12 02:37:18 [info     ] mcp.api_key.created            key_id=key-34992f9abfaec84d tenant_id=mp11-app-ui
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/api-keys "HTTP/1.1 201 Created"
+Created new transport with session ID: be44106f8775445483231db7a8feed1b
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Received session ID: be44106f8775445483231db7a8feed1b
+Negotiated protocol version: 2025-11-25
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 202 Accepted"
+Processing request of type ListToolsRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: GET http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/object-query "HTTP/1.1 200 OK"
+HTTP Request: GET http://127.0.0.1:55510/api/v1/apphub/apps/app-e1598b1298475cdf91c87b5bf7ecca26/runtime/data?page_id=page-f5329031a0285d1d9d4fb07a9eae7409 "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Processing request of type CallToolRequest
+Tool 'ont_confirm_proposal' not listed, no validation will be performed
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Processing request of type CallToolRequest
+Tool 'ont_execute_proposal' not listed, no validation will be performed
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Tool 'ont_propose_instance' not listed, no validation will be performed
+Processing request of type CallToolRequest
+Tool 'dynamic_unknown' not listed, no validation will be performed
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+Tool 'federated_unknown' not listed, no validation will be performed
+Processing request of type CallToolRequest
+HTTP Request: POST http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+HTTP Request: POST http://127.0.0.1:55517/api/v1/ont/v2/object-query "HTTP/1.1 403 Forbidden"
+HTTP Request: GET http://127.0.0.1:55517/api/v1/mcp/tools "HTTP/1.1 200 OK"
+Terminating session: be44106f8775445483231db7a8feed1b
+HTTP Request: DELETE http://127.0.0.1:55517/api/v1/mcp/protocol/mcp "HTTP/1.1 200 OK"
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\connection.py", line 783, in read_response
+    response = await self._parser.read_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\_parsers\resp3.py", line 185, in read_response
+    response = await self._read_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\_parsers\resp3.py", line 197, in _read_response
+    raw = await self._readline()
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\_parsers\base.py", line 578, in _readline
+    data = await self._stream.readline()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\streams.py", line 568, in readline
+    line = await self.readuntil(sep)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\streams.py", line 660, in readuntil
+    await self._wait_for_data('readuntil')
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\streams.py", line 545, in _wait_for_data
+    await self._waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\connection.py", line 782, in read_response
+    async with async_timeout(read_timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-platform\src\mate_platform\auth\middleware.py", line 148, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 2689, in app
+    await route.handle(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 1770, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 2744, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 1790, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 1270, in handle
+    await app(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 156, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 142, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 698, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\fastapi\routing.py", line 350, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-mcp\src\mate_tech_mcp\api\origin_routes.py", line 306, in call_tool_endpoint
+    await limiter.check(tenant_id=tenant_id, tool_name=name)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\packages\mate-tech-mcp\src\mate_tech_mcp\tools\rate_limit.py", line 55, in check
+    count, _ = await pipe.execute()
+               ^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\client.py", line 2061, in execute
+    conn = await self.connection_pool.get_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\utils.py", line 249, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\connection.py", line 1591, in get_connection
+    await self.ensure_connection(connection)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\connection.py", line 1632, in ensure_connection
+    await connection.connect()
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\connection.py", line 351, in connect
+    await self.retry.call_with_retry(
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\retry.py", line 81, in call_with_retry
+    raise error
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\retry.py", line 69, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\connection.py", line 415, in connect_check_health
+    await self.on_connect_check_health(check_health=check_health)
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\connection.py", line 524, in on_connect_check_health
+    response = await self.read_response()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\redis\asyncio\connection.py", line 806, in read_response
+    raise TimeoutError(f"Timeout reading from {host_error}")
+redis.exceptions.TimeoutError: Timeout reading from localhost:6379
+StreamableHTTP session manager shutting down
+SAFE QUERY ROW KEYS ['__rid__', 'id', 'status', 'total']
+  + Exception Group Traceback (most recent call last):
+  |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.superpowers\sdd\2026-10-11-metaplatform-product-v1.1-implementation\task-7-protocol-check.py", line 110, in <module>
+  |     asyncio.run(checks(read_key,writer_key,empty,expired,other))
+  |   File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\runners.py", line 195, in run
+  |     return runner.run(main)
+  |            ^^^^^^^^^^^^^^^^
+  |   File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\runners.py", line 118, in run
+  |     return self._loop.run_until_complete(task)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\base_events.py", line 691, in run_until_complete
+  |     return future.result()
+  |            ^^^^^^^^^^^^^^^
+  |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.superpowers\sdd\2026-10-11-metaplatform-product-v1.1-implementation\task-7-protocol-check.py", line 69, in checks
+  |     async with streamablehttp_client(protocol,headers={'Authorization':'Bearer '+read_key,'X-Tenant-Id':tenant}) as (read,write,_),ClientSession(read,write) as s:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\mcp\client\streamable_http.py", line 717, in streamablehttp_client
+  |     async with streamable_http_client(
+  |                ^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\mcp\client\streamable_http.py", line 647, in streamable_http_client
+  |     async with anyio.create_task_group() as tg:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 815, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\mcp\client\streamable_http.py", line 670, in streamable_http_client
+    |     yield (
+    |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\mcp\client\streamable_http.py", line 722, in streamablehttp_client
+    |     yield streams
+    |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.superpowers\sdd\2026-10-11-metaplatform-product-v1.1-implementation\task-7-protocol-check.py", line 69, in checks
+    |     async with streamablehttp_client(protocol,headers={'Authorization':'Bearer '+read_key,'X-Tenant-Id':tenant}) as (read,write,_),ClientSession(read,write) as s:
+    |                                                                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\mcp\shared\session.py", line 238, in __aexit__
+    |     return await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 815, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+      |     yield
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_transports\default.py", line 394, in handle_async_request
+      |     resp = await self._pool.handle_async_request(req)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 256, in handle_async_request
+      |     raise exc from None
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 236, in handle_async_request
+      |     response = await connection.handle_async_request(
+      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_async\connection.py", line 103, in handle_async_request
+      |     return await self._connection.handle_async_request(request)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_async\http11.py", line 136, in handle_async_request
+      |     raise exc
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_async\http11.py", line 106, in handle_async_request
+      |     ) = await self._receive_response_headers(**kwargs)
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_async\http11.py", line 177, in _receive_response_headers
+      |     event = await self._receive_event(timeout=timeout)
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_async\http11.py", line 217, in _receive_event
+      |     data = await self._network_stream.read(
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_backends\anyio.py", line 32, in read
+      |     with map_exceptions(exc_map):
+      |          ^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py", line 158, in __exit__
+      |     self.gen.throw(value)
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+      |     raise to_exc(exc) from exc
+      | httpcore.ReadTimeout
+      |
+      | The above exception was the direct cause of the following exception:
+      |
+      | Traceback (most recent call last):
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.superpowers\sdd\2026-10-11-metaplatform-product-v1.1-implementation\task-7-protocol-check.py", line 88, in checks
+      |     result=await c.post(url+'/api/v1/mcp/tools/ont_object_query',headers=headers,json={'arguments':{'source':f'ont.{tenant}.obj.order','paging_limit':200}})
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_client.py", line 1859, in post
+      |     return await self.request(
+      |            ^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_client.py", line 1540, in request
+      |     return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_client.py", line 1629, in send
+      |     response = await self._send_handling_auth(
+      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_client.py", line 1657, in _send_handling_auth
+      |     response = await self._send_handling_redirects(
+      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_client.py", line 1694, in _send_handling_redirects
+      |     response = await self._send_single_request(request)
+      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_client.py", line 1730, in _send_single_request
+      |     response = await transport.handle_async_request(request)
+      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_transports\default.py", line 393, in handle_async_request
+      |     with map_httpcore_exceptions():
+      |          ^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "C:\Users\houuu\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py", line 158, in __exit__
+      |     self.gen.throw(value)
+      |   File "D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\mate-platform-backend\.venv\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+      |     raise mapped_exc(message) from exc
+      | httpx.ReadTimeout
+      +------------------------------------

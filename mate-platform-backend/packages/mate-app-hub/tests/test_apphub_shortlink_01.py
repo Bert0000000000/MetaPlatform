@@ -30,6 +30,8 @@ from mate_app_hub.shortlink import (
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
+from .publication_helpers import save_runtime_fixture as _save_runtime_fixture
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -234,6 +236,7 @@ def test_revoke_shortlink() -> None:
 def test_create_shortlink_endpoint_returns_201(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
+    actual_id = _save_runtime_fixture(client, auth_headers_acme)
     r = client.post(
         "/api/v1/apphub/shortlinks",
         json={"app_id": "kb", "role": "viewer"},
@@ -242,13 +245,14 @@ def test_create_shortlink_endpoint_returns_201(
     assert r.status_code == 201, r.text
     body = r.json()
     assert body["code"]
-    assert body["app_id"] == "kb"
+    assert body["app_id"] == actual_id
     assert body["created_at"]
 
 
 def test_resolve_shortlink_endpoint_returns_200(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
+    actual_id = _save_runtime_fixture(client, auth_headers_acme)
     r_create = client.post(
         "/api/v1/apphub/shortlinks",
         json={"app_id": "kb"},
@@ -263,7 +267,7 @@ def test_resolve_shortlink_endpoint_returns_200(
     )
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["app_id"] == "kb"
+    assert body["app_id"] == actual_id
 
 
 def test_resolve_shortlink_not_found_404(
@@ -280,7 +284,9 @@ def test_list_shortlinks_endpoint_returns_items(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
     # Create two shortlinks.
+    actual_ids = set()
     for app_id in ("kb", "rag"):
+        actual_ids.add(_save_runtime_fixture(client, auth_headers_acme, app_id))
         client.post(
             "/api/v1/apphub/shortlinks",
             json={"app_id": app_id},
@@ -294,13 +300,14 @@ def test_list_shortlinks_endpoint_returns_items(
     items = r.json()["items"]
     assert len(items) == 2
     app_ids = {it["app_id"] for it in items}
-    assert app_ids == {"kb", "rag"}
+    assert app_ids == actual_ids
 
 
 def test_cross_tenant_resolve_returns_404(
     client: TestClient, auth_headers_acme: dict[str, str], auth_headers_globex: dict[str, str]
 ) -> None:
     # Create a shortlink under tenant-acme.
+    actual_id = _save_runtime_fixture(client, auth_headers_acme)
     r_create = client.post(
         "/api/v1/apphub/shortlinks",
         json={"app_id": "kb"},

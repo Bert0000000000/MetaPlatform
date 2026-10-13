@@ -14,6 +14,7 @@ import { editorIdentity } from '../../hooks/editorSession';
 import { resourceUrl, safeReturnTo } from '../../hooks/resourceContext';
 import { resourceError } from '../../hooks/resourceErrors';
 import { ridTail } from '../../rid';
+import RegisteredSourceMappingWizard, { registeredMappingIsDirty } from './RegisteredSourceMappingWizard';
 import SourceMappingEditor, { mappingIsDirty } from './SourceMappingEditor';
 import MaterializationSamples, {
   useMaterializationSamples,
@@ -129,7 +130,7 @@ function MappingSelection({ identity }: { identity: string }) {
             )}
             {types.map((type) => (
               <option value={type.rid} key={type.rid}>
-                {type.display_name || ridTail(type.rid)} · {ridTail(type.rid)}
+                {type.display_name || ridTail(type.rid)}
               </option>
             ))}
           </select>
@@ -192,6 +193,10 @@ function SourceWorkspace({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [registeredOpen, setRegisteredOpen] = useState(params.has('source'));
+  const [registeredDirty, setRegisteredDirty] = useState(false);
+  const [registeredBusy, setRegisteredBusy] = useState(false);
+  const registeredState = useCallback((value: boolean, pending: boolean) => { setRegisteredDirty(value); setRegisteredBusy(pending); }, []);
   const [editorDirty, setEditorDirty] = useState(false);
   const [editorBusy, setEditorBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -209,11 +214,12 @@ function SourceWorkspace({
         : rows[0];
   const sourceKey = source?.rid || 'new';
   const unknownSource = !!sourceRef && sourceRef !== 'new' && !source;
-  const otherDirty =
+  const legacyDirty =
     rows.some((row) => mappingIsDirty(identity, type.rid, row.rid)) ||
     mappingIsDirty(identity, type.rid, 'new');
-  const dirty = editorDirty || otherDirty;
-  const busy = editorBusy || syncing;
+  const otherDirty = legacyDirty || registeredMappingIsDirty(identity, type.rid);
+  const dirty = editorDirty || otherDirty || registeredDirty;
+  const busy = editorBusy || syncing || registeredBusy;
   const load = useCallback(async (): Promise<KernelBackingDatasource[]> => {
     const generation = ++request.current;
     setLoading(true);
@@ -321,6 +327,8 @@ function SourceWorkspace({
       {!syncResult && !syncing && !syncError && <p>尚未同步</p>}
       {syncResult && (
         <>
+          {syncResult.run_id && <p>运行 {syncResult.run_id} · {syncResult.status} · trace {syncResult.trace_id}</p>}
+          {syncResult.error && <p role="alert">{syncResult.error.message}</p>}
           <p
             role={
               syncResult.ok && syncResult.total_failed === 0
@@ -418,6 +426,13 @@ function SourceWorkspace({
           增量同步全部来源
         </Button>
       </div>
+      <Button disabled={busy || editorDirty || legacyDirty} onClick={() => setRegisteredOpen(value => !value)}>
+        {registeredOpen ? '收起注册源向导' : '接入注册数据源'}
+      </Button>
+      {registeredOpen && <RegisteredSourceMappingWizard type={type} identity={identity}
+        externalBusy={editorBusy || syncing || editorDirty || legacyDirty}
+        onState={registeredState}
+        onSaved={async name => { const declaration = await saved(name); complete(declaration); }} />}
       <p className="mp-mapping-muted">
         同步按已保存配置处理当前类型的全部声明来源；未保存映射禁止同步。
       </p>
@@ -448,7 +463,7 @@ function SourceWorkspace({
           sourceKey={sourceKey}
           sources={rows}
           canSave={!error && !loading}
-          externalBusy={syncing}
+          externalBusy={syncing || registeredBusy}
           sourceFooter={syncPanel}
           mappingFooter={samplePanel}
           onState={editorState}

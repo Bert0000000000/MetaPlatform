@@ -52,7 +52,7 @@ export interface ModelingSource {
   review: Record<string, unknown> | null;
   preview: null | { nodes: Array<Record<string, unknown>>; edges: Array<Record<string, unknown>>; totalNodes: number; totalEdges: number; limit: number };
   plan: null | { configHash: string; types: Array<{ classId: string; name: string; rid: string; mode: string; propertyMap: Record<string, string>; parentClassId?: string; inheritanceReason?: string; payload?: { parent_class?: string | null }; changes?: { addedProperties: string[]; retainedProperties: string[]; identityChanged: boolean; parentChanged: boolean } }>; relationships: Array<{ relationId?: string; rid?: string; payload?: { cardinality?: string }; cardinalityStatus?: string; targetSelection?: string }>; warnings: unknown[] };
-  publication: null | { status: string; configHash: string; completed: unknown[]; results: Array<Record<string, unknown>>; error?: string; acceptance?: ModelingAcceptance };
+  publication: null | { status: string; configHash: string; completed: unknown[]; inFlight?: string | null; results: Array<Record<string, unknown>>; error?: string; acceptance?: ModelingAcceptance };
   sync: null | { status: string; stage?: string; totalTypes?: number; totalLinks?: number; startedAt?: string; finishedAt?: string; types: Array<Record<string, unknown>>; links: unknown; error?: string; allowPartial?: boolean; quarantine?: ModelingQuarantine; eligible?: {nodes: number;edges: number} };
 }
 

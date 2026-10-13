@@ -1,0 +1,124 @@
+{
+  "fresh": {
+    "database": "codex_mp11_candidate_fresh_20261012",
+    "alembic_revision": "0022_mcp_key_scopes",
+    "actual_signed_chain": {
+      "app_id": "app-09b4077dfaf85283bc6eb83fe38bd88b",
+      "page_id": "page-ff2126d8e9a55f68ab35d225941eebc0",
+      "short_code": "fgcbVxPv",
+      "proposal_id": "prop-338d2f83",
+      "receipt": {
+        "kind": "edit_set",
+        "individual_rid": null,
+        "type_rid": null,
+        "action_rid": "ont.mp11-candidate.act.review",
+        "target_iid": "ont.mp11-candidate.ind.order.1",
+        "audit_id": "audit-d667fbab303b",
+        "outbox_event_ids": [],
+        "side_effects_emitted": [],
+        "source_rid": null,
+        "target_rid": null,
+        "affected_individuals": null,
+        "affected_links": null,
+        "postflight": {
+          "checked": false,
+          "blocked": false,
+          "summary": "\u8be5 kind \u4e0d\u9002\u7528\u540e\u9a8c\uff08action \u540e\u7f6e\u6001\u7531 apply \u4e8b\u52a1\u5185\u6821\u9a8c\u515c\u5e95\uff09",
+          "action_taken": "none"
+        }
+      },
+      "approval_expires_at": "2026-10-11T20:20:54.441540+00:00",
+      "confirmed_by": "56093853-128e-4771-8742-4af5c0f788f8",
+      "version": {
+        "app_id": "app-09b4077dfaf85283bc6eb83fe38bd88b",
+        "status": "PUBLISHED",
+        "version": "1.0.0",
+        "version_id": "ver-b63a6ffba32e449da9837051f8a5ba01"
+      },
+      "same_key_replay_equal": true
+    },
+    "source_discovery": [
+      {
+        "object": "ont.mp11-candidate.obj.customer",
+        "columns": [
+          "id",
+          "name"
+        ],
+        "run_id": "e7e53f11702d478cb8481f0972a674ff",
+        "synced": 1
+      },
+      {
+        "object": "ont.mp11-candidate.obj.order",
+        "columns": [
+          "id",
+          "total",
+          "status"
+        ],
+        "run_id": "f65897ee424a43889d806aad11f531aa",
+        "synced": 2
+      }
+    ],
+    "legacy_undated_denied": false
+  },
+  "upgrade": {
+    "database": "codex_mp11_candidate_upgrade_20261012",
+    "alembic_revision": "0022_mcp_key_scopes",
+    "actual_signed_chain": {
+      "app_id": "app-a1a3532f89da55f6b10f543e1c805005",
+      "page_id": "page-54c41afd691f5eb980538f3dff2bfa76",
+      "short_code": "6P7F6XfX",
+      "proposal_id": "prop-c8d3bf8f",
+      "receipt": {
+        "kind": "edit_set",
+        "individual_rid": null,
+        "type_rid": null,
+        "action_rid": "ont.mp11-candidate.act.review",
+        "target_iid": "ont.mp11-candidate.ind.order.1",
+        "audit_id": "audit-1987ef4243d4",
+        "outbox_event_ids": [],
+        "side_effects_emitted": [],
+        "source_rid": null,
+        "target_rid": null,
+        "affected_individuals": null,
+        "affected_links": null,
+        "postflight": {
+          "checked": false,
+          "blocked": false,
+          "summary": "\u8be5 kind \u4e0d\u9002\u7528\u540e\u9a8c\uff08action \u540e\u7f6e\u6001\u7531 apply \u4e8b\u52a1\u5185\u6821\u9a8c\u515c\u5e95\uff09",
+          "action_taken": "none"
+        }
+      },
+      "approval_expires_at": "2026-10-11T20:22:39.802662+00:00",
+      "confirmed_by": "56093853-128e-4771-8742-4af5c0f788f8",
+      "version": {
+        "app_id": "app-a1a3532f89da55f6b10f543e1c805005",
+        "status": "PUBLISHED",
+        "version": "1.0.0",
+        "version_id": "ver-9144dd772c8f4ae28978de3e2d79ce9e"
+      },
+      "same_key_replay_equal": true
+    },
+    "source_discovery": [
+      {
+        "object": "ont.mp11-candidate.obj.customer",
+        "columns": [
+          "id",
+          "name"
+        ],
+        "run_id": "93d40b9e0bdd42bbabe463f4002a40f9",
+        "synced": 1
+      },
+      {
+        "object": "ont.mp11-candidate.obj.order",
+        "columns": [
+          "id",
+          "total",
+          "status"
+        ],
+        "run_id": "f87782fbf5b64dfa9d9ee20aaeea86f2",
+        "synced": 2
+      }
+    ],
+    "legacy_undated_denied": true
+  }
+}

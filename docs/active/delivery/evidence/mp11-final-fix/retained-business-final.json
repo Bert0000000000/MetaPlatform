@@ -1,0 +1,12 @@
+{
+  "app_id": "app-5214d2501e8f5c76b706dea3f69670af",
+  "page_id": "page-4bcefec97ed752278f3525d149e69264",
+  "version": "ver-ad5edf1f07054feaa2dfd3632b0236cf",
+  "proposal": "prop-47f32dc6",
+  "status": "executed",
+  "history_count": 1,
+  "normal_signed_readonly_get": true,
+  "readonly_and_service_human_confirm_execute_denial": 403,
+  "wrong_tenant_header_denied": 403,
+  "runtime_read": true
+}

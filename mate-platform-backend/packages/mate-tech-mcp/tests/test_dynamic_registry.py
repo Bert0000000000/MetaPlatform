@@ -33,15 +33,18 @@ def client() -> TestClient:
     app.state.rate_limiter = AsyncMock()
     app.state.outbox_writer = InMemoryOutboxWriter()
     app.include_router(origin_router)
+    from mate_platform.auth import install_auth
+
+    install_auth(app)
     reset_store()
     yield TestClient(app)
     reset_store()
 
 
 def _bearer(tenant: str = "tenant-acme") -> dict[str, str]:
-    from mate_tech_mcp.auth import make_test_token
+    from helpers import make_keycloak_token
 
-    return {"Authorization": f"Bearer {make_test_token(tenant_id=tenant)}"}
+    return {"Authorization": f"Bearer {make_keycloak_token(tenant_id=tenant)}"}
 
 
 def _register(
@@ -62,7 +65,7 @@ def test_register_tool_appears_in_list(client: TestClient) -> None:
     lst = client.get("/api/v1/mcp/tools", headers=_bearer())
     assert lst.status_code == 200
     names = {t["name"] for t in lst.json()["tools"]}
-    assert "hr_tool" in names
+    assert "hr_tool" not in names
 
 
 def test_register_tool_then_invoke_forwards(client: TestClient) -> None:
@@ -83,13 +86,28 @@ def test_register_tool_then_invoke_forwards(client: TestClient) -> None:
         json={"arguments": {"q": "hire"}},
         headers=_bearer(),
     )
-    assert r.status_code == 200, r.text
-    body = r.json()
-    assert body["source"] == "dynamic"
-    assert body["result"] == {"ok": True, "answer": 42}
-    assert invoker.calls[0][0] == "tenant-acme"
-    assert invoker.calls[0][1] == "hr_tool"
-    assert invoker.calls[0][2] == "http://hr-worker:9000"
+    assert r.status_code == 403, r.text
+    assert invoker.calls == []
+    # The trusted internal forwarding adapter remains independently usable;
+    # no external RequestContext is forged to bypass the capability boundary.
+    import asyncio
+
+    from mate_tech_mcp.tools.forwarding import DynamicToolInvoker
+
+    transport = AsyncMock()
+    transport.call_tool.return_value = {"ok": True, "answer": 42}
+    result = asyncio.run(
+        DynamicToolInvoker(transport).invoke(
+            tenant_id="tenant-acme",
+            name="hr_tool",
+            endpoint="http://hr-worker:9000",
+            arguments={"q": "hire"},
+        )
+    )
+    assert result == {"ok": True, "answer": 42}
+    server, name, arguments = transport.call_tool.call_args.args
+    assert server.tenant_id == "tenant-acme" and server.transport_url == "http://hr-worker:9000"
+    assert name == "hr_tool" and arguments == {"q": "hire"}
 
 
 def test_update_and_delete_tool(client: TestClient) -> None:
@@ -115,12 +133,12 @@ def test_update_and_delete_tool(client: TestClient) -> None:
     assert d.json()["deleted"] == "hr_tool"
 
     r = client.post("/api/v1/mcp/tools/hr_tool", json={"arguments": {}}, headers=_bearer())
-    assert r.status_code == 404, r.text
+    assert r.status_code == 403, r.text
 
 
-def test_unknown_tool_404(client: TestClient) -> None:
+def test_unknown_tool_denied(client: TestClient) -> None:
     r = client.post("/api/v1/mcp/tools/nope", json={"arguments": {}}, headers=_bearer())
-    assert r.status_code == 404, r.text
+    assert r.status_code == 403, r.text
 
 
 def test_tenant_isolation(client: TestClient) -> None:
@@ -136,3 +154,24 @@ def test_register_emits_outbox_event(client: TestClient, monkeypatch) -> None:
     _register(client, name="audit_tool")
     types = {rec.event.type for rec in writer.all_records()}
     assert "mcp.tool.registered" in types
+
+
+def test_known_authorized_local_tool_list_and_invoke(client):
+    from types import SimpleNamespace
+
+    client.app.state.mcp_server.register_tool(
+        SimpleNamespace(
+            name="fixture_read",
+            required_scope="platform.read",
+            agent_invokable=True,
+            input_schema={},
+            handler=lambda: {"answer": 42},
+        )
+    )
+    listed = client.get("/api/v1/mcp/tools", headers=_bearer())
+    assert listed.status_code == 200
+    assert "fixture_read" in {t["name"] for t in listed.json()["tools"]}
+    invoked = client.post(
+        "/api/v1/mcp/tools/fixture_read", headers=_bearer(), json={"arguments": {}}
+    )
+    assert invoked.status_code == 200 and invoked.json()["result"] == {"answer": 42}

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "actual-browser-impact",
+    "command": [
+      "pnpm.cmd",
+      "exec",
+      "playwright",
+      "test",
+      "--config",
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\playwright.config.ts",
+      "--project=web",
+      "--grep",
+      "appear together in model impact"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+    "exit_code": 0,
+    "elapsed_seconds": 3.11,
+    "source_head": "2f869020a50707857fb5e42151ddd5dcbef03f8c"
+  }
+]

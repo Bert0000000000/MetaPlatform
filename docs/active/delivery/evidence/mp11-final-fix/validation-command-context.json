@@ -1,0 +1,35 @@
+{
+  "python": "mate-platform-backend/.venv/Scripts/python.exe",
+  "env_factory": "scripts/acceptance/mp11/manage.py::environment",
+  "db_factory": "ensure_database codex_mp11_candidate_tests_20261012",
+  "test_targets": {
+    "host": "127.0.0.1",
+    "port": 55497,
+    "database": "codex_mp11_candidate_tests_20261012",
+    "ws_database": "codex_mp11_ws_20261012"
+  },
+  "ambient_auth_service_vars_removed_for_unit_tests": true,
+  "ambient_MATE_DB_URL_DATABASE_URL_removed_for_unit_tests": true,
+  "PG_DSN_names_discovered_from_test_AST_and_overridden": true,
+  "new_pg_vars": [
+    "MP11_APP_ID_PG_DSN",
+    "MP11_PROPOSAL_PG_DSN"
+  ],
+  "MP11_WS_PG_REQUIRED": "1",
+  "bytecode_writes_disabled": true,
+  "private_orchestrators": [
+    {
+      "path": ".tmp\\codex-mp11-candidate\\final-fix-business.py",
+      "sha256": "b9bb9aaabf417a043041ca865697b9fe82deab016d8aabc3cb52da9d073ef50e"
+    },
+    {
+      "path": ".tmp\\codex-mp11-candidate\\final-fix-proposals.py",
+      "sha256": "1633f5846524f377d250e42f133267374a696c67274c5ac0f4a5d6c039dbcb03"
+    },
+    {
+      "path": ".tmp\\codex-mp11-candidate\\final-fix-run.py",
+      "sha256": "cfa9a3805169029fefc5f718109e51c59019f1fe66a27c11f0edf11e666f375e"
+    }
+  ],
+  "authenticated_media": "trace/video/screenshots off"
+}

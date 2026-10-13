@@ -1,0 +1,18 @@
+[
+  {
+    "name": "actual-browser-1194b651968c",
+    "command": [
+      "pnpm.cmd",
+      "exec",
+      "playwright",
+      "test",
+      "--config",
+      "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\playwright.config.ts"
+    ],
+    "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\apps\\web",
+    "exit_code": 0,
+    "elapsed_seconds": 58.49,
+    "source_head": "67a0e34d1b8ea65f8c903f800a598d6a50451b19",
+    "fixture_run_id": "1194b651968c"
+  }
+]

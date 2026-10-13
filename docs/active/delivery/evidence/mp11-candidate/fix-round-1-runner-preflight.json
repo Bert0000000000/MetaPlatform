@@ -1,0 +1,17 @@
+[
+  {
+    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/acceptance/run-mp11-acceptance.ps1 -Phase Browser",
+    "tool_chunk": "19e3db",
+    "exit_code": 1,
+    "browser_tests_started": 0,
+    "safe_tool_output": "Join-Path : Cannot bind argument to parameter 'Path' because it is an empty string.\nAt D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\run-mp11-acceptance.ps1:5 char:34\n+   [string]$ConfigPath=(Join-Path $PSScriptRoot 'mp11/config.example.j ...\n+                                  ~~~~~~~~~~~~~\n    + CategoryInfo          : InvalidData: (:) [Join-Path], ParentContainsErrorRecordException\n    + FullyQualifiedErrorId : ParameterArgumentValidationErrorEmptyStringNotAllowed,Microsoft.PowerShell.Commands.Join\n   PathCommand"
+  },
+  {
+    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/acceptance/run-mp11-acceptance.ps1 -Phase Browser",
+    "tool_chunk": "466594",
+    "exit_code": 1,
+    "browser_tests_started": 0,
+    "reason": "incomplete intermediate insertion into mixed-newline script; corrected before successful full phases",
+    "safe_tool_output": "Candidate operation failed: IndexError see safe diagnostic; credentials suppressed\nExplicit candidate configuration rejected\nAt D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\run-mp11-acceptance.ps1:14 char:25\n+ ... ASTEXITCODE -ne 0){throw 'Explicit candidate configuration rejected'}\n+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : OperationStopped: (Explicit candid...ration rejected:String) [], RuntimeException\n    + FullyQualifiedErrorId : Explicit candidate configuration rejected"
+  }
+]

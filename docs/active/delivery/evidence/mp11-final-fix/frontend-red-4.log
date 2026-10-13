@@ -1,0 +1,7489 @@
+
+ RUN  v3.2.7 D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/metaplatform-frontend/apps/web
+
+ ❯ src/api/ont/catalog-consumers.test.tsx (9 tests | 9 failed) 9163ms
+   × mapping exposes late-page Order and Customer and preserves selected onboarding model 1041ms
+     → Unable to find role="option" and name "Late Order"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+   × binding exposes late-page Order and Customer and preserves selected onboarding model 1028ms
+     → Unable to find role="option" and name "Late Order"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+   × onboarding exposes late-page Order and Customer and preserves selected onboarding model 1012ms
+     → Unable to find role="option" and name "Late Order"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+   × mapping shows failed later-page catalog rather than accepting a truncated success 1007ms
+     → Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+   × binding shows failed later-page catalog rather than accepting a truncated success 1011ms
+     → Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+   × onboarding shows failed later-page catalog rather than accepting a truncated success 1008ms
+     → Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+   × mapping rejects a repeated later page with no catalog progress 1022ms
+     → Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+   × binding rejects a repeated later page with no catalog progress 1012ms
+     → Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+   × onboarding rejects a repeated later page with no catalog progress 1021ms
+     → Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+
+ Test Files  1 failed (1)
+      Tests  9 failed (9)
+   Start at  16:02:46
+   Duration  10.22s (transform 91ms, setup 0ms, collect 257ms, tests 9.16s, environment 411ms, prepare 122ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > mapping exposes late-page Order and Customer and preserves selected onboarding model
+TestingLibraryElementError: Unable to find role="option" and name "Late Order"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:44:16
+     42| it.each(consumers)('%s exposes late-page Order and Customer and preser…
+     43|   mount(consumer);
+     44|   await screen.findByRole('option', { name: 'Late Order' });
+       |                ^
+     45|   expect(screen.getAllByRole('option', { name: 'Late Customer' }).leng…
+     46|   if (consumer === 'mapping') {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > binding exposes late-page Order and Customer and preserves selected onboarding model
+TestingLibraryElementError: Unable to find role="option" and name "Late Order"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:44:16
+     42| it.each(consumers)('%s exposes late-page Order and Customer and preser…
+     43|   mount(consumer);
+     44|   await screen.findByRole('option', { name: 'Late Order' });
+       |                ^
+     45|   expect(screen.getAllByRole('option', { name: 'Late Customer' }).leng…
+     46|   if (consumer === 'mapping') {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > onboarding exposes late-page Order and Customer and preserves selected onboarding model
+TestingLibraryElementError: Unable to find role="option" and name "Late Order"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:44:16
+     42| it.each(consumers)('%s exposes late-page Order and Customer and preser…
+     43|   mount(consumer);
+     44|   await screen.findByRole('option', { name: 'Late Order' });
+       |                ^
+     45|   expect(screen.getAllByRole('option', { name: 'Late Customer' }).leng…
+     46|   if (consumer === 'mapping') {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > mapping shows failed later-page catalog rather than accepting a truncated success
+TestingLibraryElementError: Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:62:24
+     60|   });
+     61|   mount(consumer);
+     62|   expect((await screen.findByRole('alert')).textContent).toContain('la…
+       |                        ^
+     63|   expect(screen.queryByRole('option', { name: 'Filler 0' })).toBeNull(…
+     64| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > binding shows failed later-page catalog rather than accepting a truncated success
+TestingLibraryElementError: Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:62:24
+     60|   });
+     61|   mount(consumer);
+     62|   expect((await screen.findByRole('alert')).textContent).toContain('la…
+       |                        ^
+     63|   expect(screen.queryByRole('option', { name: 'Filler 0' })).toBeNull(…
+     64| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > onboarding shows failed later-page catalog rather than accepting a truncated success
+TestingLibraryElementError: Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:62:24
+     60|   });
+     61|   mount(consumer);
+     62|   expect((await screen.findByRole('alert')).textContent).toContain('la…
+       |                        ^
+     63|   expect(screen.queryByRole('option', { name: 'Filler 0' })).toBeNull(…
+     64| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > mapping rejects a repeated later page with no catalog progress
+TestingLibraryElementError: Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      style="display: grid; gap: 14px;"
+    >
+      <p>
+        1 连接 → 2 发现字段 → 3 主键与时间列 → 4 确认映射 → 5 服务器预检 → 6 同步
+      </p>
+      <a
+        data-discover="true"
+        href="/gov/data/sources"
+      >
+        管理全局数据源
+      </a>
+      <label>
+        对象类型
+        <select
+          aria-label="对象类型"
+          class="mp-onto-input"
+        >
+          <option
+            value=""
+          >
+            请选择
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            F...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:68:24
+     66|   http.get.mockResolvedValue({ data: models.slice(0, 100) });
+     67|   mount(consumer);
+     68|   expect((await screen.findByRole('alert')).textContent).toContain('分页…
+       |                        ^
+     69| });
+     70|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > binding rejects a repeated later page with no catalog progress
+TestingLibraryElementError: Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="订单审核绑定"
+      class="mp-p-4"
+    >
+      <h3>
+        订单审核应用
+      </h3>
+      <p>
+        选择已发布对象、真实字段、客户关联和审核动作。发布时服务端会再次核验版本与权限。
+      </p>
+      <label>
+        订单对象
+        <select
+          aria-label="订单对象"
+        >
+          <option
+            value=""
+          >
+            选择已发布订单对象
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >
+            Filler 30
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler31"
+          >
+            Filler 31
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler32"
+          >
+            Filler 32
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler33"
+          >
+            Filler 33
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler34"
+          >
+            Filler 34
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler35"
+       ...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:68:24
+     66|   http.get.mockResolvedValue({ data: models.slice(0, 100) });
+     67|   mount(consumer);
+     68|   expect((await screen.findByRole('alert')).textContent).toContain('分页…
+       |                        ^
+     69| });
+     70|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+
+ FAIL  src/api/ont/catalog-consumers.test.tsx > onboarding rejects a repeated later page with no catalog progress
+TestingLibraryElementError: Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <section
+      aria-label="开始使用平台"
+      class="mp-p-4"
+    >
+      <h2>
+        开始使用平台
+      </h2>
+      <div
+        class="mp-flex mp-gap-3"
+      >
+        <button
+          aria-pressed="false"
+        >
+          从样例开始
+        </button>
+        <button
+          aria-pressed="true"
+        >
+          接入真实数据
+        </button>
+        <button
+          aria-pressed="false"
+        >
+          打开已有应用
+        </button>
+      </div>
+      <p>
+        选择本次流程的实际产物，返回首页后可从保存位置继续。
+      </p>
+      <label>
+        本次数据源
+        <select
+          aria-label="本次数据源"
+        >
+          <option
+            value=""
+          >
+            选择数据源
+          </option>
+        </select>
+      </label>
+      <label>
+        本次对象模型
+        <select
+          aria-label="本次对象模型"
+        >
+          <option
+            value=""
+          >
+            选择模型
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler0"
+          >
+            Filler 0
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler1"
+          >
+            Filler 1
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler2"
+          >
+            Filler 2
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler3"
+          >
+            Filler 3
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler4"
+          >
+            Filler 4
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler5"
+          >
+            Filler 5
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler6"
+          >
+            Filler 6
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler7"
+          >
+            Filler 7
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler8"
+          >
+            Filler 8
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler9"
+          >
+            Filler 9
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler10"
+          >
+            Filler 10
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler11"
+          >
+            Filler 11
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler12"
+          >
+            Filler 12
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler13"
+          >
+            Filler 13
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler14"
+          >
+            Filler 14
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler15"
+          >
+            Filler 15
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler16"
+          >
+            Filler 16
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler17"
+          >
+            Filler 17
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler18"
+          >
+            Filler 18
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler19"
+          >
+            Filler 19
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler20"
+          >
+            Filler 20
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler21"
+          >
+            Filler 21
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler22"
+          >
+            Filler 22
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler23"
+          >
+            Filler 23
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler24"
+          >
+            Filler 24
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler25"
+          >
+            Filler 25
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler26"
+          >
+            Filler 26
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler27"
+          >
+            Filler 27
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler28"
+          >
+            Filler 28
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler29"
+          >
+            Filler 29
+          </option>
+          <option
+            value="ont.owned-tenant.obj.filler30"
+          >[...
+ ❯ waitForWrapper ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/api/ont/catalog-consumers.test.tsx:68:24
+     66|   http.get.mockResolvedValue({ data: models.slice(0, 100) });
+     67|   mount(consumer);
+     68|   expect((await screen.findByRole('alert')).textContent).toContain('分页…
+       |                        ^
+     69| });
+     70|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯

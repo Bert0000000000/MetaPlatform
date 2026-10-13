@@ -1,6 +1,6 @@
 // ObjectTypeEditorV2Drawer - 类型/属性编辑器 v2（EXP-02 语义表达力 + EXP-04 治理元数据）。
 //
-// create / edit 双模式，提交 = POST /ont/v2/object-types 整体 upsert（body 即 ObjectTypeDTO）。
+// create / edit 双模式：完整 ObjectTypeDTO 经 schema-WIP 暂存与发布；新建保留严格拒重意图。
 // 注意：不能用 POST /object-types/{rid}/properties 追加 —— 该端点合并时会丢
 // parent_class / status / type_group / render_hints 等扩展字段，v2 编辑必须整体提交。
 //
@@ -13,12 +13,17 @@
 //
 // dev 模式 Semi 交互组件 onClick 被截 noop —— 全部原生元素 + 内联样式。
 
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@mate/shared';
 import { discardEditorInput,editorIdentity,editorInputKey,readEditorInput,retainEditorInput } from '../hooks/editorSession';
+import { UNSAFE_NavigationContext, Link } from 'react-router-dom';
+import { apiClient } from '@/api/client';
+import { listBigDataSources } from '@/api/ontology-bigdata';
 import { AlertTriangle, ChevronDown, ChevronRight, Plus, Trash2, X } from 'lucide-react';
 import {
-  propSlug, slugAndVersionOfObjectType,
+  propSlug, slugAndVersionOfObjectType, listSchemaWip, saveSchemaWip, validateObjectTypeModel, errDetailText, getObjectType, assessMigration, inspectObjectType, getObjectBindingUsage, type AppBindingUsage,
+  type MigrationAssessment,
+  type SchemaWipEntry, type ModelPreflight,
   type DestructiveConfirmDetail, type KernelInterface, type KernelLinkType,
   type KernelObjectType, type KernelObjectTypeCreate, type KernelValueType,
 } from '@/api/ont/kernel';
@@ -37,6 +42,14 @@ const badge = (color: string): React.CSSProperties => ({
 });
 
 // ─────────────────── Props ───────────────────
+
+// This editor is eagerly imported by the ontology route table. Register before
+// BrowserRouter's popstate listener; its synchronous update can otherwise unmount
+// the editor before a listener installed by an effect gets a chance to cancel.
+let activeDraftHistoryGuard: ((event: PopStateEvent) => void) | null = null;
+const guardDraftHistory = (event: PopStateEvent) => activeDraftHistoryGuard?.(event);
+if (typeof window !== 'undefined') window.addEventListener('popstate', guardDraftHistory, true);
+if (import.meta.hot) import.meta.hot.dispose(() => window.removeEventListener('popstate', guardDraftHistory, true));
 
 export interface ObjectTypeEditorPrefill {
   /** 打开后直接展开某个属性编辑区（按属性 rid）。 */
@@ -67,14 +80,15 @@ export interface ObjectTypeEditorV2DrawerProps {
    * 确认重发时在 payload 顶层加 confirm_name 再走本钩子）。
    */
   onSubmit: (
-    payload: KernelObjectTypeCreate, mode: 'create' | 'edit',
+    payload: KernelObjectTypeCreate, mode: 'create' | 'edit', expectedChecksum?: string,
   ) => Promise<string | DestructiveConfirmDetail | null>;
+  onLocateExisting?: (rid: string) => Promise<void>;
   /** create 模式概念名失焦 → 页面触发相似扫描（MP-DEDUP-01）。 */
   onCreateNameBlur?: (name: string, slug: string, domain: string) => void;
   /** 相似扫描进行中（create 概念名旁的提示）。 */
   prechecking?: boolean;
   /** True backend WIP stage handler; never calls direct upsert. */
-  onSaveDraft?: (payload: KernelObjectTypeCreate) => Promise<string | null>;
+  onSaveDraft?: (payload: KernelObjectTypeCreate, mode: 'create' | 'edit', expectedChecksum?: string) => Promise<string | null>;
   onDirtyChange?: (dirty: boolean) => void;
   auxiliaryErrors?: string[];
   auxiliaryLoading?: boolean;
@@ -93,7 +107,7 @@ interface RenderHintRow {
 interface EditorInput {
   displayName:string;slug:string;domain:string;description:string;parentClass:string;
   interfacesSel:string[];status:string;typeGroup:string;renderHints:RenderHintRow[];marking:string[];
-  propDrafts:PropertyDraft[];expanded:string|null;baseline:string;liveDefinition:string;
+  propDrafts:PropertyDraft[];expanded:string|null;baseline:string;liveDefinition:string;checksum?:string;
 }
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -106,13 +120,32 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
 
 export default function ObjectTypeEditorV2Drawer({
   open, mode, objectType, objectTypes, linkTypes, interfaces, valueTypes,
-  tenant, domainOptions, prefill, onClose, onSubmit, onCreateNameBlur, prechecking, onSaveDraft, onDirtyChange, auxiliaryErrors, auxiliaryLoading, onRetryAuxiliary, externalError, externalSubmitting = false,
+  tenant, domainOptions, prefill, onClose, onSubmit, onCreateNameBlur, prechecking, onLocateExisting, onSaveDraft, onDirtyChange, auxiliaryErrors, auxiliaryLoading, onRetryAuxiliary, externalError, externalSubmitting = false,
 }: ObjectTypeEditorV2DrawerProps) {
   const {user}=useAuth();
   const identity=editorIdentity(user);
   const sessionKey=editorInputKey(identity,mode,objectType?.rid);
   const [loadedSessionKey,setLoadedSessionKey]=useState('');
   const [sessionNotice,setSessionNotice]=useState('');
+  const [baseline, setBaseline] = useState<string | undefined>(objectType?.checksum);
+  const [latest, setLatest] = useState<KernelObjectType | null>(null);
+  const [applicationReferences, setApplicationReferences] = useState<AppBindingUsage[] | null>(null);
+  const [applicationReferenceError, setApplicationReferenceError] = useState('');
+  const [actionReferences, setActionReferences] = useState<string[] | null>(null);
+  const [impact, setImpact] = useState<MigrationAssessment | null>(null);
+  const [advanced, setAdvanced] = useState(false);
+  const [validated, setValidated] = useState(false);
+  const [resetTick, setResetTick] = useState(0);
+  const [drafts, setDrafts] = useState<SchemaWipEntry[]>([]);
+  const [notice, setNotice] = useState('');
+  const [preflight, setPreflight] = useState<ModelPreflight | null>(null);
+  const [sources, setSources] = useState<Array<{sourceId: string; name: string}>>([]);
+  const [sourceId, setSourceId] = useState('');
+  const [sourceTables, setSourceTables] = useState<Array<{name: string; columns: Array<{name: string; type: string; nullable?: boolean; primary_key?: boolean}>}>>([]);
+  const [sourceError, setSourceError] = useState('');
+  const [sourceBusy, setSourceBusy] = useState(false);
+  const lastSaved = useRef<KernelObjectTypeCreate | null>(null);
+  const navigation = useContext(UNSAFE_NavigationContext);
   const [displayName, setDisplayName] = useState('');
   const [slug, setSlug] = useState('');
   const [domain, setDomain] = useState(domainOptions[0]?.code ?? 'crm');
@@ -131,6 +164,7 @@ export default function ObjectTypeEditorV2Drawer({
   const [error, setError] = useState('');
   // G33：409 破坏性变更二段确认（页面 onSubmit 返回 DestructiveConfirmDetail 时激活）
   const [destructive, setDestructive] = useState<DestructiveConfirmDetail | null>(null);
+  const [destructiveChecksum, setDestructiveChecksum] = useState<string | undefined>();
   const [confirmInput, setConfirmInput] = useState('');
   const [closeRequested, setCloseRequested] = useState(false);
   const initial = useRef('');
@@ -143,9 +177,9 @@ export default function ObjectTypeEditorV2Drawer({
   const dirty = open && !!initial.current && current !== initial.current;
   useEffect(()=>{
     if (!open || loadedSessionKey!==sessionKey) return;
-    if (dirty) retainEditorInput<EditorInput>(identity,sessionKey,{displayName,slug,domain,description,parentClass,interfacesSel,status,typeGroup,renderHints,marking,propDrafts,expanded,baseline:initial.current,liveDefinition:baselineLive.current});
+    if (dirty) retainEditorInput<EditorInput>(identity,sessionKey,{displayName,slug,domain,description,parentClass,interfacesSel,status,typeGroup,renderHints,marking,propDrafts,expanded,baseline:initial.current,liveDefinition:baselineLive.current,checksum:baseline});
     else discardEditorInput(sessionKey);
-  },[open,loadedSessionKey,sessionKey,identity,dirty,current,expanded]);
+  },[open,loadedSessionKey,sessionKey,identity,dirty,current,expanded,baseline]);
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty,onDirtyChange]);
   useEffect(() => {
     if (!open || !dirty) return;
@@ -198,6 +232,7 @@ export default function ObjectTypeEditorV2Drawer({
     setSubmitting(false);
     setExpanded(null);
     setDestructive(null);
+    setDestructiveChecksum(undefined);
     setConfirmInput('');
     setCloseRequested(false);
     const pf = prefillRef.current;
@@ -252,7 +287,7 @@ export default function ObjectTypeEditorV2Drawer({
       initial.current = snapshot('','',domainOptions[0]?.code??'crm','','',[],'active','',[],[],[pk]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, objectType?.rid, prefillKey, identity]);
+  }, [open, mode, objectType?.rid, prefillKey, identity, resetTick]);
 
   // create 模式：概念 slug/领域变化 → 联动重算新建属性的 rid 预览
   useEffect(() => {
@@ -261,10 +296,74 @@ export default function ObjectTypeEditorV2Drawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, domain, open, mode]);
 
+  const restorePayload = (payload: KernelObjectTypeCreate) => {
+    const parts = payload.rid.split('.');
+    setDisplayName(payload.display_name ?? ''); setSlug(parts[4] ?? ''); setDomain(parts[3] ?? 'crm');
+    setDescription(payload.description ?? ''); setParentClass(payload.parent_class ?? '');
+    setInterfacesSel(payload.interfaces ?? []); setStatus(payload.status ?? 'active');
+    setTypeGroup(payload.type_group ?? ''); setMarking(payload.marking ?? []);
+    setRenderHints((payload.render_hints ?? []).map(([k,v], i) => ({key: `restored-${i}`,k,v})));
+    const restoredDrafts = payload.properties.map(p => mode === 'create'
+      ? {...draftFromProperty(p), isNew: true, name: p.rid.split('.').at(-2)!.replace(new RegExp(`^${parts[4]}-`), '')}
+      : draftFromProperty(p));
+    setPropDrafts(restoredDrafts);
+    initial.current = snapshot(payload.display_name ?? '', parts[4] ?? '', parts[3] ?? 'crm', payload.description ?? '', payload.parent_class ?? '', payload.interfaces ?? [], payload.status ?? 'active', payload.type_group ?? '', (payload.render_hints ?? []).map(([k,v],i)=>({key:String(i),k,v})), payload.marking ?? [], restoredDrafts);
+    discardEditorInput(sessionKey);
+    setError(''); setPreflight(null); setNotice('草稿已恢复，尚未发布。');
+    lastSaved.current = payload;
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    setValidated(false); setNotice(''); setPreflight(null); setLatest(null); setImpact(null); setActionReferences(null); const savedInput = readEditorInput<EditorInput>(identity, sessionKey); setBaseline(savedInput ? savedInput.checksum : objectType?.checksum); lastSaved.current = null;
+    listSchemaWip().then(rows => { if (alive) setDrafts(rows.filter(w => mode === 'create' ? w.create_only || !objectTypes.some(o => o.rid === w.rid) : w.rid === objectType?.rid)); })
+      .catch(() => { if (alive) setNotice('草稿清单暂不可用，请重新打开重试；当前输入可继续编辑。'); });
+    return () => { alive = false; };
+  }, [open, mode, objectType?.rid, identity]);
+
+  useEffect(() => {
+    if (!open || !dirty) return;
+    const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', beforeUnload);
+    // BrowserRouter records an idx for same-document history. Capture before its
+    // bubble listener so a cancelled back/forward cannot unmount this draft.
+    const currentIndex: unknown = window.history.state?.idx;
+    let restoringHistory = false;
+    const beforeHistoryNavigation = (event: PopStateEvent) => {
+      if (restoringHistory) {
+        restoringHistory = false;
+        event.stopImmediatePropagation();
+        return;
+      }
+      const targetIndex: unknown = event.state?.idx;
+      if (typeof currentIndex !== 'number' || typeof targetIndex !== 'number' || targetIndex === currentIndex) return;
+      if (!window.confirm('有未保存的更改，确定离开？')) {
+        event.stopImmediatePropagation();
+        restoringHistory = true;
+        window.history.go(currentIndex - targetIndex);
+      }
+    };
+    activeDraftHistoryGuard = beforeHistoryNavigation;
+    // BrowserRouter navigation uses these same methods for sidebar links/buttons.
+    const navigator = navigation?.navigator;
+    const push = navigator?.push, replace = navigator?.replace;
+    if (navigator && push && replace) {
+      navigator.push = (...args) => { if (window.confirm('有未保存的更改，确定离开？')) push.apply(navigator, args); };
+      navigator.replace = (...args) => { if (window.confirm('有未保存的更改，确定离开？')) replace.apply(navigator, args); };
+    }
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      if (activeDraftHistoryGuard === beforeHistoryNavigation) activeDraftHistoryGuard = null;
+      if (navigator && push && replace) { navigator.push = push; navigator.replace = replace; }
+    };
+  }, [open, dirty, navigation]);
+
   if (!open) return null;
   const requestClose = () => { if (busy) return; if (dirty) setCloseRequested(true); else {discardEditorInput(sessionKey);onClose();} };
 
   const updatePropDraft = (uid: string, next: PropertyDraft) => {
+    setPreflight(null);
     setPropDrafts((ds) => ds.map((d) => {
       if (d.uid !== uid) return d;
       if (d.isNew && next.name !== d.name) return { ...next, rid: makePropRid(next.name) };
@@ -273,11 +372,13 @@ export default function ObjectTypeEditorV2Drawer({
   };
 
   const removePropDraft = (uid: string) => {
+    setPreflight(null);
     setPropDrafts((ds) => ds.filter((d) => d.uid !== uid));
     if (expanded === uid) setExpanded(null);
   };
 
   const addPropDraft = () => {
+    setPreflight(null);
     const d = { ...emptyPropertyDraft(''), rid: makePropRid('') };
     setPropDrafts((ds) => [...ds, d]);
     setExpanded(d.uid);
@@ -295,11 +396,12 @@ export default function ObjectTypeEditorV2Drawer({
   };
 
   /** 提交（整体 upsert）。confirmNameVal 非空 = 破坏性 409 后的确认重发（payload 顶层加 confirm_name）。 */
-  const submit = async (confirmNameVal?: string, asDraft = false) => {
+  const submit = async (confirmNameVal?: string, action: 'publish' | 'draft' | 'preflight' = 'publish', retryChecksum?: string) => {
     if (busy) return;
     if (mode === 'edit' && !objectType) return;
+    setValidated(true);
     const errs: string[] = [];
-    if (!displayName.trim()) errs.push('概念显示名必填');
+    if (!displayName.trim()) errs.push('业务名称必填');
     if (mode === 'create' && !tenant) errs.push('认证租户不可用，不能生成模型标识');
     if (mode === 'create' && !/^[a-z0-9_-]+$/.test(slug.trim())) {
       errs.push('slug 必填，仅限小写字母 / 数字 / 下划线 / 连字符');
@@ -341,15 +443,57 @@ export default function ObjectTypeEditorV2Drawer({
     setSubmitting(true);
     setError('');
     setDestructive(null);
-    const gen=++submitGeneration.current;
+    setDestructiveChecksum(undefined);
+    const gen = ++submitGeneration.current;
     try {
-      const result = asDraft && onSaveDraft ? await onSaveDraft(payload) : await onSubmit(payload, mode);
-      if(gen!==submitGeneration.current) return;
+      if (action === 'draft') {
+        if (onSaveDraft) {
+          const draftError = await onSaveDraft(payload, mode, baseline);
+          if (gen !== submitGeneration.current) return;
+          if (draftError) { setError(draftError); return; }
+        } else {
+          await saveSchemaWip(payload, mode === 'create', baseline);
+          if (gen !== submitGeneration.current) return;
+        }
+        lastSaved.current = payload;
+        initial.current = current;
+        discardEditorInput(sessionKey);
+        onDirtyChange?.(false);
+        setNotice('草稿已保存，刷新后可恢复；尚未发布。');
+        return;
+      }
+      const report = await validateObjectTypeModel(payload as unknown as Record<string, unknown>);
+      if (gen !== submitGeneration.current) return;
+      setPreflight(report);
+      if (mode === 'edit' && report.valid) {
+        setActionReferences(null);
+        setApplicationReferences(null); setApplicationReferenceError('');
+        const [assessment, inspection] = await Promise.all([
+          assessMigration(payload.rid, {targetPayload: payload as unknown as Record<string, unknown>}),
+          inspectObjectType(payload.rid),
+        ]);
+        if (gen !== submitGeneration.current) return;
+        setImpact(assessment); setActionReferences(inspection.actions);
+        try {
+          const usage = await getObjectBindingUsage(payload.rid);
+          if (gen !== submitGeneration.current) return;
+          setApplicationReferences(usage);
+        } catch (e) {
+          if (gen !== submitGeneration.current) return;
+          setApplicationReferenceError('应用引用未知，请重试预检'); throw e;
+        }
+      }
+      if (!report.valid || action === 'preflight') return;
+      const submittedChecksum = retryChecksum ?? baseline;
+      const result = await onSubmit(payload, mode, submittedChecksum);
+      if (gen !== submitGeneration.current) return;
       if (result && typeof result === 'object') {
         // 409 destructive_confirm_required：抽屉底部展开二段确认区
         setDestructive(result);
+        setDestructiveChecksum(submittedChecksum);
         setConfirmInput('');
       } else if (result) {
+        setLatest(null);
         setError(result);
       } else {
         initial.current = current;
@@ -357,10 +501,10 @@ export default function ObjectTypeEditorV2Drawer({
         onDirtyChange?.(false);
         onClose();
       }
-    } catch (e) {
-      if(gen!==submitGeneration.current) return;
-      const { response } = e as { response?: { status?: number; data?: { detail?: unknown } } };
-      setError(`${response?.status ? `${response.status} · ` : ''}${typeof response?.data?.detail === 'string' ? response.data.detail : e instanceof Error ? e.message : '保存失败'}`);
+    } catch (cause) {
+      if (gen !== submitGeneration.current) return;
+      setLatest(null);
+      setError(errDetailText(cause, cause instanceof Error ? cause.message : '操作失败，请重试；输入已保留。'));
     } finally {
       if(gen===submitGeneration.current) setSubmitting(false);
     }
@@ -386,10 +530,10 @@ export default function ObjectTypeEditorV2Drawer({
         <div className="mp-justify-between mp-border mp-shrink-0 mp-flex-center mp-py-3 mp-px-5" >
           <div className="mp-min-w-0">
             <div className="mp-text-xs mp-text-2 mp-mb-1" >
-              类型 / 属性编辑器 v2 · 整体 upsert（POST /ont/v2/object-types）
+              1 业务信息 → 2 选择字段 → 3 关联 → 4 校验与发布
             </div>
             <h3 className="mp-fw-600 mp-m-0 mp-text-md" >
-              {mode === 'create' ? '新建概念（ObjectType）' : `编辑概念：${objectType?.display_name ?? ''}`}
+              {mode === 'create' ? '新建对象类型' : `编辑对象类型：${objectType?.display_name ?? ''}`}
             </h3>
           </div>
           <button type="button" onClick={requestClose} disabled={busy} aria-label="关闭" className="mp-border mp-text-2 mp-bg-1 mp-rounded-sm mp-onto-close-btn mp-onto-close-btn--sm">
@@ -398,7 +542,7 @@ export default function ObjectTypeEditorV2Drawer({
         </div>
 
         {/* Body */}
-        <fieldset disabled={busy} onClickCapture={busy ? (event)=>{event.preventDefault();event.stopPropagation();} : undefined} className="mp-flex-1 mp-overflow-y-auto mp-py-4 mp-px-5 mp-border-none mp-m-0" >
+        <fieldset disabled={busy} onClickCapture={busy ? (event)=>{event.preventDefault();event.stopPropagation();} : undefined} className="mp-flex-1 mp-overflow-y-auto mp-py-4 mp-px-5 mp-border-none mp-m-0" onChangeCapture={() => { setPreflight(null); setNotice(''); }} >
           {externalSubmitting && <p role="status">相似概念续接写入中，请等待当前提交完成。</p>}
           {auxiliaryLoading && <p role="status">正在读取编辑辅助信息；已有参考值与输入保持不变。</p>}
           {sessionNotice && <p role="status">{sessionNotice}</p>}
@@ -406,16 +550,21 @@ export default function ObjectTypeEditorV2Drawer({
           {externalError && <p role="alert" className="mp-text-danger">{externalError}</p>}
           {dirty && identity && !sessionNotice && <p role="status">未保存输入已保留在当前会话，尚未提交后端。离开后重新打开可继续编辑。</p>}
           {auxiliaryErrors?.length ? <div role="alert" className="mp-text-danger">partial · 编辑辅助信息读取失败：{auxiliaryErrors.join('；')} {onRetryAuxiliary && <button type="button" onClick={onRetryAuxiliary}>重试编辑辅助信息</button>}</div> : null}
+          {drafts.map(wip => <button type="button" key={wip.rid} onClick={() => { restorePayload(wip.payload as unknown as KernelObjectTypeCreate); setBaseline(wip.base_checksum); }}>
+            恢复草稿：{String(wip.payload.display_name || wip.rid)}
+          </button>)}
+          <p>订单对象是一笔订单；订单类型定义所有订单共有的字段。保存草稿不会发布模型。</p>
           {/* ── 基础信息 ── */}
           <div className="mp-mb-5">
             <div className="mp-onto-section-title">基础信息</div>
             {mode === 'create' ? (
               <div className="mp-grid mp-gap-2 mp-onto-grid-3">
                 <div>
-                  <div className="mp-onto-field-label mp-onto-field-label--stacked">概念名称 *</div>
+                  <div className="mp-onto-field-label mp-onto-field-label--stacked">业务名称 *</div>
                   <div className="mp-relative">
                     <input
                       type="text"
+                      aria-label="业务名称" aria-invalid={validated && !displayName.trim()}
                       value={displayName}
                       placeholder="例如：客户"
                       onChange={(e) => setDisplayName(e.target.value)}
@@ -430,9 +579,10 @@ export default function ObjectTypeEditorV2Drawer({
                   </div>
                 </div>
                 <div>
-                  <div className="mp-onto-field-label mp-onto-field-label--stacked">slug（rid 末段）*</div>
+                  <div className="mp-onto-field-label mp-onto-field-label--stacked">业务标识 *</div>
                   <input
                     type="text"
+                    aria-label="业务标识" aria-invalid={validated && !/^[a-z0-9-]+$/.test(slug.trim())}
                     value={slug}
                     placeholder="例如：customer"
                     onChange={(e) => setSlug(e.target.value)}
@@ -454,18 +604,18 @@ export default function ObjectTypeEditorV2Drawer({
               </div>
             ) : (
               <>
-                <div className="mp-onto-field-label mp-onto-field-label--stacked">概念显示名 *</div>
+                <div className="mp-onto-field-label mp-onto-field-label--stacked">业务名称 *</div>
                 <input
                   type="text"
-                  aria-label="概念显示名"
-                  value={displayName}
+                  aria-label="业务名称" aria-invalid={validated && !displayName.trim()}
+                      value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="mp-w-full mp-onto-input mp-onto-input--lg"
                 />
                 <div className="mp-mono mp-onto-hint">rid：<code>{objectType?.rid}</code>（整体 upsert，不可改）</div>
               </>
             )}
-            {mode === 'create' && (
+            {advanced && mode === 'create' && (
               <div className="mp-mono mp-onto-hint">
                 生成 rid：<code>ont.{tenant}.obj.{domain}.{slug.trim() || '<slug>'}.v1</code>
                 ；主键属性自动创建：<code>ont.{tenant}.prop.{domain}.{slug.trim() || '<slug>'}-id.v1</code>
@@ -473,7 +623,12 @@ export default function ObjectTypeEditorV2Drawer({
             )}
           </div>
 
+          <label>业务说明<textarea aria-label="业务说明" value={description} onChange={e => setDescription(e.target.value)} /></label>
+          {validated && !displayName.trim() && <p role="alert">业务名称必填</p>}
+          {validated && !/^[a-z0-9-]+$/.test(slug.trim()) && mode === 'create' && <p role="alert">业务标识必填，仅限小写字母、数字和连字符</p>}
+          <button type="button" aria-expanded={advanced} onClick={() => setAdvanced(!advanced)}>高级设置</button>
           {/* ── 类型元数据（v2）── */}
+          {advanced && <>
           <div className="mp-mb-5">
             <div className="mp-onto-section-title">类型元数据（EXP-01 层级 / EXP-04 治理）</div>
             <div className="mp-grid mp-mb-2 mp-gap-2 mp-grid-2" >
@@ -493,7 +648,7 @@ export default function ObjectTypeEditorV2Drawer({
                 </select>
               </div>
               <div>
-                <div className="mp-onto-field-label mp-onto-field-label--stacked">生命周期状态（status）</div>
+                <div className="mp-onto-field-label mp-onto-field-label--stacked">生命周期状态（仅元数据，不等同于保存草稿）</div>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
@@ -587,6 +742,33 @@ export default function ObjectTypeEditorV2Drawer({
             </div>
           </div>
 
+          </>}
+          <div className="mp-mb-3">
+            <h4>从数据表选择字段</h4>
+            <button type="button" disabled={sourceBusy} onClick={async () => {
+              setSourceBusy(true); setSourceError('');
+              try { setSources(await listBigDataSources()); } catch { setSourceError('数据源暂不可用，请重试或先到数据接入配置。'); }
+              finally { setSourceBusy(false); }
+            }}>读取数据源</button>
+            <select aria-label="选择数据源" value={sourceId} onChange={async e => {
+              const id=e.target.value; setSourceId(id); setSourceTables([]); if (!id) return;
+              setSourceBusy(true); setSourceError('');
+              try {
+                const response=await apiClient.get(`/data/sources/${encodeURIComponent(id)}/schema`);
+                if (!Array.isArray(response.data?.tables) || !response.data?.discovered_at) throw new Error('missing verified discovery');
+                setSourceTables(response.data.tables);
+              } catch { setSourceError('尚未取得可验证的实际字段，请检查数据源连接后重试。'); }
+              finally { setSourceBusy(false); }
+            }}><option value="">选择已有数据源</option>{sources.map(source => <option key={source.sourceId} value={source.sourceId}>{source.name}</option>)}</select>
+            {sourceBusy && <p>正在读取实际字段…</p>}{sourceError && <p role="alert">{sourceError}</p>}
+            {sourceTables.map(table => <fieldset key={table.name}><legend>{table.name}</legend>{table.columns.map(column => <button type="button" key={column.name} onClick={() => {
+              const name=column.name.toLowerCase().replace(/[^a-z0-9-]/g,'-');
+              const format=/int/.test(column.type) ? 'integer' : /numeric|decimal|float|double|real/.test(column.type) ? 'double' : /bool/.test(column.type) ? 'boolean' : /time/.test(column.type) ? 'timestamp' : /date/.test(column.type) ? 'date' : 'string';
+              const draft={...emptyPropertyDraft(name), rid:makePropRid(name), title:column.name, typeId:format, fallbackFormat:format, nullable:column.nullable ?? true, primaryKey:column.primary_key ?? false};
+              setPropDrafts(previous => [...previous.filter(p => p.name !== name), draft]); setExpanded(draft.uid); setPreflight(null);
+            }}>添加字段 {column.name}（{column.type}）</button>)}</fieldset>)}
+            <p><Link to="/ontology/data/mappings">打开数据映射</Link> · <Link to="/ontology/model/link-types">选择关系并查看关联</Link></p>
+          </div>
           {/* ── 属性定义 ── */}
           <div>
             <div className="mp-justify-between mp-flex-center mp-onto-section-title">
@@ -595,13 +777,14 @@ export default function ObjectTypeEditorV2Drawer({
                 <Plus className="mp-icon-12" />添加属性
               </button>
             </div>
+            {validated && !propDrafts.some(p => p.primaryKey) && <p role="alert">至少需要一个主键属性</p>}
             {propDrafts.map((d, i) => {
               const isOpen = expanded === d.uid;
               const errs = validatePropertyDraft(d, vts);
               return (
                 <div
                   key={d.uid}
-                  className="mp-hidden mp-border mp-rounded mp-mb-2 mp-bg-1"
+                  className="mp-border mp-rounded mp-mb-2 mp-bg-1"
                 >
                   <div
                     className="mp-gap-2 mp-flex-center mp-clickable mp-py-2 mp-px-3"
@@ -638,6 +821,7 @@ export default function ObjectTypeEditorV2Drawer({
                   </div>
                   {isOpen && (
                     <div className="mp-border mp-onto-prop-body">
+                      {errs.map((message,i) => <p role="alert" key={i}>{message}</p>)}
                       <PropertyEditorV2
                         draft={d}
                         onChange={(next) => updatePropDraft(d.uid, next)}
@@ -684,7 +868,7 @@ export default function ObjectTypeEditorV2Drawer({
                 />
                 <button
                   type="button"
-                  onClick={() => void submit(confirmInput.trim())}
+                  onClick={() => void submit(confirmInput.trim(), 'publish', destructiveChecksum)}
                   disabled={busy || !confirmInput.trim()}
                   className="mp-fw-600 mp-onto-btn mp-onto-btn--md mp-onto-btn--solid-danger"
                 >
@@ -692,7 +876,7 @@ export default function ObjectTypeEditorV2Drawer({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setDestructive(null); setConfirmInput(''); }}
+                  onClick={() => { setDestructive(null); setDestructiveChecksum(undefined); setConfirmInput(''); }}
                   disabled={busy}
                   className="mp-onto-btn mp-onto-btn--md"
                 >
@@ -701,13 +885,43 @@ export default function ObjectTypeEditorV2Drawer({
               </div>
             </div>
           )}
+          {notice && <p role="status">{notice}</p>}
+          {preflight && <div aria-label="预检结果">
+            <strong>{preflight.valid ? '模型校验通过' : '请修正以下问题'}</strong>
+            {[...preflight.errors, ...preflight.warnings, ...preflight.destructive].map((message,i) => <p key={i}>{message}</p>)}
+            <p>依赖：{preflight.references.dependencies.join('、') || '无'}；未解析引用：{preflight.references.unresolved.join('、') || '无'}</p>
+          </div>}
+          {preflight && mode === 'create' && <p>新建对象类型尚无已发布历史引用；重复标识会拒绝发布。</p>}
+          {preflight && mode === 'edit' && <p>引用动作：{actionReferences === null ? '尚未取得，请重试预检' : actionReferences.length ? actionReferences.join('、') : '无'}</p>}
+          {impact && <div aria-label="变更影响"><p>受影响数据：{impact.counts.instances_affected ?? impact.counts.reattach_pending ?? '未提供'} 条</p>
+            {impact.changes.map((change,i) => <p key={i}>{change}</p>)}
+            <div aria-label="应用引用">
+              {applicationReferences === null ? <p role="status">{applicationReferenceError || '应用引用尚未查询，状态未知'}</p>
+                : applicationReferences.length === 0 ? <p>当前租户没有实际应用绑定引用</p>
+                : applicationReferences.map((a, i) => <p key={a.app_id + a.page_id + a.status + i}>
+                    <Link to={'/apps/mine?app=' + encodeURIComponent(a.app_id)}>{a.app_name}</Link>
+                    {' · ' + a.app_id + ' · ' + a.model_version + ' · ' + (a.status === 'PUBLISHED' ? '已发布' : a.status === 'OFFLINE' ? '已下线' : '草稿')}
+                    {a.version_id && ' · ' + a.version_id}
+                  </p>)}
+              </div>
+            {impact.warnings.map((warning,i) => <p key={i}>{warning}</p>)}
+          </div>}
+          {latest && <div aria-label="最新版本比较"><p>最新名称：{latest.display_name}；最新说明：{latest.description || '无'}；最新属性：{latest.properties.map(p => p.title || propSlug(p.rid)).join('、')}</p>
+            <p>当前表单保持不变。确认比较后，将以最新模型为基线重试。</p>
+            <button type="button" onClick={() => void submit(undefined, 'publish', latest.checksum)}>使用最新基线重试发布</button>
+          </div>}
           {error && (
             <div className="mp-flex mp-mb-2 mp-gap-1 mp-p-2 mp-text-sm mp-text-danger mp-items-start mp-lh-16 mp-rounded mp-onto-box-danger">
               <AlertTriangle className="mp-shrink-0 mp-mt-1 mp-icon-12"  />
               <span>{error}</span>
+              <button type="button" onClick={async () => { try { setLatest(await getObjectType(currentTypeRid)); } catch { setNotice('最新模型读取失败，请重试。'); } }}>比较最新模型</button>
+              {onLocateExisting && <button type="button" onClick={async () => { try { await onLocateExisting(currentTypeRid); } catch { setNotice('未找到已有类型，请检查标识后重试。'); } }}>定位已有类型</button>}
             </div>
           )}
           <div className="mp-flex mp-justify-end mp-gap-2">
+            <button type="button" disabled={busy} onClick={() => { if(lastSaved.current) restorePayload(lastSaved.current); else { discardEditorInput(sessionKey); setResetTick(t=>t+1); } }}>撤销更改</button>
+            <button type="button" disabled={busy} onClick={() => void submit(undefined, 'draft')}>保存草稿</button>
+            <button type="button" disabled={busy} onClick={() => void submit(undefined, 'preflight')}>预检与影响</button>
             <button
               type="button"
               onClick={requestClose}
@@ -716,14 +930,13 @@ export default function ObjectTypeEditorV2Drawer({
             >
               取消
             </button>
-            {onSaveDraft && <button type="button" onClick={() => void submit(undefined,true)} disabled={busy} className="mp-onto-btn mp-onto-btn--lg">保存草稿（WIP）</button>}
-            <button
+                        <button
               type="button"
               onClick={() => void submit()}
               disabled={busy}
               className="mp-fw-600 mp-onto-btn mp-onto-btn--lg mp-onto-btn--solid"
             >
-              {submitting ? '保存中…' : '保存（整体 upsert）'}
+              {submitting ? '处理中…' : '发布对象类型'}
             </button>
           </div>
         </div>

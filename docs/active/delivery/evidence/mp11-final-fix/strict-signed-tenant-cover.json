@@ -1,0 +1,20 @@
+{
+  "label": "strict-signed-tenant-cover",
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "-m",
+    "pytest",
+    "-c",
+    "pyproject.toml",
+    "packages/mate-platform/tests/test_mp11_signed_identity.py",
+    "-q",
+    "--tb=short",
+    "-p",
+    "no:cacheprovider",
+    "--basetemp=D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\final-fix-pytest-61e2f4e8"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+  "exit_code": 0,
+  "elapsed_seconds": 5.14,
+  "head": "38ff11900b9d72560afe20db4715d344c1370a23"
+}

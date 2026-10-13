@@ -1,0 +1,11 @@
+{
+  "run_id": "bf7ce3d0ff0d",
+  "relationship_tenant": "mp11-rel-bf7ce3d0ff0d",
+  "empty_tenant": "mp11-empty-bf7ce3d0ff0d",
+  "object_types": 104,
+  "customers": 201,
+  "orders": 201,
+  "paged_links": 201,
+  "signed_grants": true,
+  "prior_inputs_retained": true
+}

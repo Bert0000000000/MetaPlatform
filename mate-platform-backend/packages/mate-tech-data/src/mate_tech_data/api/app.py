@@ -90,10 +90,15 @@ router = APIRouter(prefix="/api/v1/data", tags=["data"])
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _tid(request: Request) -> str:
-    """Return the verified tenant_id for the current request."""
+def _tid(request: Request, *, require_read: bool | None = None) -> str:
+    """Return the verified tenant, enforcing the declared read boundary."""
     ctx = request.state.ctx
-    return str(require_tenant(ctx))
+    tenant_id = require_tenant(ctx)
+    if require_read is None:
+        require_read = request.method in {"GET", "HEAD", "OPTIONS"}
+    if require_read and not ctx.has_scope("platform.read"):
+        raise HTTPException(status_code=403, detail="platform.read required")
+    return str(tenant_id)
 
 
 def _emit(
@@ -386,6 +391,8 @@ async def create_source_endpoint(
 ) -> dict[str, Any]:
     """Create a data source (FR-DATA-DATAPOSTDATASOURCES)."""
     tid = _tid(request)
+    if not request.state.ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     source = create_source(
         tid,
         name=body.name,
@@ -423,6 +430,8 @@ async def update_source_endpoint(
 ) -> dict[str, Any]:
     """Update a data source (FR-DATA-DATAPUTDATASOURCESID)."""
     tid = _tid(request)
+    if not request.state.ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     source = update_source(
         tid,
         source_id,
@@ -449,6 +458,8 @@ async def delete_source_endpoint(
 ) -> dict[str, Any]:
     """Delete a data source (FR-DATA-DATADELETEDATASOURCESID)."""
     tid = _tid(request)
+    if not request.state.ctx.has_scope("platform.write"):
+        raise HTTPException(status_code=403, detail="platform.write scope required")
     removed = delete_source(tid, source_id)
     if not removed:
         raise HTTPException(status_code=404, detail="data source not found")
@@ -469,7 +480,12 @@ async def source_schema_endpoint(
 ) -> dict[str, Any]:
     """Discover schema for a data source (FR-DATA-DATAGETDATASOURCESIDSCHEMA)."""
     tid = _tid(request)
-    schema = get_source_schema(tid, source_id)
+    from ..services.source_connector import SourceError
+
+    try:
+        schema = get_source_schema(tid, source_id)
+    except SourceError as exc:
+        raise HTTPException(status_code=422, detail=exc.detail()) from None
     if schema is None:
         raise HTTPException(status_code=404, detail="data source not found")
     return schema
@@ -481,7 +497,7 @@ async def test_source_endpoint(
     source_id: str,
 ) -> dict[str, Any]:
     """Test a data source connection (FR-DATA-DATAPOSTDATASOURCESIDTEST)."""
-    tid = _tid(request)
+    tid = _tid(request, require_read=True)
     result = test_source_connection(tid, source_id)
     if result is None:
         raise HTTPException(status_code=404, detail="data source not found")
@@ -762,7 +778,7 @@ async def data_product_versions_endpoint(
 from dataclasses import asdict as _asdict
 
 
-@router.post("/lineage/edges")
+@router.post("/lineage/edges", operation_id="dataPostDataLineageEdges")
 async def create_lineage_edge_endpoint(request: Request, body: dict) -> dict:
     """登记 lineage 依赖边（DATA-D6）。body: {source_entity, target_entity, edge_type?}。"""
     tid = _tid(request)
@@ -783,7 +799,7 @@ async def create_lineage_edge_endpoint(request: Request, body: dict) -> dict:
     return _asdict(edge)
 
 
-@router.get("/lineage/graph")
+@router.get("/lineage/graph", operation_id="dataGetDataLineageGraph")
 async def lineage_graph_endpoint(
     request: Request, entity: str | None = Query(default=None)
 ) -> dict:
@@ -792,7 +808,7 @@ async def lineage_graph_endpoint(
     return lineage_graph(tid, entity)
 
 
-@router.post("/quality/rules")
+@router.post("/quality/rules", operation_id="dataPostDataQualityRules")
 async def create_quality_rule_endpoint(request: Request, body: dict) -> dict:
     """登记 quality 规则（DATA-D7）。body: {entity_id, field, rule_type, params?}。"""
     tid = _tid(request)
@@ -814,7 +830,7 @@ async def create_quality_rule_endpoint(request: Request, body: dict) -> dict:
     return _asdict(rule)
 
 
-@router.get("/quality/rules")
+@router.get("/quality/rules", operation_id="dataGetDataQualityRules")
 async def list_quality_rules_endpoint(
     request: Request, entity_id: str | None = Query(default=None)
 ) -> dict:
@@ -823,7 +839,7 @@ async def list_quality_rules_endpoint(
     return {"items": [_asdict(r) for r in rules], "total": len(rules)}
 
 
-@router.post("/quality/run")
+@router.post("/quality/run", operation_id="dataPostDataQualityRun")
 async def run_quality_endpoint(request: Request, body: dict | None = None) -> dict:
     """执行本租户全部 enabled 规则，结果落库（DATA-D7）。"""
     tid = _tid(request)
@@ -843,7 +859,7 @@ async def run_quality_endpoint(request: Request, body: dict | None = None) -> di
     return summary
 
 
-@router.get("/quality/results")
+@router.get("/quality/results", operation_id="dataGetDataQualityResults")
 async def list_quality_results_endpoint(
     request: Request, limit: int = Query(default=50, le=200)
 ) -> dict:
@@ -852,7 +868,7 @@ async def list_quality_results_endpoint(
     return {"items": [_asdict(r) for r in results], "total": len(results)}
 
 
-@router.get("/catalog/search")
+@router.get("/catalog/search", operation_id="dataGetDataCatalogSearch")
 async def catalog_search_endpoint(request: Request, q: str = Query(...)) -> dict:
     """跨 sources + data products 检索（catalog 面）。"""
     tid = _tid(request)

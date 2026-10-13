@@ -33,8 +33,23 @@ jobs:
         run: python -m unittest discover -s infra/demo-cloud/tests -v
       - name: Prepare disposable configuration from the backend lock
         run: python infra/demo-cloud/prepare.py
-      - name: Validate the actual Compose overlay
-        run: docker compose --env-file infra/demo-cloud/private/.env -f docker-compose.yml -f infra/demo-cloud/compose.yml config --quiet
+      - name: Validate the actual Compose overlay and metadata upgrade targets
+        run: |
+          docker compose --env-file infra/demo-cloud/private/.env -f docker-compose.yml -f infra/demo-cloud/compose.yml config --quiet
+          python - <<'PY'
+          import json
+          import subprocess
+          from urllib.parse import urlsplit
+          result = subprocess.run(['docker', 'compose', '--env-file', 'infra/demo-cloud/private/.env', '-f', 'docker-compose.yml', '-f', 'infra/demo-cloud/compose.yml', 'config', '--format', 'json'], capture_output=True, check=True, text=True)
+          config = json.loads(result.stdout)
+          for service, module in [('mate-app-hub', 'mate_app_hub.main:app'), ('mate-tech-mcp', 'mate_tech_mcp.main:app')]:
+              data = config['services'][service]
+              assert data['command'][:2] == ['uvicorn', module]
+              url = urlsplit(data['environment'].get('MATE_DB_URL', ''))
+              assert url.scheme.split('+')[0] == 'postgresql'
+              assert url.hostname == 'postgres' and url.port == 5432 and url.path == '/metaplatform' and not url.query
+          print('Actual Compose consumers use the exact guarded metadata upgrade target; no credentials printed.')
+          PY
       - name: Package and validate the real source archive
         run: |
           python infra/demo-cloud/bundle.py

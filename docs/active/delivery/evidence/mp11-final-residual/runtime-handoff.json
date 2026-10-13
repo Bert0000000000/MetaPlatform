@@ -1,0 +1,62 @@
+{
+  "processes": {
+    "api": [
+      {
+        "ProcessId": 41356,
+        "ParentProcessId": 50968,
+        "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+        "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"api\" ",
+        "CreationTicks": 639273933718179600
+      },
+      {
+        "ProcessId": 50968,
+        "ParentProcessId": 46588,
+        "ExecutablePath": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+        "CommandLine": "\"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"api\" ",
+        "CreationTicks": 639273933716373330
+      }
+    ],
+    "auth": [
+      {
+        "ProcessId": 45364,
+        "ParentProcessId": 40756,
+        "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+        "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"auth\" ",
+        "CreationTicks": 639273835528245250
+      },
+      {
+        "ProcessId": 40756,
+        "ParentProcessId": 17440,
+        "ExecutablePath": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+        "CommandLine": "\"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"auth\" ",
+        "CreationTicks": 639273835527503280
+      }
+    ],
+    "web": [
+      {
+        "ProcessId": 22216,
+        "ParentProcessId": 67120,
+        "ExecutablePath": "C:\\Program Files\\nodejs\\node.exe",
+        "CommandLine": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\node_modules\\vite\\bin\\vite.js\" \"--config\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\vite.config.ts\" ",
+        "CreationTicks": 639273825553506960
+      }
+    ]
+  },
+  "source_head": "3e844b844a201731b8170bd40b22580a83103771",
+  "auth_web_unchanged": true,
+  "dependency_snapshot": "pending Docker read responsiveness; no identity claim beyond last guarded pre-stop snapshot",
+  "implementation_commit": "3e844b844a201731b8170bd40b22580a83103771",
+  "source_commit_map": "source-commit-map.json",
+  "ports": {
+    "api": 55522,
+    "auth": 55523,
+    "web": 9368,
+    "keycloak": 55520,
+    "redis": 55521
+  },
+  "signature_verification": "required; unchanged configuration/source",
+  "private_recovery_directory": ".tmp/codex-mp11-candidate",
+  "last_full_dependency_inventory": "resources-before-api-reload.json",
+  "live_business_reverification": "pending root Ruling45 coordinated recovery",
+  "scoped_review": "pending existing reviewer; ca01bf73 remained NOT APPROVED"
+}

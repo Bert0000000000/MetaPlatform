@@ -4,9 +4,14 @@
 !mate-platform-backend/packages/**
 !mate-platform-backend/services/
 !mate-platform-backend/services/**
+!mate-platform-backend/alembic/
+!mate-platform-backend/alembic/versions/
+!mate-platform-backend/alembic/versions/20261011_0021_apphub_publication.py
+!mate-platform-backend/alembic/versions/20261012_0022_mcp_key_scopes.py
 !infra/
 !infra/demo-cloud/
 !infra/demo-cloud/run_service.py
+!infra/demo-cloud/configure_schema.py
 !infra/demo-cloud/artifacts/
 !infra/demo-cloud/artifacts/requirements.txt
 **/.git

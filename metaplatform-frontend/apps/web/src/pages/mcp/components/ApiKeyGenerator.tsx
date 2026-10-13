@@ -21,11 +21,10 @@ import '../mcp.css';
 const FORM_DRAWER_W = 420;
 
 const SCOPE_OPTIONS = [
-  { label: 'tools:invoke', value: 'tools:invoke' },
-  { label: 'tools:read', value: 'tools:read' },
-  { label: 'resources:read', value: 'resources:read' },
-  { label: 'prompts:read', value: 'prompts:read' },
-  { label: 'admin', value: 'admin' },
+  { label: '平台只读 platform.read', value: 'platform.read' },
+  { label: '提议 platform.write（不能批准或执行）', value: 'platform.write' },
+  { label: '本体只读 ont.read（需要签发者同名授权）', value: 'ont.read' },
+  { label: '本体提议 ont.write（同时需要 platform.write）', value: 'ont.write' },
 ];
 
 export default function ApiKeyGenerator() {
@@ -137,6 +136,7 @@ export default function ApiKeyGenerator() {
         </Card>
       )}
 
+      <p>授权不能超过当前用户的已验证权限。旧 Key 无范围时无法调用工具，请撤销后重新签发。</p>
       <Table
         rowKey="id"
         dataSource={keys}

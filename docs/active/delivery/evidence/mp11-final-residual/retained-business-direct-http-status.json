@@ -1,0 +1,15 @@
+{
+  "label": "retained-business-direct-http-status",
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "-B",
+    "-X",
+    "utf8",
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\.tmp\\codex-mp11-candidate\\final-residual-http.py"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform",
+  "exit_code": 1,
+  "elapsed_seconds": 15.41,
+  "head": "3e844b844a201731b8170bd40b22580a83103771",
+  "private_script_sha256": "61ca34c29b2f212cce5fa2ac27a1ae6aa39ba9e53bf961baae4ca5db555ac32f"
+}

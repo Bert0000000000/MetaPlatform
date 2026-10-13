@@ -3913,3 +3913,584 @@ requirements:
       - mate-platform-backend/packages/mate-app-copilot/tests/test_modeling_generation.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-ALIGN-001:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-33-Ontology-Alignment_v1.0-20260908.md
+    service: ont
+    operationIds:
+      - ontAlignV2Individuals
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#align_individuals_endpoint
+    tests:
+      - mate-platform-backend/packages/mate-kernel/tests/test_ont_g33_alignment.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/prd/APP-ONTSTUDIO/PRD-33-Ontology-Alignment_v1.0-20260908.md
+        section: 'FR-ALIGN-001: explicit, lexical and structural individual alignment'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      ontAlignV2Individuals: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#align_individuals_endpoint
+    implementationScope: Stateless alignment endpoint; this mapping does not certify instance migration.
+  FR-ALIGN-002:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-33-Ontology-Alignment_v1.0-20260908.md
+    service: ont
+    operationIds:
+      - ontPreviewV2ObjectTypeMerge
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#merge_preview_object_types
+    tests:
+      - mate-platform-backend/packages/mate-kernel/tests/test_ont_g33_alignment.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/prd/APP-ONTSTUDIO/PRD-33-Ontology-Alignment_v1.0-20260908.md
+        section: 'FR-ALIGN-002: definition union, conflict strategy and stateless merge preview'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      ontPreviewV2ObjectTypeMerge: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#merge_preview_object_types
+    implementationScope: Definition merge preview only; persisted instance remapping has a separate contract.
+  FR-DATA-D6-CATALOG:
+    prd: docs/active/prd/APP-DATA/PRD-APP-DATA-数据平台_v1.0-20260731.md
+    service: data
+    operationIds:
+      - dataGetDataCatalogSearch
+    handler: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#catalog_search_endpoint
+    tests:
+      - mate-platform-backend/packages/mate-tech-data/tests/test_data_governance.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/prd/APP-DATA/PRD-APP-DATA-数据平台_v1.0-20260731.md
+        section: Data asset catalog and asset consumers
+      - path: docs/active/decisions/ADR-0016-data-platform-architecture.md
+        section: 'Section 2: Catalog component and tenant isolation'
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 4: MP11-DATA-05 asset navigation'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/data.yaml
+    handlers:
+      dataGetDataCatalogSearch: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#catalog_search_endpoint
+    implementationScope: Current endpoint searches sources and data products. The contract D6 label does not certify
+      the complete ADR phase or external catalog integrations.
+  FR-DATA-D6-LINEAGE:
+    prd: docs/active/prd/APP-DATA/PRD-APP-DATA-数据平台_v1.0-20260731.md
+    service: data
+    operationIds:
+      - dataGetDataLineageGraph
+      - dataPostDataLineageEdges
+    handler: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#lineage_graph_endpoint
+    tests:
+      - mate-platform-backend/packages/mate-tech-data/tests/test_data_governance.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/prd/APP-DATA/PRD-APP-DATA-数据平台_v1.0-20260731.md
+        section: Lineage views for assets and metrics
+      - path: docs/active/decisions/ADR-0016-data-platform-architecture.md
+        section: 'Section 2: Lineage component and tenant isolation'
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 4: MP11-DATA-05 asset lineage navigation'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/data.yaml
+    handlers:
+      dataGetDataLineageGraph: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#lineage_graph_endpoint
+      dataPostDataLineageEdges: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#create_lineage_edge_endpoint
+    implementationScope: Current endpoints register tenant-scoped edges and query their graph; external lineage ingestion
+      and the full ADR program are not accepted by this mapping.
+  FR-DATA-D7-QUALITY:
+    prd: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+    service: data
+    operationIds:
+      - dataGetDataQualityResults
+      - dataGetDataQualityRules
+      - dataPostDataQualityRules
+      - dataPostDataQualityRun
+    handler: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#run_quality_endpoint
+    tests:
+      - mate-platform-backend/packages/mate-tech-data/tests/test_data_governance.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 4: MP11-DATA-05 data quality results'
+      - path: docs/active/decisions/ADR-0016-data-platform-architecture.md
+        section: 'Section 2: Quality component and tenant isolation'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/data.yaml
+    handlers:
+      dataGetDataQualityResults: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#list_quality_results_endpoint
+      dataGetDataQualityRules: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#list_quality_rules_endpoint
+      dataPostDataQualityRules: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#create_quality_rule_endpoint
+      dataPostDataQualityRun: mate-platform-backend/packages/mate-tech-data/src/mate_tech_data/api/app.py#run_quality_endpoint
+    implementationScope: Current API implements required/type rules and stored results. Unique/range rules and full
+      MP11-DATA-05 acceptance are not claimed.
+  FR-ONT-AGENT-METRICS:
+    prd: docs/active/specs/2026-09-17-ontology-module-ia-redesign.md
+    service: ont
+    operationIds:
+      - ontAgentMetricsHealth
+      - ontAgentMetricsSummary
+      - ontAgentMetricsTrend
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/agent_metrics.py#agent_metrics_summary
+    tests:
+      - mate-platform-backend/packages/mate-tech-ont/tests/test_agent_metrics.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-09-17-ontology-module-ia-redesign.md
+        section: 'Sections 4.1 and 4.6: agent summary, trend and health endpoints'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      ontAgentMetricsHealth: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/agent_metrics.py#agent_metrics_health
+      ontAgentMetricsSummary: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/agent_metrics.py#agent_metrics_summary
+      ontAgentMetricsTrend: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/agent_metrics.py#agent_metrics_trend
+    implementationScope: Read-only proposal aggregation. Endpoint implementation does not certify product SLO, real-client
+      integration or business acceptance.
+  FR-ONT-G14-SHACL:
+    prd: docs/active/prd/APP-DW/PRD-23-SHACL-Full_v1.0-20260908.md
+    service: ont
+    operationIds:
+      - ontValidateV2Shacl
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#validate_shacl_endpoint
+    tests:
+      - mate-platform-backend/packages/mate-kernel/tests/test_ont_g14_shacl.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/prd/APP-DW/PRD-23-SHACL-Full_v1.0-20260908.md
+        section: FR-SHACL-001..005; especially FR-SHACL-004 REST integration
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      ontValidateV2Shacl: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#validate_shacl_endpoint
+    implementationScope: Implemented SHACL subset follows the PRD coverage list; unsupported recursive shapes and
+      full W3C conformance are not claimed.
+  MP11-AGENT-01:
+    prd: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+    service: ont
+    operationIds:
+      - ontPreviewV2Proposal
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#get_proposal_preview
+    tests:
+      - mate-platform-backend/packages/mate-tech-ont/tests/integration/test_v2_kernel_proposal_preview.py
+      - mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 7: authorized agents propose; humans preview and confirm'
+      - path: docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md
+        section: 'Task 7: stable tool schema and authenticated approval'
+      - path: docs/active/decisions/ADR-0064-action-unified-edit-set.md
+        section: 'Sections 2 and 5: proposal preview and HITL'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      ontPreviewV2Proposal: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#get_proposal_preview
+    implementationScope: This entry covers the preview API dependency of client onboarding. Installation and complete
+      dsh/WorkBuddy acceptance remain outside this API mapping.
+  MP11-APP-01:
+    prd: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+    service: apphub
+    operationIds:
+      - apphubCheckPublication
+      - apphubCompleteReleaseTask
+      - apphubCreateAppRelease
+      - apphubCreateAppVersion
+      - apphubDeleteAppVersion
+      - apphubDeleteApphubAppsCode
+      - apphubDeleteApphubGroupsCode
+      - apphubGetAppDetail
+      - apphubGetAppRelease
+      - apphubGetAppRuntime
+      - apphubGetApphubApps
+      - apphubGetApphubAppsGroups
+      - apphubGetApphubModules
+      - apphubGetApphubPages
+      - apphubGetModuleDetail
+      - apphubGetObjectBindingUsage
+      - apphubGetOrderRuntimeData
+      - apphubGetOrderRuntimeHistory
+      - apphubGetPageDetail
+      - apphubGetShortlink
+      - apphubListAppReleases
+      - apphubListAppVersions
+      - apphubListReleaseLogs
+      - apphubListReleaseTasks
+      - apphubListShortlinks
+      - apphubPatchApphubAppsCode
+      - apphubPostAppPublish
+      - apphubPostAppRuntimeExecute
+      - apphubPostApphubApps
+      - apphubPostApphubGroups
+      - apphubPostApphubModules
+      - apphubPostApphubPages
+      - apphubPostShortlink
+      - apphubPreviewOrderPage
+      - apphubPublishAppVersion
+      - apphubRollbackAppVersion
+      - apphubSavePage
+      - apphubValidateProposalContext
+      - ontApplyV2EditSet
+      - ontConfirmV2Proposal
+      - ontExecuteV2Proposal
+      - ontListV2ActionAudit
+      - ontProposeV2ActionType
+      - ontProposeV2EditSet
+      - ontRejectV2Proposal
+      - ontRevertV2Proposal
+      - ontWithdrawV2Proposal
+    handler: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#check_publication
+    tests:
+      - mate-platform-backend/packages/mate-app-hub/tests/test_apphub_publication.py
+      - mate-platform-backend/packages/mate-app-hub/tests/test_mp11_app_identity.py
+      - mate-platform-backend/packages/mate-app-hub/tests/test_apphub_order_binding.py
+      - mate-platform-backend/packages/mate-tech-ont/tests/test_ont_act05_unified.py
+      - mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_proposal_scopes.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 6: MP11-APP-01..05 metadata, binding, publication, runtime and rollback'
+      - path: docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md
+        section: 'Task 6: object-bound order application and publication checks'
+      - path: docs/active/decisions/ADR-0064-action-unified-edit-set.md
+        section: 'Sections 2 and 5: unified edit sets, confirmation, execution and reversal'
+      - path: docs/active/prd/APP-WFE/PRD-02-Action-Confirm-Rollback_v1.0-20260908.md
+        section: 'Section 2: proposal withdrawal and compensated reversal'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/apphub.yaml
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      apphubCheckPublication: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#check_publication
+      apphubCompleteReleaseTask: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#complete_release_task
+      apphubCreateAppRelease: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_app_release
+      apphubCreateAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_app_version
+      apphubDeleteAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_app_version
+      apphubDeleteApphubAppsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_app_endpoint
+      apphubDeleteApphubGroupsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_group_endpoint
+      apphubGetAppDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_detail
+      apphubGetAppRelease: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_release
+      apphubGetAppRuntime: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_runtime
+      apphubGetApphubApps: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_registered_apps
+      apphubGetApphubAppsGroups: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_groups
+      apphubGetApphubModules: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_business_modules
+      apphubGetApphubPages: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_page_templates
+      apphubGetModuleDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_module_detail
+      apphubGetObjectBindingUsage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_object_binding_usage
+      apphubGetOrderRuntimeData: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_order_runtime_data
+      apphubGetOrderRuntimeHistory: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_order_runtime_history
+      apphubGetPageDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_page_detail
+      apphubGetShortlink: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#resolve_shortlink_endpoint
+      apphubListAppReleases: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_releases
+      apphubListAppVersions: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_versions
+      apphubListReleaseLogs: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_release_logs
+      apphubListReleaseTasks: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_release_tasks
+      apphubListShortlinks: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_shortlinks_endpoint
+      apphubPatchApphubAppsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#update_app
+      apphubPostAppPublish: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#publish_app
+      apphubPostAppRuntimeExecute: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#execute_runtime_action
+      apphubPostApphubApps: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#register_app
+      apphubPostApphubGroups: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_group
+      apphubPostApphubModules: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_module
+      apphubPostApphubPages: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_page
+      apphubPostShortlink: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_shortlink_endpoint
+      apphubPreviewOrderPage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#preview_order_page
+      apphubPublishAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#publish_app_version
+      apphubRollbackAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#rollback_app_version
+      apphubSavePage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#save_page
+      apphubValidateProposalContext: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#validate_proposal_context
+      ontApplyV2EditSet: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#apply_edit_set
+      ontConfirmV2Proposal: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#confirm_proposal
+      ontExecuteV2Proposal: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#execute_proposal
+      ontListV2ActionAudit: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#list_action_audit
+      ontProposeV2ActionType: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#propose_action
+      ontProposeV2EditSet: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#propose_edit_set
+      ontRejectV2Proposal: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#reject_proposal
+      ontRevertV2Proposal: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#revert_proposal
+      ontWithdrawV2Proposal: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#withdraw_proposal
+    implementationScope: The canonical contract groups application/action APIs under APP-01. Sources also cover APP-02..05
+      and existing action ADRs; implemented means endpoint handlers exist, not that all product acceptance criteria
+      pass.
+    services:
+      - apphub
+      - ont
+  MP11-DATA-02:
+    prd: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+    service: ont
+    operationIds:
+      - ontGetV2BackingSyncRun
+      - ontListV2BackingDatasources
+      - ontSyncV2BackingDatasources
+      - ontUpsertV2BackingDatasource
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#upsert_backing_datasource
+    tests:
+      - scripts/acceptance/mp11/verify.py
+      - mate-platform-backend/packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 4: MP11-DATA-02 PG/CSV mapping and preflight'
+      - path: docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md
+        section: 'Task 5: actual datasource mapping and sync flow'
+      - path: docs/active/decisions/ADR-0073-data-sync-integrity.md
+        section: 'Section 2: stable paging, cursor and failure semantics'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      ontGetV2BackingSyncRun: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#get_backing_sync_run
+      ontListV2BackingDatasources: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#list_backing_datasources
+      ontSyncV2BackingDatasources: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#sync_backing_datasources
+      ontUpsertV2BackingDatasource: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#upsert_backing_datasource
+    implementationScope: API subset for backing mappings and sync runs; complete six-step UI and business acceptance
+      are not claimed.
+  MP11-DATA-03:
+    prd: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+    service: ont
+    operationIds:
+      - ontGetV2BackingSyncRun
+      - ontListV2BackingDatasources
+      - ontSyncV2BackingDatasources
+      - ontUpsertV2BackingDatasource
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#upsert_backing_datasource
+    tests:
+      - scripts/acceptance/mp11/verify.py
+      - mate-platform-backend/packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 4: MP11-DATA-03 timestamp and incremental parameters'
+      - path: docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md
+        section: 'Task 5: DTO persistence and actual sync use'
+      - path: docs/active/decisions/ADR-0073-data-sync-integrity.md
+        section: 'Sections 2.1, 2.2 and 2.5: source cursors and field semantics'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      ontGetV2BackingSyncRun: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#get_backing_sync_run
+      ontListV2BackingDatasources: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#list_backing_datasources
+      ontSyncV2BackingDatasources: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#sync_backing_datasources
+      ontUpsertV2BackingDatasource: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#upsert_backing_datasource
+    implementationScope: Tracks backing datasource APIs and parameter persistence; linked tests are coverage pointers,
+      not acceptance receipts.
+  MP11-DATA-04:
+    prd: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+    service: ont
+    operationIds:
+      - ontGetV2BackingSyncRun
+      - ontListV2BackingDatasources
+      - ontSyncV2BackingDatasources
+      - ontUpsertV2BackingDatasource
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#get_backing_sync_run
+    tests:
+      - scripts/acceptance/mp11/verify.py
+      - mate-platform-backend/packages/mate-tech-ont/tests/integration/test_ont_data_sync_integrity.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 4: MP11-DATA-04 run detail, errors and recovery'
+      - path: docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md
+        section: 'Task 5: run ID, row counts, cursor and retry'
+      - path: docs/active/decisions/ADR-0073-data-sync-integrity.md
+        section: 'Section 2.3: failure tracking and retry boundaries'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      ontGetV2BackingSyncRun: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#get_backing_sync_run
+      ontListV2BackingDatasources: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#list_backing_datasources
+      ontSyncV2BackingDatasources: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#sync_backing_datasources
+      ontUpsertV2BackingDatasource: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#upsert_backing_datasource
+    implementationScope: Tracks datasource sync and persisted run read-back APIs. Restart/retry acceptance is not
+      inferred from handler availability.
+  MP11-ONT-03:
+    prd: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+    service: ont
+    operationIds:
+      - apphubCompleteReleaseTask
+      - apphubCreateAppRelease
+      - apphubCreateAppVersion
+      - apphubDeleteAppVersion
+      - apphubDeleteApphubAppsCode
+      - apphubDeleteApphubGroupsCode
+      - apphubGetAppDetail
+      - apphubGetAppRelease
+      - apphubGetAppRuntime
+      - apphubGetApphubApps
+      - apphubGetApphubAppsGroups
+      - apphubGetApphubModules
+      - apphubGetApphubPages
+      - apphubGetModuleDetail
+      - apphubGetObjectBindingUsage
+      - apphubGetOrderRuntimeData
+      - apphubGetPageDetail
+      - apphubGetShortlink
+      - apphubListAppReleases
+      - apphubListAppVersions
+      - apphubListReleaseLogs
+      - apphubListReleaseTasks
+      - apphubListShortlinks
+      - apphubPatchApphubAppsCode
+      - apphubPostAppPublish
+      - apphubPostAppRuntimeExecute
+      - apphubPostApphubApps
+      - apphubPostApphubGroups
+      - apphubPostApphubModules
+      - apphubPostApphubPages
+      - apphubPostShortlink
+      - apphubPreviewOrderPage
+      - apphubPublishAppVersion
+      - apphubRollbackAppVersion
+      - apphubSavePage
+      - ontApplyV2SchemaWip
+    handler: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#apply_schema_wip
+    tests:
+      - mate-platform-backend/packages/mate-tech-ont/tests/test_mp11_object_type_creation.py
+      - mate-platform-backend/packages/mate-app-hub/tests/test_apphub_publication.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 5: MP11-ONT-03 validation, references and optimistic conflicts'
+      - path: docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md
+        section: 'Tasks 4 and 6: native WIP publication and AppHub reverse binding usage'
+      - path: docs/active/decisions/ADR-0080-ontology-draft-and-version-mechanism.md
+        section: Draft/version mechanism and optimistic publication
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/apphub.yaml
+      - mate-platform-backend/contracts/openapi/services/ont.yaml
+    handlers:
+      apphubCompleteReleaseTask: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#complete_release_task
+      apphubCreateAppRelease: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_app_release
+      apphubCreateAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_app_version
+      apphubDeleteAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_app_version
+      apphubDeleteApphubAppsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_app_endpoint
+      apphubDeleteApphubGroupsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_group_endpoint
+      apphubGetAppDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_detail
+      apphubGetAppRelease: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_release
+      apphubGetAppRuntime: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_runtime
+      apphubGetApphubApps: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_registered_apps
+      apphubGetApphubAppsGroups: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_groups
+      apphubGetApphubModules: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_business_modules
+      apphubGetApphubPages: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_page_templates
+      apphubGetModuleDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_module_detail
+      apphubGetObjectBindingUsage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_object_binding_usage
+      apphubGetOrderRuntimeData: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_order_runtime_data
+      apphubGetPageDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_page_detail
+      apphubGetShortlink: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#resolve_shortlink_endpoint
+      apphubListAppReleases: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_releases
+      apphubListAppVersions: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_versions
+      apphubListReleaseLogs: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_release_logs
+      apphubListReleaseTasks: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_release_tasks
+      apphubListShortlinks: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_shortlinks_endpoint
+      apphubPatchApphubAppsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#update_app
+      apphubPostAppPublish: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#publish_app
+      apphubPostAppRuntimeExecute: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#execute_runtime_action
+      apphubPostApphubApps: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#register_app
+      apphubPostApphubGroups: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_group
+      apphubPostApphubModules: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_module
+      apphubPostApphubPages: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_page
+      apphubPostShortlink: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_shortlink_endpoint
+      apphubPreviewOrderPage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#preview_order_page
+      apphubPublishAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#publish_app_version
+      apphubRollbackAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#rollback_app_version
+      apphubSavePage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#save_page
+      ontApplyV2SchemaWip: mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#apply_schema_wip
+    implementationScope: Canonical AppHub operations carry this shared dependency label. This maps API dependencies
+      and preserves the separate full model-impact acceptance boundary.
+    services:
+      - apphub
+      - ont
+  MP11-UX-01:
+    prd: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+    service: apphub
+    operationIds:
+      - apphubCompleteReleaseTask
+      - apphubCreateAppRelease
+      - apphubCreateAppVersion
+      - apphubDeleteAppVersion
+      - apphubDeleteApphubAppsCode
+      - apphubDeleteApphubGroupsCode
+      - apphubGetAppDetail
+      - apphubGetAppRelease
+      - apphubGetAppRuntime
+      - apphubGetApphubApps
+      - apphubGetApphubAppsGroups
+      - apphubGetApphubModules
+      - apphubGetApphubPages
+      - apphubGetModuleDetail
+      - apphubGetObjectBindingUsage
+      - apphubGetOrderRuntimeData
+      - apphubGetPageDetail
+      - apphubGetShortlink
+      - apphubListAppReleases
+      - apphubListAppVersions
+      - apphubListReleaseLogs
+      - apphubListReleaseTasks
+      - apphubListShortlinks
+      - apphubPatchApphubAppsCode
+      - apphubPostAppPublish
+      - apphubPostAppRuntimeExecute
+      - apphubPostApphubApps
+      - apphubPostApphubGroups
+      - apphubPostApphubModules
+      - apphubPostApphubPages
+      - apphubPostShortlink
+      - apphubPreviewOrderPage
+      - apphubPublishAppVersion
+      - apphubRollbackAppVersion
+      - apphubSavePage
+    handler: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_registered_apps
+    tests:
+      - metaplatform-frontend/apps/web/src/pages/dashboard/components/ProductOnboarding.test.tsx
+      - mate-platform-backend/packages/mate-app-hub/tests/test_apphub_publication.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+    sources:
+      - path: docs/active/specs/2026-10-11-metaplatform-product-v1.1.md
+        section: 'Section 3: MP11-UX-01 onboarding; section 6: existing app and runtime entry'
+      - path: docs/superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md
+        section: 'Task 6: ProductOnboarding with real app/type/publication state'
+    contractSources:
+      - mate-platform-backend/contracts/openapi/services/apphub.yaml
+    handlers:
+      apphubCompleteReleaseTask: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#complete_release_task
+      apphubCreateAppRelease: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_app_release
+      apphubCreateAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_app_version
+      apphubDeleteAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_app_version
+      apphubDeleteApphubAppsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_app_endpoint
+      apphubDeleteApphubGroupsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#delete_group_endpoint
+      apphubGetAppDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_detail
+      apphubGetAppRelease: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_release
+      apphubGetAppRuntime: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_app_runtime
+      apphubGetApphubApps: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_registered_apps
+      apphubGetApphubAppsGroups: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_groups
+      apphubGetApphubModules: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_business_modules
+      apphubGetApphubPages: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_page_templates
+      apphubGetModuleDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_module_detail
+      apphubGetObjectBindingUsage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_object_binding_usage
+      apphubGetOrderRuntimeData: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_order_runtime_data
+      apphubGetPageDetail: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#get_page_detail
+      apphubGetShortlink: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#resolve_shortlink_endpoint
+      apphubListAppReleases: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_releases
+      apphubListAppVersions: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_app_versions
+      apphubListReleaseLogs: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_release_logs
+      apphubListReleaseTasks: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_release_tasks
+      apphubListShortlinks: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#list_shortlinks_endpoint
+      apphubPatchApphubAppsCode: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#update_app
+      apphubPostAppPublish: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#publish_app
+      apphubPostAppRuntimeExecute: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#execute_runtime_action
+      apphubPostApphubApps: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#register_app
+      apphubPostApphubGroups: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_group
+      apphubPostApphubModules: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_module
+      apphubPostApphubPages: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_page
+      apphubPostShortlink: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#create_shortlink_endpoint
+      apphubPreviewOrderPage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#preview_order_page
+      apphubPublishAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#publish_app_version
+      apphubRollbackAppVersion: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#rollback_app_version
+      apphubSavePage: mate-platform-backend/packages/mate-app-hub/src/mate_app_hub/api/app.py#save_page
+    implementationScope: AppHub operations are API dependencies of onboarding. Their implemented status does not certify
+      the entire first-user experience or manual usability targets.

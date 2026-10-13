@@ -12,7 +12,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button, Card, Select, Spin, Tabs, Tag, Typography, Toast, Popconfirm, Dropdown } from '@douyinfe/semi-ui';
 import { CheckCircle2, Eye, FileText, LayoutGrid, MoreHorizontal, Pencil, Plus, RefreshCw, Settings2, Store, Trash2 } from 'lucide-react';
-import { listApps, deleteApp, listGroups, listDomains } from '@/api/apphub/apps';
+import { listApps, deleteApp, listGroups, listDomains, createOrderReviewApplication } from '@/api/apphub/apps';
+import { createOrderReviewPage, OrderPageCreationError } from '@/api/apphub/pages';
 import AppDesignSheet from './DesignFlowPage';
 import DomainManageDrawer from './components/DomainManageDrawer';
 import { EmptyState, FilterBar, PageHeader } from '@/components/skeleton';
@@ -30,12 +31,17 @@ const ALL_DOMAINS_KEY = '__all__';
 
 /** 应用目录直接展示服务端版本，时间字段不参与版本推断。 */
 function appVersion(app: AppItem): string {
-  return app.version || '—';
+  if (app.status === undefined) return `v${app.version || '—'}`;
+  return app.status === 'PUBLISHED' ? `运行 ${app.publishedVersion || '未知'} · 草稿 ${app.version || '未知'}` : `草稿 ${app.version || '未知'}`;
 }
 
 export default function AppListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [orderName, setOrderName] = useState('订单审核');
+  const [creatingOrder, setCreatingOrder] = useState(false);
+  const [orderModule, setOrderModule] = useState<string>();
+  const [createdOrder, setCreatedOrder] = useState<AppItem | null>(null);
   const [apps, setApps] = useState<AppItem[]>([]);
   const [groups, setGroups] = useState<string[]>([]);
   const [domains, setDomains] = useState<BusinessDomain[]>([]);
@@ -182,13 +188,15 @@ export default function AppListPage() {
         </div>
 
         <p className="mp-app-desc">{app.description || '暂无描述'}</p>
+        <p>责任人：{app.owner || '未指定'} · 修改时间：{app.updatedAt || '未知'}</p>
+        <Tag color={app.status === 'PUBLISHED' ? 'green' : 'grey'}>{app.status === 'PUBLISHED' ? '已发布' : app.status === 'OFFLINE' ? '已下线' : app.status === 'DESIGNING' ? '设计中' : '状态未知'}</Tag>
 
         <div className="mp-app-meta">
           <Button size="small" onClick={() => openDesign(app.appId)}>设计应用</Button>
           <Button size="small" theme="solid" type="primary" onClick={() => openApp(app.appId)}>打开应用</Button>
           {app.group ? <Tag size="small">{categoryLabel(app.group)}</Tag> : null}
           <Tag size="small" color="blue">
-            v{appVersion(app)}
+            {appVersion(app)}
           </Tag>
 
           <Dropdown
@@ -256,6 +264,21 @@ export default function AppListPage() {
         }
       />
 
+      <section aria-label="创建订单审核应用">
+        <label>订单应用名称<input aria-label="订单应用名称" value={orderName} onChange={e => setOrderName(e.target.value)} /></label>
+        <p>创建业务分组（若尚不存在）、应用和订单审核页面，然后选择真实对象、关系与动作。</p>
+        <button disabled={creatingOrder || !orderName.trim()} onClick={async () => {
+          setCreatingOrder(true);
+          try {
+            const app = createdOrder || await createOrderReviewApplication(orderName.trim());
+            setCreatedOrder(app);
+            const page = await createOrderReviewPage(app.code, orderModule);
+            navigate('/apps/mine?app=' + app.appId + '&tab=page&page=' + page.id);
+          } catch (e) { if (e instanceof OrderPageCreationError) setOrderModule(e.moduleCode); Toast.error(e instanceof Error ? e.message : '创建失败，名称和已创建应用保留，可重试页面创建'); }
+          finally { setCreatingOrder(false); }
+        }}>{createdOrder ? '继续创建订单页面' : '创建订单审核应用'}</button>
+        {createdOrder && <button onClick={() => navigate('/apps/mine?app=' + createdOrder.appId)}>打开已创建应用</button>}
+      </section>
       <div className="mp-apps-banner">
         <span className="mp-apps-banner-icon">
           <Store size={18} strokeWidth={1.5} />

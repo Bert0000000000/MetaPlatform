@@ -1,0 +1,31 @@
+{
+  "apphub_first_run": {
+    "passed": 220,
+    "failed": 3,
+    "reasons": [
+      "existing PG history seed prerequisite omitted from private runner",
+      "test empty signed tenant401 instead of intended missing tenant400"
+    ],
+    "controller_extra_ownership": "only test_app_hub_tenant_integration._token empty argument omits signed tenant; unchanged400/E_TENANT_REQUIRED assertions"
+  },
+  "proposal_first_actual_attempt": {
+    "status": 422,
+    "reason": "new model/property underscore slug rejected; no proposal created",
+    "retained_diagnostic_model": "ont.mp11-candidate.obj.finalprobe"
+  },
+  "source_baseline_red_first_attempt": {
+    "passed": 15,
+    "not_RED": true,
+    "reason": "pytest pythonpath overrode private baseline source; corrected isolated child config used in app-identity-complete-red-2"
+  },
+  "guard_first_reload_attempt": {
+    "aborted_before_stop": true,
+    "reason": "brief image shorthand differed; verified exact pgvector/pgvector:pg16 and full image digest"
+  },
+  "second_api_reload": {
+    "api_restarted": true,
+    "post_reload_docker_inspect_timeout_seconds": 20,
+    "read_only_snapshot_retry_passed": true,
+    "no_third_restart": true
+  }
+}

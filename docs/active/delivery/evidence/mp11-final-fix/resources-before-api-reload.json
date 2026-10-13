@@ -1,0 +1,129 @@
+{
+  "processes": {
+    "api": [
+      {
+        "ProcessId": 57396,
+        "ParentProcessId": 10756,
+        "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+        "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"api\" ",
+        "CreationTicks": 639273835428765700
+      },
+      {
+        "ProcessId": 10756,
+        "ParentProcessId": 28988,
+        "ExecutablePath": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+        "CommandLine": "\"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"api\" ",
+        "CreationTicks": 639273835428013090
+      }
+    ],
+    "auth": [
+      {
+        "ProcessId": 45364,
+        "ParentProcessId": 40756,
+        "ExecutablePath": "C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe",
+        "CommandLine": "\"C:\\Users\\houuu\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none\\python.exe\"  \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"auth\" ",
+        "CreationTicks": 639273835528245250
+      },
+      {
+        "ProcessId": 40756,
+        "ParentProcessId": 17440,
+        "ExecutablePath": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+        "CommandLine": "\"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\candidate.py\" \"auth\" ",
+        "CreationTicks": 639273835527503280
+      }
+    ],
+    "web": [
+      {
+        "ProcessId": 22216,
+        "ParentProcessId": 67120,
+        "ExecutablePath": "C:\\Program Files\\nodejs\\node.exe",
+        "CommandLine": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\metaplatform-frontend\\node_modules\\vite\\bin\\vite.js\" \"--config\" \"D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\scripts\\acceptance\\mp11\\vite.config.ts\" ",
+        "CreationTicks": 639273825553506960
+      }
+    ]
+  },
+  "dependencies": {
+    "keycloak": {
+      "id": "cf6841182877ca84387d8deb21fb44ad25c1e5d666fb0d8fe31f798190f3ab2a",
+      "name": "/codex-mp11-candidate-keycloak",
+      "image": "sha256:9813af49a39c5b0e8aedc5219e6b72fb7f20c0816656313e17e929ef6f871678",
+      "running": true,
+      "bindings": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55520"
+          }
+        ]
+      }
+    },
+    "redis": {
+      "id": "b80064cd2c1064fe696aaadedb75f8c0009c83787c863df9e4a0bcbc035e3573",
+      "name": "/codex-mp11-candidate-redis",
+      "image": "sha256:5509c0097c6064aa8a3b1df58f1d950e67090fffa6678ae8f3f1dc2385f12deb",
+      "running": true,
+      "bindings": {
+        "6379/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55521"
+          }
+        ]
+      }
+    }
+  },
+  "pg": {
+    "id": "d259c84a755a19ea18a1b089bb9cd83351dd6974dbd364555ab9740f3647bafa",
+    "image": "sha256:9b05db12a35460fff0587e009f9326e414a53e9484555547f96d214a2ba98ef7",
+    "bindings": {
+      "5432/tcp": [
+        {
+          "HostIp": "127.0.0.1",
+          "HostPort": "55497"
+        }
+      ]
+    },
+    "running": true
+  },
+  "active_database": "codex_mp11_candidate_20261012",
+  "running_containers": [
+    "cf6841182877 codex-mp11-candidate-keycloak Up 2 hours",
+    "b80064cd2c10 codex-mp11-candidate-redis Up 2 hours",
+    "d259c84a755a codex-mp11-relationship-pg Up 2 hours",
+    "a91c78a8688d supabase_kong_metaontoos Up 2 hours (healthy)",
+    "63aab943b8ef supabase_db_metaontoos Up 2 hours (healthy)",
+    "fdb3ac9d76e8 supabase_auth_metaontoos Up 2 hours (healthy)",
+    "dbfd38720033 mate-tech-ont Up 2 hours (healthy)",
+    "c96f2d6dbe70 mate-tech-iam Up 2 hours (healthy)",
+    "7e0b1c583253 mate-auth-service Up 2 hours (healthy)",
+    "fc0801948335 mate-api-gateway Up 2 hours (healthy)",
+    "dcb4037867e5 mate-tech-rag Up 2 hours (healthy)",
+    "048c91b12c80 mate-tech-llmgw Up 2 hours (healthy)",
+    "2eada08690bb mate-tech-dw Up 2 hours (healthy)",
+    "e86f320e47c9 mate-tech-etl Up 2 hours (healthy)",
+    "134c4d341db3 mate-app-kb Up 2 hours (healthy)",
+    "ebb5a0375f49 metaplatform-mate-tech-agent-team-1 Up 2 hours (healthy)",
+    "5bad1b6b54b1 mate-app-hub Up 2 hours (healthy)",
+    "8fd9670c1f77 mate-tech-data Up 2 hours (healthy)",
+    "dc0d47110fa1 mate-app-arch Up 2 hours (healthy)",
+    "9f316f48ce80 mate-tech-mcp Up 2 hours (healthy)",
+    "63d9ef40c423 mate-app-copilot Up 2 hours (healthy)",
+    "946ce721e48c mate-tech-agent Up 2 hours (healthy)",
+    "5861bc2e5fdf mate-tech-scheduler Up 2 hours (healthy)",
+    "187a31b2fa83 mate-tech-metrics Up 2 hours (healthy)",
+    "7dcdd0e9e91a mate-app-a2a Up 2 hours (healthy)",
+    "ee1c7c1d247b mate-tech-msg Up 2 hours (healthy)",
+    "d4fe7821a6f1 mate-tech-orchestrator Up 2 hours (healthy)",
+    "5da585000de4 mate-agent-team-e2e-control-plane Up 2 hours",
+    "5d92020f8263 mate-keycloak Up 2 hours (healthy)",
+    "2f112c0c7d31 mate-neo4j Up 2 hours (healthy)",
+    "4b215f906f6f mate-minio Up 2 hours (healthy)",
+    "bf96983b97c7 mate-kafka Up 2 hours (healthy)",
+    "05a15b8fafb8 mate-postgres Up 2 hours (healthy)",
+    "ebf475adcba2 mate-rabbitmq Up 2 hours (healthy)",
+    "8c97e216131e mate-nacos Up 2 hours (healthy)",
+    "66e0ca6d07dd mate-redis Up 2 hours (healthy)",
+    "fa59e25b0019 mate-temporal-worker Up 2 hours (healthy)"
+  ],
+  "source_head": "38ff11900b9d72560afe20db4715d344c1370a23"
+}

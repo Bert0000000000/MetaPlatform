@@ -1,6 +1,6 @@
 """Cross-tenant integration tests for mate-app-copilot (ADR-0014 step 5).
 
-5 tests: wrong-tenant 403, missing-scope pinned, no-tenant non-200,
+5 tests: wrong-tenant 403, missing-scope pinned, signed empty tenant 401,
 tenant-isolation ok, a2a delegate proxies to mate-app-a2a.
 """
 
@@ -89,14 +89,15 @@ def test_missing_scope_pinned(fresh_app: TestClient) -> None:
     assert r.status_code == 200, r.text
 
 
-def test_no_tenant_non_200(fresh_app: TestClient) -> None:
+def test_signed_empty_tenant_rejected_by_auth(fresh_app: TestClient) -> None:
     token = _token(tenant_id="")
     r = fresh_app.get(
         "/api/v1/copilot/conversations",
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert r.status_code == 400, r.text
-    assert r.json()["code"] == "E_TENANT_REQUIRED"
+    assert r.status_code == 401, r.text
+    assert r.json()["error"] == "unauthorized"
+    assert r.json()["detail"] == "token rejected: malformed signed tenant"
 
 
 def test_tenant_isolation_ok(fresh_app: TestClient) -> None:
@@ -263,8 +264,8 @@ def test_actions_execute_cross_tenant_scoped(fresh_app: TestClient) -> None:
 
     Both tenants seed ``act-send-email`` from the same stub catalog, so
     each tenant resolves the action against its own store. The negative
-    guarantee (no tenant context → 400) is covered by
-    ``test_new_endpoints_no_tenant_400``; here we pin that a valid
+    guarantee (signed empty tenant → authentication 401) is covered by
+    ``test_new_endpoints_reject_signed_empty_tenant_before_dispatch``; here we pin that a valid
     tenant token can execute and an unknown action_id returns 404.
     """
     token_acme = _token(tenant_id="tenant-acme")
@@ -287,8 +288,8 @@ def test_actions_execute_cross_tenant_scoped(fresh_app: TestClient) -> None:
     assert r_unknown.status_code == 404, r_unknown.text
 
 
-def test_new_endpoints_no_tenant_400(fresh_app: TestClient) -> None:
-    """P2-W4: the 3 new endpoints reject requests with no tenant context."""
+def test_new_endpoints_reject_signed_empty_tenant_before_dispatch(fresh_app: TestClient) -> None:
+    """All three endpoints reject a malformed signed tenant before dispatch."""
     token = _token(tenant_id="")
     for method, path, payload in (
         ("POST", "generate/process", {}),
@@ -306,5 +307,6 @@ def test_new_endpoints_no_tenant_400(fresh_app: TestClient) -> None:
                 json=payload,
                 headers={"Authorization": f"Bearer {token}"},
             )
-        assert r.status_code == 400, (path, r.text)
-        assert r.json()["code"] == "E_TENANT_REQUIRED"
+        assert r.status_code == 401, (path, r.text)
+        assert r.json()["error"] == "unauthorized"
+        assert r.json()["detail"] == "token rejected: malformed signed tenant"

@@ -137,6 +137,7 @@ class IamAuthResponse(BaseModel):
     expiresIn: int = 3600
     refreshExpiresIn: int = 0
     userId: str | None = None
+    tenantId: str | None = None
     username: str | None = None
     realName: str | None = None
     user: IamAuthUserInfo | None = None
@@ -368,7 +369,17 @@ async def iam_login(req: IamLoginRequest) -> IamAuthResponse:
     td = r.json()
     access_token = td.get("access_token", "")
     refresh_token = td.get("refresh_token", "")
-    # Fetch userinfo for username/email (best-effort)
+    # The issuer token is the identity authority, not the caller tenant hint
+    # or best-effort userinfo. Reuse the normal configured signature verifier.
+    from mate_platform.auth.verifier import TokenError
+
+    try:
+        verified = app.state.token_verifier.verify(access_token)
+        if not verified.sub or not verified.tenant_id:
+            raise TokenError("missing subject or tenant")
+    except TokenError:
+        raise HTTPException(status_code=401, detail="Issuer identity is invalid") from None
+    # Fetch userinfo for display-only username/email (best-effort)
     userinfo: dict[str, Any] = {}
     try:
         ui = await app.state.client.get(
@@ -379,7 +390,7 @@ async def iam_login(req: IamLoginRequest) -> IamAuthResponse:
             userinfo = ui.json()
     except Exception as exc:
         logger.warning("iam_login.userinfo_failed", error=str(exc))
-    sub = userinfo.get("sub", "")
+    sub = verified.sub
     preferred = userinfo.get("preferred_username", req.username)
     return IamAuthResponse(
         accessToken=access_token,
@@ -388,6 +399,7 @@ async def iam_login(req: IamLoginRequest) -> IamAuthResponse:
         expiresIn=td.get("expires_in", 3600),
         refreshExpiresIn=td.get("refresh_expires_in", 0),
         userId=sub,
+        tenantId=verified.tenant_id,
         username=preferred,
         realName=userinfo.get("name") or None,
         user=IamAuthUserInfo(
@@ -428,7 +440,17 @@ async def iam_refresh(req: IamRefreshRequest) -> IamAuthResponse:
             detail = r.text or "Refresh failed"
         raise HTTPException(status_code=r.status_code, detail=detail)
     td = r.json()
+    from mate_platform.auth.verifier import TokenError
+
+    try:
+        verified = app.state.token_verifier.verify(td.get("access_token", ""))
+        if not verified.sub or not verified.tenant_id:
+            raise TokenError("missing subject or tenant")
+    except TokenError:
+        raise HTTPException(status_code=401, detail="Issuer identity is invalid") from None
     return IamAuthResponse(
+        userId=verified.sub,
+        tenantId=verified.tenant_id,
         accessToken=td.get("access_token", ""),
         refreshToken=td.get("refresh_token") or None,
         tokenType=td.get("token_type", "Bearer"),
@@ -437,28 +459,56 @@ async def iam_refresh(req: IamRefreshRequest) -> IamAuthResponse:
     )
 
 
+class IamLogoutRequest(BaseModel):
+    refreshToken: str | None = Field(default=None, repr=False)
+
+
 @app.post("/api/v1/iam/auth/logout")
-async def iam_logout(authorization: str | None = Header(default=None)) -> dict[str, Any]:
-    """Logout: blacklist current JTI in Redis; best-effort Keycloak end_session."""
+async def iam_logout(
+    body: IamLogoutRequest | None = None, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
+    """Revoke a verified access JTI and, when supplied, its provider session."""
+    from mate_platform.auth.verifier import TokenError
+
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
-    token = authorization[len("Bearer ") :]
-    jti = ""
-    exp = 0
     try:
-        unverified = jwt.decode(token, options={"verify_signature": False})
-        jti = unverified.get("jti", "")
-        exp = unverified.get("exp", 0)
-    except Exception:
-        pass
-    if app.state.redis and jti:
-        ttl = max(exp - int(time.time()), 1) if exp else 3600
+        verified = app.state.token_verifier.verify(authorization[len("Bearer ") :])
+        if not verified.sub or not verified.tenant_id or not verified.jti:
+            raise TokenError("missing verified logout identity")
+    except TokenError:
+        raise HTTPException(status_code=401, detail="Issuer identity is invalid") from None
+    blacklisted = False
+    if app.state.redis:
         try:
-            await app.state.redis.set(f"{TOKEN_BLACKLIST_KEY_PREFIX}{jti}", "1", ex=ttl)
-        except Exception as exc:
-            logger.warning("iam_logout.blacklist_failed", error=str(exc))
-    # Best-effort Keycloak logout (no refresh token here, so skip end_session call)
-    return {"loggedOut": True, "jti": jti}
+            await app.state.redis.set(
+                f"{TOKEN_BLACKLIST_KEY_PREFIX}{verified.jti}",
+                "1",
+                ex=max(verified.expires_at - int(time.time()), 1),
+            )
+            blacklisted = True
+        except Exception:
+            logger.warning("iam_logout.blacklist_unavailable")
+    provider_logged_out = False
+    if body and body.refreshToken and KEYCLOAK_CLIENT_SECRET:
+        try:
+            response = await app.state.client.post(
+                f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/logout",
+                data={
+                    "client_id": KEYCLOAK_CLIENT_ID,
+                    "client_secret": KEYCLOAK_CLIENT_SECRET,
+                    "refresh_token": body.refreshToken,
+                },
+                timeout=10,
+            )
+            provider_logged_out = response.status_code in (200, 204)
+        except httpx.HTTPError:
+            logger.warning("iam_logout.provider_unavailable")
+    return {
+        "loggedOut": blacklisted and provider_logged_out,
+        "blacklisted": blacklisted,
+        "providerLoggedOut": provider_logged_out,
+    }
 
 
 # ---- Dashboard login override (real Keycloak JWT, not mock mb_at_ token) ----

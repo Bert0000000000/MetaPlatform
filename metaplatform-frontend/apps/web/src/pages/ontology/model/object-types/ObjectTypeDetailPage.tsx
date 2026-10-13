@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuth } from '@mate/shared';
 import {
   useLocation,
   useNavigate,
@@ -14,7 +15,7 @@ import {
   getMaterialization,
   listValueTypes,
   listInterfaces,
-  createObjectType,
+  applySchemaWip,
   saveSchemaWip,
   extractDestructiveConfirm,
   type KernelObjectType,
@@ -36,6 +37,7 @@ import VersionHistory from '../../components/VersionHistory';
 import { objectTypeFamily } from '../../hooks/objectTypeFamily';
 import { resourceUrl, safeReturnTo } from '../../hooks/resourceContext';
 import { resourceError } from '../../hooks/resourceErrors';
+import { editorIdentity } from '../../hooks/editorSession';
 import '../graph/model-workbench.css';
 import '../../ontology.css';
 
@@ -56,6 +58,8 @@ type Aux =
   | 'valueTypes'
   | 'interfaces';
 export default function ObjectTypeDetailPage() {
+  const { user } = useAuth();
+  const identity = editorIdentity(user);
   const { rid = '', tab: rawTab } = useParams();
   const tab = TABS.some((t) => t.key === rawTab) ? rawTab : 'overview';
   const navigate = useNavigate(),
@@ -83,6 +87,7 @@ export default function ObjectTypeDetailPage() {
   const [wipRef, setWipRef] = useState('');
   const generation = useRef(0),
     auxGeneration = useRef<Partial<Record<Aux, number>>>({});
+  const refreshAfterWrite = useRef(false);
   const readAux = useCallback(
     async (key: Aux, gen: number) => {
       const request = (auxGeneration.current[key] ?? 0) + 1;
@@ -140,6 +145,7 @@ export default function ObjectTypeDetailPage() {
   );
   const load = useCallback(async () => {
     const gen = ++generation.current;
+    refreshAfterWrite.current = false;
     setNotice('');
     setWipRef('');
     setEditing(false);
@@ -177,7 +183,7 @@ export default function ObjectTypeDetailPage() {
         setLoading(false);
       }
     }
-  }, [rid, readAux]);
+  }, [rid, readAux, identity]);
   useEffect(() => {
     void load();
     return () => {
@@ -192,20 +198,31 @@ export default function ObjectTypeDetailPage() {
     setPrefill(pf);
     setEditing(true);
   };
-  const write = async (payload: KernelObjectTypeCreate) => {
+  const write = async (
+    payload: KernelObjectTypeCreate,
+    _mode: 'create' | 'edit',
+    expectedChecksum?: string,
+  ) => {
     const gen = generation.current;
     try {
-      await createObjectType(payload);
-      if (gen === generation.current) void load();
+      await saveSchemaWip(payload, false, expectedChecksum);
+      if (gen !== generation.current) return '对象或登录身份已切换，草稿已暂存，请重新核对后发布。';
+      await applySchemaWip(payload.rid, payload.confirm_name ?? '', expectedChecksum ?? '');
+      if (gen !== generation.current) return '对象或登录身份已切换，请重新读取发布结果。';
+      refreshAfterWrite.current = true;
       return null;
     } catch (e) {
       return extractDestructiveConfirm(e) || resourceError(e);
     }
   };
-  const draft = async (payload: KernelObjectTypeCreate) => {
+  const draft = async (
+    payload: KernelObjectTypeCreate,
+    _mode: 'create' | 'edit',
+    expectedChecksum?: string,
+  ) => {
     const gen = generation.current;
     try {
-      const result = await saveSchemaWip(payload);
+      const result = await saveSchemaWip(payload, false, expectedChecksum);
       if (gen === generation.current) {
         setNotice(`未发布草稿已暂存 · ${result.rid}`);
         setWipRef(result.rid);
@@ -213,6 +230,13 @@ export default function ObjectTypeDetailPage() {
       return null;
     } catch (e) {
       return resourceError(e);
+    }
+  };
+  const closeEditor = () => {
+    setEditing(false);
+    if (refreshAfterWrite.current) {
+      refreshAfterWrite.current = false;
+      void load();
     }
   };
   const auxiliary = (key: Aux, label: string, children: React.ReactNode) =>
@@ -560,7 +584,7 @@ export default function ObjectTypeDetailPage() {
                 tenant={getTenantId() || ''}
                 domainOptions={[]}
                 prefill={prefill}
-                onClose={() => setEditing(false)}
+                onClose={closeEditor}
                 onSubmit={write}
                 onSaveDraft={draft}
                 auxiliaryErrors={(

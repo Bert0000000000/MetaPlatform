@@ -1,0 +1,144 @@
+{
+  "baseline": "2c13952c0ceb2c792b8192fab966a4deed2926f4",
+  "head": "38ff11900b9d72560afe20db4715d344c1370a23",
+  "scope": "32 pre-existing user PNG paths excluded from owned commit history; fingerprints below protect from subsequent cleanup, not a reconstructed first-turn byte baseline",
+  "protected_png": [
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-data-light.png",
+      "sha256": "d7ef494c100dd071c013adf5e9c13bba26fe3942c020505bee76b0cbe4372150"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-explore-dark.png",
+      "sha256": "18bf39e451edce1bd6ed23638b4d65d9a83c7fc099646e27c58793d4b927acbd"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-explore-light.png",
+      "sha256": "5379e58296330656a11872271cdae62032bd5c06e1768add668650396affff05"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-logic-dark.png",
+      "sha256": "809e09753a5c287ac6d1efc572acf3f91879912faa8b9b9409d5c676424087b0"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-logic-light.png",
+      "sha256": "0127bb8f166a34a04c84214d0c8c17ee97df397e9f20dfe58bc5fd397d2a5fa7"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-model-dark.png",
+      "sha256": "beba81346c8eb9155938b18105ba76a394ec845d2d4a532f466aa2c8ee4c94c3"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-model-light.png",
+      "sha256": "54f2a174bf8d970a3cc9c4023902ee064ff71d576afc0abc6e5a8840a49bd056"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-overview-dark.png",
+      "sha256": "90571b1d288791ee2623434e4049d58510ac5bb70a49af0bdb33d19603d8b491"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ia2-final-overview-light.png",
+      "sha256": "92d358f20cce2533fc675ce708a65b7814452a1faf47444e1178ec5ba0144b3d"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p0-demo-dark.png",
+      "sha256": "ca57a77aad21ded8b508eb67987e8de4e223b05881a53b211a65a22f35f4fcaa"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p0-demo-light.png",
+      "sha256": "cca6fac46046a0ba64318027636275c30cd32799d10bf7388686a65303dbfbc2"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1a-explorer-dark.png",
+      "sha256": "1998411c3117ac38d061efcf79c9a3d4114bf1ae8e30c3d96ca3c9bc09a0c83e"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1a-explorer-light.png",
+      "sha256": "52a08901c80c649c9d5fd1af6a16fc1e25389afea095d903c23683d353c3225a"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1a-graph-dark.png",
+      "sha256": "be4aea2ddf3440c3e3864b37ab5277a1575aa1b9b4d0d7657de5327781774500"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1a-graph-light.png",
+      "sha256": "8ae4bca203d1a330298c205268874ffbe65f79602927dff3934fe34dcd3271e7"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1b-home-dark.png",
+      "sha256": "b24ce7ef9e17a8700d39ac2ea2bfcd93e198c079f61ee2be8201c2929591ed7e"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1b-home-light.png",
+      "sha256": "7c45369aa46d674d25a09169c11ff91b9ad196c3c8bdb0c504011747d19bc6ce"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1c-agents-dark.png",
+      "sha256": "d1e6d10f1eada7946bf3e1c8ed9bb4590bdc9440cd5076a6d2b7dcd47873c720"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1c-agents-light.png",
+      "sha256": "b487d6b9caa0db359a00c4b1fa43b1b669ba27ebfef4c5ca886cea79a1546ef4"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1d-superai-dark.png",
+      "sha256": "c775d3a2dda99a43d7e65022f62741a434eb857b7ebf8e1e1d89952fc099c735"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1e-admin-dark.png",
+      "sha256": "dde18d1197991bcaaa5738f30357e20ed68953f9b14b09d5620c1d495af92a24"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p1e-admin-light.png",
+      "sha256": "65955caaedcd9c286d8818ba235852a3b475d0513d0c8330a37469fb8613a92a"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p2a-apps-dark.png",
+      "sha256": "ee39fc86f9c8cfc6533a02b1d4e67c36e7ec95aa52783299ae0687bdbc993aa6"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p2c-gov-dark.png",
+      "sha256": "ca644cb2e330e4c03cc32c6f8193e4bb446c8904fb4148c27554f285e991e487"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/e2e/screenshots/ui-p2c-gov-light.png",
+      "sha256": "a9da94af529b27adc8b1b4f719b9798d58d734e70fa65c0883a3d9ddf67c9290"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/visual/ui-redesign/1-home-dark.png",
+      "sha256": "2edd6e19a49be78d24ae5525c944173f7eb5de1d0d058b64d5be2e366cad7b2b"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/visual/ui-redesign/1-home-light.png",
+      "sha256": "4d7bfa32f861592f434f5f63d0bde4298846617a101d139d329e3f6184f270bd"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/visual/ui-redesign/2-ontology-dark.png",
+      "sha256": "930c79a131daf07950c2daf8c05c396a3987e4aefd157991cc1fbf981bb9376a"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/visual/ui-redesign/2-ontology-light.png",
+      "sha256": "1b4f9caef0f26343e616f9df2e36b09fa83e66eaca423a8a07787d41708d72dd"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/visual/ui-redesign/4-superai-dark.png",
+      "sha256": "660304a9c8a1c7370c92eb6a60c2e7391ae7aa5c8e7ce37eedaf1a351918ccac"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/visual/ui-redesign/4-superai-light.png",
+      "sha256": "a75098247c9216c5a8e6519b1cf018eb555823e4481515e25fc0d0584c8ff7af"
+    },
+    {
+      "path": "metaplatform-frontend/apps/web/tests/visual/ui-redesign/5-apps-light.png",
+      "sha256": "b1f08931108d0fd7ee03ff288bb9c18f7b12f8added1576c1f28c9663dfe3497"
+    }
+  ],
+  "preserved_paths": [
+    ".worktrees/ga-v1-followups",
+    ".worktrees/prd-05-08-sprint-0",
+    ".worktrees/sprint-0-prds",
+    "docs/active/specs/ClaudeCode启动提示词-MetaPlatform-Ontology页面重构-4000字符内.md",
+    "docs/active/specs/MetaPlatform-调整优化方案执行计划-2026-09-17.md",
+    "examples/metaplatform_ontology_builder_v2/"
+  ],
+  "owned_generated_pyc": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/__pycache__/api.cpython-312.pyc"
+}

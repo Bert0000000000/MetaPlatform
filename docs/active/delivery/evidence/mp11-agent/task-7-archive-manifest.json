@@ -1,0 +1,104 @@
+{
+  "scope": "Task7 scoped acceptance only",
+  "base": "664aba152b40ce7d04b706ef0e39eb5d0234bd15",
+  "implemented": "35f00e8dc6cc094c9be13a0a0d9ff885b33d795e",
+  "accepted_source": "e9ef0de62bb819c6fa09a6257aeb2ebfdaeaa1e9",
+  "initial_backend": "157 passed at 35f00e8d",
+  "fix_covering": "28 passed at e9ef0de6",
+  "ui": "9 passed at unchanged frontend35f00e8d; original command-gated silent tsc exit0 and build",
+  "review": "I1 addressed; new C0/I0/M0; M1 Task8/final-owned",
+  "copy_format": "UTF8 no BOM; trailing blank lines normalized; ASCII end-of-line whitespace normalized in log copies only; original source hashes retained",
+  "limits": [
+    "fixture identity; signed issuer and full candidate Task8",
+    "normal Redis limiter not exercised",
+    "true dsh/WorkBuddy1.1.1 not exercised",
+    "original Redis attempt and password-prefix output incidents retained; no transcript deletion or no-touch claim"
+  ],
+  "files": [
+    {
+      "name": "task-7-report.md",
+      "source_sha256": "B8676A15D223CE71112456D681BB69EFF4F9CBEFC85570DF67C7C0F706CF4236",
+      "archived_sha256": "B8676A15D223CE71112456D681BB69EFF4F9CBEFC85570DF67C7C0F706CF4236"
+    },
+    {
+      "name": "task-7-review.md",
+      "source_sha256": "0834D9CD52C812B6ACA3601DF569BF0E4EEA42721737384D9774E7CE14930E4F",
+      "archived_sha256": "0834D9CD52C812B6ACA3601DF569BF0E4EEA42721737384D9774E7CE14930E4F"
+    },
+    {
+      "name": "task-7-rereview1.md",
+      "source_sha256": "3F553858DA18E44A61B568D1A667092F83CF32BA0D4C983B7F7F42F3CB47CD60",
+      "archived_sha256": "3F553858DA18E44A61B568D1A667092F83CF32BA0D4C983B7F7F42F3CB47CD60"
+    },
+    {
+      "name": "task-7-original-ui-typecheck-receipt.md",
+      "source_sha256": "F0893E65208D0B59633650BE4944077B3F7C900DF21B58568D156DA3BA7E5D71",
+      "archived_sha256": "F0893E65208D0B59633650BE4944077B3F7C900DF21B58568D156DA3BA7E5D71"
+    },
+    {
+      "name": "task-7-fix1-repr-incident.md",
+      "source_sha256": "DAE080185B9A5008D6CD764306D3A5F379732B0647A8112747BEF1DCF46D5ECE",
+      "archived_sha256": "DAE080185B9A5008D6CD764306D3A5F379732B0647A8112747BEF1DCF46D5ECE"
+    },
+    {
+      "name": "task-7-backend-green.log",
+      "source_sha256": "C887D575C44FAF4629021A8B8568D219BB76FA31907F532B2F00E9EC305FA4B6",
+      "archived_sha256": "BD9FB5E5677040AF73D1197EE5EC9CC49C6D4F392A45BD2D9A16DC96E346D0A8"
+    },
+    {
+      "name": "task-7-ui-build.log",
+      "source_sha256": "CEBE8231AF291BB7E64A89319C0BD63330E498CD7F0E7EA48FB61092158813F4",
+      "archived_sha256": "CEBE8231AF291BB7E64A89319C0BD63330E498CD7F0E7EA48FB61092158813F4"
+    },
+    {
+      "name": "task-7-protocol.log",
+      "source_sha256": "D7EE5E3D072A0A5A50B4A983DC5B004EEE8A3DCCA8E26E85921A37B5266B0C41",
+      "archived_sha256": "D7EE5E3D072A0A5A50B4A983DC5B004EEE8A3DCCA8E26E85921A37B5266B0C41"
+    },
+    {
+      "name": "task-7-rest-harness-failure.log",
+      "source_sha256": "B358B3D07E7DD6F0FDBC5E7AAA4D5CC5EFC6C034C5F77734BB6735F94CB619A0",
+      "archived_sha256": "00CA82878039352EED9893E6F8B4DAB12DCD292C7694B4681B2B62496888EB1F"
+    },
+    {
+      "name": "task-7-fix1-covering.log",
+      "source_sha256": "6CB441CECB6CBD18366356C792248121AA7DEC6BDA50EF510319DBC2D00F178D",
+      "archived_sha256": "6CB441CECB6CBD18366356C792248121AA7DEC6BDA50EF510319DBC2D00F178D"
+    },
+    {
+      "name": "task-7-fix1-focused-green.log",
+      "source_sha256": "E39C7C8495C11B3781A4116112E8EDAAD58E79F9E534B4818722B9EAE3CFA6A2",
+      "archived_sha256": "E39C7C8495C11B3781A4116112E8EDAAD58E79F9E534B4818722B9EAE3CFA6A2"
+    },
+    {
+      "name": "task-7-fix1-red.log",
+      "source_sha256": "B162BBC5EFFA0FB9B14A45EBFC249C56C0A7B950B7C01CBDE2E820BD3BF997F6",
+      "archived_sha256": "D00DCF1450D0D5C930834F326D40B717AAD2DEEACDE39EA599010633631573D4"
+    },
+    {
+      "name": "task-7-protocol-evidence.json",
+      "source_sha256": "C85A44FBCC0B23E759F14974BA1C28F2F593C44BF6A58A80D010FDE82CFC784F",
+      "archived_sha256": "4EFDEA108C9F4A4183A6B87F0DCC188B46C073D03A600240591AAA1506687EF2"
+    },
+    {
+      "name": "task-7-migration-evidence.json",
+      "source_sha256": "95238C1022C50863D2B57ACC0562AF803673B21A4D430ACF6627D53FFB1E5738",
+      "archived_sha256": "9BEBBB1F65F5C832FB155E167FD87A4642BEA4C01045160734A8FC8F67A87687"
+    },
+    {
+      "name": "task-7-resources-final.json",
+      "source_sha256": "48CE43CD844CC8AF6EA409765DEA71F3F629C82F84AE23A79765337671F9EB1C",
+      "archived_sha256": "48CE43CD844CC8AF6EA409765DEA71F3F629C82F84AE23A79765337671F9EB1C"
+    },
+    {
+      "name": "task-7-owned-red-cleanup.json",
+      "source_sha256": "13D09AE123606F14584038E27F87611433AAFA5FA9EC5462A002AF7C46B5B952",
+      "archived_sha256": "A87C48285DF09CC0BFB3A5169BFECE9CE505E63F2B8519CBF370F194B9D2322B"
+    },
+    {
+      "name": "task-7-fix1-db.json",
+      "source_sha256": "163B02B3788B8DF6BF9C963DA796879F94D2D2006C94637ABE8686CEF885B251",
+      "archived_sha256": "4B20B8EEF8C1102654CFE3A1105DDD1E767136183D1C18C69E83B2C868906976"
+    }
+  ]
+}

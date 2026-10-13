@@ -1,0 +1,6 @@
+{
+  "host": "127.0.0.1",
+  "port": 55497,
+  "database": "codex_mp11_agent_pgvector_fix1_20261012",
+  "ownership": "Task7 Fix1 isolated optional-vector regression"
+}

@@ -1,0 +1,18 @@
+{
+  "command": [
+    "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend\\.venv\\Scripts\\python.exe",
+    "-m",
+    "pytest",
+    "-c",
+    "pyproject.toml",
+    "services/auth-service/tests/test_mp11_login_tenant.py",
+    "packages/mate-platform/tests/test_mp11_signed_identity.py",
+    "-q",
+    "--tb=short",
+    "-p",
+    "no:cacheprovider"
+  ],
+  "cwd": "D:\\Hermes\\Workspace\\10_Projects\\2026-07-02-MetaPlatform\\mate-platform-backend",
+  "exit_code": 0,
+  "elapsed_seconds": 8.74
+}

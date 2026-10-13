@@ -99,16 +99,28 @@ async function getOne<T>(path: string): Promise<T> {
   return resp.data as T;
 }
 
-export async function listObjectTypes(): Promise<KernelObjectType[]> {
-  // GET returns an array with no total. A short terminal batch proves completion;
-  // a failed later batch rejects the entire read, never a partial active family.
-  const types: KernelObjectType[] = [];
+export async function listObjectTypes(params?: { limit?: number; offset?: number }): Promise<KernelObjectType[]> {
+  // Existing modeling/mapping consumers expect the complete catalog. Explicit
+  // pagination opts into a single batch; listAllObjectTypes owns completion.
+  if (!params) return listAllObjectTypes();
+  const resp = await apiClient.get(v2('/object-types'), { params });
+  return resp.data as KernelObjectType[];
+}
+
+/** Read the complete authorized catalog; later-page failure never becomes partial success. */
+export async function listAllObjectTypes(): Promise<KernelObjectType[]> {
+  const items: KernelObjectType[] = [];
+  const seen = new Set<string>();
   const limit = 100;
-  for (let offset = 0; ; offset += limit) {
-    const resp = await apiClient.get(v2('/object-types'), { params: { limit, offset } });
-    const batch = resp.data as KernelObjectType[];
-    types.push(...batch);
-    if (batch.length < limit) return types;
+  for (let offset = 0; ; ) {
+    const page = await listObjectTypes({ limit, offset });
+    for (const item of page) {
+      if (seen.has(item.rid)) throw new Error('对象类型分页未取得进展，请重新加载');
+      seen.add(item.rid);
+      items.push(item);
+    }
+    if (page.length < limit) return items;
+    offset += page.length;
   }
 }
 
@@ -118,6 +130,24 @@ export async function getObjectType(rid: string): Promise<KernelObjectType> {
 
 export async function listActionTypes(): Promise<KernelActionType[]> {
   return list<KernelActionType>('/action-types');
+}
+
+/** Uses the existing backend upsert contract; the UI distinguishes create from edit. */
+export async function createLinkType(payload: KernelLinkType, createOnly = false): Promise<KernelLinkType> {
+  const resp = await apiClient.post(v2('/link-types'), payload, { params: createOnly ? { create_only: true } : undefined });
+  return resp.data as KernelLinkType;
+}
+export interface KernelLinkInstanceCreate {
+  rid: string;
+  link_type_rid: string;
+  src: string;
+  dst: string;
+  props: Record<string, { value: unknown }>;
+  marking?: string[];
+}
+export async function createLinkInstance(payload: KernelLinkInstanceCreate): Promise<KernelLinkInstance> {
+  const resp = await apiClient.post(v2('/link-instances'), payload);
+  return resp.data as KernelLinkInstance;
 }
 
 export async function listLinkTypes(): Promise<KernelLinkType[]> {
@@ -181,8 +211,8 @@ export async function appendObjectTypeProperty(rid: string, payload: KernelPrope
 }
 
 /** Upsert 一个 ObjectType（POST /object-types）。 */
-export async function createObjectType(payload: KernelObjectTypeCreate): Promise<KernelObjectType> {
-  const resp = await apiClient.post(v2('/object-types'), payload);
+export async function createObjectType(payload: KernelObjectTypeCreate, createOnly = false): Promise<KernelObjectType> {
+  const resp = await apiClient.post(v2('/object-types'), payload, { params: createOnly ? { create_only: true } : undefined });
   return resp.data as KernelObjectType;
 }
 
@@ -384,6 +414,8 @@ export interface EditSetImpact {
 
 /** Proposal 预览（GET /ont/v2/proposals/{id}/preview）。 */
 export interface ProposalPreview {
+  approval_expires_at?: string | null;
+  approval_ttl_seconds?: number;
   id?: string;
   proposal_id?: string;
   kind: ProposalKind;
@@ -430,6 +462,8 @@ export interface ProposalRecord {
   kind: ProposalKind;
   confirmed_by?: string | null;
   confirmed_at?: string | null;
+  approval_expires_at?: string | null;
+  approval_ttl_seconds?: number;
   /** ONT-GATE-01：三闸门预检（schema×SHACL×Axiom；GET 时实时重算） */
   preflight?: ProposalPreflight | null;
 }
@@ -860,15 +894,19 @@ export function errDetailText(e: unknown, fallback: string): string {
 export interface SchemaWipEntry {
   rid: string;
   author: string;
+  create_only?: boolean;
+  base_checksum?: string;
   payload: Record<string, unknown>;
   created_at?: string;
-  base_checksum?: string;
 }
 
 /** Stage an existing backend WIP. Does not apply the model or create a version. */
-export async function saveSchemaWip(payload: KernelObjectTypeCreate): Promise<{rid: string; status: 'staged'; base_checksum: string}> {
+export async function saveSchemaWip(payload: KernelObjectTypeCreate, createOnly = false, expectedChecksum?: string): Promise<{ rid: string; status: string; base_checksum?: string }> {
   const { confirm_name: _confirmation, ...definition } = payload;
-  const resp = await apiClient.post(v2('/object-types/wip'), { payload: definition });
+  const options = createOnly || expectedChecksum !== undefined ? { params: { create_only: createOnly, expected_checksum: expectedChecksum } } : undefined;
+  const resp = options
+    ? await apiClient.post(v2('/object-types/wip'), { payload: definition }, options)
+    : await apiClient.post(v2('/object-types/wip'), { payload: definition });
   return resp.data;
 }
 
@@ -952,6 +990,12 @@ export interface ModelPreflight {
   destructive: string[];
   references: { resolved: string[]; unresolved: string[]; dependencies: string[] };
   rid: string;
+}
+
+/** Actual same-tenant ActionType.on references from the existing class inspector. */
+export async function inspectObjectType(rid: string): Promise<{ actions: string[] }> {
+  const response = await apiClient.get(v2(`/classes/${encodeURIComponent(rid)}/inspect`));
+  return response.data;
 }
 
 /** 发布前预检：静态错误 + 破坏性差异 + 引用解析 + 必要依赖。 */
@@ -1119,6 +1163,8 @@ export interface KernelBackingDatasource {
   name: string;
   kind: string;
   dsn_env: string;
+  source_id?: string;
+  run_history?: BackingSyncResult[];
   table_name: string;
   pk_column: string;
   field_mapping: Record<string, string>;
@@ -1137,6 +1183,8 @@ export interface BackingDatasourceCreate {
   name: string;
   kind?: string;
   dsn_env?: string;
+  source_id?: string;
+  ts_column?: string;
   table: string;
   pk_column: string;
   field_mapping: Record<string, string>;
@@ -1166,6 +1214,12 @@ export interface BackingDatasourceSyncSource {
   cursor: { ts: string | null; pk: string | null };
 }
 export interface BackingDatasourceSyncResult {
+  run_id?: string;
+  trace_id?: string;
+  status?: 'running' | 'succeeded' | 'failed' | 'interrupted';
+  started_at?: string;
+  ended_at?: string | null;
+  error?: { message: string; error_code?: string; trace_id?: string };
   ok: boolean;
   total_synced: number;
   total_failed: number;
@@ -1175,12 +1229,21 @@ export interface BackingDatasourceSyncResult {
 /** Synchronizes every declared source. HTTP 200 with ok=false is a partial failure. */
 export async function syncBackingDatasources(
   classRid: string, incremental = false,
-): Promise<BackingDatasourceSyncResult> {
+): Promise<BackingSyncResult> {
   const resp = await apiClient.post(
     v2(`/object-types/${encodeURIComponent(classRid)}/datasources/sync`), {},
     { params: incremental ? { incremental: true } : undefined },
   );
-  return resp.data as BackingDatasourceSyncResult;
+  return resp.data as BackingSyncResult;
+}
+
+export interface BackingSyncResult extends BackingDatasourceSyncResult {
+  run_id: string;
+  trace_id: string;
+  status: 'running' | 'succeeded' | 'failed' | 'interrupted';
+  started_at: string;
+  ended_at?: string | null;
+  error?: { message: string; error_code?: string; trace_id?: string };
 }
 
 /** DATA-15：物化行集（对象最新状态回流读端点）。 */
@@ -1278,7 +1341,7 @@ export interface KernelLinkInstance {
   link_type_rid: string;
   src: string;
   dst: string;
-  props: Array<[string, unknown]>;
+  props: Record<string, unknown>;
   created_at?: string;
   tenant_id: string;
   marking?: string[];
@@ -1362,4 +1425,20 @@ export async function validateShacl(payload: {
 }): Promise<ShaclValidateReport> {
   const resp = await apiClient.post(v2('/shacl/validate'), payload);
   return resp.data as ShaclValidateReport;
+}
+
+
+export interface AppBindingUsage {
+  app_id: string;
+  app_name: string;
+  page_id: string;
+  status: 'DRAFT' | 'PUBLISHED' | 'OFFLINE' | 'DESIGNING';
+  version_id: string | null;
+  model_version: string;
+  model_checksum: string;
+  action_rid: string;
+}
+export async function getObjectBindingUsage(classRid: string): Promise<AppBindingUsage[]> {
+  const response = await apiClient.get('/apphub/bindings/usage', { params: { class_rid: classRid } });
+  return response.data.items;
 }

@@ -60,7 +60,8 @@ it('establishes a session with the existing nested UserInfo DTO identity', async
   mount();
   fireEvent.click(screen.getByTestId('shared-login-submit'));
   await screen.findByRole('heading', { name: '个人页面 provider-person-42' });
-  expect(JSON.parse(localStorage.getItem('mate_platform_user')!)).toMatchObject({ id: 'provider-person-42', username: 'provider-person', tenantId: 'existing-tenant' });
+  expect(JSON.parse(localStorage.getItem('mate_platform_user')!)).toMatchObject({ id: 'provider-person-42', username: 'provider-person', tenantId: '' });
+  expect(api.login).toHaveBeenCalledWith(expect.objectContaining({ tenantId: 'existing-tenant' }));
   expect(localStorage.getItem('mate_platform_token')).toBe('fixture-access');
   expect(localStorage.getItem('mate_platform_refresh_token')).toBe('fixture-refresh');
 });

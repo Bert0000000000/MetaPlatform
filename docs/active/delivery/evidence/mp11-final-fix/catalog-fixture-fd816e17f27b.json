@@ -1,0 +1,14 @@
+{
+  "run_id": "fd816e17f27b",
+  "tenant": "mp11-catalog-fd816e17f27b",
+  "object_types": 103,
+  "first_page_count": 100,
+  "late_page_count": 3,
+  "order": "ont.mp11-catalog-fd816e17f27b.obj.zorder",
+  "customer": "ont.mp11-catalog-fd816e17f27b.obj.zcustomer",
+  "source_id": "src-68813eb7",
+  "link": "ont.mp11-catalog-fd816e17f27b.link.customer_orders",
+  "action": "ont.mp11-catalog-fd816e17f27b.act.review",
+  "signed_grant": true,
+  "separate_from_relationship_fixture": true
+}

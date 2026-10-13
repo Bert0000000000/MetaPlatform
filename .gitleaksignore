@@ -1,0 +1,4 @@
+# Exact historical test JWT seed; fixture-only, never a production verification key.
+658d2522f2d8f2d0e2e19133ac2de83affdcd069:mate-platform-backend/packages/mate-tech-ont/tests/conftest.py:mate-jwt-secret:72
+# Public MCP actor key ID in an audit line (apikey:key-...), not a bearer/API-key secret.
+2f869020a50707857fb5e42151ddd5dcbef03f8c:docs/active/delivery/evidence/mp11-agent/task-7-protocol.log:generic-api-key:92

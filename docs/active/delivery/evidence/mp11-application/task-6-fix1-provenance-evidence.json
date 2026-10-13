@@ -1,0 +1,65 @@
+{
+  "identity": "signature-bypass USER fixture",
+  "actual_apphub_ontology_pg_attribution": "PASS",
+  "verified_context": {
+    "app_id": "app-32af75ef793e41a19a7c3e4e948d9efb",
+    "page_id": "page-review-09939174",
+    "app_version_id": "ver-358f473bd866470285b729ee19c3f2f3",
+    "app_version": "1.0.0"
+  },
+  "checks": [
+    [
+      "top",
+      "app_id",
+      404
+    ],
+    [
+      "top",
+      "page_id",
+      422
+    ],
+    [
+      "top",
+      "app_version_id",
+      404
+    ],
+    [
+      "parameters",
+      "app_id",
+      404
+    ],
+    [
+      "parameters",
+      "page_id",
+      422
+    ],
+    [
+      "parameters",
+      "app_version_id",
+      404
+    ],
+    [
+      "propose-edit-set",
+      "forged404/custom422"
+    ],
+    [
+      "apply-edit-set",
+      "forged404/custom422"
+    ],
+    [
+      "top",
+      "verified_registered_action",
+      "prop-16cf54fe"
+    ],
+    [
+      "parameters",
+      "verified_registered_action",
+      "prop-e6950979"
+    ],
+    [
+      "propose-edit-set",
+      "verified_registered_action",
+      "prop-543d9d1dbdd0"
+    ]
+  ]
+}

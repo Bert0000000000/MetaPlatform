@@ -80,6 +80,7 @@ export async function fetchAccessToken(
  */
 export interface JwtClaims {
   sub?: string;
+  scope?: string;
   preferred_username?: string;
   tenant_id?: string;
   realm_access?: { roles?: string[] };

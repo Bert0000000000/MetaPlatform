@@ -10,6 +10,8 @@ declare -A SRC_MAP=(
     [mate-common]=/tmp/build/packages/mate-common/src/mate_common
     [mate-platform]=/tmp/build/packages/mate-platform/src/mate_platform
     [mate-clients]=/tmp/build/packages/mate-clients/src/mate_clients
+    [mate-tech-data]=/tmp/build/packages/mate-tech-data/src/mate_tech_data
+    [mate-tech-db]=/tmp/build/packages/mate-tech-db/src/mate_tech_db
 )
 for pkg in "${!SRC_MAP[@]}"; do
     SRC="${SRC_MAP[$pkg]}"

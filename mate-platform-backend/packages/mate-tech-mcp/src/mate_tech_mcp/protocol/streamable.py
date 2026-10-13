@@ -7,8 +7,8 @@ transport.
 
 The surface is a ``FastMCP`` subclass whose ``list_tools`` /
 ``call_tool`` / resources / prompts delegate to the ``MCPServer``
-runtime registry — so it reflects the W2 dynamic registry and the
-federation fallback, not a static snapshot.
+runtime registry. External calls expose only tools with verified capability
+metadata; dynamic and federated tools remain unavailable until they have it.
 
 Tenant binding (ADR-0062 / 1.1 task 1a)
 ---------------------------------------
@@ -41,11 +41,8 @@ from mcp.types import (
 from pydantic import AnyUrl
 
 from ..caller_context import bind_caller
-from ..federation_routes import federation_router
 from ..prompts.templates import list_prompts as list_prompt_templates
 from ..prompts.templates import render_prompt
-from ..repositories import get_tool_by_name, list_dynamic_tools
-from ..tools.forwarding import get_dynamic_invoker
 
 
 class MateStreamableHttpServer(FastMCP):
@@ -129,8 +126,15 @@ class MateStreamableHttpServer(FastMCP):
     # -- tools -----------------------------------------------------------
     async def list_tools(self) -> list[Tool]:
         tenant = await self._resolve_tenant()
-        static = await self._mcp.list_tools(tenant)
-        known = {t["name"] for t in static}
+        request = self._request_object()
+        ctx = getattr(getattr(request, "state", None), "ctx", None)
+        with bind_caller(
+            tenant_id=tenant,
+            bearer_token=self._request_bearer(),
+            scopes=frozenset(getattr(ctx, "scopes", ())),
+            auth_method=getattr(ctx, "auth_method", ""),
+        ):
+            static = await self._mcp.list_tools(tenant)
         tools = [
             Tool(
                 name=t["name"],
@@ -139,16 +143,8 @@ class MateStreamableHttpServer(FastMCP):
             )
             for t in static
         ]
-        # W2 dynamic registry, scoped to the authenticated tenant.
-        for d in list_dynamic_tools(tenant):
-            if d.name not in known and d.enabled:
-                tools.append(
-                    Tool(
-                        name=d.name,
-                        description=d.description,
-                        inputSchema=d.input_schema or {"type": "object"},
-                    )
-                )
+        # Dynamic/federated registrations have no verified capability/agent allowlist.
+        # Do not advertise or invoke them on an external credential until they do.
         return tools
 
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
@@ -160,7 +156,22 @@ class MateStreamableHttpServer(FastMCP):
         # （ont_confirm/reject/execute_proposal）在此面必然 PermissionError。
         args.pop("__caller__", None)
         # 1.1 task 1c: downstream proxies (ontology) must go out as the caller.
-        with bind_caller(tenant_id=tenant, bearer_token=self._request_bearer()):
+        with bind_caller(
+            tenant_id=tenant,
+            bearer_token=self._request_bearer(),
+            scopes=frozenset(
+                getattr(
+                    getattr(getattr(self._request_object(), "state", None), "ctx", None),
+                    "scopes",
+                    (),
+                )
+            ),
+            auth_method=getattr(
+                getattr(getattr(self._request_object(), "state", None), "ctx", None),
+                "auth_method",
+                "",
+            ),
+        ):
             return await self._dispatch(name, args, tenant)
 
     async def _dispatch(self, name: str, args: dict[str, Any], tenant: str) -> Any:
@@ -169,30 +180,7 @@ class MateStreamableHttpServer(FastMCP):
             return await self._mcp.call_tool(name, args, tenant_id=tenant)
         except KeyError:
             pass
-        # 2. W2 dynamic forwarding tool
-        dyn = get_tool_by_name(tenant, name)
-        if dyn is not None and dyn.enabled and dyn.endpoint:
-            try:
-                return await get_dynamic_invoker().invoke(
-                    tenant_id=tenant,
-                    name=name,
-                    endpoint=dyn.endpoint,
-                    arguments=args,
-                )
-            except RuntimeError as e:
-                raise ValueError(str(e)) from e
-        # 3. federation fallback
-        try:
-            remote = await federation_router.route(
-                tenant_id=tenant,
-                tool_name=name,
-                arguments=args,
-            )
-            if remote is not None:
-                return remote
-        except RuntimeError as e:
-            raise ValueError(str(e)) from e
-        raise ValueError(f"Tool not found: {name}")
+        raise PermissionError("tool is not in the verified external agent allowlist")
 
     # -- resources -------------------------------------------------------
     async def list_resources(self) -> list[Resource]:
