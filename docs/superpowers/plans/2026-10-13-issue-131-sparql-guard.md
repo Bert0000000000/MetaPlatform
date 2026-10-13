@@ -38,6 +38,9 @@ with pytest.raises(ValueError, match="Unsupported SPARQL syntax: FILTER"):
 
 ## Task 2: Publish and verify
 
+**Files:** infra/demo-cloud/verify.py and infra/demo-cloud/tests/test_sparql_verification.py. Extend existing authenticated release acceptance with read-only execution/EXPLAIN probes: anonymous 401, real FILTER/OPTIONAL 400, and quoted/IRI/variable keyword text 200. Preserve the existing v2 persistence and RLS checks.
+
+- [ ] Run probe orchestration regressions before implementing; require the expected error detail and SELECT response shape so malformed successful responses cannot approve a release.
 - [ ] Re-fetch main, merge new commits without losing concurrent work, rerun affected checks, push and open a PR with available codex/codex-automation labels.
 - [ ] Wait for every required/affected check and actual PostgreSQL/browser evidence; merge with the reviewed head SHA, preserving existing worktrees.
 - [ ] Verify remote main and the corresponding Tencent Demo Deploy artifact. Confirm repaired HTTP behavior on the actual deployed service using synthetic read-only queries and a trusted test identity; preserve existing data.
