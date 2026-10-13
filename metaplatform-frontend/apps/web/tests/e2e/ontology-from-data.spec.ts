@@ -385,7 +385,7 @@ test('缺失身份仍可发布本体 → 同步受阻 → 补齐来源复用模�
   expect(individuals).toHaveLength(0);
   await page.reload();
   await expect(page.getByRole('navigation', { name: '逆向发现本体流程', exact: true }).getByRole('button', { name: /数据同步（可选）/ })).toHaveAttribute('aria-current', 'step');
-  await page.getByRole('button', { name: '返回发布结果', exact: true }).click();
+  await page.getByRole('navigation', { name: '逆向发现本体流程', exact: true }).getByRole('button', { name: /本体发布与验收/ }).click();
   await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
 
   source = await upload('modeling-repaired-identity.xlsx'); endpoint = `${gateway}/ont/v2/modeling/sources/${source.id}`;
