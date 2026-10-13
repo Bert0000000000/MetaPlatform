@@ -47,17 +47,66 @@ def verify_platform_access(call, claims: dict, checks: list) -> None:
 
 def verify_apphub_catalog(call, class_rid: str, checks: list) -> None:
     """Read catalog dependencies for the saved synthetic class; errors block release."""
-    for path in (
-        "/api/v1/apphub/modules",
-        "/api/v1/apphub/bindings/usage?" + urlencode({"class_rid": class_rid}),
-    ):
+
+    def read_items(path):
         result = call("GET", path)
         require(
             isinstance(result, dict)
             and isinstance(result.get("items"), list)
             and type(result.get("total")) is int
-            and result["total"] >= len(result["items"]),
+            and result["total"] == len(result["items"])
+            and all(isinstance(item, dict) for item in result["items"]),
             "AppHub catalog read returned an unknown result",
+        )
+        return result["items"]
+
+    for item in read_items("/api/v1/apphub/modules"):
+        require(
+            all(
+                isinstance(item.get(field), str)
+                for field in (
+                    "id",
+                    "tenant_id",
+                    "name",
+                    "code",
+                    "app_code",
+                    "description",
+                    "entry_path",
+                )
+            ),
+            "AppHub module read returned an unknown result",
+        )
+        require(item["tenant_id"] == TENANT, "AppHub module tenant mismatch")
+
+    for item in read_items("/api/v1/apphub/bindings/usage?" + urlencode({"class_rid": class_rid})):
+        require(
+            all(
+                isinstance(item.get(field), str)
+                for field in (
+                    "app_id",
+                    "app_name",
+                    "page_id",
+                    "status",
+                    "model_version",
+                )
+            )
+            and "version_id" in item
+            and (item["version_id"] is None or isinstance(item["version_id"], str))
+            and all(
+                item.get(field) is None or isinstance(item[field], str)
+                for field in ("model_checksum", "action_rid")
+            ),
+            "AppHub binding usage read returned an unknown result",
+        )
+        require(item["model_version"] == class_rid, "AppHub binding model mismatch")
+        require(
+            "tenant_id" not in item or item["tenant_id"] == TENANT,
+            "AppHub binding tenant mismatch",
+        )
+        # The handler returns null action/checksum for a saved incomplete draft.
+        require(
+            item.get("action_rid") is None or item["action_rid"].startswith(f"ont.{TENANT}."),
+            "AppHub binding action tenant mismatch",
         )
     checks.append("AppHub modules and object binding usage read through gateway")
 
