@@ -44,6 +44,38 @@ def verify_platform_access(call, claims: dict, checks: list) -> None:
     checks.append("AppHub applications read through gateway")
 
 
+def verify_sparql_boundary(call, checks: list) -> None:
+    """Read-only, authenticated probes for the legacy execution and explain routes."""
+    supported = 'SELECT ?FILTER WHERE { ?FILTER <urn:issue131:OPTIONAL> "FILTER" } LIMIT 1'
+    unsupported = (
+        ("FILTER", "SELECT ?s WHERE { ?s rdf:type ?o.FILTER(?o = ?o) }"),
+        ("OPTIONAL", "SELECT ?s WHERE { ?s rdf:type ?o.OPTIONAL { ?s label ?v } }"),
+    )
+    for path in ("/api/v1/ont/sparql", "/api/v1/ont/explain"):
+        call("POST", path, {"query": supported}, authenticated=False, expected=(401,))
+        for keyword, query in unsupported:
+            result = call("POST", path, {"query": query}, expected=(400,))
+            require(
+                isinstance(result, dict)
+                and result.get("detail") == f"Parse failed: Unsupported SPARQL syntax: {keyword}",
+                "Legacy SPARQL syntax error does not identify the unsupported keyword",
+            )
+        result = call("POST", path, {"query": supported}, expected=(200,))
+        if path.endswith("/sparql"):
+            require(
+                isinstance(result, dict) and isinstance(result.get("bindings"), list),
+                "Legacy SPARQL SELECT bindings are missing",
+            )
+        else:
+            require(
+                isinstance(result, dict) and result.get("variables") == ["FILTER"],
+                "Legacy SPARQL EXPLAIN projection changed",
+            )
+    checks.append(
+        "Legacy SPARQL/EXPLAIN: anonymous 401, FILTER/OPTIONAL 400, keyword RDF terms 200 verified"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default="http://127.0.0.1:8080")
@@ -93,6 +125,7 @@ def main() -> None:
     require(bool(claims.get("sub")), "Login token has no subject")
     checks.append("Keycloak login through gateway with tenant-bound subject")
     verify_platform_access(call, claims, checks)
+    verify_sparql_boundary(call, checks)
 
     state_path = HERE / "artifacts/acceptance-state.json"
     if args.read_only:
