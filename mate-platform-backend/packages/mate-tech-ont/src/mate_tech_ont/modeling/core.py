@@ -697,7 +697,21 @@ def _join_key(properties, keys):
     return values if all(v is not None and v != "" for v in values) else None
 
 
-def _check_link_edits(model, entities, report):
+def _class_ancestors(classes):
+    """Index self and ancestors after candidate inheritance has been validated."""
+    parents = {cls.id: cls.parentClassId for cls in classes}
+    ancestors = {}
+    for class_id in parents:
+        chain = []
+        current = class_id
+        while current is not None:
+            chain.append(current)
+            current = parents[current]
+        ancestors[class_id] = tuple(chain)
+    return ancestors
+
+
+def _check_link_edits(model, entities, ancestors, report):
     relations = {r.id: r for r in model.relationships}
     edits, seen = defaultdict(list), set()
     for link in model.links:
@@ -712,7 +726,10 @@ def _check_link_edits(model, entities, report):
         source, target = entities.get(link.source), entities.get(link.target)
         if source is None or target is None:
             report.issue("error", link.id, "边引用不存在的实例端点")
-        elif source["classId"] != relation.source or target["classId"] != relation.target:
+        elif (
+            relation.source not in ancestors[source["classId"]]
+            or relation.target not in ancestors[target["classId"]]
+        ):
             report.issue("error", link.id, "边端点与关系的来源或目标类不匹配")
         elif source.get("excluded") or target.get("excluded"):
             report.issue("warning", link.id, "边端点实例已排除，该边自动移除")
@@ -721,10 +738,11 @@ def _check_link_edits(model, entities, report):
     return edits
 
 
-def _compile_relations(model, entities, link_edits, report):
+def _compile_relations(model, entities, link_edits, ancestors, report):
     by_class = defaultdict(list)
     for entity in entities.values():
-        by_class[entity["classId"]].append(entity)
+        for class_id in ancestors[entity["classId"]]:
+            by_class[class_id].append(entity)
     edges = []
     for relation in model.relationships:
         source_keys = [j.sourceProperty for j in relation.joins]
@@ -844,6 +862,7 @@ def _evaluate(value, rows, require_review, quarantine=None):
     classes = _check_model(model, grouped, headers, report, require_review)
     if report.errors:
         return report.finish()
+    ancestors = _class_ancestors(model.classes)
     entities = {}
     invalid_keys = set()
 
@@ -940,7 +959,7 @@ def _evaluate(value, rows, require_review, quarantine=None):
                     identity=entity["identity"],
                 )
                 entity["excluded"] = True
-    link_edits = _check_link_edits(model, entities, report)
+    link_edits = _check_link_edits(model, entities, ancestors, report)
     if report.errors:
         return report.finish()
     active = {k: e for k, e in entities.items() if not e.get("excluded")}
@@ -1007,7 +1026,7 @@ def _evaluate(value, rows, require_review, quarantine=None):
             rid: [link for link in links if link.source in active and link.target in active]
             for rid, links in link_edits.items()
         }
-    edges = _compile_relations(model, active, link_edits, report)
+    edges = _compile_relations(model, active, link_edits, ancestors, report)
     from .rules import check_edge_cardinality
 
     if quarantine is None:

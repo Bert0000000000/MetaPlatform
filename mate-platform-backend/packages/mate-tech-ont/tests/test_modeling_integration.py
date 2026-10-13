@@ -19,6 +19,173 @@ from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 DSN = os.environ.get("MODELING_TEST_DSN", "")
 
 
+def inherited_plant_sample():
+    """18 leaf specimens, three sites/batches, and two parent-declared relations."""
+    from copy import deepcopy
+
+    specimen = {
+        "id": "specimen",
+        "name": "植物标本",
+        "identity": ["code"],
+        "labelProperty": "name",
+        "accepted": True,
+        "properties": [
+            {"id": key, "name": key, "dataType": "text"}
+            for key in ("code", "name", "site", "batch")
+        ],
+    }
+    classes = [specimen]
+    for cid, name in (("tree", "乔木"), ("shrub", "灌木"), ("herb", "草本")):
+        classes.append(
+            {
+                **deepcopy(specimen),
+                "id": cid,
+                "name": name,
+                "parentClassId": "specimen",
+                "inheritanceReason": "标本分类中的一种植物标本",
+            }
+        )
+    for cid in ("site", "batch"):
+        classes.append(
+            {
+                "id": cid,
+                "name": cid,
+                "identity": ["code"],
+                "labelProperty": "code",
+                "accepted": True,
+                "properties": [{"id": "code", "name": "code", "dataType": "text"}],
+            }
+        )
+    value = {
+        "schemaVersion": 2,
+        "name": "植物调查",
+        "classes": classes,
+        "mappings": [
+            {
+                "id": c["id"],
+                "classId": c["id"],
+                "sheet": c["id"],
+                "bindings": {p["id"]: p["id"] for p in c["properties"]},
+                "accepted": True,
+            }
+            for c in classes[1:]
+        ],
+        "relationships": [
+            {
+                "id": "at_" + cid,
+                "name": "属于" + cid,
+                "source": "specimen",
+                "target": cid,
+                "joins": [{"sourceProperty": cid, "targetProperty": "code"}],
+                "accepted": True,
+                "cardinality": "N:1",
+                "cardinalityStatus": "confirmed",
+                "cardinalityReason": "每份标本属于一个采样点和批次",
+                "targetSelection": "entity",
+            }
+            for cid in ("site", "batch")
+        ],
+    }
+    book = Workbook()
+    book.remove(book.active)
+    for cid in ("tree", "shrub", "herb"):
+        sheet = book.create_sheet(cid)
+        sheet.append(["code", "name", "site", "batch"])
+        for i in range(6):
+            sheet.append([f"{cid}{i}", f"{cid}名称{i}", f"site{i % 3}", f"batch{i % 3}"])
+    for cid in ("site", "batch"):
+        sheet = book.create_sheet(cid)
+        sheet.append(["code"])
+        for i in range(3):
+            sheet.append([f"{cid}{i}"])
+    out = BytesIO()
+    book.save(out)
+    book.close()
+    return value, out.getvalue()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("target_descendant", [False, True])
+async def test_inherited_plant_links_new_reuse_and_repeated_sync(app, target_descendant):
+    value, content = inherited_plant_sample()
+    if target_descendant:
+        from copy import deepcopy
+
+        site_child = deepcopy(next(c for c in value["classes"] if c["id"] == "site"))
+        site_child.update(
+            id="site_leaf",
+            name="具体采样点",
+            parentClassId="site",
+            inheritanceReason="具体采样点是一种采样点",
+        )
+        value["classes"].append(site_child)
+        next(m for m in value["mappings"] if m["classId"] == "site")["classId"] = "site_leaf"
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        previous = None
+        snapshot = None
+        for reuse in (False, True):
+            uploaded = await client.post(
+                "/api/v1/ont/v2/modeling/sources", files={"file": ("plants.xlsx", content)}
+            )
+            assert uploaded.status_code == 201, uploaded.text
+            source = uploaded.json()
+            prefix = "/api/v1/ont/v2/modeling/sources/" + source["id"]
+            resolutions = (
+                {
+                    t["classId"]: {
+                        "mode": "reuse",
+                        "targetRid": t["rid"],
+                        "propertyMap": t["propertyMap"],
+                    }
+                    for t in previous["plan"]["types"]
+                }
+                if reuse
+                else {}
+            )
+            saved = await client.put(
+                prefix,
+                json={"revision": source["revision"], "draft": value, "resolutions": resolutions},
+            )
+            assert saved.status_code == 200, saved.text
+            source = await validate_publish(client, saved.json())
+            for _ in range(2):
+                checked = await client.post(
+                    prefix + "/sync-check", json={"revision": source["revision"]}
+                )
+                assert checked.status_code == 200, checked.text
+                source = checked.json()
+                assert source["syncCheck"]["canSync"], source["syncCheck"]
+                synced = await client.post(
+                    prefix + "/sync", json={"revision": source["revision"], "background": False}
+                )
+                assert synced.status_code == 200, synced.text
+                source = synced.json()
+                assert source["sync"]["status"] == "succeeded", source["sync"]
+                objects = (await client.get("/api/v1/ont/v2/individuals")).json()
+                links = (await client.get("/api/v1/ont/v2/link-instances")).json()
+                assert len(objects) == 24 and len(links) == 36
+                types = {t["classId"]: t["rid"] for t in source["plan"]["types"]}
+                by_rid = {o["rid"]: o for o in objects}
+                assert not any(o["class_rid"] == types["specimen"] for o in objects)
+                assert {by_rid[l["src"]]["class_rid"] for l in links} == {
+                    types[cid] for cid in ("tree", "shrub", "herb")
+                }
+                assert {by_rid[l["dst"]]["class_rid"] for l in links} == {
+                    types["site_leaf" if target_descendant else "site"],
+                    types["batch"],
+                }
+                current = (
+                    {o["rid"] for o in objects},
+                    {(l["rid"], l["src"], l["dst"]) for l in links},
+                )
+                if snapshot is not None:
+                    assert current == snapshot
+                snapshot = current
+            previous = source
+
+
 @pytest.fixture(autouse=True)
 def require_modeling_test_dsn():
     if not DSN:
