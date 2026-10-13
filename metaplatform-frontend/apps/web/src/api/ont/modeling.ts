@@ -64,6 +64,7 @@ export interface ModelingQuarantine {
 const base = '/ont/v2/modeling/sources';
 const sourcePath = (id: string) => `${base}/${encodeURIComponent(id)}`;
 export interface ModelingCompletionPlan {
+  semantics?: ModelingDefinition[];
   hash: string; canApply: boolean;
   changes: Array<{id: string;name: string;action: string;reason: string}>;
   candidates: Array<{id: string;name: string;included: boolean;originallyIncluded: boolean;parent: string | null;identity: string[];reason: string;problem: string;deferredProperties?: Array<{id:string;name:string;reason:string}>}>;

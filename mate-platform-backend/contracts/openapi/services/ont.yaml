@@ -6654,6 +6654,10 @@ components:
               identity: { type: array, items: { type: string } }
               reason: { type: string }
               problem: { type: string }
+        semantics:
+          description: 本次方案显式确认的发布范围内业务语义，内容绑定方案哈希
+          type: array
+          items: { $ref: "#/components/schemas/DataModelingSemanticDefinition" }
         relationships: { type: array, items: { type: object } }
         counts:
           type: object

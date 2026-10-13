@@ -281,6 +281,13 @@ def propose(source, rows, defer_classes=()):
                     class_id, prop_id, "同一业务身份存在多个非空值，当前来源无法可靠确定唯一值"
                 )
 
+    # The inert plan exposes exactly the semantic content confirmed by the user.
+    semantic_targets = {d["target"] for d in publication_scope(draft)["semantics"]["definitions"]}
+    for definition in draft["semantics"]["definitions"]:
+        if definition["target"] in semantic_targets:
+            definition["confirmed"] = True
+    semantics = [d for d in draft["semantics"]["definitions"] if d["target"] in semantic_targets]
+
     report = validate_ontology(draft)
     evidence = validate_evidence(draft, source["profile"])
     remaining = [i for i in report["issues"] + evidence if i["severity"] == "error"]
@@ -318,6 +325,7 @@ def propose(source, rows, defer_classes=()):
     ]
     return {
         "draft": draft,
+        "semantics": semantics,
         "changes": changes,
         "remaining": remaining,
         "candidates": candidates,

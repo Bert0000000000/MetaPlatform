@@ -237,3 +237,25 @@ def test_deferred_classes_do_not_consume_completion_record_capacity(monkeypatch)
     monkeypatch.setattr(generation_quality, "MAX_NODES", 2)
     plan = propose(source, rows, ["line"])
     assert plan["canApply"] and plan["data"]["nodes"] == 1
+
+
+def test_completion_confirms_only_visible_scoped_semantics_and_binds_content():
+    source, rows = fixture()
+    targets = ["class:line", "class:payment", "relationship:pays"]
+    source["draft"]["semantics"]["definitions"] = [
+        {"target": target, "definition": "业务定义", "basis": "人工依据", "confirmed": False}
+        for target in targets
+    ]
+    plan = propose(source, rows)
+    assert {d["target"] for d in plan["semantics"]} == set(targets)
+    assert all(d["confirmed"] for d in plan["draft"]["semantics"]["definitions"])
+    assert not any(d["confirmed"] for d in source["draft"]["semantics"]["definitions"])
+    deferred = propose(source, rows, ["line"])
+    assert [d["target"] for d in deferred["semantics"]] == ["class:payment"]
+    assert [d["confirmed"] for d in deferred["draft"]["semantics"]["definitions"]] == [
+        False,
+        True,
+        False,
+    ]
+    source["draft"]["semantics"]["definitions"][0]["definition"] = "新定义"
+    assert propose(source, rows)["hash"] != plan["hash"]

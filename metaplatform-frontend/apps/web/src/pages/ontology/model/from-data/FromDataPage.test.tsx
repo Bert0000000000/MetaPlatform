@@ -361,7 +361,7 @@ describe('逆向发现本体独立辅助入口', () => {
     fireEvent.change(await screen.findByRole('textbox', { name: '新的稳定模型标识' }), { target: { value: 'manufacturing-material' } });
     fireEvent.click(screen.getByRole('button', { name: '修改标识及引用' }));
     await waitFor(() => expect(screen.getByText('manufacturing-material')).toBeVisible());
-    expect(screen.getByRole('checkbox', { name: '已确认对象定义' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: '确认对象及业务语义' })).not.toBeChecked();
     showMappings();
     expect(screen.getByRole('checkbox', { name: /确认映射 库存 →/ })).not.toBeChecked();
     fireEvent.click(screen.getByRole('tab', { name: /业务关系/ }));
@@ -485,4 +485,45 @@ describe('逆向发现本体独立辅助入口', () => {
     expect(draft.mappings[1].accepted).toBe(false);
     expect(draft.relationships[0].accepted).toBe(false);
   });
+});
+
+
+it('对象审核展示并一并确认相关语义，定义编辑只撤销相关确认', async () => {
+  const value = fixture();
+  value.draft!.semantics.definitions = [{ target: 'class:material', definition: '按物料编码识别的采购物料', aliases: [], scope: '采购', grain: '一种物料', unit: '', constraints: '', basis: '业务规则', confirmed: false }];
+  vi.mocked(getModelingSource).mockResolvedValue(value);
+  open();
+  expect(await screen.findByText(/待审核语义 1 项/)).toBeVisible();
+  expect(screen.getByText('定义：按物料编码识别的采购物料')).toBeVisible();
+  await openObject();
+  expect(screen.getByRole('textbox', { name: 'class:material 定义' })).toHaveValue('按物料编码识别的采购物料');
+  fireEvent.click(screen.getByRole('checkbox', { name: '确认对象及业务语义' }));
+  expect(screen.getByRole('checkbox', { name: '确认对象及业务语义' })).toBeChecked();
+  expect(screen.getByText(/待审核语义 0 项/)).toBeVisible();
+  fireEvent.change(screen.getByRole('textbox', { name: 'class:material 定义' }), { target: { value: '按工厂区分的物料' } });
+  expect(screen.getByRole('checkbox', { name: '确认对象及业务语义' })).not.toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: '保存修改' }));
+  await waitFor(() => expect(saveModelingSource).toHaveBeenCalled());
+  const saved = vi.mocked(saveModelingSource).mock.calls.at(-1)![0];
+  expect(saved.draft!.classes[0].accepted).toBe(false);
+  expect(saved.draft!.semantics.definitions[0].confirmed).toBe(false);
+  expect(saved.draft!.mappings[0].accepted).toBe(true);
+});
+
+it('校验警告原地审核并先保存再校验，不返回第二步', async () => {
+  const value = fixture();
+  value.draft!.semantics.definitions = [{ target: 'class:material', definition: '采购物料', aliases: [], scope: '', grain: '', unit: '', constraints: '', basis: '业务规则', confirmed: false }];
+  value.validation!.issues = [{ severity: 'warning', item: 'class:material', message: '语义口径尚未业务确认' }];
+  vi.mocked(getModelingSource).mockResolvedValue(value);
+  open();
+  await screen.findByRole('button', { name: '已保存' });
+  fireEvent.click(screen.getByRole('button', { name: /3.*变更草稿与校验/ }));
+  fireEvent.click(await screen.findByRole('button', { name: '查看并处理' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '确认对象及业务语义' }));
+  fireEvent.click(screen.getByRole('button', { name: '保存并重新校验' }));
+  await waitFor(() => expect(runModelingOperation).toHaveBeenCalled());
+  expect(saveModelingSource).toHaveBeenCalledTimes(1);
+  expect(vi.mocked(saveModelingSource).mock.calls[0][0].draft!.semantics.definitions[0].confirmed).toBe(true);
+  expect(vi.mocked(runModelingOperation).mock.calls[0][0].revision).toBe(4);
+  expect(screen.getByRole('button', { name: /3.*变更草稿与校验/ })).toHaveAttribute('aria-current', 'step');
 });
