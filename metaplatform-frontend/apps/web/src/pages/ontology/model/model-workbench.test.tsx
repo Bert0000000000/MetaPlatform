@@ -208,8 +208,22 @@ it('selects real card DTO, preserves RID when opening complete editor detail', a
   );
 });
 it('clears the selected model when the blank canvas is clicked', async () => {
+  vi.stubGlobal('PointerEvent', class extends MouseEvent {
+    readonly pointerId: number;
+    readonly isPrimary: boolean;
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 0;
+      this.isPrimary = init.isPrimary ?? true;
+    }
+  });
   const router = mount(`/ontology/model/graph?typeRef=${encodeURIComponent(customer.rid)}`);
   const canvas = await screen.findByRole('img', { name: '本体类与关系结构图' });
+  Object.assign(canvas, {
+    setPointerCapture: vi.fn(),
+    hasPointerCapture: vi.fn(() => false),
+    releasePointerCapture: vi.fn(),
+  });
   expect(screen.getByRole('button', { name: '查看本体类 客户' })).toHaveClass('is-selected');
   fireEvent.pointerDown(canvas, { button: 0, pointerId: 1, isPrimary: true, clientX: 20, clientY: 20 });
   fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });

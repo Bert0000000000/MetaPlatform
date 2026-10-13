@@ -115,13 +115,14 @@ export default function OntologySchemaGraph({ classes, relationships, selected, 
     return { x: size.width / 2 - (size.width / 2 - c.x) * ratio, y: size.height / 2 - (size.height / 2 - c.y) * ratio, scale };
   });
   const resetLayout = () => {
+    const fullStorageKey = `mate-ontology-graph-layout:${layoutKey}:all`;
     setAll(true);
     setHovered('');
     onSelect('');
     onRelationSelect?.('');
-    setManualLayout({ key: storageKey, positions: {} });
+    setManualLayout({ key: fullStorageKey, positions: {} });
     setReset(v => v + 1);
-    try { localStorage.removeItem(storageKey); } catch { /* Keep reset usable without browser storage. */ }
+    try { localStorage.removeItem(fullStorageKey); } catch { /* Keep reset usable without browser storage. */ }
   };
   if (diagram.error) return <div role="alert" className="ms-empty ms-error">{diagram.error}</div>;
   return <div className={`mp-schema-graph ms-schema-diagram ms-concept-diagram${compact ? ' is-overview' : ''}${expanded ? ' ms-schema-expanded' : ''}`}>
