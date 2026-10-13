@@ -916,7 +916,9 @@ def test_pg_inherited_link_write_and_child_supersession_do_not_deadlock(monkeypa
         publishing.result(timeout=10)
     with updater.tenant_scope(T):
         assert updater.get_individual(iid).class_rid == ClassRef(new)
-        assert any(item.rid == instance.rid for item in updater.list_link_instances(ClassRef(link)))
+        assert any(
+            item.rid == instance.rid for item in updater.list_link_instances(link_type_rid=link)
+        )
         assert updater.create_link_instance(instance, require_endpoints=True).rid == instance.rid
 
 
