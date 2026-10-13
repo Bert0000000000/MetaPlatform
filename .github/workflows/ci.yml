@@ -46,9 +46,25 @@ jobs:
       - name: Data-modeling and SHACL frontend regressions
         working-directory: ./metaplatform-frontend
         run: pnpm --filter @mate/web test:unit src/pages/ontology/model/from-data src/pages/ontology/model/validation
+      - name: Home, login and overview regressions
+        working-directory: ./metaplatform-frontend
+        run: pnpm --filter @mate/web test:unit src/api/dashboard/workbench.test.ts src/pages/dashboard src/pages/auth/SharedLoginPage.test.tsx src/pages/ontology/overview/OverviewPage.test.tsx src/pages/ontology/governance/publication-workflow.test.tsx
       - name: Typecheck web
         working-directory: ./metaplatform-frontend
         run: pnpm --filter @mate/web typecheck
       - name: Build web
         working-directory: ./metaplatform-frontend
         run: pnpm --filter @mate/web build
+      - name: Install Chromium for rendering regressions
+        working-directory: ./metaplatform-frontend
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Responsive rendering regressions
+        working-directory: ./metaplatform-frontend
+        run: pnpm exec playwright test --config playwright.ui-repair.config.ts
+      - name: Upload rendering evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-rendering-regressions
+          path: metaplatform-frontend/tests/e2e/.artifacts/ui-repair
+          if-no-files-found: warn
