@@ -90,3 +90,33 @@ test('login starts with empty credentials and removes the obsolete default accou
   await expect(page.getByText('请使用管理员提供的账号登录')).toBeVisible();
   await expect(page.getByText(/默认账号/)).not.toBeVisible();
 });
+
+for (const [width, theme] of [[390, 'light'], [1440, 'light'], [390, 'dark']] as const) {
+  test(`model editor native controls are readable and footer actions fit at ${width}px in ${theme} mode`, async ({ page }) => {
+    await page.route('**/dashboard/settings*', route => route.fulfill({ json: { ...(fixtures['/api/v1/dashboard/settings'] as object), theme } }));
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/ontology/model/object-types');
+    expect((await page.getByRole('button', { name: '新建对象类型', exact: true }).boundingBox())!.height).toBe(32);
+    await page.getByRole('button', { name: '编辑', exact: true }).first().click();
+    const editor = page.getByRole('dialog', { name: '模型编辑器', exact: true });
+    await expect(editor).toBeVisible();
+    await expect(page.locator('body')).toHaveAttribute('theme-mode', theme);
+    const source = editor.getByRole('button', { name: '读取数据源', exact: true });
+    await expect(source).toBeEnabled();
+    expect((await source.boundingBox())!.height).toBeGreaterThanOrEqual(32);
+    const description = await editor.getByRole('textbox', { name: '业务说明', exact: true }).boundingBox();
+    expect(description!.height).toBeGreaterThanOrEqual(72);
+    expect(description!.width).toBeGreaterThan(Math.min(width * 0.6, 300));
+    const actions = ['撤销更改', '保存草稿', '预检与影响', '取消', '发布对象类型'];
+    for (const label of actions) {
+      const button = editor.getByRole('button', { name: label, exact: true });
+      const rect = (await button.boundingBox())!;
+      const bounds = (await editor.boundingBox())!;
+      expect(rect.height).toBeGreaterThanOrEqual(32);
+      expect(rect.x).toBeGreaterThanOrEqual(bounds.x);
+      expect(rect.x + rect.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+      expect(await button.evaluate(e => getComputedStyle(e).whiteSpace)).toBe('nowrap');
+    }
+    await page.screenshot({ path: `tests/e2e/.artifacts/ui-repair/model-editor-${width}-${theme}.png` });
+  });
+}

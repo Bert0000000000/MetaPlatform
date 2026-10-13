@@ -141,5 +141,22 @@
       "rid": "ont.ui-repair.obj.crm.customer.v1",
       "author": "ui-reader"
     }
-  ]
+  ],
+  "/api/v1/ont/v2/object-types/ont.ui-repair.obj.crm.customer.v1": {
+    "rid": "ont.ui-repair.obj.crm.customer.v1",
+    "display_name": "客户模型与长名称响应式检查",
+    "primary_key": ["ont.ui-repair.prop.code.v1"],
+    "properties": [
+      {
+        "rid": "ont.ui-repair.prop.code.v1",
+        "type_id": "STRING",
+        "nullable": false,
+        "primary_key": true,
+        "title": "客户编号",
+        "format": "string"
+      }
+    ],
+    "interfaces": [],
+    "status": "active"
+  }
 }
