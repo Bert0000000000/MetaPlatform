@@ -7,27 +7,29 @@ import { resolve } from 'node:path';
 test.use({ trace: 'off', video: 'off', screenshot: 'off' });
 
 const artifactMode = process.env.MP11_ARTIFACT_MODE ?? 'dev';
-const websiteTitle = '让企业的数据、AI 与业务行动协同起来';
+const websiteTitle = '让 AI 深入业务， 让企业协同进化。';
 
-test('product introduction leads visitors through capabilities, scenarios, development updates and version planning', async ({ page }) => {
+test('website explains positioning, enterprise problems, architecture and contact with chapter illustrations', async ({ page }) => {
   await page.goto('/website/');
   await expect(page.getByText('本体驱动的企业 AI 操作平台', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: '了解平台', exact: true })).toHaveAttribute('href', '#platform');
-  expect(await page.locator('main > section[id]').evaluateAll(elements => elements.map(element => element.id))).toEqual(['top', 'platform', 'capabilities', 'orders', 'updates', 'plan', 'faq']);
-  for (const [name, anchor] of [['平台介绍', 'platform'], ['产品能力', 'capabilities'], ['业务场景', 'orders'], ['产品更新', 'updates'], ['版本规划', 'plan']]) {
+  for (const [name, anchor] of [['平台定位', 'platform'], ['企业挑战', 'problems'], ['平台架构', 'architecture'], ['联系与合作', 'contact']]) {
     await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name, exact: true }).first().click();
     await expect(page).toHaveURL(new RegExp(`#${anchor}$`));
     await expect(page.locator(`#${anchor} h2`)).toBeInViewport();
+    await expect(page.locator(`#${anchor} svg[role="img"]`).first()).toBeVisible();
   }
-  await expect(page.locator('#updates time')).toHaveCount(4);
-  await expect(page.locator('#updates')).toContainText('2026-10-11');
-  for (const theme of ['关系定义与关联', '对象创建与模型发布', '真实数据接入与恢复', '官网与平台入口']) await expect(page.locator('#updates')).toContainText(theme);
+  await expect(page.locator('#contact')).toContainText('官方联系方式 · 待公布');
+  await expect(page.locator('#contact a[href^="mailto:"], #contact a[href^="tel:"]')).toHaveCount(0);
+  await page.locator('#plan summary').click();
   for (const state of ['1.1.0 开发中', '1.1.1 规划', '1.2 研究 / 规划']) await expect(page.locator('#plan')).toContainText(state);
   await expect(page.locator('#plan')).toContainText('尚未发布');
   await expect(page.locator('#plan')).toContainText('OWL / RDF / SHACL');
-  await expect(page.locator('#updates')).not.toContainText('正式发布');
+  await expect(page.locator('#architecture')).toContainText('中央控制面');
+  await expect(page.locator('#architecture')).toContainText('租户运行面');
+  await expect(page.locator('#architecture')).toContainText('租户数据面');
   await page.goto('/website/#chain');
-  await expect(page.getByRole('heading', { name: '把业务语言变成协作基础' })).toBeInViewport();
+  await expect(page.getByRole('heading', { name: /企业 AI，需要\s*共同的业务语言。/ })).toBeInViewport();
 });
 test('anonymous website directory and index expose real platform links', async ({ page }) => {
   const requests: string[] = [];
@@ -64,10 +66,10 @@ test('default entry remains available with JavaScript disabled', async ({ browse
   await page.setViewportSize({ width: 390, height: 900 });
   await page.getByText('菜单', { exact: true }).focus();
   await page.keyboard.press('Enter');
-  await page.getByRole('link', { name: '产品更新', exact: true }).locator('visible=true').first().focus();
+  await page.getByRole('link', { name: '平台架构', exact: true }).locator('visible=true').first().focus();
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/#updates$/);
-  await expect(page.locator('#updates h2')).toBeInViewport();
+  await expect(page).toHaveURL(/#architecture$/);
+  await expect(page.locator('#architecture h2')).toBeInViewport();
   await page.getByText('菜单', { exact: true }).click();
   await page.goto('/website/#faq');
   await page.getByText('什么是业务本体？', { exact: true }).focus();
@@ -97,15 +99,15 @@ for (const width of [360, 390, 768, 1440]) {
       await expect(page.locator('.mobile-menu')).not.toHaveAttribute('open', '');
       await expect(page.getByText('菜单', { exact: true })).toBeFocused();
       await page.keyboard.press('Enter');
-      await expect(page.getByRole('link', { name: '业务场景', exact: true }).locator('visible=true').first()).toBeVisible();
+      await expect(page.getByRole('link', { name: '企业挑战', exact: true }).locator('visible=true').first()).toBeVisible();
     }
-    const scenarioLink = page.getByRole('link', { name: '业务场景', exact: true }).locator('visible=true').first();
+    const scenarioLink = page.getByRole('link', { name: '企业挑战', exact: true }).locator('visible=true').first();
     await scenarioLink.focus();
     await page.keyboard.press('Enter');
     if (width <= 820) await expect(page.locator('.mobile-menu')).not.toHaveAttribute('open', '');
-    await expect(page).toHaveURL(/#orders$/);
-    await expect(page.getByRole('heading', { name: '从一笔订单，到一次有依据的决策' })).toBeInViewport();
-    for (const [name, id] of [['平台介绍', 'platform'], ['产品能力', 'capabilities'], ['产品更新', 'updates'], ['版本规划', 'plan']]) {
+    await expect(page).toHaveURL(/#problems$/);
+    await expect(page.getByRole('heading', { name: /跨过 AI 与业务\s*之间的断层。/ })).toBeInViewport();
+    for (const [name, id] of [['平台定位', 'platform'], ['平台架构', 'architecture'], ['联系与合作', 'contact']]) {
       if (width <= 820) {
         await page.getByText('菜单', { exact: true }).focus();
         await page.keyboard.press('Enter');
@@ -123,6 +125,7 @@ test('reduced motion removes animated effects', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/website/');
   expect(await page.locator('.hero').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+  expect(await page.locator('.orbit').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('auto');
 });
 
