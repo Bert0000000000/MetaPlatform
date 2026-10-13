@@ -30,8 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install ruff pyright httpx pydantic fastapi pydantic-settings sqlalchemy structlog
       - run: ruff check mate-platform-backend
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install helm
         run: |
           curl -fsSL https://get.helm.sh/helm-v3.15.4-linux-amd64.tar.gz -o /tmp/helm.tgz
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           curl -fsSL -o /tmp/helm-docs.tar.gz https://github.com/norwoodj/helm-docs/releases/download/v1.14.2/helm-docs_1.14.2_Linux_x86_64.tar.gz
           tar xf /tmp/helm-docs.tar.gz
@@ -79,13 +79,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # gitleaks-action auto-detects .gitleaks.toml at the repo root.
       # The config extends the built-in default ruleset and adds
       # Mate-Platform-specific rules (JWT / AWS / GitHub / PEM).
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -95,10 +95,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install exact oasdiff 1.33.0
         shell: bash
@@ -140,7 +140,7 @@ jobs:
             --report .ci/mp11-oasdiff-review.json
       - name: Upload bounded contract review report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mp11-oasdiff-ga-${{ github.run_id }}
           path: .ci/mp11-oasdiff-review.json
@@ -154,8 +154,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
         with: { version: v3.14.4 }
       - run: |
           curl -sSLO https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
@@ -183,10 +183,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
         with: { version: v3.14.4 }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install pyyaml
       - run: |
@@ -204,8 +204,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install pre-commit
       - run: python scripts/ci/forbid_raw_sql.py
@@ -216,8 +216,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install pre-commit
       - run: python scripts/ci/forbid_bare_httpx.py
@@ -228,8 +228,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install pre-commit
       - run: python scripts/ci/forbid_legacy_fallback.py
@@ -249,8 +249,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: install pre-commit
         run: python -m pip install pre-commit
@@ -266,8 +266,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install uv
         run: python -m pip install uv
@@ -315,8 +315,8 @@ jobs:
           --health-cmd "pg_isready -U meta -d postgres"
           --health-interval 5s --health-timeout 5s --health-retries 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install locked ontology runtime and test dependencies
         working-directory: mate-platform-backend
@@ -379,7 +379,7 @@ jobs:
           assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error')), 'New ontology and modeling cases must all execute and pass'
           print(f'New ontology/modeling cases: {len(cases)} executed, 0 skipped')
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ontology-broad-results
@@ -410,8 +410,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install uv
         run: python -m pip install uv
@@ -426,7 +426,7 @@ jobs:
         env:
           ONT_RLS_ADMIN_DSN: postgresql://meta:meta@localhost:5432/postgres
           PG_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ontology-rls-required-results
@@ -459,8 +459,8 @@ jobs:
       ONT_RLS_ADMIN_DSN: postgresql://meta:meta@localhost:5432/postgres
       PG_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install locked Ontology runtime and test dependencies
         working-directory: mate-platform-backend
@@ -485,7 +485,7 @@ jobs:
         run: |
           .venv/bin/python -m pytest packages/mate-tech-ont/tests/test_modeling_integration.py packages/mate-tech-ont/tests/test_modeling_merge_regressions.py -q --junitxml=../.ci/modeling-postgres.xml
           .venv/bin/python -c "from xml.etree import ElementTree as ET; root=ET.parse('../.ci/modeling-postgres.xml').getroot(); cases=root.findall('.//testcase'); assert cases and all(c.find('skipped') is None for c in cases), 'Modeling PostgreSQL tests must execute without skips'"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ontology-postgres-required-results
@@ -516,8 +516,8 @@ jobs:
           --health-cmd "pg_isready -U meta -d postgres"
           --health-interval 5s --health-timeout 5s --health-retries 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install locked product runtime and test dependencies
         working-directory: mate-platform-backend
@@ -593,7 +593,7 @@ jobs:
               assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error')), f'{suite}: every case must execute and pass'
               print(f'{suite}: {len(cases)} executed, 0 skipped')
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mp11-product-postgres-results
@@ -630,8 +630,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install uv
         run: python -m pip install uv
@@ -655,8 +655,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: Install uv
         run: python -m pip install uv
@@ -671,8 +671,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install pre-commit
       - run: python scripts/ci/forbid_skip_tests.py
@@ -683,8 +683,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install pre-commit
       - run: python scripts/ci/require_evidence.py
@@ -695,7 +695,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: python scripts/ci/validate_requirement_coverage.py

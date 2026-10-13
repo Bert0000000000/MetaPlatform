@@ -19,15 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: Install pnpm
         run: npm install -g pnpm@11.15.1
       - name: Cache pnpm store
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.local/share/pnpm/store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('metaplatform-frontend/pnpm-lock.yaml') }}
@@ -63,7 +63,7 @@ jobs:
         run: pnpm exec playwright test --config playwright.ui-repair.config.ts
       - name: Upload rendering evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ui-rendering-regressions
           path: metaplatform-frontend/tests/e2e/.artifacts/ui-repair
