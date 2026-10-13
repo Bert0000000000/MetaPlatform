@@ -27,6 +27,8 @@ _UNSUPPORTED = [
     ('SELECT ?s WHERE { ?s label "x"@en.FILTER(?s = ?s) }', "FILTER"),
     (r"SELECT ?s WHERE { ?s rdf:type ?o . F\u0049LTER(?o = 'x') }", "FILTER"),
     (r"SELECT ?s WHERE { ?s rdf:type ?o . \U0000004fPTIONAL{ ?s label ?v } }", "OPTIONAL"),
+    ("SELECT ?s WHERE { ?s <urn:p> ex:.FILTER(?s = ?s) }", "FILTER"),
+    ("SELECT ?s WHERE { ?s <urn:p> :.OPTIONAL{ ?s <urn:p> ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . OPTIONAL { ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . optional{ ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . OpTiOnAl { ?s label ?v } }", "OPTIONAL"),

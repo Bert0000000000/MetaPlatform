@@ -43,7 +43,8 @@ _SYNTAX_TOKENS = re.compile(
     r"|#[^\r\n]*"
     rf"|[?$][{_VARNAME_START}][{_VARNAME_TAIL}]*"
     rf"|(?:[{_PN_BASE}_][{_VARNAME_TAIL}.\-]*)?:"
-    rf"(?:[{_VARNAME_TAIL}:.\-]|\\.|%[0-9a-fA-F]{{2}})*"
+    rf"(?:(?:[{_VARNAME_START}:]|\\.|%[0-9a-fA-F]{{2}})"
+    rf"(?:[{_VARNAME_TAIL}:.\-]|\\.|%[0-9a-fA-F]{{2}})*)?"
     r"|@[a-zA-Z]+(?:-[a-zA-Z0-9]+)*"
     rf"|(?P<word>[{_VARNAME_START}][{_VARNAME_TAIL}\-]*)",
     re.DOTALL,
