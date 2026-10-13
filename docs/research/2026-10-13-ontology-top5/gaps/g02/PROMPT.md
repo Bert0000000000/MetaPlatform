@@ -6,7 +6,7 @@
 
 你在 Bert0000000000/MetaPlatform 实施 `G02`：JSON-LD 导出显式声明 ont 扩展词汇命名空间。先读当前仓库 AGENTS.md、该工单 [PRD](PRD.md) 与 [交付要求](../../DELIVERY-STANDARD.md)，从最新 main 建隔离分支，保存 Git/WIP/工作树状态。
 
-调研基线 `dc8980d3e129e94f0bc55190705ede7cbe304ba0`，定位文件 `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py`（约第 2130 行）。必须先核对差距是否仍存在：JSON-LD 输出含 ont:type_id、ont:nullable、ont:primary_key，而 @context 只有 owl/rdfs/schema；扩展项依赖未声明的命名空间。 若已有可靠修复，输出当前代码与验收证据，不重复改代码。
+调研基线 `dc8980d3e129e94f0bc55190705ede7cbe304ba0`，定位文件 `mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py`（约第 2130 行）。必须先核对差距是否仍存在：JSON-LD 输出含 ont:type_id、ont:nullable、ont:primary_key，但 @context 没有声明 ont 的词汇展开规则。注意：带冒号的 ont:* 也可能被消费者当作绝对 IRI，不能据此判定 JSON-LD 语法必错；本项是扩展词汇定义与互操作说明不明确。 若已有可靠修复，输出当前代码与验收证据，不重复改代码。
 
 只完成：在既有 JSON-LD @context 明确 ont 扩展命名空间，补一份扩展词汇说明和解析用例；不改变 RID 或导入字段。
 

@@ -5,7 +5,7 @@
 | ID | 优先级 | 工单 | 独立部署单元 | PRD | Prompt |
 |---|---|---|---|---|---|
 | G01 | P1 | Turtle 导出正确转义业务名称，特殊字符可重新解析 | ont | [PRD](gaps/g01/PRD.md) | [Prompt](gaps/g01/PROMPT.md) |
-| G02 | P1 | JSON-LD 导出显式声明 ont 扩展词汇命名空间 | ont | [PRD](gaps/g02/PRD.md) | [Prompt](gaps/g02/PROMPT.md) |
+| G02 | P2 | JSON-LD 导出显式声明 ont 扩展词汇命名空间 | ont | [PRD](gaps/g02/PRD.md) | [Prompt](gaps/g02/PROMPT.md) |
 | G03 | P1 | 类型 JSON-LD 往返保留属性业务标题 | ont | [PRD](gaps/g03/PRD.md) | [Prompt](gaps/g03/PROMPT.md) |
 | G04 | P2 | 导入导出页提供既有 Turtle 下载选项 | web | [PRD](gaps/g04/PRD.md) | [Prompt](gaps/g04/PROMPT.md) |
 | G05 | P1 | JSON 文件导入前展示摘要并要求明确确认 | web | [PRD](gaps/g05/PRD.md) | [Prompt](gaps/g05/PROMPT.md) |

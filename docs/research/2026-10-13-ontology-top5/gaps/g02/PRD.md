@@ -1,12 +1,12 @@
 # G02 PRD：JSON-LD 导出显式声明 ont 扩展词汇命名空间
 
-状态：待实现 / 调研建议。优先级：P1。有效工作预算：60 分钟。发布单元：ont 应用服务。无本轮其他工单依赖。
+状态：待实现 / 调研建议。优先级：P2。有效工作预算：60 分钟。发布单元：ont 应用服务。无本轮其他工单依赖。
 
 ## 用户、问题与价值
 
 用户：业务本体建模/审核者及接口消费者。差距类别：标准词汇语义。
 
-当前证据：JSON-LD 输出含 ont:type_id、ont:nullable、ont:primary_key，而 @context 只有 owl/rdfs/schema；扩展项依赖未声明的命名空间。
+当前证据：JSON-LD 输出含 ont:type_id、ont:nullable、ont:primary_key，但 @context 没有声明 ont 的词汇展开规则。注意：带冒号的 ont:* 也可能被消费者当作绝对 IRI，不能据此判定 JSON-LD 语法必错；本项是扩展词汇定义与互操作说明不明确。
 
 基线固定源码：[mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py](https://github.com/Bert0000000000/MetaPlatform/blob/dc8980d3e129e94f0bc55190705ede7cbe304ba0/mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/v2_kernel/api.py#L2130)。行号用于定位，实际实施前核对最新 main，不能将调研时状态当未来现状。
 
