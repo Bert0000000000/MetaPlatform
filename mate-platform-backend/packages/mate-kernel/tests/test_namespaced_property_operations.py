@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from mate_kernel.action.unified import assemble_unified_edits
 from mate_kernel.objectset.ir import ObjectSetQuery
 from mate_kernel.ontology.identity.class_ref import ClassRef
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
@@ -19,6 +20,7 @@ from mate_kernel.ontology.security_policies import (
     filter_visible_individuals,
     mask_property_values,
 )
+from mate_kernel.ontology.types.action_type import ActionType
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 from mate_kernel.ontology.versioning_ops import diff_object_types
@@ -140,3 +142,28 @@ def test_row_and_column_policies_still_enforce_specific_fields(model: ObjectType
     assert filter_visible_individuals([ind], denied, ("ordinary",)) == []
     masked = mask_property_values({"id": "c1", "name": "Ada", "score": 3}, policy, ("ordinary",))
     assert masked == {"id": "c1", "name": "Ada", "score": None}
+
+
+def test_function_mapping_updates_value_field_without_treating_it_as_version(
+    model: ObjectType,
+) -> None:
+    suffix = ".v1" if model.properties[0].rid.rid.endswith(".v1") else ""
+    value = replace(model.properties[1], rid=ClassRef(f"ont.nsp.prop.crm.value{suffix}"))
+    action = ActionType(
+        rid=ClassRef("ont.nsp.act.update.v1"),
+        parameters=(value,),
+        submission_criteria=(),
+        side_effects=(),
+        function_ref=ClassRef("ont.nsp.fn.update.v1"),
+        on=(model.rid,),
+    )
+    assembly = assemble_unified_edits(
+        action_type=action,
+        proposal_kind="action",
+        parameters_raw={},
+        target_iid="ont.nsp.ind.customer.c1",
+        invoke_function=lambda *_: {"value": "updated"},
+    )
+    assert len(assembly.ops) == 1
+    assert assembly.ops[0].property_rid == value.rid.rid
+    assert assembly.ops[0].value == "updated"

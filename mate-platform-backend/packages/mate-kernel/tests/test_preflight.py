@@ -92,6 +92,20 @@ def _action() -> ActionType:
 
 
 class TestActionParameterGate:
+    @pytest.mark.parametrize("version", ["", ".v1"])
+    @pytest.mark.parametrize("use_rids", [False, True])
+    def test_namespaced_parameter_alias_and_rid_acceptance(
+        self, version: str, use_rids: bool
+    ) -> None:
+        rid = f"ont.t.prop.crm.amount{version}"
+        action = replace(
+            _action(),
+            parameters=(replace(_action().parameters[1], rid=ClassRef(rid), title="Amount"),),
+        )
+        checked = check_action_parameters(action, {rid if use_rids else "amount": 3})
+        assert checked["errors"] == [] and checked["warnings"] == []
+        assert preflight_action(action, {}).blocked is True
+
     def test_missing_required(self):
         r = check_action_parameters(_action(), {})
         assert r["errors"] and any("必填" in e for e in r["errors"])
@@ -126,7 +140,9 @@ class TestActionParameterGate:
 class TestCreateInstanceGate:
     @pytest.mark.parametrize("version", ["", ".v1"])
     @pytest.mark.parametrize("use_rids", [False, True])
-    def test_namespaced_properties_agree_across_schema_and_shacl(self, version: str, use_rids: bool) -> None:
+    def test_namespaced_properties_agree_across_schema_and_shacl(
+        self, version: str, use_rids: bool
+    ) -> None:
         properties = tuple(
             replace(p, rid=ClassRef(f"ont.t.prop.crm.{slug}{version}"))
             for p, slug in zip(_ot().properties, ("p-id", "p-name", "p-amt"), strict=True)

@@ -48,7 +48,7 @@ it.each(consumers)('%s exposes late-page Order and Customer and preserves select
   if (consumer === 'mapping') {
     await waitFor(() => expect((screen.getByLabelText('对象类型') as HTMLSelectElement).disabled).toBe(false));
     fireEvent.change(screen.getByLabelText('对象类型'), { target: { value: models[102].rid } });
-    expect((screen.getByLabelText('对象类型') as HTMLSelectElement).value).toBe(models[102].rid);
+    await waitFor(() => expect((screen.getByLabelText('对象类型') as HTMLSelectElement).value).toBe(models[102].rid));
   } else if (consumer === 'onboarding') {
     expect((screen.getByLabelText('本次对象模型') as HTMLSelectElement).value).toBe(models[102].rid);
     fireEvent.click(screen.getByRole('button', { name: '重新核验产物' }));

@@ -149,18 +149,19 @@ def _seed_pair_repo(repo) -> tuple[ObjectType, ObjectType]:
 # ─────────────────── 1) model_type preview ───────────────────
 
 
-def test_model_type_preview_renders_properties_and_primary_key(client, app) -> None:
+@pytest.mark.parametrize("namespace", ["", "crm."])
+def test_model_type_preview_renders_properties_and_primary_key(client, app, namespace: str) -> None:
     """propose_object_type 后 preview 渲染属性表 + 主键 + 接口。"""
     repo = app.state.kernel_repo
     # 准备一个已有 ObjectType（precheck 用）
     src, tgt = _seed_pair_repo(repo)
 
     type_def = {
-        "rid": "ont.acme.obj.invoice.v1",
-        "primary_key": ["ont.acme.prop.invoice-id.v1"],
+        "rid": f"ont.acme.obj.{namespace}invoice.v1",
+        "primary_key": [f"ont.acme.prop.{namespace}invoice-id.v1"],
         "properties": [
             {
-                "rid": "ont.acme.prop.invoice-id.v1",
+                "rid": f"ont.acme.prop.{namespace}invoice-id.v1",
                 "type_id": "string",
                 "nullable": False,
                 "primary_key": True,
@@ -168,7 +169,7 @@ def test_model_type_preview_renders_properties_and_primary_key(client, app) -> N
                 "format": "string",
             },
             {
-                "rid": "ont.acme.prop.invoice-amount.v1",
+                "rid": f"ont.acme.prop.{namespace}invoice-amount.v1",
                 "type_id": "float",
                 "nullable": False,
                 "primary_key": False,
@@ -196,6 +197,7 @@ def test_model_type_preview_renders_properties_and_primary_key(client, app) -> N
     assert body["display_name"] == "Invoice"
     # Property 表渲染
     assert len(body["properties"]) == 2
+    assert [p["name"] for p in body["properties"]] == ["invoice-id", "invoice-amount"]
     assert any(p["primary_key"] for p in body["properties"])
     pks = body["primary_key"]
     assert len(pks) == 1
@@ -205,14 +207,70 @@ def test_model_type_preview_renders_properties_and_primary_key(client, app) -> N
     # impact_summary 自动算
     impact = body["impact_summary"]
     assert impact["kind"] == "model_type"
-    assert impact["new_object_type_rid"] == "ont.acme.obj.invoice.v1"
+    assert impact["new_object_type_rid"] == type_def["rid"]
     assert impact["new_property_count"] == 2
     assert impact["affected_individuals_estimate"] == 0
     assert isinstance(impact["cross_schema_references"], list)
     # parameters 透传
-    assert body["parameters"]["type_def"]["rid"] == "ont.acme.obj.invoice.v1"
+    assert body["parameters"]["type_def"]["rid"] == type_def["rid"]
     # created_at 已写入
     assert body["created_at"]
+
+
+@pytest.mark.parametrize("version", ["", ".v1"])
+def test_materialization_export_and_governance_use_distinct_property_names(
+    client, app, version: str
+) -> None:
+    from mate_tech_ont.v2_kernel.governance import lint_anti_patterns
+
+    rid = "ont.acme.obj.crm.nsconsumer.v1"
+    p_id, p_value = (ClassRef(f"ont.acme.prop.crm.{slug}{version}") for slug in ("id", "value"))
+    ot = ObjectType(
+        rid=ClassRef(rid),
+        primary_key=(p_id,),
+        properties=(
+            Property(
+                rid=p_id,
+                type_id="string",
+                nullable=False,
+                primary_key=True,
+                title="ID",
+                format=PropertyFormat.STRING,
+            ),
+            Property(
+                rid=p_value,
+                type_id="string",
+                nullable=True,
+                primary_key=False,
+                title="Value",
+                format=PropertyFormat.STRING,
+            ),
+        ),
+    )
+    repo = app.state.kernel_repo
+    now = datetime.now(UTC)
+    with repo.tenant_scope("acme"):
+        repo.upsert_object_type(ot)
+        repo.create_individual(
+            Individual(
+                rid="ont.acme.ind.nsconsumer.c1",
+                class_rid=ot.rid,
+                props=((p_id, "c1"), (p_value, "public")),
+                primary_key="c1",
+                tenant_id="acme",
+                created_at=now,
+                updated_at=now,
+            )
+        )
+    materialized = client.get(f"/api/v1/ont/v2/object-types/{rid}/materialization")
+    assert materialized.status_code == 200, materialized.text
+    body = materialized.json()
+    assert {field["slug"] for field in body["schema"].values()} == {"id", "value"}
+    assert body["rows"][0]["id"] == "c1" and body["rows"][0]["value"] == "public"
+    exported = client.get(f"/api/v1/ont/v2/object-types/{rid}/export")
+    assert exported.status_code == 200, exported.text
+    assert {p["schema:name"] for p in exported.json()["properties"]} == {"id", "value"}
+    assert any(row["subject"] == rid + "#value" for row in lint_anti_patterns([ot]))
 
 
 # ─────────────────── 2) create_instance preview ───────────────────
