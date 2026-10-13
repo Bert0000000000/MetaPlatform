@@ -209,6 +209,23 @@ jobs:
       - name: Run ontology core e2e
         run: bash scripts/ci/ontology-core-e2e.sh test
 
+      - name: Run HTTP operation and website layout browser regressions
+        working-directory: metaplatform-frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:9200
+        run: pnpm exec playwright test --config playwright.experience.config.ts
+
+      - name: Require all experience browser cases to execute with zero skips
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          cases = list(ET.parse('metaplatform-frontend/test-results/experience.xml').getroot().iter('testcase'))
+          assert len(cases) == 7, f'Expected 7 experience browser cases, found {len(cases)}'
+          assert not any(case.find(tag) is not None for case in cases for tag in ('skipped', 'failure', 'error'))
+          print('Experience browser regressions: 7 executed, 0 skipped; real ontology suites remain required.')
+          PY
+
       - name: Collect both required migration browser cases
         if: ${{ !cancelled() }}
         working-directory: metaplatform-frontend
