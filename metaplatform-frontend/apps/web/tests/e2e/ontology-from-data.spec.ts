@@ -5,6 +5,35 @@ import { decodeJwtPayload, fetchAccessToken, injectAuth } from './helpers/auth';
 const gateway = process.env.E2E_GATEWAY ?? 'http://127.0.0.1:8200/api/v1';
 const samples = path.resolve(import.meta.dirname, '../../public/modeling-samples');
 
+test('中文、英文及空格文件名上传同一工作簿 → 原文资料及来源名称读回一致', async ({ page, context, request }) => {
+  const token = await injectAuth(context, page);
+  const fs = await import('node:fs/promises');
+  const buffer = await fs.readFile(path.resolve(import.meta.dirname, '../fixtures/issue142-unicode.xlsx'));
+  const names = ['企业 世界.xlsx', 'company.xlsx', 'company world.xlsx'];
+  let originalProfile: unknown;
+  for (const name of names) {
+    await page.goto('/ontology/model/from-data');
+    const received = page.waitForResponse(response => response.url().endsWith('/modeling/sources') && response.request().method() === 'POST');
+    await page.getByLabel('上传 Excel 文件').setInputFiles({ name, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer });
+    const response = await received;
+    expect(response.status()).toBe(201);
+    const source = await response.json();
+    expect(source.name).toBe(name);
+    expect(source.profile.rowCount).toBe(1);
+    expect(source.profile.sheets.map((sheet: { name: string; rows: number }) => [sheet.name, sheet.rows])).toEqual([['业务资料', 1], ['空表', 0]]);
+    expect(JSON.stringify(source.profile)).toContain('中文产品');
+    if (originalProfile === undefined) originalProfile = source.profile;
+    else expect(source.profile).toEqual(originalProfile);
+    const persisted = await request.get(`${gateway}/ont/v2/modeling/sources/${source.id}`, { headers: { Authorization: `Bearer ${token}` } });
+    expect(persisted.status()).toBe(200);
+    expect((await persisted.json()).name).toBe(name);
+    await page.reload();
+    const history = page.getByRole('combobox', { name: '选择历史导入', exact: true });
+    await expect(history).toHaveValue(source.id);
+    await expect(history.getByRole('option', { name, exact: true })).toHaveCount(1);
+  }
+});
+
 async function confirmPublication(page: Page) {
   await page.getByRole('button', {name: '发布本体', exact: true}).click();
   const dialog = page.getByRole('dialog');

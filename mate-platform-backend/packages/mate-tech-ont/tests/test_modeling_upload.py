@@ -36,9 +36,12 @@ def workbook():
 def multipart(disposition, content):
     boundary = "issue142-filename-boundary"
     body = (
-        f"--{boundary}\r\nContent-Disposition: {disposition}\r\n"
-        f"Content-Type: {MIME}\r\n\r\n"
-    ).encode("utf-8") + content + f"\r\n--{boundary}--\r\n".encode()
+        (
+            f"--{boundary}\r\nContent-Disposition: {disposition}\r\nContent-Type: {MIME}\r\n\r\n"
+        ).encode()
+        + content
+        + f"\r\n--{boundary}--\r\n".encode()
+    )
     return body, {"Content-Type": f"multipart/form-data; boundary={boundary}"}
 
 
@@ -64,8 +67,12 @@ def client(monkeypatch):
         role = request.headers.get("x-test-role", "PLATFORM_ADMIN")
         if request.headers.get("x-test-anonymous") != "true":
             request.state.ctx = RequestContext(
-                request_id="issue142", trace_id="issue142", tenant_id="issue142",
-                user_id="admin", roles=frozenset({role}), permissions=frozenset(),
+                request_id="issue142",
+                trace_id="issue142",
+                tenant_id="issue142",
+                user_id="admin",
+                roles=frozenset({role}),
+                permissions=frozenset(),
                 scopes=frozenset({"platform.read", "platform.write"}),
                 auth_method=AuthMethod.USER,
             )
@@ -101,12 +108,17 @@ def test_multipart_upload_preserves_decoded_name_and_chinese_workbook(client, di
     assert source["name"] == name
     assert source["profile"]["rowCount"] == 1
     assert [(s["name"], s["rows"]) for s in source["profile"]["sheets"]] == [
-        ("业务资料", 1), ("空表", 0)
+        ("业务资料", 1),
+        ("空表", 0),
     ]
-    assert client.records == [{
-        "name": name, "rows": [{"sheet": "业务资料", "row": 2, "values": {"编号": "P1", "名称": "中文产品"}}],
-        "headers": {"业务资料": ["编号", "名称"], "空表": ["备注"]}, "content": content,
-    }]
+    assert client.records == [
+        {
+            "name": name,
+            "rows": [{"sheet": "业务资料", "row": 2, "values": {"编号": "P1", "名称": "中文产品"}}],
+            "headers": {"业务资料": ["编号", "名称"], "空表": ["备注"]},
+            "content": content,
+        }
+    ]
 
 
 @pytest.mark.parametrize("filename", ["report.txt", "=?utf-8?B?cmVwb3J0LnR4dA==?="])
@@ -119,9 +131,14 @@ def test_extended_filename_cannot_override_rejected_plain_extension(client, file
     assert client.records == []
 
 
-@pytest.mark.parametrize("filename", [
-    "=?not-a-charset?B?cmVwb3J0Lnhsc3g=?=", "=?utf-8?B?/w==?=", "=?utf-8?B?A?=",
-])
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "=?not-a-charset?B?cmVwb3J0Lnhsc3g=?=",
+        "=?utf-8?B?/w==?=",
+        "=?utf-8?B?A?=",
+    ],
+)
 def test_bad_filename_encoding_has_encoding_error_and_does_not_persist(client, filename):
     body, headers = multipart(f'form-data; name="file"; filename="{filename}"', workbook())
     response = client.post(PATH, content=body, headers=headers)
@@ -145,7 +162,9 @@ def test_encoded_filename_does_not_bypass_input_size_limit(client):
     assert client.records == []
 
 
-@pytest.mark.parametrize(("identity", "status"), [({"x-test-role": "USER"}, 403), ({"x-test-anonymous": "true"}, 401)])
+@pytest.mark.parametrize(
+    ("identity", "status"), [({"x-test-role": "USER"}, 403), ({"x-test-anonymous": "true"}, 401)]
+)
 def test_encoded_filename_does_not_bypass_mutation_identity(client, identity, status):
     body, headers = multipart(DOTNET, workbook())
     response = client.post(PATH, content=body, headers={**headers, **identity})
