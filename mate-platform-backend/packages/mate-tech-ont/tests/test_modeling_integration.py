@@ -2168,4 +2168,9 @@ async def test_tencent_release_excel_probe_runs_real_modeling_endpoints(app):
         receipt = await asyncio.to_thread(probe.verify, call, None)
         assert len(receipt["identities"]["individuals"]) == 4
         assert len(receipt["identities"]["links"]) == 2
+        second = await asyncio.to_thread(probe.verify, call, None)
+        assert second["source_id"] != receipt["source_id"]
+        assert set(second["identities"]["individuals"]).isdisjoint(
+            receipt["identities"]["individuals"]
+        )
         assert await asyncio.to_thread(probe.verify, call, receipt) == receipt

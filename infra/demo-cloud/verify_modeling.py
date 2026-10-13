@@ -164,7 +164,15 @@ def verify(call, receipt):
             }
         ],
     }
-    source = call("PUT", path, {"revision": source["revision"], "draft": draft})
+    source = call(
+        "PUT",
+        path,
+        {
+            "revision": source["revision"],
+            "draft": draft,
+            "resolutions": {cid: {"mode": "new", "propertyMap": {}} for cid in (item_id, label_id)},
+        },
+    )
     source = call(
         "POST", path + "/validate", {"revision": source["revision"], "preparePublication": True}
     )
