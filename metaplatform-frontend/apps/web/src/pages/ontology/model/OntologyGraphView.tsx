@@ -63,7 +63,8 @@ export default function OntologyGraphView() {
   }, [load]);
   const query = params.get('q') ?? '',
     view = params.get('view') === 'list' ? 'list' : 'graph',
-    rid = params.get('typeRef') || params.get('class') || '';
+    rid = params.get('typeRef') || params.get('class') || '',
+    linkRid = params.get('linkRef') || '';
   const filtered = useMemo(
     () =>
       types.filter((t) =>
@@ -78,7 +79,11 @@ export default function OntologyGraphView() {
     (l) => known.has(l.src) && known.has(l.dst),
   );
   const selected = filtered.find((t) => t.rid === rid) ?? null;
-  const unavailableSelection = !rid || selected
+  const selectedLink = visibleLinks.find((l) => l.rid === linkRid) ?? null;
+  const unavailableSelection = linkRid && !selectedLink
+    ? errors.length ? `关系读取未完成 · ${linkRid}`
+      : links.some((l) => l.rid === linkRid) ? `所选关系被筛选隐藏 · ${linkRid}` : `未找到请求的关系 · ${linkRid}`
+    : !rid || selected
     ? undefined
     : errors.length
       ? `模型读取未完成 · ${rid}`
@@ -99,6 +104,8 @@ export default function OntologyGraphView() {
   );
   const update = (key: string, value: string) => {
     const p = new URLSearchParams(params);
+    if (key === 'typeRef') p.delete('linkRef');
+    if (key === 'linkRef') { p.delete('typeRef'); p.delete('class'); }
     if (value) p.set(key, value);
     else p.delete(key);
     setParams(p);
@@ -205,6 +212,8 @@ export default function OntologyGraphView() {
                 types={filtered}
                 links={visibleLinks}
                 selectedRid={rid}
+                selectedRelation={linkRid}
+                onRelationSelect={(id) => update('linkRef', id)}
                 onSelect={(id) => update('typeRef', id)}
                 onOpen={open}
               />
@@ -236,6 +245,9 @@ export default function OntologyGraphView() {
           <div id="model-inspector" className="mw-inspector-panel" hidden={!inspectorOpen}>
             <ModelInspector
               type={selected}
+              link={selectedLink}
+              objectTypes={types}
+              onSelect={(id) => update('typeRef', id)}
               unavailableSelection={unavailableSelection}
               linksUnavailable={errors.length > 0}
               links={visibleLinks.filter((l) => l.src === rid || l.dst === rid)}

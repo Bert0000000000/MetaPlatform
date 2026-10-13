@@ -3,10 +3,12 @@ import type { KernelObjectType, KernelLinkType } from '@/api/ont/kernel';
 import { ridTail } from '../../rid';
 import OntologySchemaGraph from './OntologySchemaGraph';
 
-export default function SchemaGraphCanvas({ types, links, selectedRid, onSelect, onOpen }: {
+export default function SchemaGraphCanvas({ types, links, selectedRid, selectedRelation, onRelationSelect, onSelect, onOpen }: {
   types: KernelObjectType[];
   links: KernelLinkType[];
   selectedRid?: string;
+  selectedRelation?: string;
+  onRelationSelect?: (rid: string) => void;
   onSelect: (rid: string) => void;
   onOpen: (rid: string) => void;
 }) {
@@ -22,5 +24,6 @@ export default function SchemaGraphCanvas({ types, links, selectedRid, onSelect,
     target: l.dst,
   })), [links]);
   return <OntologySchemaGraph classes={classes} relationships={relationships}
+    selectedRelation={selectedRelation} onRelationSelect={onRelationSelect}
     selected={selectedRid} onSelect={onSelect} onOpen={onOpen} layoutKey="model-workbench" compact />;
 }

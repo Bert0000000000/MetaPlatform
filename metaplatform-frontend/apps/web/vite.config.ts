@@ -33,7 +33,7 @@ function publicWebsiteEntry(): Plugin {
   const install = (server: { middlewares: { use: (handler: (req: { url?: string }, res: unknown, next: () => void) => void) => void } }) => {
     server.middlewares.use((req, _res, next) => {
       const [pathname, query] = (req.url ?? '').split('?');
-      if (pathname === '/website' || pathname === '/website/') {
+      if (pathname === '/' || pathname === '/website' || pathname === '/website/') {
         req.url = `/website/index.html${query === undefined ? '' : `?${query}`}`;
       }
       next();

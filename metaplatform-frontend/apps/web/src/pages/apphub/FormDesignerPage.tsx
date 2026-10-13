@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createUuid } from '@/utils/uuid';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -72,7 +73,7 @@ function generateFieldKey(type: string): string {
 
 function toFormField(f: Partial<FormField>, idx: number): FormField {
   return {
-    id: crypto.randomUUID(),
+    id: createUuid(),
     type: f.type || 'text',
     label: f.label || `字段${idx + 1}`,
     fieldKey: f.fieldKey || generateFieldKey(f.type || 'text'),
@@ -214,7 +215,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
 
   const handleAddField = (def: typeof COMPONENT_DEFINITIONS[number]) => {
     const newField: FormField = {
-      id: crypto.randomUUID(),
+      id: createUuid(),
       type: def.type,
       ...def.defaultProps,
       fieldKey: generateFieldKey(def.type),
@@ -241,7 +242,7 @@ export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdP
   const handleCopyField = (field: FormField) => {
     const copy: FormField = {
       ...field,
-      id: crypto.randomUUID(),
+      id: createUuid(),
       fieldKey: generateFieldKey(field.type),
       label: `${field.label}_副本`,
     };

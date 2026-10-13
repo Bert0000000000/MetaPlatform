@@ -1,4 +1,5 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
+import { createUuid } from '@/utils/uuid';
 
 const client = createApiClient({ baseURL: apiPath('apphub', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
@@ -103,7 +104,7 @@ export class OrderPageCreationError extends Error {
 }
 
 export async function createOrderReviewPage(appCode: string, resumeModuleCode?: string): Promise<{ id: string }> {
-  const code = resumeModuleCode || 'review-' + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  const code = resumeModuleCode || 'review-' + createUuid().replace(/-/g, '').slice(0, 16);
   if (!resumeModuleCode) {
     await client.post('/modules', { name: '订单审核', code, app_code: appCode, description: '订单审核页面', entry_path: '' });
   }

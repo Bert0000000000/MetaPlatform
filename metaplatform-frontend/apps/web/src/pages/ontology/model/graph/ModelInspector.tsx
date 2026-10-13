@@ -5,6 +5,9 @@ import {
 import { ridTail } from '../../rid';
 export default function ModelInspector({
   type,
+  link,
+  objectTypes = [],
+  onSelect,
   links,
   onOpen,
   onBinding,
@@ -13,6 +16,9 @@ export default function ModelInspector({
   linksUnavailable,
 }: {
   type: KernelObjectType | null;
+  link?: KernelLinkType | null;
+  objectTypes?: KernelObjectType[];
+  onSelect?: (rid: string) => void;
   links: KernelLinkType[];
   onOpen: () => void;
   onBinding: () => void;
@@ -23,7 +29,23 @@ export default function ModelInspector({
   return (
     <aside className="mw-inspector" aria-label="资源属性">
       <small>资源属性 INSPECTOR</small>
-      {type ? (
+      {link ? (
+        <>
+          <h2>{link.src_display_name?.trim() || link.dst_display_name?.trim() || ridTail(link.rid)}</h2>
+          <code>{link.rid}</code>
+          <dl>
+            <dt>源模型</dt><dd>{objectTypes.find(t => t.rid === link.src)?.display_name || link.src}</dd>
+            <dt>目标模型</dt><dd>{objectTypes.find(t => t.rid === link.dst)?.display_name || link.dst}</dd>
+            <dt>关系基数</dt><dd>{link.cardinality}</dd>
+          </dl>
+          <h3>关系属性 · {link.link_properties.length}</h3>
+          <ul>{link.link_properties.map(p => <li key={p.rid}>{p.title || p.rid} <code>{p.format}</code></li>)}</ul>
+          {onSelect && <>
+            <button onClick={() => onSelect(link.src)}>查看源模型 {objectTypes.find(t => t.rid === link.src)?.display_name || link.src}</button>
+            <button onClick={() => onSelect(link.dst)}>查看目标模型 {objectTypes.find(t => t.rid === link.dst)?.display_name || link.dst}</button>
+          </>}
+        </>
+      ) : type ? (
         <>
           <h2>{type.display_name || type.rid}</h2>
           <code>{type.rid}</code>

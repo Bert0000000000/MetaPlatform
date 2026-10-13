@@ -15,6 +15,7 @@
 // dev 模式 Semi 交互组件 onClick 被截 noop —— 全部原生元素 + 内联样式。
 
 import { Plus, Trash2 } from 'lucide-react';
+import { createUuid } from '@/utils/uuid';
 import {
   propSlug,
   type KernelLinkType, type KernelObjectType, type KernelProperty,
@@ -65,7 +66,7 @@ export interface PropertyDraft {
 /** 新建属性草稿工厂。 */
 export function emptyPropertyDraft(name = ''): PropertyDraft {
   return {
-    uid: crypto.randomUUID(),
+    uid: createUuid(),
     rid: '',
     name,
     isNew: true,
@@ -89,7 +90,7 @@ export function emptyPropertyDraft(name = ''): PropertyDraft {
 /** 从后端 PropertyDTO 构造编辑草稿。 */
 export function draftFromProperty(p: KernelProperty): PropertyDraft {
   return {
-    uid: crypto.randomUUID(),
+    uid: createUuid(),
     rid: p.rid,
     name: propSlug(p.rid),
     isNew: false,
@@ -466,7 +467,7 @@ export default function PropertyEditorV2({
           <div className="mp-justify-between mp-mb-2 mp-flex-center">
             <span className="mp-onto-field-label mp-onto-field-label--stacked">嵌套字段（struct_fields，至少 1 项）</span>
             <button type="button" onClick={() => set({
-              structFields: [...draft.structFields, { key: crypto.randomUUID(), title: '', format: 'string' }],
+              structFields: [...draft.structFields, { key: createUuid(), title: '', format: 'string' }],
             })} className="mp-onto-btn mp-onto-btn--xs">
               <Plus className="mp-icon-12" />添加嵌套字段
             </button>
