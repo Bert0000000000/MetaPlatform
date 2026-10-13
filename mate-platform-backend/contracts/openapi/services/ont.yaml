@@ -3848,6 +3848,13 @@ paths:
         - data-modeling
       summary: Upload Source
       operationId: ontCreateModelingSource
+      description: >-
+        Upload a valid .xlsx workbook using a UTF-8 browser filename or a complete
+        RFC 2047 encoded-word filename emitted by PowerShell/.NET. The decoded
+        filename is preserved in the source name. The plain multipart filename
+        is authoritative; filename* does not override it. Invalid filename
+        encodings, unsupported extensions and invalid workbook content return 422;
+        content over 12 MiB returns 413. Existing administrator and tenant checks apply.
       requestBody:
         content:
           multipart/form-data:
