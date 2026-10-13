@@ -340,7 +340,7 @@ export default function FromDataPage() {
           <div aria-label="发布操作反馈" aria-live="polite" aria-busy={busy === '发布原生模型'}>
             {busy === '发布原生模型' && <div role="status" className="fd-status"><Spin size="small" /><span>正在发布原生模型，请稍候。完成结果将在这里显示。</span></div>}
             {publishError && <Banner type="danger" description={publishError} closeIcon={null} />}
-            {published && <div role="status"><Banner type="success" description="本次所选本体已发布" closeIcon={null} /><p className="mp-onto-muted">已接入平台原生本体，可查看下方类型。暂缓候选可后续完善；数据同步为可选操作。</p><Link to="/ontology/model/object-types">进入平台本体模型</Link></div>}
+            {published && <div role="status"><Banner type="success" description="本次所选本体已发布" closeIcon={null} /><p className="mp-onto-muted">已接入平台原生本体，可查看下方类型。暂缓候选可后续完善；数据同步为可选操作。</p>{source.plan?.types.filter(type => source.publication?.completed.includes(type.rid)).map(type => <p key={type.classId}><Link to={`/ontology/model/object-types/${encodeURIComponent(type.rid)}`}>进入平台本体模型：{type.name}</Link></p>)}</div>}
           </div>
           {source.publication && <div className="fd-result" role="status"><h3>发布结果 · {source.publication.status}</h3>{source.publication.error && <Banner type="danger" description={source.publication.error} closeIcon={null} />}<p>已完成 {source.publication.completed.length} 项。</p>{source.plan?.types.filter(type => source.publication?.completed.includes(type.rid)).map(type => <p key={type.classId}><Link to={`/ontology/model/object-types/${encodeURIComponent(type.rid)}`}>{type.name} · 查看原生类型</Link></p>)}<details><summary>逐项发布记录</summary><Findings value={source.publication.results} /></details></div>}
         </section>

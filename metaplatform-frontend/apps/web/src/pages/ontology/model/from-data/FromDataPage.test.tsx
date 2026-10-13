@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { getModelingSource, listModelingSources, runModelingOperation, saveModelingSource } from '@/api/ont/modeling';
 import type { ModelingSource } from '@/api/ont/modeling';
 import { listObjectTypes } from '@/api/ont/kernel';
@@ -42,6 +42,25 @@ const openObject = async (name = '物料') => { fireEvent.click(await screen.fin
 const showMappings = () => fireEvent.click(screen.getByRole('tab', { name: /数据映射/ }));
 
 describe('逆向发现本体独立辅助入口', () => {
+  it.each([[1, 0], [2, 0], [2, 1]])('发布 %i 个类型后，第 %i 个入口跳转到对应详情', async (count, index) => {
+    const source = fixture();
+    source.plan!.types.push({ ...source.plan!.types[0], classId: 'warehouse', name: '仓库', rid: 'ont.test.obj.warehouse.v1' });
+    source.publication = { status: 'succeeded', configHash: 'hash3', completed: source.plan!.types.slice(0, count).map(type => type.rid), results: [] };
+    vi.mocked(getModelingSource).mockResolvedValue(source);
+    function Location() { return <output aria-label="当前路由">{useLocation().pathname}</output>; }
+    render(<MemoryRouter initialEntries={['/ontology/model/from-data?source=source-one']}><FromDataPage /><Location /></MemoryRouter>);
+    await screen.findByText('本次所选本体已发布');
+    for (const type of source.plan!.types.slice(0, count)) {
+      expect(screen.getByRole('link', { name: `进入平台本体模型：${type.name}` })).toHaveAttribute('href', `/ontology/model/object-types/${encodeURIComponent(type.rid)}`);
+    }
+    if (count === 1) expect(screen.queryByRole('link', { name: '进入平台本体模型：仓库' })).not.toBeInTheDocument();
+    const target = source.plan!.types[index];
+    fireEvent.click(screen.getByRole('link', { name: `进入平台本体模型：${target.name}` }));
+    expect(screen.getByLabelText('当前路由')).toHaveTextContent(`/ontology/model/object-types/${encodeURIComponent(target.rid)}`);
+    expect(saveModelingSource).not.toHaveBeenCalled();
+    expect(runModelingOperation).not.toHaveBeenCalled();
+  });
+
   it('回到候选审核刷新目录，在实际详情中独立显示全部同名对象', async () => {
     open();
     await openObject();
