@@ -72,6 +72,8 @@
   `ont.<tenant>.prop.<slug>.vN` 与 `ont.<tenant>.prop.<domain>.<slug>.vN`。
   同领域的不同属性不得误判为重复；同 slug 的不同版本仍拒绝。实例必填与 PK
   校验使用相同别名规则，并继续接受完整属性 RID。
+  查询行/字段 schema、schema/SHACL 预检、提案写入、版本 diff/迁移、行列策略与
+  工具字段枚举共用该解析规则；前端属性展示同步，避免同领域字段相互覆盖。
 - **发布前预检（只读）**：`POST /object-types/validate` 在静态校验之上返回 `destructive`
   （与当前生效定义的破坏性差异）与 `references{resolved,unresolved,dependencies}`。
   未解析引用**只报告不阻断** —— 仓库语义允许"先声明后注册"（`_assert_parent_acyclic`、
