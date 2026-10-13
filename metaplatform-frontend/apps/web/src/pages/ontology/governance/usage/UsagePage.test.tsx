@@ -27,6 +27,3 @@ it('distinguishes missing metrics from actual zero and positive writes', async (
   expect(cells('ont.t.obj.zero')[2]).toHaveTextContent('0');
   expect(cells('ont.t.obj.written')[2]).toHaveTextContent('3');
 });
-
-
-

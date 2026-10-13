@@ -47,4 +47,3 @@ it('does not replace explicit canonical null or steal a colliding legacy alias',
   expect(within(rows[1]).getAllByRole('cell')[0]).toHaveTextContent('—');
   expect(within(rows[0]).getAllByRole('columnheader')).toHaveLength(3);
 });
-

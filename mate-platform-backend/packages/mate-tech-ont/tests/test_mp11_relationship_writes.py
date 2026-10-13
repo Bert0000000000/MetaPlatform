@@ -889,6 +889,7 @@ def test_pg_inherited_link_write_and_child_supersession_do_not_deadlock(monkeypa
         link_type_rid=ClassRef(link),
         src=iid,
         dst=O1,
+        props=(),
         tenant_id=T,
         created_at=datetime.now(UTC),
     )
@@ -939,6 +940,7 @@ def test_pg_usage_reports_zero_then_actual_action_write_count(auth_headers):
         rid=ClassRef(f"ont.{T}.prop.note-{suffix}"),
         type_id="string",
         nullable=True,
+        primary_key=False,
         title="Note",
         format=PropertyFormat.STRING,
     )
