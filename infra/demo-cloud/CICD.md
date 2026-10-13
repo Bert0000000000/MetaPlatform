@@ -8,7 +8,7 @@
 2. 合并后，在同一个 main 提交上运行前端、后端、OpenAPI、GA、本体闭环和演示部署检查。部署等待这些工作流全部成功；失败、取消、缺少结果均停止发布。
 3. GitHub 打包由后端 `uv.lock` 导出的依赖和源码，以 SSH 传输并校验 SHA-256。服务器构建带提交 SHA 的应用镜像。
 4. 切换前备份两个 PostgreSQL 数据库，保留当前应用版本和验证记录。只更新平台应用容器，沿用当前 Compose 项目、账号、网络与数据卷。
-5. 切换后验证真实登录、本体记录读回、实例提议确认执行及 PostgreSQL 租户隔离。成功才登记新版本；失败则恢复上一版应用并重新验证。
+5. 切换后验证真实登录、AppHub 应用/模块目录和合成对象类型的绑定使用情况、本体记录读回、实例提议确认执行及 PostgreSQL 租户隔离。成功才登记新版本；失败则恢复上一版应用并重新验证。
 
 镜像版本通过 `sudo env` 显式传递三个公开发布设置，避免 sudo 清理进程环境后回退到配置文件的旧标签。验收还核对全部应用的实际镜像标签，健康但运行错误版本也视为失败。
 
@@ -63,3 +63,11 @@ gh workflow run tencent-demo-deploy.yml --ref main -f operation=rollback
 这是单机演示部署，更新应用时有短暂访问中断。4 核 16 GB 可复用现有镜像构建缓存。基础设施容器、数据卷和现有配置不自动重建。
 
 自动回滚恢复应用版本，不自动恢复数据库。发布前的备份用于人工恢复；不兼容的数据库或基础设施改动需要安排维护。完整 R1 / GA 业务验收仍以仓库规定的证据为准。
+
+## AppHub 目录准备与验收
+
+应用切换前，`configure_schema.py` 在同一事务和 PostgreSQL 维护锁下检查并准备明确白名单中的 `apphub_apps`、`apphub_groups`、`apphub_domains`、`apphub_modules`、`apphub_pages`、`apphub_templates`、`apphub_shortlinks` 与 `mcp_api_keys`。缺表只按现有 ORM 创建；已有表仅允许 MP11 发布字段、页面定义与 MCP scopes 的已审查增量。其他缺列、类型/可空性冲突、不安全 scopes 默认值或存量授权冲突在任何变更前阻止升级。
+
+目录准备不写入种子记录、不更新已有应用、模块、页面、发布快照或授权，也不修改 Alembic 版本戳。重复执行不产生 DDL/DML 变更。正式入口仍要求批准的演示数据库地址及实际连接目标；SQLite 仅用于独立测试，PostgreSQL 由 MP11 CI 的隔离目标执行。
+
+登录与合成对象类型读回后，发布验收实际请求 `/api/v1/apphub/modules` 与 `/api/v1/apphub/bindings/usage?class_rid=<合成对象 RID>`，初次发布和重启读回均执行。空的已知列表可通过；HTTP 错误或无法识别的列表响应阻止发布登记并触发现有应用回滚流程。

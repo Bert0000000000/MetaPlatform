@@ -605,3 +605,23 @@ it('publishes detail edits through WIP using the compared checksum and clears on
   expect(screen.getByLabelText('业务名称')).toHaveValue('客户发布名');
   expect(screen.queryByText(/当前生效定义已变化/)).toBeNull();
 });
+
+it('retains the first model check when validation starts as the selected catalog becomes available', async () => {
+  vi.mocked(api.validateObjectTypeModel).mockRejectedValue({
+    response: { status: 403, data: { detail: 'denied' } },
+  });
+  let started = false;
+  const observer = new MutationObserver(() => {
+    const button = screen.queryByRole('button', { name: '校验选中模型' });
+    if (button instanceof HTMLButtonElement && !button.disabled && !started) {
+      started = true;
+      fireEvent.click(button);
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+  try {
+    mount(`/ontology/model/graph?typeRef=${encodeURIComponent(customer.rid)}&view=list`);
+    expect(await screen.findByText(/校验失败.*403/)).toBeVisible();
+    expect(screen.queryByText(/校验通过/)).toBeNull();
+  } finally { observer.disconnect(); }
+});
