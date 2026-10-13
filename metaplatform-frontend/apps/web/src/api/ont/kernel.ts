@@ -1414,14 +1414,16 @@ export interface ShaclValidateReport {
   conforms: boolean;
   violations: ShaclViolation[];
   stats?: Record<string, unknown>;
+  severity_counts?: Record<string, number>;
+  [key: string]: unknown;
 }
 
 /** SHACL 实例合规校验：POST /v2/shacl/validate（shapes 由 ObjectType 定义合成）。 */
 export async function validateShacl(payload: {
   target_class: string;
   closed?: boolean;
-}): Promise<ShaclValidateReport> {
-  const resp = await apiClient.post(v2('/shacl/validate'), payload);
+}, signal?: AbortSignal): Promise<ShaclValidateReport> {
+  const resp = await apiClient.post(v2('/shacl/validate'), payload, { signal });
   return resp.data as ShaclValidateReport;
 }
 
