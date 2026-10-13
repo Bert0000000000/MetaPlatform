@@ -50,6 +50,14 @@ gh workflow run tencent-demo-deploy.yml --ref main -f operation=rollback
 
 数据库备份位于服务器部署目录的 `ci/backups/`，详细私有日志在 `ci/logs/`。旧应用目录和镜像保留供回滚使用；禁止执行 `docker compose down -v` 或全局清理。
 
+## Excel 建模同步依赖与发布验收
+
+腾讯云本体应用显式传入 `ONT_MODELING_SOURCE_DSN`，与 `KERNEL_PG_DSN` 指向同一个 `metaplatform_ont` 数据库，并使用原有非特权 `mate_app` 角色和私有密码。Excel 暂存写入与原生背挂来源读取必须使用同一目标；保留租户隔离、模型发布基线和数据校验，不能用放宽同步条件替代配置修复。此依赖与“接入注册数据源”的连接参数（#112）分别管理。
+
+每次新版本发布由 `verify.py` 上传独立合成工作簿，显式保存审核后的两个类型和关系，发布后执行 `ontCheckModelingDataSync` / `ontSyncModelingSource`，GET 读回 4 个实例与 2 条关系，再重跑同一批次核对稳定身份和数量。任一配置、校验、同步状态或字段/端点/数量不符即验收失败，沿用现有回滚流程。凭据不会进入公开验收报告。
+
+合成记录收据随 `artifacts/acceptance-state.json` 保存；已有收据在 `--read-only` 时只读回。首次升级旧版本时，旧收据没有 Excel 项，不把旧收据当成该项通过证据；随后必需的首次写入验收执行完整探针。探针不读取或同步用户现有企业工作簿；#139 的原企业批次业务验收须用原映射重新检查和同步后独立登记。
+
 ## 适用范围
 
 这是单机演示部署，更新应用时有短暂访问中断。4 核 16 GB 可复用现有镜像构建缓存。基础设施容器、数据卷和现有配置不自动重建。
