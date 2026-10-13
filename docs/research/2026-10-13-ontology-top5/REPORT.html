@@ -1,0 +1,212 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ontology TOP5 · MetaPlatform 差距调研</title><style>body{margin:0;background:#f5f7fb;color:#182439;font:16px/1.7 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1240px;margin:auto;padding:28px}header{background:#172844;color:white;padding:32px;border-radius:16px}header p{color:#d1dded}h1{font-size:30px}h2{font-size:24px;margin-top:36px;border-bottom:2px solid #c8d5e6;padding-bottom:8px}h3{font-size:20px}a{color:#185fbd;overflow-wrap:anywhere}code{background:#e7eef8;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}p{margin:14px 0}section{background:white;margin:22px 0;padding:24px;border:1px solid #d9e2ee;border-radius:12px}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}td{padding:10px;border:1px solid #d5dfec;vertical-align:top}tr:first-child{background:#e8f0fb;font-weight:700}tr:nth-child(2n){background:#f7f9fc}nav{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}nav a{color:white}details{margin:16px 0}summary{font-size:22px;font-weight:700;cursor:pointer}footer{color:#576c89} @media(max-width:700px){main{padding:12px}header,section{padding:16px}h1{font-size:24px}}</style></head><body><main><header><h1>Ontology TOP5 · MetaPlatform</h1><p>真实 GitHub 快照 · 核心源码审读 · 功能与 UI 对比 · 16 个独立工单</p><p>2026-10-13 · 基线 dc8980d3e129 · 调研建议，功能待实现</p><nav><a href="#s0">总报告</a><a href="#s1">semantica-agi/semantica</a><a href="#s2">deeplethe/utopia</a><a href="#s3">trustgraph-ai/trustgraph</a><a href="#s4">protegeproject/protege</a><a href="#s5">datavane/tis</a><a href="#s6">差距索引</a></nav></header><section id="s0"><details open><summary>总报告</summary><h1>Ontology TOP5：代码、功能、UI 交互与 MetaPlatform 差距调研</h1>
+<p>日期：2026-10-13。状态：调研建议 / PRD 草案；本报告不修改任何 Accepted/Gate/GA 状态。MetaPlatform 代码基线：<a href="https://github.com/Bert0000000000/MetaPlatform/commit/dc8980d3e129e94f0bc55190705ede7cbe304ba0">dc8980d3e129e94f0bc55190705ede7cbe304ba0</a>。</p>
+<h2>结论</h2>
+<p>优先修补现有业务本体能力的可靠性和交互闭环：导出语法与标题保真、导入预览、校验范围和报告对象绑定、图谱状态隔离与语义检索。MetaPlatform 已有建模、数据同步、发布版本、SHACL、公理、业务动作等能力，不需要为了追赶 Stars 替换整个内核。Semantica/TrustGraph 最适合参考 Python/React 实现；Utopia/TIS 适合参考业务交互；Protégé 适合校准语义与声明/推导区分。</p>
+<h2>筛选口径与排名边界</h2>
+<p>GitHub REST <code>search/repositories?q=topic:ontology&amp;sort=stars&amp;order=desc&amp;per_page=50</code>，保存完整候选快照；对前 50 名进行相关性筛选，取其中 Stars 最高的五个软件项目。Ontology/语义建模须为核心代码能力。排除区块链（ontio/ontology）、清单、纯本体数据集、仅提供词汇类型声明的项目、普通自动化工具。排除位于 Protégé 前的 n8n-as-code：核心是 n8n 工作流/节点能力，不是本体建模内核。没有从榜单中排除高热度 AI 项目以制造传统编辑器排名。</p>
+<p>这是该主题与上述筛选范围内的 TOP5，<strong>不是所有 GitHub 仓库的全球完整排名，也不是质量排行榜</strong>。未标该 topic 的 Jena/RDFLib 等引擎可能有更高 Stars；WebProtégé/WebVOWL 适合作为传统交互补充，但在本次范围内 Stars 不进入前五。Stars、fork、push 与 SHA 取 2026-10-13 GitHub API 快照，可随时间变化。筛选并未要求必须有 UI；实际五项均找到 UI 或官方交互材料。</p>
+<div class="table-wrap"><table>
+<tr><td>项目</td><td>⭐ Stars</td><td>🍴 Forks</td><td>📅 Last push (UTC)</td><td>💻 Language</td><td>License</td><td>Recommendation</td></tr>
+<tr><td><a href="https://github.com/semantica-agi/semantica">semantica-agi/semantica</a></td><td>13,985</td><td>1,618</td><td>2026-10-12T15:01:16Z</td><td>Python</td><td>MIT</td><td>重点借鉴</td></tr>
+<tr><td><a href="https://github.com/deeplethe/utopia">deeplethe/utopia</a></td><td>8,309</td><td>1,151</td><td>2026-10-13T02:17:01Z</td><td>Rust</td><td>Apache-2.0</td><td>选择性借鉴</td></tr>
+<tr><td><a href="https://github.com/trustgraph-ai/trustgraph">trustgraph-ai/trustgraph</a></td><td>2,804</td><td>331</td><td>2026-10-11T18:14:53Z</td><td>Python</td><td>Apache-2.0</td><td>重点借鉴</td></tr>
+<tr><td><a href="https://github.com/protegeproject/protege">protegeproject/protege</a></td><td>1,579</td><td>316</td><td>2026-10-01T16:36:14Z</td><td>Java</td><td>BSD-2-Clause（实际 license.txt）</td><td>语义与交互参照</td></tr>
+<tr><td><a href="https://github.com/datavane/tis">datavane/tis</a></td><td>1,425</td><td>304</td><td>2026-10-11T10:10:14Z</td><td>Java</td><td>Apache-2.0</td><td>选择性借鉴</td></tr>
+</table></div>
+<p>层级：重点借鉴 2 项（Semantica/TrustGraph）；选择性借鉴 2 项（Utopia/TIS）；语义与交互参照 1 项（Protégé）。这里的层级反映 MetaPlatform 技术栈与业务用途匹配度，不改变按 Stars 的名次。</p>
+<h2>研究方法与证据边界</h2>
+<ul>
+<li>使用 GitHub API 取得 metadata、完整递归 tree 和固定 SHA 源文件；正文链接固定到当次 SHA。<code>evidence/</code> 保留候选池、快照和下载源码的 SHA256 清单。原始 API/源码缓存保存在本地，不将第三方源码整份复制进本仓库。</li>
+<li>五项均审读实际核心代码与依赖文件；TrustGraph 的 UI 在其独立 <code>trustgraph-ui</code> 仓库，固定额外 SHA 分析。TIS 当前 UI 交互依官方使用文档和主仓库控制器；找到的旧 ng-tis 仓库无法证实与当前版本一致，因此未拿其旧代码证明当前 UI。</li>
+<li>MetaPlatform：读取当前 AGENTS/ADR/契约、前后端代码与既有 issue；浏览器只读访问云端模型工作台、导入导出界面。没有部署第三方项目，没有运行其测试，也没有声称已完成五项项目的真实服务端端到端验收。</li>
+<li>UI 结论明确区分：<strong>源码可确认</strong>（事件、状态、请求路径）、<strong>官方文档说明</strong>（操作步骤）与 <strong>本轮浏览器观察</strong>（MetaPlatform）。项目规模、测试文件存在或 HTTP 200 不作为业务链路成功证据。</li>
+<li>许可证逐项审读文件；结论仅是本轮主仓库文本识别。依赖/插件/字体等如需复制接入须逐一保留通知并审计，不能以主仓库 MIT/Apache/BSD 代替全部依赖审查。</li>
+</ul>
+<h2>功能比较</h2>
+<div class="table-wrap"><table>
+<tr><td>维度</td><td>Semantica</td><td>Utopia</td><td>TrustGraph</td><td>Protégé</td><td>TIS</td><td>MetaPlatform 当前基线</td></tr>
+<tr><td>类型/属性/关系</td><td>本体 registry、editor、生成/审核</td><td>类/关系/属性及 open/strict 场景</td><td>ontology loader + workbench</td><td>OWL 实体与公理</td><td>ObjectType/Linker/SharedProperty</td><td>Kernel 基元、属性、关系、接口、父类；不是空白</td></tr>
+<tr><td>标准交换</td><td>RDF/OWL、导入导出、SHACL 组件</td><td>RDF 导入 preview/apply</td><td>UI OWL/XML/Turtle importer/exporter</td><td>OWLAPI 格式与插件</td><td>主要物理数据→业务语义配置</td><td>v2 JSON-LD、Turtle 分支已存在；需修边界，不可笼统写“没有导出”</td></tr>
+<tr><td>数据到本体</td><td>text/data generator + quality gate</td><td>抽取、候选对齐/回归例子</td><td>ontology-guided extraction</td><td>编辑器及外围插件</td><td>数据源/表字段绑定、LLM 辅助（文档）</td><td>PR #98 逆向发现、来源 profile、候选证据、人工审核/发布/同步已合入</td></tr>
+<tr><td>校验/推理</td><td>ontology validator、pyshacl 分支、studio</td><td>公理和约束、人工回归例子</td><td>结构检查、抽取规范、查询解释</td><td>reasoner factory 与声明/推导层级</td><td>语义配置及 ChatBI query trace</td><td>SHACL Core 子集、公理运行时校验、规则推理/解释；不是完整 OWL2 reasoner</td></tr>
+<tr><td>图谱交互</td><td>search/inspect、邻域、来源/时间</td><td>graph/table + inspector/历史</td><td>2D/3D context 与本体树（UI 子仓库）</td><td>实体树、frame 与 selection</td><td>域/对象/关系配置（官方文档）</td><td>类型树+图谱+Inspector、拖动缩放/关系选择、typeRef/q 深链接已有</td></tr>
+<tr><td>身份/存储</td><td>Explorer 部分 app.state，需继续核验</td><td>kb_id 作用域、PG、成员权限</td><td>分布式运行与上下文隔离需部署核验</td><td>本地桌面，非多租户业务平台</td><td>插件/域/外部数据源，非 Kernel RLS 替代品</td><td>tenant ctx、非特权 PG/RLS、Outbox/版本/动作架构是保留优势</td></tr>
+<tr><td>部署</td><td>Explorer/服务/依赖按可选能力</td><td>自托管，v0.1 schema 前进迁移</td><td>多组件配置和数据后端</td><td>桌面发行包</td><td>Java 服务与 connector 插件</td><td>已有 Tencent Demo Deploy 门禁、应用回滚；本次仅规划增量，未部署</td></tr>
+</table></div>
+<h2>MetaPlatform 基线定位</h2>
+<p>权威入口 <a href="https://github.com/Bert0000000000/MetaPlatform/blob/dc8980d3e129e94f0bc55190705ede7cbe304ba0/AGENTS.md">AGENTS.md</a>；草稿/版本 ADR-0080 与迁移 ADR-0082；API 单源 <a href="https://github.com/Bert0000000000/MetaPlatform/blob/dc8980d3e129e94f0bc55190705ede7cbe304ba0/mate-platform-backend/contracts/openapi/services/ont.yaml">mate-platform-backend/contracts/openapi/services/ont.yaml</a>。</p>
+<p>浏览器观察（2026-10-13，云端应用部署 SHA 未在本轮核定，不能把它直接等同代码基线）：</p>
+<p>1. <code>/ontology/model/graph</code> 显示 77 类型、53 关系，类型树、图谱、缩放/适应/重置、局部关联、属性检查器；选择客户后 URL 生成 <code>typeRef</code>。已有深链接，故不提交“新增类型深链接”。</p>
+<p>2. <code>/ontology/governance/import-export</code> 有目标类型下拉、JSON-LD 导出与 Choose File；未见格式选择或导入预览。未导入、发布、同步或修改任何存量模型。</p>
+<p>3. 云端已存在 #111–#117 的独立人工测试问题；本报告将它们列为先处理的业务链路缺陷，而不重复创建。发布前再次 fetch 主分支，从 08a84ec1 更新至本报告所示 SHA；G03 同步改为当前 property_slug 取名导致业务标题丢失，而不重复已修的领域 slug 解析。</p>
+<p>代码审计重点：v2 <code>export_object_type/import_object_type</code>、ModelValidationPage、AxiomsPage、OntologyGraphView/SchemaGraphCanvas/ModelInspector、EvidenceEditor 与 legacy SPARQL 兼容路由。旧 <code>owl/io.py</code> 的统计式解析不用于断言 v2 内核没有标准能力；legacy SPARQL 也不代替 v2 业务查询/写入。</p>
+<h2>已有 issue 去重</h2>
+<div class="table-wrap"><table>
+<tr><td>既有 issue</td><td>处理边界</td></tr>
+<tr><td><a href="https://github.com/Bert0000000000/MetaPlatform/issues/111">#111</a> 属性 slug 重复误判</td><td>引用原工单；不再提交相同 RID/slug 修复</td></tr>
+<tr><td><a href="https://github.com/Bert0000000000/MetaPlatform/issues/112">#112</a> 注册数据源配置阻塞</td><td>需要真实连接配置；不伪造接入成功，不复制为新 connector 任务</td></tr>
+<tr><td><a href="https://github.com/Bert0000000000/MetaPlatform/issues/113">#113</a> 物化样本重复列</td><td>与 G03 的模型标题序列化不同，保持独立</td></tr>
+<tr><td><a href="https://github.com/Bert0000000000/MetaPlatform/issues/114">#114</a> Action 表单无保存/测试无反馈</td><td>完整动作链涉及保存/执行/审计，不以隐藏按钮当闭环</td></tr>
+<tr><td><a href="https://github.com/Bert0000000000/MetaPlatform/issues/115">#115</a> 使用量写统计缺失</td><td>不将缺指标当 0；原工单承担链路核对</td></tr>
+<tr><td><a href="https://github.com/Bert0000000000/MetaPlatform/issues/116">#116</a> 应用引用 500</td><td>原工单负责依赖恢复；不得把未知引用当无引用</td></tr>
+<tr><td><a href="https://github.com/Bert0000000000/MetaPlatform/issues/117">#117</a> 新建类型缺少删除入口</td><td>原工单处理退役/引用/删除语义，不复制成新按钮任务</td></tr>
+</table></div>
+<h2>高阶差异如何处理</h2>
+<p>完整 OWL2 DL reasoner、任意本体全量保真导入、人工 competency case 自动回归、跨文档事实级 provenance DAG、可维护的业务术语库，都是值得继续评估的能力差异。但 MetaPlatform 的已接受产品目标是业务本体/数字员工平台，并非完全复制 Protégé。现有源码已经包含 reasoning/explain、question_bank/evaluation、lineage、候选 evidence/aliases 等对应基础；本轮没有足够运行证据将它们判定为整项缺失。</p>
+<p>因此本轮确认差距只进入下方 16 项可验证增量；每项 PRD 明确它解决的局部缺口。完成这些工单<strong>不等于上述高阶能力达到对标项目全功能</strong>。如要将完整 OWL2、外部本体迁移等升级为产品目标，先调整权威规格和评估真实语义/存储/身份成本，再形成另一轮垂直切片；不能把库安装、菜单、mock 数据或全库迁移包装成一小时独立部署成果。</p>
+<h2>1 小时拆分原则</h2>
+<p>16 项都是基于当前主分支即可独立做、独立验证、独立发布的增量；<strong>不依赖本次其他工单先完成</strong>，同文件修改可能有合并冲突，需要各分支重基并重新验证。每项交付完整局部用户行为，测试与部署包含在同一个工单，未把测试/部署分成依赖票。</p>
+<p>每项有效工作预算 60 分钟：读基线/复现 5、实现 20、测试 15、独立发布及回滚核对 15、证据 5。前提为依赖已安装、独立测试身份/数据/端口与预热部署目标已可用。CI 排队、首次安装、大镜像下载不由功能粒度控制；现有 Tencent 发布流水线 gate/deploy timeout 为 65/80 分钟，<strong>不能据此保证从领取到云端完成的墙钟时间必小于一小时</strong>。如任务实做超预算，记录耗时和阻塞并继续拆小，不跳过必需测试或伪报部署完成。</p>
+<p>最小部署单元：11 项只发 web 应用，5 项只发 ont 服务；全部无需新基础设施或数据库迁移。复用已有 CI/部署流程，禁止重建共享数据库、清理卷或停止其他工作树服务。未来实际部署必须核对 <code>deploy-result.json</code> revision、改动路径的 UI/API 行为以及持久化读回（若工单涉及写入），不能只用容器健康判通过。</p></details></section><section id="s1"><details><summary>semantica-agi/semantica</summary><h1>1. semantica-agi/semantica</h1>
+<p>快照：2026-10-13T07:35:57.270908+00:00；commit <code>e247b94fbe4fc3a52bafae5997e48f1839e13b87</code>；Stars 13,985；forks 1,618；last push 2026-10-12T15:01:16Z；created 2025-06-25T10:41:00Z；size 50,080 KB。</p>
+<p>技术栈：Python + FastAPI + React/TypeScript。主仓库许可：MIT。匹配度：重点借鉴。</p>
+<h2>关键代码路径</h2>
+<div class="table-wrap"><table>
+<tr><td>固定 SHA 文件</td><td>审读/定位结论</td></tr>
+<tr><td><a href="https://github.com/semantica-agi/semantica/blob/e247b94fbe4fc3a52bafae5997e48f1839e13b87/pyproject.toml">pyproject.toml</a></td><td>Python 依赖与可选能力边界；不能只依据前端菜单推断服务都已启用。</td></tr>
+<tr><td><a href="https://github.com/semantica-agi/semantica/blob/e247b94fbe4fc3a52bafae5997e48f1839e13b87/semantica/explorer/app.py">semantica/explorer/app.py</a></td><td>Explorer 应用入口，组合 API 路由与运行状态。</td></tr>
+<tr><td><a href="https://github.com/semantica-agi/semantica/blob/e247b94fbe4fc3a52bafae5997e48f1839e13b87/semantica/explorer/routes/ontology.py">semantica/explorer/routes/ontology.py</a></td><td>本体 HTTP 调度；registry/drafts/proposals 等部分状态放在 app.state，不能直接当企业级共享持久化方案。</td></tr>
+<tr><td><a href="https://github.com/semantica-agi/semantica/blob/e247b94fbe4fc3a52bafae5997e48f1839e13b87/semantica/ontology/engine.py">semantica/ontology/engine.py</a></td><td>生成器、验证器、质量门、版本管理和对齐接口组合；复用算法前要检查 store 与可选依赖。</td></tr>
+<tr><td><a href="https://github.com/semantica-agi/semantica/blob/e247b94fbe4fc3a52bafae5997e48f1839e13b87/explorer/src/workspaces/OntologyWorkspace/ShaclStudio.tsx">explorer/src/workspaces/OntologyWorkspace/ShaclStudio.tsx</a></td><td>SHACL shapes 生成/选择/编辑/验证、结果回跳节点的交互。</td></tr>
+<tr><td><a href="https://github.com/semantica-agi/semantica/blob/e247b94fbe4fc3a52bafae5997e48f1839e13b87/explorer/src/workspaces/GraphWorkspace/GraphInspectorPanel.tsx">explorer/src/workspaces/GraphWorkspace/GraphInspectorPanel.tsx</a></td><td>来源字段、置信度、时间字段等分区；source/evidence 是被保留的元数据。</td></tr>
+<tr><td><a href="https://github.com/semantica-agi/semantica/blob/e247b94fbe4fc3a52bafae5997e48f1839e13b87/explorer/src/workspaces/OntologyWorkspace/ontologyUrlState.ts">explorer/src/workspaces/OntologyWorkspace/ontologyUrlState.ts</a></td><td>本体工作区可分享的 URL 状态；并不是所有画布相机状态都有持久化保证。</td></tr>
+</table></div>
+<h3>功能与代码判断</h3>
+<p>OntologyEngine 组合数据/文本生成、class/property 推断、验证/质量门、版本及 alignment。用户入口不只是 Python SDK：Explorer 具有 OntologyEditor、ProposalReview、ShaclStudio、Versions/Alignments/Vocabulary 等组件。SHACL validator 中有独立 pyshacl 路径；不要将自建约束表替代标准 SHACL 引擎。API 路由的部分 registry/proposals/drafts 使用进程 app.state，这在单实例交互中可用，但不能直接移植作为 MetaPlatform 多实例持久化或 RLS 权威。</p>
+<h3>UI 操作链（源码可确认，未启动对方服务）</h3>
+<p>1. Ontology 工作区选择本体 → Loader/Editor 查看类/属性 → 修改表单/候选 → API 提交；必须追踪具体 endpoint，菜单出现不证明持久化。</p>
+<p>2. SHACL Studio 选择本体 → 生成严格 shapes → 点 shape 聚焦文本 → 人工编辑 → validateShacl → 展示结果/节点跳转。loading/error 与成功结果分开，校验不是自动修复。</p>
+<p>3. Graph Inspector 将来源/置信度和内容区分，便于用户沿 source/evidence 复核；时间字段参与其他 workspace，不应将全部界面字段视为不可变审计记录。</p>
+<p>4. URL 状态帮助本体资源定位；MetaPlatform 已有 typeRef/q，可借鉴更精细状态，但不能重复造已有深链接。</p>
+<h3>对 MetaPlatform 的适用性</h3>
+<p>UI 组织与 Python 模块拆分直接相关；优先借鉴 SHACL 报告与候选证据复核、标准 context、检索与工作区状态。接入成本在 store/进程状态适配、依赖体积、身份/租户边界及模块实际执行证据。建议参考实现原则，在现有 Kernel/契约上增量开发，勿将 Explorer app.state 变成第二套模型权威。</p>
+<p>相关差距：G02、G04、G07、G08、G10、G11、G13、G14、G15、G16。</p>
+<h2>许可核对与复用范围</h2>
+<p><a href="https://github.com/semantica-agi/semantica/blob/e247b94fbe4fc3a52bafae5997e48f1839e13b87/LICENSE">LICENSE</a>。本轮主仓库文件未见额外的非商业/托管服务/嵌入用途限制；仍须保留通知并核对实际复制的依赖与插件许可证。主仓库许可判断不等同全依赖批准。</p></details></section><section id="s2"><details><summary>deeplethe/utopia</summary><h1>2. deeplethe/utopia</h1>
+<p>快照：2026-10-13T07:35:57.520823+00:00；commit <code>cda374771577b2d42ed257312864ecf8e067bfbd</code>；Stars 8,309；forks 1,151；last push 2026-10-13T02:17:01Z；created 2026-08-07T19:33:17Z；size 12,571 KB。</p>
+<p>技术栈：Rust/Axum/SQLx + PostgreSQL/pgvector + React。主仓库许可：Apache-2.0。匹配度：选择性借鉴。</p>
+<h2>关键代码路径</h2>
+<div class="table-wrap"><table>
+<tr><td>固定 SHA 文件</td><td>审读/定位结论</td></tr>
+<tr><td><a href="https://github.com/deeplethe/utopia/blob/cda374771577b2d42ed257312864ecf8e067bfbd/Cargo.toml">Cargo.toml</a></td><td>Rust workspace 分为 store、ingest、extract、reason、search、server 等模块。</td></tr>
+<tr><td><a href="https://github.com/deeplethe/utopia/blob/cda374771577b2d42ed257312864ecf8e067bfbd/web/package.json">web/package.json</a></td><td>React UI 与前端脚本；与 MetaPlatform 同属网页交互，但后端无法直接移植。</td></tr>
+<tr><td><a href="https://github.com/deeplethe/utopia/blob/cda374771577b2d42ed257312864ecf8e067bfbd/crates/utopia-server/src/api/ontology_routes.rs">crates/utopia-server/src/api/ontology_routes.rs</a></td><td>本体读写路由、导入 preview/apply 分离，改变本体时产生 ledger 记录。</td></tr>
+<tr><td><a href="https://github.com/deeplethe/utopia/blob/cda374771577b2d42ed257312864ecf8e067bfbd/crates/utopia-ingest/src/ontology_rdf.rs">crates/utopia-ingest/src/ontology_rdf.rs</a></td><td>RDF/本体输入处理；应按支持结构逐项验证，不把文件后缀支持当全部 OWL 语义支持。</td></tr>
+<tr><td><a href="https://github.com/deeplethe/utopia/blob/cda374771577b2d42ed257312864ecf8e067bfbd/crates/utopia-store/src/ontology_regressions.rs">crates/utopia-store/src/ontology_regressions.rs</a></td><td>kb_id 作用域查询、人的回归例子与保存的 last_result；读列表不重新执行模型。</td></tr>
+<tr><td><a href="https://github.com/deeplethe/utopia/blob/cda374771577b2d42ed257312864ecf8e067bfbd/web/src/pages/Ontology.tsx">web/src/pages/Ontology.tsx</a></td><td>类/属性 rail、图表视图、定义/关系/属性/实例详情，Import/Refine/Misses 为独立操作视图。</td></tr>
+<tr><td><a href="https://github.com/deeplethe/utopia/blob/cda374771577b2d42ed257312864ecf8e067bfbd/web/src/pages/EntityHistory.tsx">web/src/pages/EntityHistory.tsx</a></td><td>对象历史和可解释人工决策交互。</td></tr>
+</table></div>
+<h3>功能与代码判断</h3>
+<p>Rust workspace 通过 SQLx 与 PostgreSQL 管理类、关系、知识库作用域与回归例子。ontology_routes 中 preview_import 与 apply_import 分离，是比“选文件即 upsert”更可核对的设计；发生本体改变时留下 ledger 类型记录。ontology_regressions 查询同时绑定 kb_id、事实/实体/属性，列表读取已有结果，不以读取页面时自动跑模型替代明确评估。</p>
+<p>项目仍标 v0.1，README 明确 schema 持续演进且迁移只有前进方向；Decision intelligence/部分 business rules 在 roadmap 中，不能作为已交付能力。MetaPlatform 也有 questions/evaluation/版本，不应因 Utopia 有回归面板就声称 MetaPlatform 完全没有评估。</p>
+<h3>UI 操作链（源码可确认，未部署对方服务）</h3>
+<p>1. Ontology 页左侧 classes/properties rail → 中间 graph/table → 右侧 definition/relations/attributes/instances。选择模型后可在同一区域理解定义与实例，不必四次跳页。</p>
+<p>2. Import、refine、misses 是独立操作视图；导入预览与正式 apply 不混在一个浏览文件事件中。</p>
+<p>3. Regression panel 展示已保存例子及最近结果，和当前源标签一起读取；明确再检查才能更新结果，避免旧结果冒充本轮正确。</p>
+<p>4. EntityHistory 给人工修改/裁决上下文。相应业务权限由 KB 成员角色约束，不能照搬为 MetaPlatform 租户权威。</p>
+<h3>对 MetaPlatform 的适用性</h3>
+<p>可借鉴预览确认、报告与目标绑定、父类/实例详情邻接导航。整套 Rust backend 接入成本高于界面增量；它的 KB scope 与本平台 tenant/RLS 是不同身份模型，不能仅对字段改名就迁移。相关差距：G01、G05、G06、G09、G10、G12、G16。</p>
+<h2>许可核对与复用范围</h2>
+<p><a href="https://github.com/deeplethe/utopia/blob/cda374771577b2d42ed257312864ecf8e067bfbd/LICENSE">LICENSE</a>。本轮主仓库文件未见额外的非商业/托管服务/嵌入用途限制；仍须保留通知并核对实际复制的依赖与插件许可证。主仓库许可判断不等同全依赖批准。</p></details></section><section id="s3"><details><summary>trustgraph-ai/trustgraph</summary><h1>3. trustgraph-ai/trustgraph</h1>
+<p>快照：2026-10-13T07:35:59.329691+00:00；commit <code>ea19308aaeb8458b9d988794eff7d4c0016bd43f</code>；Stars 2,804；forks 331；last push 2026-10-11T18:14:53Z；created 2024-07-10T19:14:04Z；size 104,157 KB。</p>
+<p>技术栈：Python 分布式 flows + 独立 React UI。主仓库许可：Apache-2.0。匹配度：重点借鉴。</p>
+<h2>关键代码路径</h2>
+<div class="table-wrap"><table>
+<tr><td>固定 SHA 文件</td><td>审读/定位结论</td></tr>
+<tr><td><a href="https://github.com/trustgraph-ai/trustgraph/blob/ea19308aaeb8458b9d988794eff7d4c0016bd43f/trustgraph-flow/pyproject.toml">trustgraph-flow/pyproject.toml</a></td><td>flow 服务依赖与分布式运行组成；接入需要平台运维成本。</td></tr>
+<tr><td><a href="https://github.com/trustgraph-ai/trustgraph/blob/ea19308aaeb8458b9d988794eff7d4c0016bd43f/trustgraph-flow/trustgraph/extract/kg/ontology/run.py">trustgraph-flow/trustgraph/extract/kg/ontology/run.py</a></td><td>本体抽取运行入口（目录树定位，未作为完整执行验证）。</td></tr>
+<tr><td><a href="https://github.com/trustgraph-ai/trustgraph/blob/ea19308aaeb8458b9d988794eff7d4c0016bd43f/trustgraph-flow/trustgraph/extract/kg/ontology/ontology_loader.py">trustgraph-flow/trustgraph/extract/kg/ontology/ontology_loader.py</a></td><td>类、父类、property、equivalent/disjoint/domain/range/基数等结构解析与结构检查。</td></tr>
+<tr><td><a href="https://github.com/trustgraph-ai/trustgraph/blob/ea19308aaeb8458b9d988794eff7d4c0016bd43f/trustgraph-flow/trustgraph/extract/kg/ontology/extract.py">trustgraph-flow/trustgraph/extract/kg/ontology/extract.py</a></td><td>本体引导的抽取管道；需要 ontology config 与处理上下文。</td></tr>
+<tr><td><a href="https://github.com/trustgraph-ai/trustgraph/blob/ea19308aaeb8458b9d988794eff7d4c0016bd43f/trustgraph-flow/trustgraph/query/ontology/query_explanation.py">trustgraph-flow/trustgraph/query/ontology/query_explanation.py</a></td><td>按处理元数据组织 query explanation；含模板措辞，不能把说明文本单独当真实推理证据。</td></tr>
+<tr><td><a href="https://github.com/trustgraph-ai/trustgraph/blob/ea19308aaeb8458b9d988794eff7d4c0016bd43f/trustgraph-base/trustgraph/provenance/triples.py">trustgraph-base/trustgraph/provenance/triples.py</a></td><td>来源链三元组构造，而不是只显示一条来源链接。</td></tr>
+<tr><td><a href="https://github.com/trustgraph-ai/trustgraph/blob/ea19308aaeb8458b9d988794eff7d4c0016bd43f/tests/unit/test_extract/test_ontology/test_ontology_loading.py">tests/unit/test_extract/test_ontology/test_ontology_loading.py</a></td><td>存在加载结构的测试源码；本轮仅审读，未运行对方测试。</td></tr>
+</table></div>
+<p>额外 UI SHA：<code>02efcac8adf04a1de1a4f601c1ecbb70ed910d6d</code>。实际审读：</p>
+<ul>
+<li><a href="https://github.com/trustgraph-ai/trustgraph-ui/blob/02efcac8adf04a1de1a4f601c1ecbb70ed910d6d/packages/portal/package.json">packages/portal/package.json</a></li>
+<li><a href="https://github.com/trustgraph-ai/trustgraph-ui/blob/02efcac8adf04a1de1a4f601c1ecbb70ed910d6d/packages/trustkit/src/components/ontology/OntologyWorkbench.tsx">packages/trustkit/src/components/ontology/OntologyWorkbench.tsx</a></li>
+<li><a href="https://github.com/trustgraph-ai/trustgraph-ui/blob/02efcac8adf04a1de1a4f601c1ecbb70ed910d6d/packages/trustkit/src/utils/ontology-importer.ts">packages/trustkit/src/utils/ontology-importer.ts</a></li>
+<li><a href="https://github.com/trustgraph-ai/trustgraph-ui/blob/02efcac8adf04a1de1a4f601c1ecbb70ed910d6d/packages/trustkit/src/utils/ontology-exporter.ts">packages/trustkit/src/utils/ontology-exporter.ts</a></li>
+<li><a href="https://github.com/trustgraph-ai/trustgraph-ui/blob/02efcac8adf04a1de1a4f601c1ecbb70ed910d6d/packages/trustkit/src/components/ontology/OntologyValidationPanel.tsx">packages/trustkit/src/components/ontology/OntologyValidationPanel.tsx</a></li>
+</ul>
+<h3>功能与代码判断</h3>
+<p>主仓库是 Python 分布式 flow/runtime，OntologyLoader 为抽取建立 classes/properties/hierarchy/约束结构。extract.py 消费本体指导抽取；来源三元组在 provenance 模块有实际构造代码。query_explanation 将处理元数据转换为步骤，部分内容是模板文本，单独的“置信度/解释句子”不能证明事实来源和执行轨迹正确。</p>
+<p>UI 在同组织独立 trustgraph-ui 仓库，当前 Workbench、Importer、Exporter、ValidationPanel 均有源文件。Importer 使用 DOMParser 处理 XML，并有专门 Turtle 解析逻辑；Exporter 区分 owl/rdf/turtle 与 MIME/扩展名。虽然存在测试和 round-trip 宣称，本轮没有跑真实部署或遍历全部 OWL 语法，不将其记为完整 OWL2 保真结论。</p>
+<h3>UI 操作链（源码可确认，未部署对方服务）</h3>
+<p>1. Ontology 列表选择 → 类/属性树 → 右侧编辑器或 metadata；校验面板可切换显示，供发布前核对。</p>
+<p>2. Importer 读取文件识别 XML/Turtle → 解析结果或 importError → 本体状态更新。多格式能力由真实 parser 支撑，不只是文件过滤器。</p>
+<p>3. Export 操作选择格式 → 对应 serializer → 对应 MIME/后缀下载。删除有显式确认；确认本身不等同服务端引用检查。</p>
+<p>4. Agent/GraphRAG 的解释与 context 视图依赖部署 backend，与 ontology workbench 是不同消费者，不能由 UI 源码证明完整业务链成功。</p>
+<h3>对 MetaPlatform 的适用性</h3>
+<p>标准格式与报告组件适合参考；完整 runtime 需要数据存储、flow、队列/服务配置，不是给现有平台装一包即可上线。沿用 Kernel 权威，优先修已有序列化、显示完整性与错误边界。相关差距：G01、G02、G03、G04、G06、G08、G13、G14、G15。</p>
+<h2>许可核对与复用范围</h2>
+<p><a href="https://github.com/trustgraph-ai/trustgraph/blob/ea19308aaeb8458b9d988794eff7d4c0016bd43f/LICENSE">LICENSE</a>。本轮主仓库文件未见额外的非商业/托管服务/嵌入用途限制；仍须保留通知并核对实际复制的依赖与插件许可证。主仓库许可判断不等同全依赖批准。</p></details></section><section id="s4"><details><summary>protegeproject/protege</summary><h1>4. protegeproject/protege</h1>
+<p>快照：2026-10-13T07:35:58.685482+00:00；commit <code>bf03cccc65ea664e139d6829bba6d209ef58ee55</code>；Stars 1,579；forks 316；last push 2026-10-01T16:36:14Z；created 2013-08-20T01:26:26Z；size 44,245 KB。</p>
+<p>技术栈：Java/Swing + OWLAPI + reasoner 插件。主仓库许可：BSD-2-Clause（实际 license.txt）。匹配度：语义与交互参照。</p>
+<h2>关键代码路径</h2>
+<div class="table-wrap"><table>
+<tr><td>固定 SHA 文件</td><td>审读/定位结论</td></tr>
+<tr><td><a href="https://github.com/protegeproject/protege/blob/bf03cccc65ea664e139d6829bba6d209ef58ee55/pom.xml">pom.xml</a></td><td>多模块 Maven 与插件构建入口。</td></tr>
+<tr><td><a href="https://github.com/protegeproject/protege/blob/bf03cccc65ea664e139d6829bba6d209ef58ee55/protege-editor-owl/pom.xml">protege-editor-owl/pom.xml</a></td><td>OWL 编辑器与 OWLAPI 依赖边界，reasoner 可作为插件。</td></tr>
+<tr><td><a href="https://github.com/protegeproject/protege/blob/bf03cccc65ea664e139d6829bba6d209ef58ee55/protege-editor-owl/src/main/java/org/protege/editor/owl/model/inference/OWLReasonerManagerImpl.java">protege-editor-owl/src/main/java/org/protege/editor/owl/model/inference/OWLReasonerManagerImpl.java</a></td><td>reasoner factory 注册、NoOpReasoner、实例生命周期、进度及推理状态管理。</td></tr>
+<tr><td><a href="https://github.com/protegeproject/protege/blob/bf03cccc65ea664e139d6829bba6d209ef58ee55/protege-editor-owl/src/main/java/org/protege/editor/owl/ui/view/cls/ToldOWLClassHierarchyViewComponent.java">protege-editor-owl/src/main/java/org/protege/editor/owl/ui/view/cls/ToldOWLClassHierarchyViewComponent.java</a></td><td>声明类层级与选择/编辑视图。</td></tr>
+<tr><td><a href="https://github.com/protegeproject/protege/blob/bf03cccc65ea664e139d6829bba6d209ef58ee55/protege-editor-owl/src/main/java/org/protege/editor/owl/ui/view/cls/InferredOWLClassHierarchyViewComponent.java">protege-editor-owl/src/main/java/org/protege/editor/owl/ui/view/cls/InferredOWLClassHierarchyViewComponent.java</a></td><td>使用 inferred hierarchy provider，背景区分推导视图，并复用实体搜索/选择。</td></tr>
+<tr><td><a href="https://github.com/protegeproject/protege/blob/bf03cccc65ea664e139d6829bba6d209ef58ee55/license.txt">license.txt</a></td><td>API 为 NOASSERTION，但实际许可证是 BSD 两条款；应以真实文件核对，不能误记无许可。</td></tr>
+</table></div>
+<h3>功能与代码判断</h3>
+<p>Java/Swing 桌面编辑器以 OWLAPI 管理本体，reasoner factory/插件负责推理；没有 reasoner 时存在 NoOpReasoner。Told 与 Inferred hierarchy 使用不同 provider；Inferred 视图使用专门背景与选择路径，这是区分声明事实和推导事实的可靠产品表达。推理进度、缓冲与模型变更必须同步，不能以点击过 reasoner 菜单就宣称结果是新鲜的。</p>
+<p>主仓库 API license 为 NOASSERTION，而 license.txt 明确两条款 BSD；本轮已审读。发行版可能组合第三方插件，主仓库许可不覆盖所有插件。这里借鉴交互/语义，不将整个 Swing 桌面 UI 嵌入 Web 平台。</p>
+<h3>UI 操作链（源码与官方资料确认，未运行桌面包）</h3>
+<p>1. 选择实体/类树 → frame 编辑属性/公理 → 选择模型保持各 view 同步。</p>
+<p>2. 选择 reasoner → 初始化/计算 → inferred hierarchy provider 更新；声明层级与推导层级各有来源，用户可分辨。</p>
+<p>3. 通过 entity finder 查类，再在层级定位；同名实体需要 IRI 上下文，而不是用显示名称唯一匹配。</p>
+<p>4. 语义编辑是学术/标准本体工具的优势；数据源同步、Action/数字员工、平台租户不是同一产品范围。</p>
+<h3>对 MetaPlatform 的适用性</h3>
+<p>优先借鉴父类可见性、校验覆盖/新鲜度、标题往返与实体检索。完整 OWL2 语义若成为新产品目标，需要 reasoner 性能、身份映射、数据边界和专门一致性数据集，不能当成一个 1 小时工单。相关差距：G01、G03、G04、G07、G09、G11、G12、G14。</p>
+<h2>许可核对与复用范围</h2>
+<p><a href="https://github.com/protegeproject/protege/blob/bf03cccc65ea664e139d6829bba6d209ef58ee55/license.txt">license.txt</a>。本轮主仓库文件未见额外的非商业/托管服务/嵌入用途限制；仍须保留通知并核对实际复制的依赖与插件许可证。主仓库许可判断不等同全依赖批准。</p></details></section><section id="s5"><details><summary>datavane/tis</summary><h1>5. datavane/tis</h1>
+<p>快照：2026-10-13T07:35:57.990290+00:00；commit <code>afc1595326264947cf52791d13e81dbcee808e78</code>；Stars 1,425；forks 304；last push 2026-10-11T10:10:14Z；created 2019-01-23T13:44:33Z；size 42,054 KB。</p>
+<p>技术栈：Java/Maven + 数据集成插件 + 配置驱动 Web UI。主仓库许可：Apache-2.0。匹配度：选择性借鉴。</p>
+<h2>关键代码路径</h2>
+<div class="table-wrap"><table>
+<tr><td>固定 SHA 文件</td><td>审读/定位结论</td></tr>
+<tr><td><a href="https://github.com/datavane/tis/blob/afc1595326264947cf52791d13e81dbcee808e78/pom.xml">pom.xml</a></td><td>Java 多模块构建与 tis-console/tis-plugin 等模块；插件生态不是一个 Python 可直接导入的库。</td></tr>
+<tr><td><a href="https://github.com/datavane/tis/blob/afc1595326264947cf52791d13e81dbcee808e78/tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/Ontology.java">tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/Ontology.java</a></td><td>本体域、对象、关系、共享属性、词典等插件分类及按域加载。</td></tr>
+<tr><td><a href="https://github.com/datavane/tis/blob/afc1595326264947cf52791d13e81dbcee808e78/tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/OntologyObjectType.java">tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/OntologyObjectType.java</a></td><td>物理数据源/对象属性绑定的核心类型；需要配套 connector。</td></tr>
+<tr><td><a href="https://github.com/datavane/tis/blob/afc1595326264947cf52791d13e81dbcee808e78/tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/OntologyGlossary.java">tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/OntologyGlossary.java</a></td><td>词典的 target 与 synonyms 结构，业务词与技术字段之间的语义连接。</td></tr>
+<tr><td><a href="https://github.com/datavane/tis/blob/afc1595326264947cf52791d13e81dbcee808e78/tis-console/src/main/java/com/qlangtech/tis/runtime/module/action/OntologyAction.java">tis-console/src/main/java/com/qlangtech/tis/runtime/module/action/OntologyAction.java</a></td><td>getObjectType/getOntologyDetail 配置控制器及 ChatBI 流式 TraceStep 输出。</td></tr>
+<tr><td><a href="https://github.com/datavane/tis/blob/afc1595326264947cf52791d13e81dbcee808e78/tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/chatbi/ChatBIService.java">tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/chatbi/ChatBIService.java</a></td><td>ChatBI ask/查询结果接口；不能仅因接口存在就认为执行后端全部可用。</td></tr>
+</table></div>
+<h3>功能与代码判断</h3>
+<p>本体以插件分类组织 Domain、ObjectType、Linker、SharedProperty、ValueType、Glossary、Action/Function。Ontology 类按 domain 和 plugin metadata 加载，主存储/物理表/字段绑定依赖配套 connector。Glossary 的 target/synonyms 将业务术语指向语义资源，ChatBIService 接口和控制器的 TraceStep 输出体现语义层驱动查询的设计。</p>
+<p>这是数据集成/语义层平台，与 MetaPlatform 的源绑定、共享属性、动作有交集。当前主仓库含配置控制器，完整当版 Web UI 不在此次固定主仓库 tree 中；旧 robincoin/ng-tis 不能证实是当前版本，因此没有用 Angular9 旧仓库替当前功能背书。</p>
+<h3>UI 操作链（官方使用文档 + 控制器，非现场体验）</h3>
+<p>1. 建本体域 → 从物理表引入 ObjectType → 定义属性/共享属性/值类型 → 配置 LinkType 的外键、关联表或中间对象方式。</p>
+<p>2. 配置 Glossary 术语及同义词，关联业务实体/属性；帮助 ChatBI 消除不同字段命名与业务语言之间的差异。</p>
+<p>3. 官方 AI 推理操作是勾选已引入的对象表、调整提示与审核建议；本轮没有验证“自动完成 90%”等营销比例。</p>
+<p>4. ChatBI 输出 SQL/结果与处理步骤，需要真实数据源才能验证问数是否正确，不能用控制器存在判完成。</p>
+<p>官方材料：https://tis.pub/docs/guide/ontology/ 和 https://www.tis.pub/docs/guide/ontology/skill/skill-inference-ontology-res/ 。</p>
+<h3>对 MetaPlatform 的适用性</h3>
+<p>借鉴业务语义可发现性、属性标题和来源证据就地复核；保留已有逆向建模人工审查/发布/同步流程，不能说它尚未存在。Java plugin 与 XML/外部存储的治理成本不同，不推荐照搬为 Kernel 的第二套定义库。相关差距：G03、G11、G16；真实数据源阻塞沿用 #112，业务 Action 阻塞沿用 #114。</p>
+<h2>许可核对与复用范围</h2>
+<p><a href="https://github.com/datavane/tis/blob/afc1595326264947cf52791d13e81dbcee808e78/LICENSE">LICENSE</a>。本轮主仓库文件未见额外的非商业/托管服务/嵌入用途限制；仍须保留通知并核对实际复制的依赖与插件许可证。主仓库许可判断不等同全依赖批准。</p></details></section><section id="s6"><details><summary>差距索引</summary><h1>确认差距与独立工单索引</h1>
+<p>基线：<code>dc8980d3e129e94f0bc55190705ede7cbe304ba0</code>。以下 16 项是本轮确认且有局部独立交付路径的差距；不是完整 OWL2 平台迁移计划。每项一份 PRD、一份可复制执行 prompt、一个 ZIP 附件。优先处理 P1；原云端 #111–#117 继续留在原票，不重复登记。</p>
+<div class="table-wrap"><table>
+<tr><td>ID</td><td>优先级</td><td>工单</td><td>独立部署单元</td><td>PRD</td><td>Prompt</td></tr>
+<tr><td>G01</td><td>P1</td><td>Turtle 导出正确转义业务名称，特殊字符可重新解析</td><td>ont</td><td><a href="gaps/g01/PRD.md">PRD</a></td><td><a href="gaps/g01/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G02</td><td>P1</td><td>JSON-LD 导出显式声明 ont 扩展词汇命名空间</td><td>ont</td><td><a href="gaps/g02/PRD.md">PRD</a></td><td><a href="gaps/g02/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G03</td><td>P1</td><td>类型 JSON-LD 往返保留属性业务标题</td><td>ont</td><td><a href="gaps/g03/PRD.md">PRD</a></td><td><a href="gaps/g03/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G04</td><td>P2</td><td>导入导出页提供既有 Turtle 下载选项</td><td>web</td><td><a href="gaps/g04/PRD.md">PRD</a></td><td><a href="gaps/g04/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G05</td><td>P1</td><td>JSON 文件导入前展示摘要并要求明确确认</td><td>web</td><td><a href="gaps/g05/PRD.md">PRD</a></td><td><a href="gaps/g05/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G06</td><td>P2</td><td>导入导出页区分类型加载失败与空列表并支持重试</td><td>web</td><td><a href="gaps/g06/PRD.md">PRD</a></td><td><a href="gaps/g06/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G07</td><td>P1</td><td>SHACL 类型切换立即清空旧报告并拒绝迟到响应</td><td>web</td><td><a href="gaps/g07/PRD.md">PRD</a></td><td><a href="gaps/g07/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G08</td><td>P2</td><td>SHACL 页面可下载当前目标的完整 JSON 校验报告</td><td>web</td><td><a href="gaps/g08/PRD.md">PRD</a></td><td><a href="gaps/g08/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G09</td><td>P1</td><td>公理校验明确展示未执行及部分覆盖，不以绿色标记代替全覆盖</td><td>web</td><td><a href="gaps/g09/PRD.md">PRD</a></td><td><a href="gaps/g09/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G10</td><td>P2</td><td>模型工作台图谱布局缓存按用户和租户隔离</td><td>web</td><td><a href="gaps/g10/PRD.md">PRD</a></td><td><a href="gaps/g10/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G11</td><td>P2</td><td>模型工作台搜索可命中业务说明和属性标题</td><td>web</td><td><a href="gaps/g11/PRD.md">PRD</a></td><td><a href="gaps/g11/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G12</td><td>P2</td><td>模型属性检查器展示直接父类并可点击定位</td><td>web</td><td><a href="gaps/g12/PRD.md">PRD</a></td><td><a href="gaps/g12/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G13</td><td>P1</td><td>SPARQL 兼容端点明确拒绝未执行的 INSERT/DELETE</td><td>ont</td><td><a href="gaps/g13/PRD.md">PRD</a></td><td><a href="gaps/g13/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G14</td><td>P1</td><td>SPARQL 简化解析器对 FILTER/OPTIONAL 明确报不支持</td><td>ont</td><td><a href="gaps/g14/PRD.md">PRD</a></td><td><a href="gaps/g14/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G15</td><td>P2</td><td>SHACL 报告按真实 severity 展示 Warning 和 Info</td><td>web</td><td><a href="gaps/g15/PRD.md">PRD</a></td><td><a href="gaps/g15/PROMPT.md">Prompt</a></td></tr>
+<tr><td>G16</td><td>P2</td><td>候选证据旁可查看所引用来源列的统计摘要</td><td>web</td><td><a href="gaps/g16/PRD.md">PRD</a></td><td><a href="gaps/g16/PROMPT.md">Prompt</a></td></tr>
+</table></div></details></section><footer>源码链接固定 SHA；证据层级与一小时预算边界见正文。项目 UI 未全部实际部署运行。</footer></main></body></html>

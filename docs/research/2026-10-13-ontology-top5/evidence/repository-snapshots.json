@@ -1,0 +1,107 @@
+{
+  "collected_at": "2026-10-13T07:59:50.246361+00:00",
+  "scope": "topic:ontology / stars descending / relevance-filtered",
+  "metaplatform_baseline": "dc8980d3e129e94f0bc55190705ede7cbe304ba0",
+  "repositories": [
+    {
+      "repo": "semantica-agi/semantica",
+      "stars": 13985,
+      "forks": 1618,
+      "pushed_at": "2026-10-12T15:01:16Z",
+      "language": "Python",
+      "license_api": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "license_audited": "MIT",
+      "size_kb": 50080,
+      "created_at": "2025-06-25T10:41:00Z",
+      "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+      "retrieved_at": "2026-10-13T07:35:57.270908+00:00",
+      "recommendation": "重点借鉴"
+    },
+    {
+      "repo": "deeplethe/utopia",
+      "stars": 8309,
+      "forks": 1151,
+      "pushed_at": "2026-10-13T02:17:01Z",
+      "language": "Rust",
+      "license_api": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "license_audited": "Apache-2.0",
+      "size_kb": 12571,
+      "created_at": "2026-08-07T19:33:17Z",
+      "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+      "retrieved_at": "2026-10-13T07:35:57.520823+00:00",
+      "recommendation": "选择性借鉴"
+    },
+    {
+      "repo": "trustgraph-ai/trustgraph",
+      "stars": 2804,
+      "forks": 331,
+      "pushed_at": "2026-10-11T18:14:53Z",
+      "language": "Python",
+      "license_api": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "license_audited": "Apache-2.0",
+      "size_kb": 104157,
+      "created_at": "2024-07-10T19:14:04Z",
+      "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+      "retrieved_at": "2026-10-13T07:35:59.329691+00:00",
+      "recommendation": "重点借鉴"
+    },
+    {
+      "repo": "protegeproject/protege",
+      "stars": 1579,
+      "forks": 316,
+      "pushed_at": "2026-10-01T16:36:14Z",
+      "language": "Java",
+      "license_api": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "license_audited": "BSD-2-Clause（实际 license.txt）",
+      "size_kb": 44245,
+      "created_at": "2013-08-20T01:26:26Z",
+      "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+      "retrieved_at": "2026-10-13T07:35:58.685482+00:00",
+      "recommendation": "语义与交互参照"
+    },
+    {
+      "repo": "datavane/tis",
+      "stars": 1425,
+      "forks": 304,
+      "pushed_at": "2026-10-11T10:10:14Z",
+      "language": "Java",
+      "license_api": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "license_audited": "Apache-2.0",
+      "size_kb": 42054,
+      "created_at": "2019-01-23T13:44:33Z",
+      "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+      "retrieved_at": "2026-10-13T07:35:57.990290+00:00",
+      "recommendation": "选择性借鉴"
+    }
+  ]
+}

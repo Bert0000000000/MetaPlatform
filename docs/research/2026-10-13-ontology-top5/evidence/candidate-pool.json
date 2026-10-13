@@ -1,0 +1,259 @@
+{
+  "query": "topic:ontology",
+  "sort": "stars",
+  "order": "desc",
+  "total_count": 2735,
+  "page_size": 50,
+  "items": [
+    {
+      "full_name": "semantica-agi/semantica",
+      "stars": 13985,
+      "description": "Graph-Native Infrastructure for Context and Accountable AI Systems"
+    },
+    {
+      "full_name": "deeplethe/utopia",
+      "stars": 8309,
+      "description": "World's first open-source enterprise world model."
+    },
+    {
+      "full_name": "trustgraph-ai/trustgraph",
+      "stars": 2804,
+      "description": "The Semantic Intelligence Layer for Ontologies"
+    },
+    {
+      "full_name": "EtienneLescot/n8n-as-code",
+      "stars": 1608,
+      "description": "Give your AI agent n8n superpowers. 537 nodes with full schemas, 7,700+ templates, Git-like sync, and TypeScript workflows."
+    },
+    {
+      "full_name": "protegeproject/protege",
+      "stars": 1579,
+      "description": "Protege Desktop"
+    },
+    {
+      "full_name": "datavane/tis",
+      "stars": 1425,
+      "description": "Support agile Ontology DataOps Based on Flink, DataX and Flink-CDC with Web-UI"
+    },
+    {
+      "full_name": "yuezhiai/jonex",
+      "stars": 1359,
+      "description": "All-in-One Multimodal Parsing Engine + Ontology-Powered, LLM Wiki-Driven AI-Ready Knowledge Engine"
+    },
+    {
+      "full_name": "google/schema-dts",
+      "stars": 1248,
+      "description": "JSON-LD TypeScript types for Schema.org vocabulary"
+    },
+    {
+      "full_name": "fabio-rovai/open-ontologies",
+      "stars": 1045,
+      "description": "Plan, apply and roll back changes to a production ontology, with a blast radius report and a proof an auditor can re-check."
+    },
+    {
+      "full_name": "ontio/ontology",
+      "stars": 907,
+      "description": "Official Go implementation of the Ontology protocol. https://dev-docs.ont.io/#/"
+    },
+    {
+      "full_name": "jerlendds/osintbuddy",
+      "stars": 838,
+      "description": "Node graphs, OSINT data mining,  and plugins. Connect unstructured and public data for transformative insights. The rewrite can be found @ osintbuddy/osintbuddy"
+    },
+    {
+      "full_name": "protegeproject/webprotege",
+      "stars": 805,
+      "description": "The webprotege code base"
+    },
+    {
+      "full_name": "ruc-datalab/EvoOntology",
+      "stars": 802,
+      "description": "EvoOntology: A Self-Evolving Ontology Layer for Data Agents ⚙️ EvoOntology插件为Claude Code/Codex 建立&进化本体层"
+    },
+    {
+      "full_name": "edmcouncil/fibo",
+      "stars": 756,
+      "description": "The Financial Industry Business Ontology (FIBO) defines the sets of things that are of interest in financial business applications and the ways that those things can relate to one another. In this way, FIBO can give meaning to any data (e.g., spreadsheets, relational databases, XML documents) that describe the business of finance."
+    },
+    {
+      "full_name": "ozekik/awesome-ontology",
+      "stars": 719,
+      "description": "A curated list of ontology things"
+    },
+    {
+      "full_name": "nicolas-hbt/pygraft",
+      "stars": 715,
+      "description": "Configurable Generation of Synthetic Schemas and Knowledge Graphs at Your Fingertips"
+    },
+    {
+      "full_name": "openbkn-ai/bkn-foundry",
+      "stars": 675,
+      "description": "BKN Foundry is the Ontology back-end foundation of OpenBKN. It transforms ontology-driven business semantics into runtime services: data, logic, actions, security governance, and observability."
+    },
+    {
+      "full_name": "usc-isi-i2/Web-Karma",
+      "stars": 607,
+      "description": "Information Integration Tool"
+    },
+    {
+      "full_name": "pysemtec/semantic-python-overview",
+      "stars": 550,
+      "description": "(subjective) overview of projects which are related both to python and semantic technologies (RDF, OWL, Reasoning, ...)"
+    },
+    {
+      "full_name": "google/digitalbuildings",
+      "stars": 464,
+      "description": "Digital Buildings (ontology and SDK) currently being used by Google internally to manage our own buildings."
+    },
+    {
+      "full_name": "aitomatic/semikong",
+      "stars": 437,
+      "description": "First Open-Source Industry-Specific Model for Semiconductors"
+    },
+    {
+      "full_name": "DiseaseOntology/HumanDiseaseOntology",
+      "stars": 416,
+      "description": "Repository for the Human Disease Ontology."
+    },
+    {
+      "full_name": "Varietyz/Disciplined-AI-Software-Development",
+      "stars": 412,
+      "description": "Disciplined AI Collaboration: a method for building software with AI. One loop at every size, rules held by checks rather than attention, state derived rather than written, evidence in place of claims. Includes the PAG grammar, an architecture and a queryable ontology. Every page is also served as Markdown and JSON at banes-lab.com."
+    },
+    {
+      "full_name": "databrickslabs/ontobricks",
+      "stars": 407,
+      "description": "Transforms Databricks Unity Catalog tables into a knowledge graph, with ontology design and reasoning exposed as tools via MCP."
+    },
+    {
+      "full_name": "dgarijo/Widoco",
+      "stars": 401,
+      "description": "Wizard for documenting ontologies. WIDOCO is a step by step generator of HTML templates with the documentation of your ontology. It uses the LODE environment to create part of the template."
+    },
+    {
+      "full_name": "msg-systems/holmes-extractor",
+      "stars": 396,
+      "description": "Information extraction from English and German texts based on predicate logic"
+    },
+    {
+      "full_name": "INCATools/ontology-development-kit",
+      "stars": 385,
+      "description": "Ontology lifecycle management"
+    },
+    {
+      "full_name": "obophenotype/human-phenotype-ontology",
+      "stars": 377,
+      "description": "Ontology for the description of human clinical features"
+    },
+    {
+      "full_name": "dahlia/wikidata",
+      "stars": 370,
+      "description": "Wikidata client library for Python"
+    },
+    {
+      "full_name": "biocypher/biocypher",
+      "stars": 337,
+      "description": "A unifying framework for biomedical research knowledge graphs"
+    },
+    {
+      "full_name": "ontodev/robot",
+      "stars": 328,
+      "description": "ROBOT is an OBO Tool"
+    },
+    {
+      "full_name": "monarch-initiative/mondo",
+      "stars": 326,
+      "description": "Mondo Disease Ontology"
+    },
+    {
+      "full_name": "alephdata/followthemoney",
+      "stars": 302,
+      "description": "Data model and processing tools for investigative entity data"
+    },
+    {
+      "full_name": "b2ihealthcare/snow-owl",
+      "stars": 292,
+      "description": ":owl: Snow Owl Terminology Server - a production-ready, fast, scalable, FHIR Terminology Service compliant server that supports SNOMED CT International and Extensions, LOINC, RxNorm, UMLS, ICD-10/11, custom code systems and many others"
+    },
+    {
+      "full_name": "althonos/pronto",
+      "stars": 268,
+      "description": "A Python frontend to (Open Biomedical) Ontologies."
+    },
+    {
+      "full_name": "854875058/Symbio",
+      "stars": 266,
+      "description": "🧬 Symbio（共生）- AI Infra 级多 Agent 协同框架 | 33 Killer Features: 动态 DAG, 本体化记忆, 防过早完成, 数据飞轮, 神经符号安全, OpenTelemetry 可观测, HITL 人类介入, MCP 原生支持, 语义缓存, PromptOps, 边缘计算, 隐私计算 | Next-Gen AI Infrastructure for Multi-Agent Orchestration"
+    },
+    {
+      "full_name": "geneontology/go-ontology",
+      "stars": 254,
+      "description": "Source ontology files for the Gene Ontology"
+    },
+    {
+      "full_name": "lambdamusic/Ontospy",
+      "stars": 251,
+      "description": "Python library and command-line interface for inspecting and visualizing RDF models aka ontologies."
+    },
+    {
+      "full_name": "ThHanke/ontosphere",
+      "stars": 247,
+      "description": "Browser-based RDF/ontology knowledge graph editor — load RDF from files, URLs or SPARQL endpoints; author nodes and edges on the canvas; run OWL-RL reasoning; apply multi-algorithm layout and clustering. AI-native via MCP tool surface and relay bridge. Fully client-side, no backend required."
+    },
+    {
+      "full_name": "FoodOntology/foodon",
+      "stars": 243,
+      "description": "The core repository for the FOODON food ontology project. This holds the key classes of the ontology; larger files and the results of text-mining projects will be stored in other repos. "
+    },
+    {
+      "full_name": "growgraph/ontocast",
+      "stars": 242,
+      "description": "Agentic Ontology Assisted Framework for Semantic Triple Extraction"
+    },
+    {
+      "full_name": "KBpedia/kbpedia",
+      "stars": 241,
+      "description": "KBPedia Knowledge Graph & Knowledge Ontology (KKO)"
+    },
+    {
+      "full_name": "The-Knowledge-Graph-Guys/vault-ld",
+      "stars": 239,
+      "description": "Vault-LD: an open spec for Markdown vaults as linked data. YAML-LD frontmatter + a shared `@context` = an RDF knowledge graph. Prose for humans and LLMs, triples for machines."
+    },
+    {
+      "full_name": "Leading-AI-IO/palantir-ontology-strategy",
+      "stars": 238,
+      "description": "A comprehensive guide to Palantir Foundry's Ontology strategy. / 世界最強のデータプラットフォーム「パランティア」の中核概念である『オントロジー』の戦略と実装を解き明かすOSS書籍プロジェクト。"
+    },
+    {
+      "full_name": "OBOFoundry/OBOFoundry.github.io",
+      "stars": 233,
+      "description": "Metadata and website for the Open Bio Ontologies Foundry Ontology Registry"
+    },
+    {
+      "full_name": "DerwenAI/strwythura",
+      "stars": 233,
+      "description": "Strwythura: construct an entity-resolved knowledge graph from structured data sources and unstructured content sources, implementing an ontology pipeline, plus context engineering for optimizing AI application outcomes within a specific domain. This produces a Streamlit app, with MLOps instrumentation."
+    },
+    {
+      "full_name": "XMUDeepLIT/MemGraphRAG",
+      "stars": 224,
+      "description": "[KDD 2026] MemGraphRAG: Memory-based Multi-Agent System for Graph Retrieval-Augmented Generation"
+    },
+    {
+      "full_name": "openbkn-ai/bkn-studio",
+      "stars": 216,
+      "description": "Web console for OpenBKN — build, manage, and collaborate on business knowledge networks. React + TypeScript frontend for the platform's admin UIs and workspaces."
+    },
+    {
+      "full_name": "ralforion/orionbelt-ontology-builder",
+      "stars": 216,
+      "description": "Browser-based ontology workbench for OWL ontologies and SKOS vocabularies. Streamlit + rdflib, no Java, no Protégé. OWL-RL reasoning, 22 SKOS validation checks, read-only SPARQL console, bulk operations, gist upper-ontology starters, merge-aware imports, interactive vis-network graph."
+    },
+    {
+      "full_name": "obophenotype/cell-ontology",
+      "stars": 215,
+      "description": "An ontology of cell types"
+    }
+  ]
+}

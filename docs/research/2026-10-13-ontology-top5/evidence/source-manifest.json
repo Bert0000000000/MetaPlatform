@@ -1,0 +1,415 @@
+[
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "ARCHITECTURE.md",
+    "bytes": 6052,
+    "sha256": "6731335ffe871e0adc6fd893ca147de717a0670fe13882da5a51b3bedf7d30f0"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "LICENSE",
+    "bytes": 1066,
+    "sha256": "7650ef0576603b337c310b9ad9dc051819257213abc44b720d9e678f8e4f4c40"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "package.json",
+    "bytes": 424,
+    "sha256": "427923d445152bf24788b458bac1eccfd57f849f13f5b06ca489094efcd28783"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "pyproject.toml",
+    "bytes": 12308,
+    "sha256": "59176a5649bfd0acaa8d51e90d02c1996b835e2b1dc468ae8b2ad395a1e4c39a"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "README.md",
+    "bytes": 81132,
+    "sha256": "15a4ef6892d1adfb3566a8a341dbc942481645377afc399ead5950c07744f7a0"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "explorer/package.json",
+    "bytes": 2680,
+    "sha256": "3f36697afdde1d87f2a41ee0b839e4fe9865a40623b1837fffec501d4f0d958b"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "semantica/explorer/app.py",
+    "bytes": 11167,
+    "sha256": "81b4bdb9196e30c0eaa4b7b527d55a3bd1c16ce40c7760fb5bb10ae19ae6a8b0"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "semantica/ontology/competency_questions.py",
+    "bytes": 14398,
+    "sha256": "91627fec4a8d8b80a64a248c334d61dcdb7a9749241368359e216287cf1a39ef"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "semantica/ontology/engine.py",
+    "bytes": 29870,
+    "sha256": "7664a49eaa1c19b0cdf4bafb089acb2ba15316965be4add946fa8e4f6c8eeb94"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "semantica/ontology/ontology_validator.py",
+    "bytes": 14787,
+    "sha256": "4e3679dcf042d123f77bee2a4ad00aa581972f24738000cae1d9dac07111997f"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "semantica/explorer/routes/ontology.py",
+    "bytes": 144402,
+    "sha256": "ceec6e0775a8040e8151908379c4b09e6565fd668ad6fc7aafc14fdc3a3f77eb"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "semantica/explorer/routes/provenance.py",
+    "bytes": 14467,
+    "sha256": "79494ea42b4f540827aed8acfcc3056743005f6c6583aada0a2923b0f47a4e5a"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "explorer/src/workspaces/GraphWorkspace/GraphInspectorPanel.tsx",
+    "bytes": 29246,
+    "sha256": "6c9b634c7cd6d4048380a27decc9e4ef58fb13e41c03c4b2dac9ecc3ccca4248"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "explorer/src/workspaces/ImportExportWorkspace/ImportExportWorkspace.tsx",
+    "bytes": 9679,
+    "sha256": "0f28b09f0d4cabf97153a7eea2abda53a15b2ca74db99740f70ef03311c1069f"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "explorer/src/workspaces/OntologyWorkspace/OntologyEditor.tsx",
+    "bytes": 26576,
+    "sha256": "160aa85cd88b2ee589b1612f3faa86e7c7535d02d19bb741474403fa80461c41"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "explorer/src/workspaces/OntologyWorkspace/ontologyUrlState.ts",
+    "bytes": 3500,
+    "sha256": "1ca8078c65d13125100dd0c7399e66cf0d3c1d6a1da1213b8cb5db3d08d363c6"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "explorer/src/workspaces/OntologyWorkspace/ProposalReview.tsx",
+    "bytes": 13669,
+    "sha256": "b09da11f0802cec97fc4524601be917b08a9dab14405e4fd04d4ad44cb1fd319"
+  },
+  {
+    "repo": "semantica-agi/semantica",
+    "sha": "e247b94fbe4fc3a52bafae5997e48f1839e13b87",
+    "path": "explorer/src/workspaces/OntologyWorkspace/ShaclStudio.tsx",
+    "bytes": 17190,
+    "sha256": "679c71d08ae4851c0b01240eaf7d491e996fc9448c2ba2953d0463dcbcf0da8a"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "Cargo.toml",
+    "bytes": 4030,
+    "sha256": "e4b303575fbfbc1eb66ed7be1e462a928f4f8db633bbe37d365da2c34b0903eb"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "LICENSE",
+    "bytes": 11353,
+    "sha256": "45363b938cd5051ccbabb398b3942abb560162a2f95c2ad33786889834afcb49"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "README.md",
+    "bytes": 16209,
+    "sha256": "e1df8d52de02e007a8a4250d6936e45dc9090a9e97c6375148c13935f6b161df"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "web/package.json",
+    "bytes": 1562,
+    "sha256": "e37d7493ee52c199ecb26bc5030ccbfb5d23d2f6ab465c4c7cc2a1f051a5293f"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "web/src/pages/EntityHistory.tsx",
+    "bytes": 8648,
+    "sha256": "aa8184681944b94c3cc74f1018e8260a5cf2cb1f62dbcc161fc62e75fccd4575"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "web/src/pages/Ontology.tsx",
+    "bytes": 105577,
+    "sha256": "305bc2ce21dee0f5f438cb07cdb86bf303da186c1b4587b95483d5da5b2caf21"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "web/src/pages/OntologyRegressionsPanel.tsx",
+    "bytes": 6636,
+    "sha256": "6a0d73bafd76e4aeafeb982999184ae42ae5d5e99c671d184cc2483e8aa317ad"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "crates/utopia-store/src/ontology_regressions.rs",
+    "bytes": 9175,
+    "sha256": "85b2f3a88f8efb8a180877dedfa562b800f33c4d97fa71d40493d7ce4b71e16f"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "crates/utopia-server/src/api/ontology_routes.rs",
+    "bytes": 31858,
+    "sha256": "4d7dc59d6c4229b7437a05f7894ecedd4e6b99bdaecc90891fc72b2d57141f4c"
+  },
+  {
+    "repo": "deeplethe/utopia",
+    "sha": "cda374771577b2d42ed257312864ecf8e067bfbd",
+    "path": "crates/utopia-ingest/src/ontology_rdf.rs",
+    "bytes": 81673,
+    "sha256": "469df0e737b20f1eea6b1a2b4a73e19cb3a3e008c8c2d573ead044efd0ddb2d7"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph",
+    "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+    "path": "LICENSE",
+    "bytes": 11359,
+    "sha256": "8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph",
+    "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+    "path": "README.md",
+    "bytes": 16384,
+    "sha256": "26c2a4bc91017e5ade12dfb458222ed7ba9b92f1ce97939e3516a52c7cc72fa0"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph",
+    "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+    "path": "trustgraph-flow/pyproject.toml",
+    "bytes": 6017,
+    "sha256": "fe84b4fe769463ef64d01ab2ddbdcd10194744e9cc33ff59467c8c1baabe0a6a"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph",
+    "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+    "path": "trustgraph-flow/trustgraph/query/ontology/query_explanation.py",
+    "bytes": 26295,
+    "sha256": "57cd872ab724e71c8a8b713c36344f66045a8d8d011440ce194734c24ff07af5"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph",
+    "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+    "path": "trustgraph-flow/trustgraph/extract/kg/ontology/extract.py",
+    "bytes": 46218,
+    "sha256": "c3cd0592d39bd3064359d438dd81a764daa7ea5d2b25db68882f89db2d8db130"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph",
+    "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+    "path": "trustgraph-flow/trustgraph/extract/kg/ontology/ontology_loader.py",
+    "bytes": 8834,
+    "sha256": "93255ce2268b68dd5c02ef57d9cbe7601947f0fcc67472701a317f4dd824da16"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph",
+    "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+    "path": "trustgraph-base/trustgraph/provenance/triples.py",
+    "bytes": 27206,
+    "sha256": "5ef770dbd1ac5041b9aeaedb8b59ba19dde17d8610118d7e275345e251ac918f"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph",
+    "sha": "ea19308aaeb8458b9d988794eff7d4c0016bd43f",
+    "path": "tests/unit/test_extract/test_ontology/test_ontology_loading.py",
+    "bytes": 19254,
+    "sha256": "ab96744e00e9b3a01e01447c87c2ae42ef88099c64f983bbadb4e69baae8b108"
+  },
+  {
+    "repo": "protegeproject/protege",
+    "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+    "path": "license.txt",
+    "bytes": 1674,
+    "sha256": "413fc8ed2dcc1c4182bc60f915dacd74f33e3444750b6f1c7fca38a31d303aa8"
+  },
+  {
+    "repo": "protegeproject/protege",
+    "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+    "path": "pom.xml",
+    "bytes": 18036,
+    "sha256": "a78fed614e766c1e4e262629f0d4e57127f0ba9f901733de68134fad7e442216"
+  },
+  {
+    "repo": "protegeproject/protege",
+    "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+    "path": "README.md",
+    "bytes": 1569,
+    "sha256": "1aef148db4e7e9dface8b9a07e2edcb7d60f680a3e0499fc8c2e1f8a7ffe9f1a"
+  },
+  {
+    "repo": "protegeproject/protege",
+    "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+    "path": "protege-editor-owl/pom.xml",
+    "bytes": 7231,
+    "sha256": "dbdec0c0a10c1e5e78cafe007348cf4817cc7193376762edf0aad0fe49b422cb"
+  },
+  {
+    "repo": "protegeproject/protege",
+    "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+    "path": "protege-editor-owl/src/main/java/org/protege/editor/owl/ui/view/cls/InferredOWLClassHierarchyViewComponent.java",
+    "bytes": 1708,
+    "sha256": "d75b0c90a7506d675fb802fcd6b4acafe0ccc545485a705be0ed160b70c8e4b3"
+  },
+  {
+    "repo": "protegeproject/protege",
+    "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+    "path": "protege-editor-owl/src/main/java/org/protege/editor/owl/ui/view/cls/ToldOWLClassHierarchyViewComponent.java",
+    "bytes": 11936,
+    "sha256": "94cbd91272caca940b142ee0f3bf514a50dc6bf39de3b557d1439cffb431a332"
+  },
+  {
+    "repo": "protegeproject/protege",
+    "sha": "bf03cccc65ea664e139d6829bba6d209ef58ee55",
+    "path": "protege-editor-owl/src/main/java/org/protege/editor/owl/model/inference/OWLReasonerManagerImpl.java",
+    "bytes": 17424,
+    "sha256": "c460628960e0870a4209270d0d109b66c902f1a2037c10176a87ce33f9ba4781"
+  },
+  {
+    "repo": "datavane/tis",
+    "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+    "path": "LICENSE",
+    "bytes": 11328,
+    "sha256": "f885d4d66ef7cbb5e54c14a89d6e611efb505a567329b1156aa1842b840093eb"
+  },
+  {
+    "repo": "datavane/tis",
+    "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+    "path": "pom.xml",
+    "bytes": 32663,
+    "sha256": "899f5d0f14f338c81096275595fd18fa8410da47e3cc450b78add15bbfe9d40f"
+  },
+  {
+    "repo": "datavane/tis",
+    "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+    "path": "README.md",
+    "bytes": 9865,
+    "sha256": "19fd65db3f61485ad33347c664beb6ea06b663f9952d41fcfcfc17f517bdb18e"
+  },
+  {
+    "repo": "datavane/tis",
+    "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+    "path": "tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/Ontology.java",
+    "bytes": 19080,
+    "sha256": "4eea51c74041296e38110f02bd61fefc0d812c425bffdfb73d7a6a01b3bd3250"
+  },
+  {
+    "repo": "datavane/tis",
+    "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+    "path": "tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/OntologyGlossary.java",
+    "bytes": 3403,
+    "sha256": "40a5db3bc6591d535ede6d9ca0acd432d260be2fe1b46d98b5704fb2dc2d1396"
+  },
+  {
+    "repo": "datavane/tis",
+    "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+    "path": "tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/OntologyObjectType.java",
+    "bytes": 6454,
+    "sha256": "bcbf08ea6281c5c748c243784b6ce79791adad40f7c18a495ec3bf6445a705d8"
+  },
+  {
+    "repo": "datavane/tis",
+    "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+    "path": "tis-plugin/src/main/java/com/qlangtech/tis/plugin/ontology/chatbi/ChatBIService.java",
+    "bytes": 2115,
+    "sha256": "31a7c2231f22c6a4d23c5b4482f987304584f2df177e60ca68403ab734ec966a"
+  },
+  {
+    "repo": "datavane/tis",
+    "sha": "afc1595326264947cf52791d13e81dbcee808e78",
+    "path": "tis-console/src/main/java/com/qlangtech/tis/runtime/module/action/OntologyAction.java",
+    "bytes": 34242,
+    "sha256": "3fb98639ab7a169b10d19cbe9edbc73b9d07044a57f2d5c42ff2392f8ddeadf2"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph-ui",
+    "sha": "02efcac8adf04a1de1a4f601c1ecbb70ed910d6d",
+    "path": "LICENSE",
+    "bytes": 11238,
+    "sha256": "8e63883b1c2616ada5e3a97b7266f86b17c340b062f133a3cd1933e5dbea374b"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph-ui",
+    "sha": "02efcac8adf04a1de1a4f601c1ecbb70ed910d6d",
+    "path": "package.json",
+    "bytes": 1149,
+    "sha256": "43a9202db91aa8d28c23d7a7888dc14dbc0bc780d69b189f76ec176641451ef4"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph-ui",
+    "sha": "02efcac8adf04a1de1a4f601c1ecbb70ed910d6d",
+    "path": "README.md",
+    "bytes": 884,
+    "sha256": "95759ccf1d4e92b968dd932cedd7537ce9dde6507ab2c1e79761f139ce8c119d"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph-ui",
+    "sha": "02efcac8adf04a1de1a4f601c1ecbb70ed910d6d",
+    "path": "packages/portal/package.json",
+    "bytes": 697,
+    "sha256": "841fd4fbb807d4a887554160aba9dc6f203d435535259a34f2bc281c8c0e16f9"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph-ui",
+    "sha": "02efcac8adf04a1de1a4f601c1ecbb70ed910d6d",
+    "path": "packages/trustkit/src/utils/ontology-exporter.ts",
+    "bytes": 10087,
+    "sha256": "e6d4a3943beac9a89c353eab08a9f121772b1366a4973d10624a1dabe9e31998"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph-ui",
+    "sha": "02efcac8adf04a1de1a4f601c1ecbb70ed910d6d",
+    "path": "packages/trustkit/src/utils/ontology-importer.ts",
+    "bytes": 22713,
+    "sha256": "de902c3a46995bcfc02962eba69cf51f8a7fb7cf6c65df67a8a753210de3fbef"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph-ui",
+    "sha": "02efcac8adf04a1de1a4f601c1ecbb70ed910d6d",
+    "path": "packages/trustkit/src/components/ontology/OntologyValidationPanel.tsx",
+    "bytes": 3305,
+    "sha256": "f04072a5ed18cc9e76feed1decb892f913e839109a02f9c564f2935138c84db6"
+  },
+  {
+    "repo": "trustgraph-ai/trustgraph-ui",
+    "sha": "02efcac8adf04a1de1a4f601c1ecbb70ed910d6d",
+    "path": "packages/trustkit/src/components/ontology/OntologyWorkbench.tsx",
+    "bytes": 13965,
+    "sha256": "a2bd8bb992efa54adf498257f0e8a8cdce9854aa7721bd8d55173fd6273518a1"
+  }
+]
