@@ -41,7 +41,7 @@ jobs:
       # Every compose consumer, including browser helpers, uses this isolated CI configuration.
       COMPOSE_FILE: docker-compose.yml:docker-compose.override.yml:.tmp/ontology-core-ci.compose.json
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Free ports
         run: |
@@ -53,7 +53,7 @@ jobs:
         run: npm install -g pnpm@11.15.1
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
@@ -249,7 +249,7 @@ jobs:
 
       - name: Upload safe SHACL browser results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: shacl-safe-results
           path: metaplatform-frontend/test-results/shacl.xml
@@ -317,7 +317,7 @@ jobs:
 
       - name: Upload safe Builder V2 inventory and result artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: builder-v2-safe-results
           path: |
