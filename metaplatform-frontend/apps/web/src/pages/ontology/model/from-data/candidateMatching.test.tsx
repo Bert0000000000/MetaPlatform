@@ -1,10 +1,10 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { precheckObjectTypes, type KernelObjectType } from '@/api/ont/kernel';
 import type { ModelingClass } from '@/api/ont/modeling';
 import ReuseComparison from './ReuseComparison';
-import { suggestResolution } from './candidateMatching';
+import { localMatches, suggestResolution } from './candidateMatching';
 
 vi.mock('@/api/ont/kernel', () => ({ precheckObjectTypes: vi.fn() }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
@@ -12,6 +12,39 @@ const cls: ModelingClass = { id: 'customer', name: '客户', description: '购�
 const target: KernelObjectType = { rid: 'ont.test.obj.crm.customer.v1', display_name: 'Customer', description: '购买企业产品的客户', primary_key: ['ont.test.prop.code.v1'], interfaces: [], properties: [{ rid: 'ont.test.prop.code.v1', title: '客户编码', type_id: 'string', format: 'string', nullable: false, primary_key: true }] };
 
 describe('候选对齐已有企业本体', () => {
+  it.each(['人员', '组织', '产品'])('精确同名 %s 独立展示全部对象，不受相似前五和低分影响', async name => {
+    const unrelated = Array.from({ length: 5 }, (_, i) => ({ ...target, rid: `ont.test.obj.other.unrelated-${i}.v1`, display_name: `无关对象${i}` }));
+    const same = Array.from({ length: 6 }, (_, i) => ({ ...target, rid: `ont.test.obj.crm.existing-${i}.v1`, display_name: name }));
+    vi.mocked(precheckObjectTypes).mockResolvedValue({ candidates: unrelated.map(t => ({ rid: t.rid, display_name: t.display_name, slug: 'unrelated', similarity: 0.99, suggested_action: 'merge' })) });
+    const onResolve = vi.fn();
+    render(<ReuseComparison cls={{ ...cls, id: 'new-concept', name }} resolution={{ mode: 'new', propertyMap: {} }} types={[...unrelated, ...same]} onResolve={onResolve} />);
+    const exact = screen.getByRole('region', { name: `${name} 精确同名对象` });
+    expect(within(exact).getAllByLabelText(`匹配建议 ${name}`)).toHaveLength(6);
+    same.forEach(t => expect(within(exact).getByText(t.rid)).toBeInTheDocument());
+    const similar = await screen.findByRole('region', { name: `${name} 相似候选` });
+    expect(exact.compareDocumentPosition(similar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(onResolve).not.toHaveBeenCalled();
+  });
+
+  it('同名对象不受低相似度和匹配服务失败影响，也不重复列入相似候选', async () => {
+    vi.mocked(precheckObjectTypes).mockResolvedValue({ candidates: [{ rid: target.rid, display_name: '客户', slug: 'customer', similarity: 0.1, suggested_action: 'cancel' }] });
+    const same = { ...target, display_name: '客户' };
+    const first = render(<ReuseComparison cls={cls} resolution={{ mode: 'new', propertyMap: {} }} types={[same]} />);
+    await screen.findByRole('region', { name: '客户 精确同名对象' });
+    expect(screen.getAllByLabelText('匹配建议 客户')).toHaveLength(1);
+    first.unmount();
+    vi.mocked(precheckObjectTypes).mockRejectedValue(new Error('offline'));
+    render(<ReuseComparison cls={cls} resolution={{ mode: 'new', propertyMap: {} }} types={[same]} />);
+    await screen.findByText(/相似匹配暂时不可用/);
+    expect(screen.getByRole('region', { name: '客户 精确同名对象' })).toHaveTextContent(target.rid);
+  });
+
+  it('精确名称保留内部空白与标点，稳定标识只比较对象 slug', () => {
+    expect(localMatches({ ...cls, id: 'crm', name: 'other' }, [target])).toEqual([]);
+    expect(localMatches({ ...cls, id: 'test', name: 'other' }, [target])).toEqual([]);
+    expect(localMatches({ ...cls, id: 'different', name: 'Customer' }, [{ ...target, display_name: ' Custom-er ' }])).toEqual([]);
+    expect(localMatches({ ...cls, id: 'different', name: 'Customer' }, [{ ...target, display_name: ' CUSTOMER ' }])).toHaveLength(1);
+  });
   it('客户匹配 Customer 后保留人工选择，点击只提出复用与字段对应', async () => {
     vi.mocked(precheckObjectTypes).mockResolvedValue({ candidates: [{ rid: target.rid, display_name: 'Customer', slug: 'customer', similarity: 0.95, suggested_action: 'merge' }] });
     const onResolve = vi.fn();

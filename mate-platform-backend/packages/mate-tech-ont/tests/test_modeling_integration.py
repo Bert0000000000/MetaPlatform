@@ -26,6 +26,96 @@ def require_modeling_test_dsn():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["人员", "组织", "产品"])
+async def test_exact_name_review_uses_real_tenant_catalog_even_when_similarity_misses(
+    app, monkeypatch, name
+):
+    from types import SimpleNamespace
+
+    async def no_similarity(*args):
+        return SimpleNamespace(model_dump=lambda: {"candidates": []})
+
+    monkeypatch.setattr(native, "precheck_object_type", no_similarity)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = await candidate(client)
+        prefix = "/api/v1/ont/v2/modeling/sources/" + source["id"]
+        initial = (
+            await client.post(
+                prefix + "/validate",
+                json={"revision": source["revision"], "preparePublication": True},
+            )
+        ).json()
+        payload = initial["plan"]["types"][0]["payload"]
+        tenant = app.state.test_tenant
+        rids = [f"ont.{tenant}.obj.crm.existing-{i}.v1" for i in range(6)]
+        for rid in rids:
+            response = await client.post(
+                "/api/v1/ont/v2/object-types", json={**payload, "rid": rid, "display_name": name}
+            )
+            assert response.status_code in (200, 201), response.text
+        # The same name in another tenant must not become part of this notice.
+        other_tenant = "other_" + uuid4().hex[:12]
+        other_rid = f"ont.{other_tenant}.obj.crm.other-name.v1"
+        other = {
+            **payload,
+            "rid": other_rid,
+            "display_name": name,
+            "primary_key": [
+                rid.replace(f"ont.{tenant}.", f"ont.{other_tenant}.")
+                for rid in payload["primary_key"]
+            ],
+            "properties": [
+                {**p, "rid": p["rid"].replace(f"ont.{tenant}.", f"ont.{other_tenant}.")}
+                for p in payload["properties"]
+            ],
+        }
+        response = await client.post(
+            "/api/v1/ont/v2/object-types", headers={"x-test-tenant": other_tenant}, json=other
+        )
+        assert response.status_code in (200, 201), response.text
+        source["draft"]["classes"][0]["name"] = name
+        saved = await client.put(
+            prefix,
+            json={"revision": source["revision"], "draft": source["draft"], "resolutions": {}},
+        )
+        assert saved.status_code == 200, saved.text
+        source = saved.json()
+        checked = (
+            await client.post(
+                prefix + "/validate",
+                json={"revision": source["revision"], "preparePublication": True},
+            )
+        ).json()
+        assert not checked["validation"]["canPublish"] and checked["plan"] is None
+        notice = next(
+            i["message"] for i in checked["validation"]["issues"] if "精确同名" in i["message"]
+        )
+        assert all(rid in notice for rid in rids) and other_rid not in notice
+        cid = source["draft"]["classes"][0]["id"]
+        saved = await client.put(
+            prefix,
+            json={
+                "revision": source["revision"],
+                "draft": source["draft"],
+                "resolutions": {cid: {"mode": "new", "propertyMap": {}}},
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        source = saved.json()
+        checked = (
+            await client.post(
+                prefix + "/validate",
+                json={"revision": source["revision"], "preparePublication": True},
+            )
+        ).json()
+        assert checked["validation"]["canPublish"], checked
+        notice = next(w for w in checked["plan"]["warnings"] if "精确同名" in w)
+        assert all(rid in notice for rid in rids) and other_rid not in notice
+
+
+@pytest.mark.asyncio
 async def test_cross_domain_slug_collision_is_row_issue_and_can_be_resolved_by_reuse(app):
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
