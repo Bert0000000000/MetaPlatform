@@ -835,6 +835,15 @@ class InMemoryOntologyRepository(OntologyRepository):
             items = [i for i in items if i.class_rid.rid in allowed]
         return list(items)
 
+    def relationship_ancestors(self, class_rid: str) -> frozenset[str]:
+        from .relationship_inheritance import relationship_ancestors
+
+        def parent_of(rid: str) -> str:
+            ot = self.get_object_type(ClassRef(rid))
+            return ot.parent_class.rid if ot.parent_class else ""
+
+        return relationship_ancestors(class_rid, parent_of)
+
     def create_link_instance(
         self, li: LinkInstance, *, require_endpoints: bool = False
     ) -> LinkInstance:
@@ -849,7 +858,10 @@ class InMemoryOntologyRepository(OntologyRepository):
                 endpoint = self._individuals.get(rid)
                 if endpoint is None:
                     raise KeyError(f"{side} individual not found: {rid}")
-                if endpoint.class_rid != expected:
+                if (
+                    endpoint.class_rid != expected
+                    and expected.rid not in self.relationship_ancestors(endpoint.class_rid.rid)
+                ):
                     raise ValueError(
                         f"{side} class_rid must be {expected}, got {endpoint.class_rid}"
                     )
@@ -927,12 +939,28 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._edit_overlay = {(r, p) for r, p in self._edit_overlay if r != rid}
         return True
 
-    def list_link_instances(self, tenant_id: str | None = None) -> list[LinkInstance]:
+    def list_link_instances(
+        self,
+        tenant_id: str | None = None,
+        *,
+        link_type_rid: str | None = None,
+        src: str | None = None,
+        dst: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[LinkInstance]:
         items = list(self._link_instances.values())
         if tenant_id is not None:
             # F8：与 PG 侧同语义 —— 显式租户过滤
             items = [x for x in items if x.tenant_id == tenant_id]
-        return items
+        if link_type_rid:
+            items = [x for x in items if x.link_type_rid.rid == link_type_rid]
+        if src:
+            items = [x for x in items if x.src == src]
+        if dst:
+            items = [x for x in items if x.dst == dst]
+        items.sort(key=lambda x: x.rid)
+        return items[offset : offset + limit] if limit else items[offset:]
 
     # ───── reasoning ─────
 

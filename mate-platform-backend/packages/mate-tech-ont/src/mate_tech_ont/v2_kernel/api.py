@@ -5281,6 +5281,7 @@ class InspectLinkDTO(BaseModel):
     link_type: str
     direction: str
     peer_class: str
+    inherited_from: str = ""
 
 
 class ClassInspectDTO(BaseModel):
@@ -5378,24 +5379,27 @@ async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     link_types = await _call_scoped(request, "list_link_types")
+    ancestors = await _call_scoped(request, "relationship_ancestors", class_rid)
     links: list[InspectLinkDTO] = []
     for lt in link_types:
         if not all(ref.rid.startswith(prefix) for ref in (lt.rid, lt.src, lt.dst)):
             continue
-        if lt.src.rid == class_rid:
+        if lt.src.rid == class_rid or lt.src.rid in ancestors:
             links.append(
                 InspectLinkDTO(
                     link_type=lt.rid.rid,
                     direction="out",
                     peer_class=lt.dst.rid,
+                    inherited_from=lt.src.rid if lt.src.rid != class_rid else "",
                 )
             )
-        if lt.dst.rid == class_rid:
+        if lt.dst.rid == class_rid or lt.dst.rid in ancestors:
             links.append(
                 InspectLinkDTO(
                     link_type=lt.rid.rid,
                     direction="in",
                     peer_class=lt.src.rid,
+                    inherited_from=lt.dst.rid if lt.dst.rid != class_rid else "",
                 )
             )
     action_types = await _call_scoped(request, "list_action_types")
@@ -5658,7 +5662,9 @@ async def create_link_instance(
             ) from e
         if str(endpoint.tenant_id) != str(tenant_id):
             raise HTTPException(status_code=403, detail=f"{field_name} belongs to another tenant")
-        if endpoint.class_rid != expected_class:
+        if endpoint.class_rid != expected_class and expected_class.rid not in await _call_scoped(
+            request, "relationship_ancestors", endpoint.class_rid.rid
+        ):
             raise HTTPException(
                 status_code=422,
                 detail=f"{field_name} class_rid must be {expected_class}, got {endpoint.class_rid}",

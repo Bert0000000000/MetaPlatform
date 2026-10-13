@@ -3603,7 +3603,12 @@ class PgOntologyRepository(OntologyRepository):
                         # writes require both resources inside this protected transaction.
                         if require_endpoints and actual is None:
                             raise KeyError(f"{side} individual not found: {row[side]}")
-                        if actual is not None and actual != definition[f"{side}_rid"]:
+                        if (
+                            actual is not None
+                            and actual != definition[f"{side}_rid"]
+                            and definition[f"{side}_rid"]
+                            not in self._relationship_ancestors(cur, actual, lock=True)
+                        ):
                             raise ValueError(
                                 f"{side} class_rid must be {definition[f'{side}_rid']}, got {actual}"
                             )
@@ -5811,6 +5816,35 @@ class PgOntologyRepository(OntologyRepository):
                     ColumnPolicy(property_rid=r.get("property_rid", ""), required_markings=markings)
                 )
         return SecurityPolicySet(row_policies=tuple(rows_), column_policies=tuple(cols_))
+
+    def _relationship_ancestors(self, cur, class_rid: str, *, lock: bool = False) -> frozenset[str]:
+        from mate_kernel.ontology.relationship_inheritance import relationship_ancestors
+
+        tenant = class_rid.split(".")[1]
+        if self._current_tenant() not in (None, tenant):
+            return frozenset()
+
+        def parent_of(rid: str) -> str:
+            cur.execute(
+                "SELECT parent_class FROM ont_object_type WHERE rid=%s AND tenant_id=%s AND archived=FALSE"
+                + (" FOR SHARE" if lock else ""),
+                (rid, tenant),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise KeyError(rid)
+            return row["parent_class"] or ""
+
+        return relationship_ancestors(class_rid, parent_of)
+
+    def relationship_ancestors(self, class_rid: str) -> frozenset[str]:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                return self._relationship_ancestors(cur, class_rid)
+        finally:
+            conn.close()
 
     def _ancestors_of_class(self, class_rid: str) -> frozenset[str]:
         """类的全部祖先（subclass 公理闭包，EXP-01 联动）。"""

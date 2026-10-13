@@ -79,7 +79,7 @@ export default function OntologyGraphView() {
     (l) => known.has(l.src) && known.has(l.dst),
   );
   const selected = filtered.find((t) => t.rid === rid) ?? null;
-  const selectedLink = visibleLinks.find((l) => l.rid === linkRid) ?? null;
+  const selectedLink = links.find((l) => l.rid === linkRid) ?? null;
   const unavailableSelection = linkRid && !selectedLink
     ? errors.length ? `关系读取未完成 · ${linkRid}`
       : links.some((l) => l.rid === linkRid) ? `所选关系被筛选隐藏 · ${linkRid}` : `未找到请求的关系 · ${linkRid}`
@@ -210,7 +210,9 @@ export default function OntologyGraphView() {
             ) : view === 'graph' ? (
               <ModelGraphCanvas
                 types={filtered}
+                catalogTypes={types}
                 links={visibleLinks}
+                catalogLinks={links}
                 selectedRid={rid}
                 selectedRelation={linkRid}
                 onRelationSelect={(id) => update('linkRef', id)}
@@ -250,7 +252,7 @@ export default function OntologyGraphView() {
               onSelect={(id) => update('typeRef', id)}
               unavailableSelection={unavailableSelection}
               linksUnavailable={errors.length > 0}
-              links={visibleLinks.filter((l) => l.src === rid || l.dst === rid)}
+              links={links}
               onOpen={() => open(rid)}
               onBinding={() =>
                 navigate(
