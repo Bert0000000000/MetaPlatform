@@ -5,6 +5,7 @@
 // （不存渲染结果，只存查询配置 —— 数据始终最新）。
 
 import type { ChartType } from './ChartSvg';
+import { createUuid } from '@/utils/uuid';
 
 export const ANALYSIS_PINS_KEY = 'ont-analysis-pins';
 
@@ -56,7 +57,7 @@ export function readAnalysisPins(): AnalysisPin[] {
 export function saveAnalysisPin(pin: Omit<AnalysisPin, 'id' | 'created_at'>): AnalysisPin {
   const item: AnalysisPin = {
     ...pin,
-    id: crypto.randomUUID(),
+    id: createUuid(),
     created_at: new Date().toISOString(),
   };
   const pins = readAnalysisPins();

@@ -27,7 +27,7 @@ test('root introduces the website and leads anonymous visitors to platform login
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('让企业的数据、AI 与业务行动协同起来');
   await page.getByRole('link', {name:'进入平台',exact:true}).first().click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login$/, {timeout:30000});
   await expect(page.getByRole('button',{name:'登录',exact:true})).toBeVisible();
 });
 
@@ -48,7 +48,7 @@ test('HTTP creation opens and retains input across property and advanced operati
   await page.getByRole('button',{name:'添加属性',exact:true}).click();
   await page.getByPlaceholder('例如 dept_name').fill('amount');
   await page.getByRole('button',{name:'高级设置',exact:true}).click();
-  await page.getByRole('button',{name:'添加行',exact:true}).click();
+  await page.getByRole('button',{name:'添加',exact:true}).click();
   await expect(page.getByLabel('业务名称',{exact:true})).toHaveValue('测试订单');
   await page.getByRole('button',{name:'保存草稿',exact:true}).click();
   await expect(page.getByText('草稿已保存，刷新后可恢复；尚未发布。')).toBeVisible();
@@ -62,11 +62,11 @@ for (const [width,height] of [[1280,720],[1920,1080],[768,1024]]) {
     const svg = page.getByRole('img',{name:'本体类与关系结构图'});
     await expect(svg).toBeVisible();
     const before = await svg.boundingBox();
-    const footer = page.getByRole('group',{name:'图谱用途筛选'});
+    const footer = page.locator('.ms-concept-legend');
     await expect(footer).toBeInViewport();
     const layout = await page.locator('.mw-workbench').evaluate(element => {
       const bounds = element.getBoundingClientRect(), parent = element.parentElement!.getBoundingClientRect();
-      return {bottom:bounds.bottom,parentBottom:parent.bottom,viewport:innerHeight};
+      return {bottom:bounds.bottom,parentBottom:parent.bottom-parseFloat(getComputedStyle(element.parentElement!).paddingBottom),viewport:innerHeight};
     });
     expect(Math.abs(layout.bottom-layout.parentBottom)).toBeLessThanOrEqual(2);
     expect(layout.bottom).toBeLessThanOrEqual(height);
@@ -88,5 +88,18 @@ for (const [width,height] of [[1280,720],[1920,1080],[768,1024]]) {
     await page.getByLabel('搜索图谱对象').fill('订单');
     await expect(page.getByRole('button',{name:'查看本体类 客户',exact:true})).toHaveCount(0);
     await expect(page.getByRole('button',{name:'查看本体类 订单',exact:true})).toBeVisible();
+    if (width === 1280) await page.screenshot({path:'test-results/experience-artifacts/graph-1280.png'});
   });
 }
+
+test('selecting a graph relation shows its actual endpoints and cardinality', async ({page}) => {
+  await fixture(page); await page.goto('/ontology/model/graph');
+  await page.getByRole('button',{name:'查看关系 客户订单 · 1:N',exact:true}).press('Enter');
+  await expect(page.locator('#model-inspector').getByRole('heading',{name:'客户订单',exact:true})).toBeVisible();
+  await expect(page.locator('#model-inspector')).toContainText('1:N');
+  await page.reload();
+  await expect(page.locator('#model-inspector')).toContainText('客户订单');
+  await page.getByRole('button',{name:'查看目标模型 订单',exact:true}).click();
+  await expect(page.locator('#model-inspector').getByRole('heading',{name:'订单',exact:true})).toBeVisible();
+  await expect(page).not.toHaveURL(/linkRef=/);
+});

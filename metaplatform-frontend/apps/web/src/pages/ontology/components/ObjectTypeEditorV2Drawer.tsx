@@ -14,6 +14,7 @@
 // dev 模式 Semi 交互组件 onClick 被截 noop —— 全部原生元素 + 内联样式。
 
 import { useContext, useEffect, useRef, useState } from 'react';
+import { createUuid } from '@/utils/uuid';
 import { useAuth } from '@mate/shared';
 import { discardEditorInput,editorIdentity,editorInputKey,readEditorInput,retainEditorInput } from '../hooks/editorSession';
 import { UNSAFE_NavigationContext, Link } from 'react-router-dom';
@@ -704,7 +705,7 @@ export default function ObjectTypeEditorV2Drawer({
                 <span>渲染提示（render_hints，key/value）</span>
                 <button
                   type="button"
-                  onClick={() => setRenderHints((rs) => [...rs, { key: crypto.randomUUID(), k: '', v: '' }])}
+                  onClick={() => setRenderHints((rs) => [...rs, { key: createUuid(), k: '', v: '' }])}
                   className="mp-onto-btn mp-onto-btn--xs"
                 >
                   <Plus className="mp-icon-12" />添加

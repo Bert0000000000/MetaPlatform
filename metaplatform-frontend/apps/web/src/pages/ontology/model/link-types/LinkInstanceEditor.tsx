@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createUuid } from '@/utils/uuid';
 import { createLinkInstance, errDetailText, listIndividuals, type KernelIndividual, type KernelLinkType } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
 
@@ -12,7 +13,7 @@ export default function LinkInstanceEditor({ linkType, onSaved, onCancel }: {
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [retry, setRetry] = useState(0);
   const submitting = useRef(false);
   // Retain the operation RID for a network retry, preventing duplicate persisted associations.
-  const [rid] = useState(() => 'ont.' + (getTenantId() || linkType.rid.split('.')[1]) + '.lnk.' + crypto.randomUUID());
+  const [rid] = useState(() => 'ont.' + (getTenantId() || linkType.rid.split('.')[1]) + '.lnk.' + createUuid());
   useEffect(() => {
     let alive = true; setLoading(true); setLoadError('');
     Promise.all([listIndividuals({ classRid: linkType.src }),
