@@ -2,7 +2,8 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AxiosResponse } from 'axios';
+import { AxiosError, type AxiosResponse } from 'axios';
+import { toast } from '@mate/shared';
 import { apiClient } from '@/api/client';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import ModelValidationPage from './ModelValidationPage';
@@ -10,16 +11,18 @@ import ModelValidationPage from './ModelValidationPage';
 vi.hoisted(() => {
   HTMLCanvasElement.prototype.getContext = (() => ({ fillRect() {}, measureText: () => ({ width: 0 }) })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
 });
+vi.mock('@mate/shared', async importOriginal => ({ ...await importOriginal<typeof import('@mate/shared')>(), toast: vi.fn() }));
 
 const a = 'ont.acme.obj.shacl-a.v1', b = 'ont.acme.obj.shacl-b.v1';
 const originalAdapter = apiClient.defaults.adapter;
 const originalURL = URL;
-type Pending = { target: string; resolve: (response: AxiosResponse) => void; reject: (error: Error) => void; response: (data: unknown) => AxiosResponse };
+type Pending = { target: string; resolve: (response: AxiosResponse) => void; reject: (error: Error) => void; response: (data: unknown, status?: number) => AxiosResponse };
 let pending: Pending[], blobs: Blob[], filenames: string[];
 const passed = { conforms: true, violations: [], severity_counts: { Violation: 0, Warning: 0, Info: 0 }, stats: { individuals: 2 } };
 
 beforeEach(() => {
   pending = []; blobs = []; filenames = [];
+  vi.mocked(toast).mockClear();
   const storage = new Map<string, string>();
   vi.stubGlobal('localStorage', { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value), removeItem: (key: string) => storage.delete(key), clear: () => storage.clear() });
   localStorage.setItem('mate_platform_user', JSON.stringify({ tenantId: 'acme' }));
@@ -33,7 +36,7 @@ beforeEach(() => {
   // Replace only external transport. The mounted page, Semi controls and API client stay real.
   apiClient.defaults.adapter = config => {
     const path = config.url ?? '';
-    const response = (data: unknown): AxiosResponse => ({ data, status: 200, statusText: 'OK', headers: {}, config });
+    const response = (data: unknown, status = 200): AxiosResponse => ({ data, status, statusText: 'OK', headers: {}, config });
     if (path.endsWith('/settings')) return Promise.resolve(response({}));
     if (path.endsWith('/lint/anti-patterns')) return Promise.resolve(response([]));
     if (path.endsWith('/object-types')) return Promise.resolve(response([a, b].map((rid, i) => ({ rid, display_name: `类型 ${i === 0 ? 'A' : 'B'}`, primary_key: [], properties: [], interfaces: [] }))));
@@ -89,6 +92,17 @@ describe('SHACL report target and request lifetime (transport controlled)', () =
     const view = mount(); await start(); view.unmount(); mount(); await start();
     await complete(0); expect(screen.queryByText('✓ conforms')).not.toBeInTheDocument(); expect(download()).toBeDisabled();
     await complete(1); expect(screen.getByText('✓ conforms')).toBeVisible();
+  });
+  it.each([500, 403])('suppresses the global toast of a stale HTTP %i failure', async status => {
+    mount(); await start(); await select('类型 B'); await start(); await complete(1);
+    const response = pending[0].response({ detail: '过期请求错误' }, status);
+    await act(async () => pending[0].reject(new AxiosError('过期请求错误', 'ERR_BAD_RESPONSE', response.config, undefined, response)));
+    expect(toast).not.toHaveBeenCalled(); expect(screen.getByText('✓ conforms')).toBeVisible();
+  });
+  it('suppresses a global error after unmount while preserving active request errors', async () => {
+    const view = mount(); await start(); view.unmount(); await fail(0);
+    expect(toast).not.toHaveBeenCalled(); mount(); await start(); await fail(1);
+    expect(toast).toHaveBeenCalledWith('旧请求失败', 'error'); expect(screen.getByText('旧请求失败')).toBeVisible();
   });
 });
 

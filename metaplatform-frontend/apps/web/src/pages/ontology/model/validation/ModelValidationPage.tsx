@@ -62,6 +62,7 @@ export default function ModelValidationPage() {
   const [shaclError, setShaclError] = useState('');
   const [shaclLoading, setShaclLoading] = useState(false);
   const shaclRequest = useRef(0);
+  const shaclAbort = useRef<AbortController | null>(null);
   const shaclTarget = useRef('');
   const mounted = useRef(false);
   const shaclReport = shaclReceipt?.target_class === shaclClass ? shaclReceipt.report : null;
@@ -77,6 +78,8 @@ export default function ModelValidationPage() {
     if (shaclTarget.current === rid) return;
     shaclTarget.current = rid;
     shaclRequest.current++;
+    shaclAbort.current?.abort();
+    shaclAbort.current = null;
     setShaclClass(rid);
     setShaclReceipt(null);
     setShaclError('');
@@ -85,7 +88,7 @@ export default function ModelValidationPage() {
 
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; shaclRequest.current++; };
+    return () => { mounted.current = false; shaclRequest.current++; shaclAbort.current?.abort(); shaclAbort.current = null; };
   }, []);
 
   const load = useCallback(async () => {
@@ -108,17 +111,20 @@ export default function ModelValidationPage() {
     if (!shaclClass || !mounted.current) return;
     const target = shaclClass;
     const request = ++shaclRequest.current;
+    shaclAbort.current?.abort();
+    const controller = new AbortController();
+    shaclAbort.current = controller;
     const isCurrent = () => mounted.current && shaclRequest.current === request && shaclTarget.current === target;
     setShaclLoading(true);
     setShaclError('');
     setShaclReceipt(null);
     try {
-      const report = await validateShacl({ target_class: target });
+      const report = await validateShacl({ target_class: target }, controller.signal);
       if (isCurrent()) setShaclReceipt({ target_class: target, receivedAt: new Date().toISOString(), scope: SHACL_SCOPE, report });
     } catch (e) {
       if (isCurrent()) setShaclError(e instanceof Error ? e.message : String(e));
     } finally {
-      if (isCurrent()) setShaclLoading(false);
+      if (isCurrent()) { shaclAbort.current = null; setShaclLoading(false); }
     }
   }, [shaclClass]);
 
