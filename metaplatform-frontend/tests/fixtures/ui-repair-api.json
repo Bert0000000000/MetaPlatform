@@ -89,9 +89,7 @@
     {
       "rid": "ont.ui-repair.obj.crm.customer.v1",
       "display_name": "客户模型与长名称响应式检查",
-      "primary_key": [
-        "ont.ui-repair.prop.code.v1"
-      ],
+      "primary_key": ["ont.ui-repair.prop.code.v1"],
       "properties": [
         {
           "rid": "ont.ui-repair.prop.code.v1",
