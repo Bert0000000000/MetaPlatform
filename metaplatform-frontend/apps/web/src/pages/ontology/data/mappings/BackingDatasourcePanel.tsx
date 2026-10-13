@@ -21,6 +21,16 @@ import MaterializationSamples, {
 } from './MaterializationSamples';
 import './backing-datasource.css';
 
+function sourceLabel(source: KernelBackingDatasource): string {
+  if (
+    source.name === 'excel-modeling' &&
+    source.dsn_env === 'ONT_MODELING_SOURCE_DSN' &&
+    source.table_name.startsWith('ont_excel_')
+  )
+    return 'Excel 建模导入（系统维护）';
+  return `${source.name} · ${source.table_name}`;
+}
+
 /** Source declarations are edits; samples are independent reads; sync uses saved declarations. */
 export default function BackingDatasourcePanel() {
   const { user } = useAuth();
@@ -368,7 +378,7 @@ function SourceWorkspace({
             {unknownSource && <option value={sourceRef}>{sourceRef}</option>}
             {rows.map((row) => (
               <option key={row.rid} value={row.rid}>
-                {row.name} · {row.table_name}
+                {sourceLabel(row)}
               </option>
             ))}
             <option value="new">新来源</option>

@@ -155,6 +155,26 @@
   font-size: 11px;
   margin-bottom: 7px;
 }
+.mp-mapping-managed-column {
+  min-width: 0;
+}
+.mp-mapping-managed-column strong {
+  margin-bottom: 2px;
+}
+.mp-mapping-managed-column small {
+  color: var(--semi-color-text-2);
+}
+.mp-mapping-managed-column details {
+  margin-top: 7px;
+  color: var(--semi-color-text-2);
+}
+.mp-mapping-managed-column summary {
+  width: fit-content;
+  cursor: pointer;
+}
+.mp-mapping-managed-column code {
+  margin-top: 5px;
+}
 .mp-mapping-unknown {
   font-size: 12px;
   overflow-wrap: anywhere;

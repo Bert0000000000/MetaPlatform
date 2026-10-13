@@ -21,6 +21,26 @@ beforeEach(() => {
 });
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});
 
+it.each([false, true])('精确匹配建议需要显式采用，缺少属性=%s 时使用对应操作，取消不保存', async missing => {
+  const code = {id:'code',name:'客户编码',dataType:'text'};
+  const current = {...source,resolutions:{customer:{mode:'new',propertyMap:{}}},draft:{classes:[{
+    id:'customer',name:'客户',accepted:true,identity:['code'],properties:missing ? [code,{id:'level',name:'客户等级',dataType:'text'}] : [code],
+  }]}} as unknown as ModelingSource;
+  const native = {...target,display_name:'客户',primary_key:['ont.test.prop.customer-code.v1'],properties:[{
+    rid:'ont.test.prop.customer-code.v1',title:'客户编码',type_id:'string',format:'string',nullable:false,primary_key:true,
+  }]} as KernelObjectType;
+  render(<PublicationReview source={current} types={[native]} disabled={false} onPrepare={async () => current} onChanged={vi.fn()} onPublished={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button',{name:'发布本体'}));
+  expect(await screen.findByRole('combobox',{name:'客户 发布操作'})).toHaveValue('new');
+  fireEvent.click(screen.getByRole('button',{name:'客户 采用匹配建议'}));
+  expect(screen.getByRole('combobox',{name:'客户 发布操作'})).toHaveValue(missing ? 'extend' : 'reuse');
+  expect(screen.getByRole('combobox',{name:'客户 已有对象'})).toHaveValue(rid);
+  if (missing) expect(screen.getByText(/新增 1 个属性：客户等级/)).toBeInTheDocument();
+  expect(saveModelingSource).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:'关闭'}));
+  expect(runModelingOperation).not.toHaveBeenCalled();
+});
+
 it('同名新建只阻止发布，在窗口改为复用后保留审批并显式发布', async () => {
   vi.mocked(runModelingOperation).mockResolvedValueOnce({...source,revision:3,validation:{canPublish:false,issues:[{item:'customer',message:'已有客户不能重复新建',severity:'error'}]}} as ModelingSource);
   const changed = vi.fn(), published = vi.fn();
@@ -188,4 +208,58 @@ it('首项 inFlight 重开时不补建议字段或隐式新建，校验仍发送
   expect(screen.getByRole('combobox', {name:'供应商 发布操作'})).toBeDisabled();
   expect(prepare).toHaveBeenCalledTimes(2);
   expect(published).not.toHaveBeenCalled();
+});
+
+it('部分发布后重开保留原方案，只继续剩余资源', async () => {
+  const partial = {...checked, plan:{...checked.plan,types:[{rid}],relationships:[{rid:'link'}]}, publication:{
+    status:'failed',configHash:'hash',completed:[rid],results:[],error:'关系发布暂时失败',
+  }} as unknown as ModelingSource;
+  vi.mocked(runModelingOperation).mockResolvedValueOnce({...partial,publication:{...partial.publication!,status:'succeeded',completed:[rid,'link'],error:undefined}});
+  const published=vi.fn();
+  render(<PublicationReview source={partial} types={[target]} disabled={false} onPrepare={async () => partial} onChanged={vi.fn()} onPublished={published} />);
+  fireEvent.click(screen.getByRole('button',{name:'发布本体'}));
+  expect(await screen.findByText('关系发布暂时失败')).toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'校验发布方案'})).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'继续发布剩余项'}));
+  await waitFor(()=>expect(published).toHaveBeenCalledTimes(1));
+  expect(runModelingOperation).toHaveBeenCalledWith(partial,'publish',{configHash:'hash',acknowledgeWarnings:true});
+});
+
+it('资源均已处理但核验失败时显示具体对象并允许安全重试', async () => {
+  const failed = {...checked,plan:{...checked.plan,types:[{rid}],relationships:[]},publication:{
+    status:'failed',configHash:'hash',completed:[rid],results:[],error:'发布后核验未通过',acceptance:{
+      status:'drifted',sourceRevision:3,checkedAt:'now',counts:{types:1,relationships:0,drifted:1},limitations:[],
+      types:[{classId:'customer',name:'客户',rid,status:'changed'}],relationships:[],
+    },
+  }} as unknown as ModelingSource;
+  vi.mocked(runModelingOperation).mockResolvedValueOnce({...failed,publication:{...failed.publication!,status:'succeeded',acceptance:{...failed.publication!.acceptance!,status:'passed',counts:{types:1,relationships:0,drifted:0},types:[{classId:'customer',name:'客户',rid,status:'matched'}]}}});
+  const published=vi.fn();
+  render(<PublicationReview source={failed} types={[target]} disabled={false} onPrepare={async () => failed} onChanged={vi.fn()} onPublished={published} />);
+  fireEvent.click(screen.getByRole('button',{name:'发布本体'}));
+  expect(await screen.findByText(/客户（已变化）/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'重新核验发布结果'}));
+  await waitFor(()=>expect(published).toHaveBeenCalledTimes(1));
+  expect(runModelingOperation).toHaveBeenCalledWith(failed,'publish',{configHash:'hash',acknowledgeWarnings:true});
+});
+
+
+it.each([false,true])('原方案预检查阻断后可以重新校验，但已开始发布的决定始终锁定（首项inFlight=%s）', async first => {
+  const fixed = {...checked,revision:7,resolutions:{customer:{mode:'reuse',targetRid:rid,propertyMap:{}}},plan:{...checked.plan!,types:[{classId:'customer',name:'客户',rid,mode:'reuse',propertyMap:{}}],relationships:[]},validation:{canPublish:false,errors:1,warnings:0,configHash:'hash',counts:{nodes:0,edges:0,classes:1},issues:[{item:'customer',severity:'error',message:'原生基线预检查未通过'}]},publication:{status:'failed',configHash:'hash',completed:first ? [] : [rid],inFlight:first ? rid : null,results:[],error:'原生基线预检查未通过'}} as unknown as ModelingSource;
+  const prepared = {...fixed,revision:8,validation:{...fixed.validation!,canPublish:true,errors:0,issues:[]}} as ModelingSource;
+  const completed = {...prepared,publication:{...prepared.publication!,status:'succeeded',inFlight:null,completed:[rid]}} as ModelingSource;
+  vi.mocked(runModelingOperation).mockResolvedValueOnce(prepared).mockResolvedValueOnce(completed);
+  const published = vi.fn();
+  render(<PublicationReview source={fixed} types={[target]} disabled={false} onPrepare={async () => fixed} onChanged={vi.fn()} onPublished={published} />);
+  fireEvent.click(screen.getByRole('button',{name:'发布本体'}));
+  expect(await screen.findByRole('combobox',{name:'客户 发布操作'})).toBeDisabled();
+  expect(screen.getByRole('combobox',{name:'客户 已有对象'})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button',{name:'校验发布方案'}));
+  await screen.findByText('发布方案校验通过，请核对操作及属性对应后确认发布。');
+  expect(screen.getByRole('combobox',{name:'客户 发布操作'})).toBeDisabled();
+  expect(saveModelingSource).not.toHaveBeenCalled();
+  const button = screen.getByRole('button',{name:first ? '继续发布剩余项' : '重新核验发布结果'});
+  fireEvent.click(button);
+  await waitFor(()=>expect(published).toHaveBeenCalledExactlyOnceWith(completed));
+  expect(runModelingOperation).toHaveBeenNthCalledWith(1,expect.objectContaining({revision:7,resolutions:fixed.resolutions,plan:fixed.plan,publication:fixed.publication}),'validate',{preparePublication:true});
+  expect(runModelingOperation).toHaveBeenNthCalledWith(2,prepared,'publish',{configHash:'hash',acknowledgeWarnings:true});
 });

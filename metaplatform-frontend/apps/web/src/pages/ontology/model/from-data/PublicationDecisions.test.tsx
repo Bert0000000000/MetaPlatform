@@ -42,3 +42,12 @@ it('首个类型 inFlight 且未记完成时仍锁定发布操作、目标和字
   expect(resolve).not.toHaveBeenCalled();
   expect(edit).not.toHaveBeenCalled();
 });
+
+
+it('发布确认只显示本次纳入的属性，不把暂缓属性列为新增或必填对应', () => {
+  const current = {...source,resolutions:{customer:{mode:'extend',targetRid:rid,propertyMap:{code:prop}}},draft:{...source.draft!,classes:[{...source.draft!.classes[0],identity:['code'],properties:[...source.draft!.classes[0].properties,{id:'level',name:'客户等级',dataType:'text',included:false}]}]}} as ModelingSource;
+  render(<PublicationDecisions source={current} types={[target]} onResolve={vi.fn()} />);
+  expect(screen.getByText('新增 0 个属性：无。已有实例保留。')).toBeInTheDocument();
+  expect(screen.queryByRole('combobox',{name:'客户 发布属性 客户等级'})).not.toBeInTheDocument();
+  expect(screen.getByRole('combobox',{name:'客户 发布属性 客户编码'})).toHaveValue(prop);
+});

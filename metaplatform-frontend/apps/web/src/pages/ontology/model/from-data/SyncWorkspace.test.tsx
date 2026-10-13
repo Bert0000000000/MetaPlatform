@@ -16,9 +16,9 @@ function fixture(): ModelingSource {
     publication: { status: 'succeeded', configHash: 'hash', completed: [], results: [] }, job: null, review: null, preview: null, validation: null, sync: null,
     syncCheck: { sourceRevision: 3, checkedAt: '2026-10-11T06:00:00Z', canSync: true, baselineError: null, preview: { nodes: 2, edges: 0 }, report: { scope: 'data', errors: 0, warnings: 0, canSync: true, counts: { classes: 1, nodes: 2, edges: 0 }, configHash: 'data', issues: [] } } };
 }
-function show(source: ModelingSource, dirty = false) {
+function show(source: ModelingSource, dirty = false, published = true) {
   const actions = { onCheck: vi.fn(), onSync: vi.fn(), onLocate: vi.fn(), onRefresh: vi.fn(), onBack: vi.fn() };
-  render(<MemoryRouter><SyncWorkspace source={source} dirty={dirty} busy={false} published {...actions} /></MemoryRouter>);
+  render(<MemoryRouter><SyncWorkspace source={source} dirty={dirty} busy={false} published={published} {...actions} /></MemoryRouter>);
   return actions;
 }
 it('查看与检查不自动同步，用户确认范围后才允许提交', () => {
@@ -35,9 +35,10 @@ it('查看与检查不自动同步，用户确认范围后才允许提交', () =
 it('过期检查不能授权同步或展示预计数量', () => {
   const source = fixture(); source.revision++;
   show(source);
-  expect(screen.getByText('请先检查本次数据。')).toBeVisible();
+  expect(screen.getAllByText('请先检查本次数据。')).not.toHaveLength(0);
   expect(screen.queryByText(/预计生成或更新/)).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '开始同步' })).toBeDisabled();
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '检查本次数据' })).toBeEnabled();
 });
 it('归并同对象冲突并定位审核详情，不显示虚假零预览', () => {
   const source = fixture(); source.syncCheck!.canSync = false; source.syncCheck!.preview = null;
@@ -47,9 +48,18 @@ it('归并同对象冲突并定位审核详情，不显示虚假零预览', () =
   ] };
   const actions = show(source);
   expect(screen.getAllByText('同身份属性冲突')).toHaveLength(1);
-  fireEvent.click(screen.getByRole('button', { name: '去核对' }));
+  fireEvent.click(screen.getByRole('button', { name: '去处理' }));
   expect(actions.onLocate).toHaveBeenCalledWith('fd-class-item');
   expect(screen.queryByText(/预计生成或更新/)).not.toBeInTheDocument();
+});
+it('普通警告明确标记为无需处理', () => {
+  const source=fixture();
+  source.syncCheck!.report={...source.syncCheck!.report,warnings:1,issueGroups:[
+    {severity:'warning',item:'map',message:'来源为空表，保留类定义但不生成实例',count:1},
+  ]};
+  show(source);
+  expect(screen.getByText('无需处理')).toBeVisible();
+  expect(screen.queryByRole('button',{name:'去处理'})).not.toBeInTheDocument();
 });
 it('中途失败保留实际结果和按类型查看入口', () => {
   const source = fixture(); source.sync = { status: 'failed', error: '关系写入失败', types: [{ classId: 'item', rid: 'ont.test.obj.item.v1', sourceRef: 'ont.test.bds.item-excel-modeling', total_synced: 2, total_failed: 0 }], links: 1 };
@@ -64,8 +74,9 @@ it('中途失败保留实际结果和按类型查看入口', () => {
 it('定义漂移禁止确认与执行', () => {
   const source = fixture(); source.syncCheck!.baselineError = '原生定义已变化'; source.syncCheck!.canSync = false;
   show(source);
-  expect(screen.getByText('原生定义已变化')).toBeVisible();
-  expect(screen.getByRole('checkbox')).toBeDisabled();
+  expect(screen.getAllByText('原生定义已变化')).not.toHaveLength(0);
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'重新检查数据'})).toBeEnabled();
 });
 
 it('问题暂缓后必须明确确认，提交当前检查哈希才能同步合格数据', () => {
@@ -74,8 +85,19 @@ it('问题暂缓后必须明确确认，提交当前检查哈希才能同步合�
   source.syncCheck!.partial={canSync:true,checkHash:'current-check',preview:{nodes:1,edges:0},report:source.syncCheck!.report,
     quarantine:{rows:3,entities:1,relationships:1,groups:[{kind:'entity',item:'item',name:'物料',reason:'同身份冲突',count:3,examples:[{sheet:'物料',row:2}]}]}};
   const actions=show(source);
+  expect(screen.getByText(/无需逐条核对/)).toBeVisible();
   expect(screen.getByRole('button',{name:'同步合格数据'})).toBeDisabled();
-  fireEvent.click(screen.getByRole('checkbox',{name:'我已核对暂缓范围，确认仅写入合格实例及关系'}));
+  fireEvent.click(screen.getByRole('checkbox',{name:'我确认自动暂缓问题数据，仅同步合格实例及关系'}));
   fireEvent.click(screen.getByRole('button',{name:'同步合格数据'}));
   expect(actions.onSync).toHaveBeenCalledWith({allowPartial:true,checkHash:'current-check'});
+});
+
+it('同步条件未满足时在执行区说明原因并提供唯一下一步', () => {
+  const source=fixture(); source.publication=null; source.syncCheck=null;
+  const actions=show(source, false, false);
+  expect(screen.getByText('当前还不能同步实例')).toBeVisible();
+  expect(screen.getByText('当前还不能同步实例').parentElement).toHaveTextContent('请先完成当前本体发布');
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'去发布本体'}));
+  expect(actions.onBack).toHaveBeenCalledOnce();
 });

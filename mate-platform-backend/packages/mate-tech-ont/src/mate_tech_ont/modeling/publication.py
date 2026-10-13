@@ -61,6 +61,19 @@ async def datasource_baseline(request, rid):
     )
 
 
+def link_structure_matches(live, expected):
+    """Compare fields that affect native link creation and data synchronization."""
+    structural_fields = (
+        "rid",
+        "src",
+        "dst",
+        "cardinality",
+        "directionality",
+        "link_properties",
+    )
+    return bool(live) and all(live.get(field) == expected.get(field) for field in structural_fields)
+
+
 def hierarchy_order(classes):
     """Validate explicit candidate inheritance and return parents before descendants."""
     by_id = {cls["id"]: cls for cls in classes}
@@ -224,6 +237,8 @@ async def prepare(request, source):
         if mode != "new" and not existing:
             raise ValueError(f"{cls['name']} 选择的原生类型不存在")
         prop_map = dict(resolution.get("propertyMap") or {})
+        selected_properties = {prop["id"] for prop in cls["properties"]}
+        prop_map = {key: value for key, value in prop_map.items() if key in selected_properties}
         parent_id = cls.get("parentClassId") or ""
         inherited_props = {}
         if parent_id:
@@ -388,10 +403,10 @@ async def prepare(request, source):
         }
         body = native.LinkTypeDTO(**body).model_dump()
         existing_rel = await current_link(request, rid)
-        if existing_rel and any(
-            existing_rel[k] != body[k] for k in ("src", "dst", "cardinality", "directionality")
-        ):
+        if existing_rel and not link_structure_matches(existing_rel, body):
             raise ValueError("已有关系定义冲突，需在原生关系编辑器审核")
+        if existing_rel:
+            body = existing_rel  # Reuse retains native names and human-authored descriptions.
         relationships.append(
             {
                 "relationId": rel["id"],
@@ -531,12 +546,16 @@ async def _publish_locked(request, source, store):
             store.update(source["id"], revision, {"publication": state}, increment=False)
         for item in plan["relationships"]:
             live_link = await current_link(request, item["rid"])
-            if item["rid"] in state["completed"] and live_link != item["payload"]:
-                raise ValueError("已发布关系被修改，请重新预检")
-            if item["rid"] not in state["completed"]:
-                if live_link != item["baseline"] and live_link != item["payload"]:
+            if item["rid"] in state["completed"]:
+                if not link_structure_matches(live_link, item["payload"]):
+                    raise ValueError("已发布关系被修改，请重新预检")
+            else:
+                if item["baseline"] is not None:
+                    if not link_structure_matches(live_link, item["payload"]):
+                        raise ValueError("原生关系已变化，请重新预检")
+                elif live_link is not None and live_link != item["payload"]:
                     raise ValueError("原生关系已变化，请重新预检")
-                if live_link != item["payload"]:
+                if live_link is None:
                     await native.upsert_link_type(
                         native.LinkTypeDTO(**item["payload"]),
                         request,
@@ -550,7 +569,19 @@ async def _publish_locked(request, source, store):
         state["status"] = "succeeded"
         state["acceptance"] = await verify_plan(request, {**source, "publication": state})
         if state["acceptance"]["status"] != "passed":
-            raise ValueError("发布后原生定义与审核方案不一致，请查看核验结果")
+            mismatches = [
+                f"对象 {item['name']}（{'缺失' if item['status'] == 'missing' else '已变化'}）"
+                for item in state["acceptance"]["types"]
+                if item["status"] != "matched"
+            ] + [
+                f"关系 {item['rid']}（{'缺失' if item['status'] == 'missing' else '已变化'}）"
+                for item in state["acceptance"]["relationships"]
+                if item["status"] != "matched"
+            ]
+            detail = "、".join(mismatches[:8])
+            if len(mismatches) > 8:
+                detail += f"等 {len(mismatches)} 项"
+            raise ValueError(f"发布后核验未通过：{detail or '原生定义与审核方案不一致'}")
     except Exception as exc:
         state.update(status="failed", error=str(getattr(exc, "detail", exc)))
     return store.update(source["id"], revision, {"publication": state}, increment=False)

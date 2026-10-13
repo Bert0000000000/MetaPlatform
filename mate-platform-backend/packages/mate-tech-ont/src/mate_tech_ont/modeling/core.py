@@ -34,6 +34,8 @@ class Strict(BaseModel):
 
 
 class Property(Strict):
+    included: StrictBool = True
+    deferReason: str = Field(default="", max_length=1000)
     id: Slug
     name: Name
     dataType: Literal["text", "number", "date"]
@@ -789,19 +791,17 @@ def validate_ontology(value, require_review=True):
         report.config_hash = digest(model.model_dump())
         from .scope import publication_scope
 
-        model = model.model_copy(
-            update={
-                "classes": [c for c in model.classes if c.included],
-                "relationships": [r for r in model.relationships if r.included],
-                "semantics": ModelingSemantics.model_validate(
-                    publication_scope(model.model_dump()).get("semantics", {})
-                ),
-            }
-        )
-        if not model.classes:
+        scoped = publication_scope(model.model_dump())
+        if not scoped["classes"]:
             report.issue("error", "draft", "请至少选择一个对象类型用于本次发布")
-        report.class_counts = {c.id: 0 for c in model.classes}
-        _check_model(model, {}, {}, report, require_review, model_only=True)
+        else:
+            try:
+                model = Draft.model_validate(scoped)
+            except (ValidationError, ValueError, TypeError):
+                report.issue("error", "draft", "发布范围的属性或依赖无效，请保留有效身份和标签属性")
+            else:
+                report.class_counts = {c.id: 0 for c in model.classes}
+                _check_model(model, {}, {}, report, require_review, model_only=True)
     result = report.finish()[0]
     result["scope"] = "ontology"
     if not result["errors"]:
@@ -829,7 +829,11 @@ def _evaluate(value, rows, require_review, quarantine=None):
     if not scoped["classes"]:
         report.issue("error", "draft", "请至少选择一个对象类型用于本次发布")
         return report.finish()
-    model = Draft.model_validate(scoped)
+    try:
+        model = Draft.model_validate(scoped)
+    except (ValidationError, ValueError, TypeError):
+        report.issue("error", "draft", "发布范围的属性或依赖无效，请保留有效身份和标签属性")
+        return report.finish()
     report.class_counts = {c.id: 0 for c in model.classes}
     try:
         rows, headers = _input_rows(rows)

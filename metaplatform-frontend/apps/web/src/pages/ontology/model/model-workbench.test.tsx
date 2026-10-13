@@ -129,6 +129,8 @@ beforeEach(() => {
       cardinality: 'N:1',
       directionality: 'directed',
       link_properties: [],
+      src_display_name: '归属于',
+      dst_display_name: '包含',
     },
   ]);
   vi.mocked(api.listActionTypes).mockResolvedValue([]);
@@ -175,6 +177,31 @@ function mount(path = '/ontology/model/graph') {
   render(<RouterProvider router={router} />);
   return router;
 }
+it('shows parent and child concepts as a hierarchy and keeps filtered children visible', async () => {
+  const party: api.KernelObjectType = {
+    ...customer,
+    rid: customer.parent_class!,
+    display_name: '业务主体',
+    parent_class: undefined,
+  };
+  vi.mocked(api.listObjectTypes).mockResolvedValue([customer, party]);
+  const router = mount();
+
+  expect(await screen.findByRole('button', { name: '选择资源 业务主体' }))
+    .toHaveAttribute('data-depth', '0');
+  expect(screen.getByRole('button', { name: '选择资源 客户' }))
+    .toHaveAttribute('data-depth', '1');
+  expect(screen.getByRole('button', { name: '选择资源 客户' }))
+    .toHaveStyle({ paddingInlineStart: '24px' });
+  expect(screen.getByRole('button', { name: '选择资源 客户' }))
+    .toHaveTextContent('客户v1');
+  expect(screen.queryByText('是一种')).toBeNull();
+
+  await router.navigate('/ontology/model/graph?q=客户');
+  await waitFor(() => expect(screen.getByRole('button', { name: '选择资源 客户' }))
+    .toHaveAttribute('data-depth', '0'));
+  expect(screen.queryByRole('button', { name: '选择资源 业务主体' })).toBeNull();
+});
 it('selects real card DTO, preserves RID when opening complete editor detail', async () => {
   const router = mount();
   fireEvent.click(await screen.findByRole('button', { name: '查看本体类 客户' }));
@@ -186,6 +213,37 @@ it('selects real card DTO, preserves RID when opening complete editor detail', a
   expect(router.state.location.pathname).toContain(
     encodeURIComponent(customer.rid),
   );
+});
+it('clears the selected model when the blank canvas is clicked', async () => {
+  vi.stubGlobal('PointerEvent', class extends MouseEvent {
+    readonly pointerId: number;
+    readonly isPrimary: boolean;
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 0;
+      this.isPrimary = init.isPrimary ?? false;
+    }
+  });
+  const router = mount(`/ontology/model/graph?typeRef=${encodeURIComponent(customer.rid)}`);
+  const canvas = await screen.findByRole('img', { name: '本体类与关系结构图' });
+  const captured = new Set<number>();
+  canvas.setPointerCapture = vi.fn((id: number) => { captured.add(id); });
+  canvas.hasPointerCapture = vi.fn((id: number) => captured.has(id));
+  canvas.releasePointerCapture = vi.fn((id: number) => { captured.delete(id); });
+  expect(screen.getByRole('button', { name: '查看本体类 客户' })).toHaveClass('is-selected');
+  fireEvent.pointerDown(canvas, { button: 0, pointerId: 1, isPrimary: true, clientX: 20, clientY: 20 });
+  fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
+  expect(canvas.setPointerCapture).toHaveBeenCalledExactlyOnceWith(1);
+  expect(canvas.releasePointerCapture).toHaveBeenCalledExactlyOnceWith(1);
+  await waitFor(() => expect(router.state.location.search).not.toContain('typeRef='));
+  expect(screen.getByRole('complementary', { name: '资源属性' })).toHaveTextContent('选择模型查看属性与关系');
+});
+it('shows the business relationship name together with its cardinality', async () => {
+  mount();
+  await screen.findByRole('button', { name: '查看本体类 客户' });
+  fireEvent.click(screen.getByRole('checkbox', { name: '关系名称与基数' }));
+  expect(screen.getByRole('button', { name: '查看关系 归属于 · N:1' })).toBeVisible();
+  expect(screen.queryByText(/customer-party/)).toBeNull();
 });
 it('edits complete metadata, stages true WIP and keeps failed input', async () => {
   mount(

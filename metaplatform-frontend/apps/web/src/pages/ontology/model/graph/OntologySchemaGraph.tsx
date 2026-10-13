@@ -9,10 +9,16 @@ function classPurpose(name: string) {
   return '其他业务对象';
 }
 interface ModelClass { id: string; name: string; description: string; properties: unknown[] }
-interface Relationship { id: string; name: string; source: string; target: string }
+interface Relationship { id: string; name: string; cardinality?: string; source: string; target: string }
 
 const purposes = ['基础对象', '业务单据与计划', '明细与记录', '其他业务对象'];
 const category = (name: string) => purposes.indexOf(classPurpose(name));
+const relationshipLabel = (relationship: Relationship, compact = false) => {
+  const name = compact && relationship.name.length > 12
+    ? `${relationship.name.slice(0, 11)}…`
+    : relationship.name;
+  return relationship.cardinality ? `${name} · ${relationship.cardinality}` : name;
+};
 
 function readPositions(key: string): SchemaPositions {
   try {
@@ -80,7 +86,10 @@ export default function OntologySchemaGraph({ classes, relationships, selected, 
     drag.current = null;
     setDragging(''); setMoving(false);
     if (svg.current?.hasPointerCapture(pointerId)) svg.current.releasePointerCapture(pointerId);
-    if (!current?.id) return;
+    if (!current?.id) {
+      if (current && !current.moved && !canceled) onSelect('');
+      return;
+    }
     if (canceled) { setManualLayout({ key: storageKey, positions: current.initialPositions }); return; }
     if (current.moved) {
       try { localStorage.setItem(storageKey, JSON.stringify(current.positions)); } catch { /* Layout remains available for this view if storage is full. */ }
@@ -126,7 +135,8 @@ export default function OntologySchemaGraph({ classes, relationships, selected, 
           {diagram.edges.map(r => {
             const edge = positioned!.edge(r.source, r.target, r.id), points = edge.points;
             const active = related.relation ? r.id === related.relation : r.source === related.active || r.target === related.active;
-            return <g key={r.id} className={`ms-schema-edge${selectedRelation === r.id ? ' is-selected' : ''}${active ? ' is-connected' : related.ids.size ? ' is-dimmed' : ''}`} role="button" tabIndex={0} aria-label={`查看关系 ${r.name}`} onPointerDown={e => e.stopPropagation()} onClick={() => onRelationSelect?.(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRelationSelect?.(r.id); } }}><title>{r.name}</title><rect x={edge.x - 10} y={edge.y - 10} width="20" height="20" fill="transparent" /><polyline className="ms-schema-edge-hit" points={points.map((p: { x: number; y: number }) => `${p.x},${p.y}`).join(' ')} /><polyline points={points.map((p: { x: number; y: number }) => `${p.x},${p.y}`).join(' ')} markerEnd={`url(#${marker}${active || selectedRelation === r.id ? '-active' : ''})`} />{(labels || selectedRelation === r.id) && camera.scale > .45 && <text x={edge.x} y={edge.y - 8} textAnchor="middle">{r.name.length > 16 ? `${r.name.slice(0, 15)}…` : r.name}</text>}</g>;
+            const label = relationshipLabel(r);
+            return <g key={r.id} className={`ms-schema-edge${selectedRelation === r.id ? ' is-selected' : ''}${active ? ' is-connected' : related.ids.size ? ' is-dimmed' : ''}`} role="button" tabIndex={0} aria-label={`查看关系 ${label}`} onPointerDown={e => e.stopPropagation()} onClick={() => onRelationSelect?.(r.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRelationSelect?.(r.id); } }}><title>{label}</title><rect x={edge.x - 10} y={edge.y - 10} width="20" height="20" fill="transparent" /><polyline className="ms-schema-edge-hit" points={points.map((p: { x: number; y: number }) => `${p.x},${p.y}`).join(' ')} /><polyline points={points.map((p: { x: number; y: number }) => `${p.x},${p.y}`).join(' ')} markerEnd={`url(#${marker}${active || selectedRelation === r.id ? '-active' : ''})`} />{(labels || selectedRelation === r.id) && camera.scale > .45 && <text x={edge.x} y={edge.y - 8} textAnchor="middle">{relationshipLabel(r, true)}</text>}</g>;
           })}
           {diagram.nodes.map(c => {
             const node = positioned!.node(c.id);
@@ -142,7 +152,7 @@ export default function OntologySchemaGraph({ classes, relationships, selected, 
       </svg>
       {!diagram.nodes.length && <div className="ms-concept-empty">没有匹配的对象</div>}
     </div>
-    <div className="ms-concept-footer"><div className="ms-concept-legend" aria-label="图谱用途筛选">{purposes.filter(p => classes.some(c => classPurpose(c.name) === p)).map(p => <label key={p} title="用途分组建议"><input type="checkbox" checked={categories.includes(p)} onChange={e => setCategories(v => e.target.checked ? [...v, p] : v.filter(k => k !== p))} /><i className={`ms-concept-kind-${purposes.indexOf(p)}`} />{p}</label>)}</div><label className="ms-concept-label-toggle"><input type="checkbox" checked={labels} onChange={e => setLabels(e.target.checked)} />关系名称</label></div>
-    {!!selectedRelation && <div className="ms-concept-selected-relation">{relationships.filter(r => r.id === selectedRelation).map(r => <button key={r.id} onClick={() => onRelationSelect?.(r.id)}><strong>{r.name}</strong><span>{classes.find(c => c.id === r.source)?.name} → {classes.find(c => c.id === r.target)?.name}</span></button>)}</div>}
+    <div className="ms-concept-footer"><div className="ms-concept-legend" aria-label="图谱用途筛选">{purposes.filter(p => classes.some(c => classPurpose(c.name) === p)).map(p => <label key={p} title="用途分组建议"><input type="checkbox" checked={categories.includes(p)} onChange={e => setCategories(v => e.target.checked ? [...v, p] : v.filter(k => k !== p))} /><i className={`ms-concept-kind-${purposes.indexOf(p)}`} />{p}</label>)}</div><label className="ms-concept-label-toggle"><input type="checkbox" checked={labels} onChange={e => setLabels(e.target.checked)} />关系名称与基数</label></div>
+    {!!selectedRelation && <div className="ms-concept-selected-relation">{relationships.filter(r => r.id === selectedRelation).map(r => <button key={r.id} onClick={() => onRelationSelect?.(r.id)}><strong>{relationshipLabel(r)}</strong><span>{classes.find(c => c.id === r.source)?.name} → {classes.find(c => c.id === r.target)?.name}</span></button>)}</div>}
   </div>;
 }

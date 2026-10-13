@@ -156,9 +156,50 @@ dl.fd-findings > div { display: grid; grid-template-columns: 110px minmax(0, 1fr
 @media (max-width: 520px) { .fd-batch-name-col { width: 120px; } .fd-batch-table-scroll { max-height: max(120px, calc(100dvh - 320px)); } }
 
 .fd-sync-details { max-width: 500px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.fd-sync-gate, .fd-sync-ready { padding: 14px 16px; margin: 16px 0; border: 1px solid var(--semi-color-border); border-radius: var(--semi-border-radius-small); background: var(--semi-color-fill-0); }
+.fd-sync-gate { border-left: 3px solid var(--semi-color-warning); }
+.fd-sync-ready { border-left: 3px solid var(--semi-color-success); }
+.fd-sync-gate strong, .fd-sync-ready strong { display: block; font-size: 13px; }
+.fd-sync-gate p, .fd-sync-ready p { margin: 4px 0 10px; color: var(--semi-color-text-1); }
+.fd-sync-ready p { margin-bottom: 0; }
+.fd-issue-resolution { display: inline-flex; align-items: center; min-height: 24px; font-size: 12px; white-space: nowrap; }
+.fd-issue-resolution.is-info { color: var(--semi-color-text-2); }
+.fd-issue-resolution.is-deferred { color: var(--semi-color-success); font-weight: 500; }
 .fd-relationship-repair { padding: 16px; margin: 16px 0; border: 1px solid var(--semi-color-border); border-radius: 8px; background: var(--semi-color-fill-0); }
 .fd-relationship-repair p { margin: 8px 0; line-height: 1.65; overflow-wrap: anywhere; }
 
 .fd-publication-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; }
 .fd-publication-feedback { flex: 1 1 320px; min-width: 0; max-height: 96px; overflow: auto; overflow-wrap: anywhere; font-size: 13px; line-height: 1.6; color: var(--semi-color-text-1); }
 .fd-publication-footer .fd-inline { flex-shrink: 0; margin-left: auto; }
+
+.fd-publication-summary { display: flex; gap: 24px; padding: 12px 16px; margin-bottom: 16px; background: var(--semi-color-fill-0); border-radius: var(--semi-border-radius-small); font-weight: 500; }
+
+/* The modal is rendered in a portal, outside .fd-page. */
+.fd-publication-modal .semi-modal-body { padding-top: 4px; }
+.fd-publication-intro { margin: 0 0 16px; color: var(--semi-color-text-2); font-size: 13px; line-height: 1.6; }
+.fd-publication-decisions .fd-publication-summary { gap: 0; padding: 12px 0; margin-bottom: 16px; font-size: 13px; }
+.fd-publication-summary > span { padding: 0 20px; }
+.fd-publication-summary > span + span { border-left: 1px solid var(--semi-color-border); }
+.fd-publication-decisions .fd-table-scroll { margin: 0; border: 1px solid var(--semi-color-border); border-radius: 8px; }
+.fd-publication-decisions .fd-table { table-layout: fixed; }
+.fd-publication-decisions .fd-table th { padding: 10px 14px; white-space: nowrap; }
+.fd-publication-decisions .fd-table td { padding: 14px; vertical-align: top; }
+.fd-publication-decisions .fd-table tr:last-child td { border-bottom: 0; }
+.fd-publication-decisions .fd-table tbody tr:hover { background: var(--semi-color-fill-0); }
+.fd-publication-decisions .fd-table td > strong { display: block; padding-top: 7px; }
+.fd-publication-decisions select { box-sizing: border-box; width: 100%; min-width: 0; height: 34px; padding: 0 28px 0 10px; border: 1px solid var(--semi-color-border); border-radius: 6px; background-color: var(--semi-color-fill-0); color: var(--semi-color-text-0); font: inherit; cursor: pointer; text-overflow: ellipsis; }
+.fd-publication-decisions select:hover { border-color: var(--semi-color-primary); }
+.fd-publication-decisions select:focus-visible { outline: 2px solid var(--semi-color-primary); outline-offset: 2px; }
+.fd-publication-decisions select:disabled { opacity: .6; cursor: default; }
+.fd-publication-decisions td > p { margin: 6px 0 8px; line-height: 1.6; }
+.fd-publication-decisions details { margin-top: 8px; }
+.fd-publication-decisions summary { color: var(--semi-color-text-2); font-size: 12px; line-height: 1.6; cursor: pointer; }
+.fd-publication-decisions details[open] > summary { margin-bottom: 10px; }
+.fd-publication-decisions code { font-size: 11px; overflow-wrap: anywhere; }
+.fd-publication-decisions .mp-onto-field { display: grid; gap: 6px; margin: 10px 0; font-size: 12px; }
+.fd-publication-modal .mp-onto-muted { font-size: 12px; color: var(--semi-color-text-3); line-height: 1.6; margin: 12px 0 0; }
+.fd-publication-modal .semi-modal-footer { border-top: 1px solid var(--semi-color-border); padding-top: 16px; }
+@media (max-width: 760px) {
+  .fd-publication-decisions .fd-table { min-width: 700px; }
+  .fd-publication-summary > span { padding: 0 12px; }
+}

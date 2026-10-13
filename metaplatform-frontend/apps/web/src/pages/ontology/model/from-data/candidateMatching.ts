@@ -7,7 +7,8 @@ const normalize = (value: string) => value.toLowerCase().replace(/[\s_-]/g, '');
 export function suggestResolution(cls: ModelingClass, target: KernelObjectType): ModelingResolution {
   const propertyMap: Record<string, string> = {};
   const used = new Set<string>();
-  for (const prop of cls.properties) {
+  const properties = cls.properties.filter(prop => prop.included !== false);
+  for (const prop of properties) {
     const expected = { text: 'string', number: 'double', date: 'date' }[prop.dataType];
     const targetSlug = target.rid.split('.').at(-2) || '';
     const matches = target.properties.filter(p => {
@@ -22,7 +23,7 @@ export function suggestResolution(cls: ModelingClass, target: KernelObjectType):
       used.add(matches[0].rid);
     }
   }
-  return { mode: Object.keys(propertyMap).length === cls.properties.length ? 'reuse' : 'extend', targetRid: target.rid, propertyMap };
+  return { mode: Object.keys(propertyMap).length === properties.length ? 'reuse' : 'extend', targetRid: target.rid, propertyMap };
 }
 
 export function localMatches(cls: ModelingClass, types: KernelObjectType[]) {

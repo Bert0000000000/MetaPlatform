@@ -10,7 +10,7 @@ vi.hoisted(() => {
 vi.mock('@/api/ont/modeling', () => ({confirmModelingCompletion:vi.fn(),prepareModelingCompletion:vi.fn(),saveModelingSource:vi.fn()}));
 const source={id:'source',revision:2,publication:null} as ModelingSource;
 const plan:ModelingCompletionPlan={hash:'a'.repeat(64),canApply:true,
-  candidates:[{id:'line',name:'费用明细',identity:['单号','明细号'],reason:'单据内唯一',included:true,originallyIncluded:true,parent:null,problem:''}],
+  candidates:[{id:'line',name:'费用明细',identity:['单号','明细号'],reason:'单据内唯一',included:true,originallyIncluded:true,parent:null,problem:'',deferredProperties:[]}],
   relationships:[],changes:[],remaining:[],counts:{classes:1,relationships:0,deferred:0},data:{nodes:2,edges:0,rows:0,errors:0,canSync:true}};
 beforeEach(() => {
   vi.resetAllMocks();vi.mocked(prepareModelingCompletion).mockResolvedValue(plan);
@@ -90,4 +90,15 @@ it('首项 inFlight 且完成列表为空时不能重新审批候选', () => {
   expect(prepare).not.toHaveBeenCalled();
   expect(prepareModelingCompletion).not.toHaveBeenCalled();
   expect(confirmModelingCompletion).not.toHaveBeenCalled();
+});
+
+it('兼容尚未返回暂缓属性字段的旧服务数据', async () => {
+  vi.mocked(prepareModelingCompletion).mockResolvedValue({
+    ...plan,
+    candidates: [{...plan.candidates[0], deferredProperties: undefined}],
+  });
+  render(<CompletionReview source={source} disabled={false} onPrepare={async () => source} onApplied={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', {name: '一次处理并确认'}));
+  expect(await screen.findByRole('combobox', {name: '费用明细 本次处理'})).toBeVisible();
+  expect(screen.getByRole('button', {name: '确认方案并重新校验'})).toBeEnabled();
 });

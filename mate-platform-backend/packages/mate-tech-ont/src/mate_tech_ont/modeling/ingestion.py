@@ -12,7 +12,7 @@ from mate_kernel.ontology.identity import ClassRef
 
 from ..v2_kernel import api as native
 from .core import convert, digest
-from .publication import current_link, current_type, datasource_baseline
+from .publication import current_link, current_type, datasource_baseline, link_structure_matches
 from .store import now
 
 
@@ -221,7 +221,8 @@ async def verify_baseline(request, source):
                     "原生来源映射已被修改，请先在数据映射页核对；本次同步不会覆盖该配置"
                 )
     for item in source["plan"]["relationships"]:
-        if await current_link(request, item["rid"]) != item["payload"]:
+        live = await current_link(request, item["rid"])
+        if not link_structure_matches(live, item["payload"]):
             raise ValueError("原生关系发布后已变化，请重新验证发布")
 
 
