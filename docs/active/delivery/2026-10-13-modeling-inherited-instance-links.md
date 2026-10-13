@@ -33,4 +33,12 @@
 
 ## 生效方式
 
+## PR 门禁补充
+
+提交合并结果后，PR #134 的门禁发现继承/语义契约描述未同步生成 bundle，以及新增固定候选 JSON 缺少结尾换行和 Prettier 格式；已用锁定依赖重新生成 bundle 并执行 `npm run check`（0 errors，保留既有 warnings），格式化候选且确认解析值完全一致。建模浏览器验收数量由 7 同步为 8，保持零失败、零跳过检查；三级继承用例改为检查 `.ms-schema-edge.is-inheritance`，适配现有继承标记。
+
+本地完整 8 项首轮为 6 passed、2 failed；两个页面加载失败（其中移动端 trace 有 `ERR_NETWORK_CHANGED`）均在原参数复跑通过，复跑 2 passed。原始 JUnit 为主工作区 `.ci/inherited-main-browser-first-full.xml`，复跑 JUnit 在独立工作树 `metaplatform-frontend/test-results/modeling.xml`。本地网络失败未伪记为完整首轮成功；完整 CI 仍由受保护 main 的 required checks 决定是否允许合并。
+
+## 运行生效
+
 运行中的后端若未自动加载源码，需要重新加载/重启后端后使用。已经同步为零关系的来源不会自动补写；重新检查数据并显式同步即可按新规则生成关系。前端无需因本次后端修复重新构建。
