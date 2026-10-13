@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -121,6 +122,46 @@ class TransferTests(unittest.TestCase):
 
 
 class DockerRuntimeTests(unittest.TestCase):
+    def test_actual_compose_excel_source_reads_the_kernel_staging_database(self):
+        # Resolve the real overlay, without contacting a daemon or starting services.
+        with tempfile.TemporaryDirectory() as directory:
+            env = Path(directory) / "demo.env"
+            env.write_text(
+                "DEMO_BACKEND_IMAGE=backend:probe\n"
+                "DEMO_FRONTEND_IMAGE=frontend:probe\n"
+                "POSTGRES_USER=probe_admin\n"
+                "POSTGRES_PASSWORD=synthetic-only\n"
+                "ONT_APP_PASSWORD=synthetic-only\n"
+                "KEYCLOAK_ADMIN_PASSWORD=synthetic-only\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [
+                    shutil.which("docker"),
+                    "compose",
+                    "--env-file",
+                    str(env),
+                    "-f",
+                    "docker-compose.yml",
+                    "-f",
+                    "infra/demo-cloud/compose.yml",
+                    "config",
+                    "--format",
+                    "json",
+                ],
+                cwd=KIT.parent.parent,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        runtime = json.loads(result.stdout)["services"]["mate-tech-ont"]["environment"]
+        self.assertEqual(
+            runtime.get("ONT_MODELING_SOURCE_DSN"),
+            runtime["KERNEL_PG_DSN"],
+            "Excel source must read the same database where modeling stages rows",
+        )
+        self.assertTrue(runtime["KERNEL_PG_DSN"].startswith("postgresql://mate_app:"))
+
     def test_compose_keeps_only_explicit_release_variables_after_sudo_environment_reset(self):
         server = load("ci_server")
         release = dict(path="source", backend="backend:" + SHA, frontend="web:" + SHA)
