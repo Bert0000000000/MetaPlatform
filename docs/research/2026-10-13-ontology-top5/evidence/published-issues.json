@@ -1,0 +1,146 @@
+[
+  {
+    "id": "G01",
+    "number": 118,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/118",
+    "title": "[ONT-TOP5][1h][P1] G01 Turtle 导出正确转义业务名称，特殊字符可重新解析",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G01-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:32.796932+00:00"
+  },
+  {
+    "id": "G02",
+    "number": 119,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/119",
+    "title": "[ONT-TOP5][1h][P1] G02 JSON-LD 导出显式声明 ont 扩展词汇命名空间",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G02-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:34.076775+00:00"
+  },
+  {
+    "id": "G03",
+    "number": 120,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/120",
+    "title": "[ONT-TOP5][1h][P1] G03 类型 JSON-LD 往返保留属性业务标题",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G03-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:35.376044+00:00"
+  },
+  {
+    "id": "G04",
+    "number": 121,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/121",
+    "title": "[ONT-TOP5][1h][P2] G04 导入导出页提供既有 Turtle 下载选项",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G04-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:36.728941+00:00"
+  },
+  {
+    "id": "G05",
+    "number": 122,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/122",
+    "title": "[ONT-TOP5][1h][P1] G05 JSON 文件导入前展示摘要并要求明确确认",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G05-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:38.276471+00:00"
+  },
+  {
+    "id": "G06",
+    "number": 123,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/123",
+    "title": "[ONT-TOP5][1h][P2] G06 导入导出页区分类型加载失败与空列表并支持重试",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G06-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:39.748746+00:00"
+  },
+  {
+    "id": "G07",
+    "number": 124,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/124",
+    "title": "[ONT-TOP5][1h][P1] G07 SHACL 类型切换立即清空旧报告并拒绝迟到响应",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G07-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:41.104903+00:00"
+  },
+  {
+    "id": "G08",
+    "number": 125,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/125",
+    "title": "[ONT-TOP5][1h][P2] G08 SHACL 页面可下载当前目标的完整 JSON 校验报告",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G08-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:42.323263+00:00"
+  },
+  {
+    "id": "G09",
+    "number": 126,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/126",
+    "title": "[ONT-TOP5][1h][P1] G09 公理校验明确展示未执行及部分覆盖，不以绿色标记代替全覆盖",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G09-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:43.576503+00:00"
+  },
+  {
+    "id": "G10",
+    "number": 127,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/127",
+    "title": "[ONT-TOP5][1h][P2] G10 模型工作台图谱布局缓存按用户和租户隔离",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G10-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:45.008450+00:00"
+  },
+  {
+    "id": "G11",
+    "number": 128,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/128",
+    "title": "[ONT-TOP5][1h][P2] G11 模型工作台搜索可命中业务说明和属性标题",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G11-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:46.295235+00:00"
+  },
+  {
+    "id": "G12",
+    "number": 129,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/129",
+    "title": "[ONT-TOP5][1h][P2] G12 模型属性检查器展示直接父类并可点击定位",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G12-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:47.545928+00:00"
+  },
+  {
+    "id": "G13",
+    "number": 130,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/130",
+    "title": "[ONT-TOP5][1h][P1] G13 SPARQL 兼容端点明确拒绝未执行的 INSERT/DELETE",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G13-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:49.508381+00:00"
+  },
+  {
+    "id": "G14",
+    "number": 131,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/131",
+    "title": "[ONT-TOP5][1h][P1] G14 SPARQL 简化解析器对 FILTER/OPTIONAL 明确报不支持",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G14-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:50.855758+00:00"
+  },
+  {
+    "id": "G15",
+    "number": 132,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/132",
+    "title": "[ONT-TOP5][1h][P2] G15 SHACL 报告按真实 severity 展示 Warning 和 Info",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G15-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:52.125398+00:00"
+  },
+  {
+    "id": "G16",
+    "number": 133,
+    "url": "https://github.com/Bert0000000000/MetaPlatform/issues/133",
+    "title": "[ONT-TOP5][1h][P2] G16 候选证据旁可查看所引用来源列的统计摘要",
+    "zip_url": "https://github.com/Bert0000000000/MetaPlatform/raw/1e1e29916f9499b88c53b876f1992cc7435eaa88/docs/research/2026-10-13-ontology-top5/attachments/G16-PRD-PROMPT.zip",
+    "document_sha": "1e1e29916f9499b88c53b876f1992cc7435eaa88",
+    "published_at": "2026-10-13T08:04:53.525027+00:00"
+  }
+]
