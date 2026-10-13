@@ -23,7 +23,32 @@ class ParsedQuery:
 _TRIPLE_RE = re.compile(r"""\\?\\w+\\s+(<[^>]+>|:?\\w+)\\s+(\\?\\w+|<[^>]+>|"[^"]*"\\^\\^\\w+)""")
 
 
+# This token scan only identifies unsupported syntax; it is not a SPARQL parser.
+# Consume complete RDF terms/comments before inspecting bare words, so names,
+# escaped quotes and IRI fragments cannot be mistaken for FILTER/OPTIONAL.
+_SYNTAX_TOKENS = re.compile(
+    r'"""(?:\\.|(?!""").)*"""'
+    r"|'''(?:\\.|(?!''').)*'''"
+    r'|"(?:\\.|[^"\\\r\n])*"'
+    r"|'(?:\\.|[^'\\\r\n])*'"
+    r'|<[^<>"{}|^`\\\x00-\x20]*>'
+    r"|#[^\r\n]*"
+    r"|(?P<word>[?$@]?[\w:](?:[\w:.\-\u00b7\u0300-\u036f\u203f-\u2040]|\\.|%[0-9a-fA-F]{2})*)",
+    re.DOTALL,
+)
+
+
+def _reject_unsupported_syntax(sparql: str) -> None:
+    for token in _SYNTAX_TOKENS.finditer(sparql):
+        word = token.group("word")
+        if word is not None:
+            keyword = word.rstrip(".").upper()
+            if keyword in {"FILTER", "OPTIONAL"}:
+                raise ValueError(f"Unsupported SPARQL syntax: {keyword}")
+
+
 def parse_sparql(sparql: str) -> ParsedQuery:
+    _reject_unsupported_syntax(sparql)
     sparql_strip = sparql.strip()
     upper = sparql_strip.upper()
     if upper.startswith("SELECT"):
@@ -218,10 +243,12 @@ def _delete_to_cypher(p: ParsedQuery) -> str:
     if not p.triples:
         return "MATCH (n) DELETE n"
     parts = []
+    variables = []
     for s, pr, _o in p.triples:
         var = s.strip("?") if s.startswith("?") else "n"
+        variables.append(var)
         parts.append(f"({var}:{pr.strip('<>').strip(':')})")
-    return f"MATCH {', '.join(parts)} DELETE {', '.join(p.strip('?') if p.startswith('?') else 'n' for p in p.triples)}"
+    return f"MATCH {', '.join(parts)} DELETE {', '.join(variables)}"
 
 
 def execute_sparql(

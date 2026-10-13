@@ -18,7 +18,10 @@ _UNSUPPORTED = [
     ("SELECT ?s WHERE { ?s rdf:type ?o . OPTIONAL { ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . optional{ ?s label ?v } }", "OPTIONAL"),
     ("SELECT ?s WHERE { ?s rdf:type ?o . OpTiOnAl { ?s label ?v } }", "OPTIONAL"),
-    ("SELECT ?s WHERE { ?s rdf:type ?o . # harmless FILTER\nOPTIONAL { ?s label ?v } }", "OPTIONAL"),
+    (
+        "SELECT ?s WHERE { ?s rdf:type ?o . # harmless FILTER\nOPTIONAL { ?s label ?v } }",
+        "OPTIONAL",
+    ),
     ("SELECT ?s WHERE { ?s rdf:type ?o . # harmless OPTIONAL\rFILTER(?o = 'x') }", "FILTER"),
     ('SELECT ?s WHERE { ?s label "OPTIONAL" . FILTER(?s = ?s) }', "FILTER"),
     ("SELECT ?s WHERE { ?s <urn:FILTER#OPTIONAL> ?o . OPTIONAL { ?s label ?v } }", "OPTIONAL"),
@@ -111,7 +114,10 @@ def test_http_select_limit_reads_only_authenticated_tenant(
     assert execute_sparql(query, TenantContext(tenant_id="issue131-foreign", user_id="other")) == [
         {"s": foreign.id}
     ]
-    assert store.get_instance(TenantContext(tenant_id="tenant-acme", user_id="u-1"), second.id) == second
+    assert (
+        store.get_instance(TenantContext(tenant_id="tenant-acme", user_id="u-1"), second.id)
+        == second
+    )
 
 
 @pytest.mark.parametrize("label", ["FILTER", "OPTIONAL"])
