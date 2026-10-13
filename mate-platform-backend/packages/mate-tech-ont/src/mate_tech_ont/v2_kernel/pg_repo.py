@@ -3574,6 +3574,9 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                # Supersession locks class rows before reattaching individuals. Take
+                # the shared schema lock first to preserve that global lock order.
+                self._lock_schema_definitions(cur, row["tenant_id"], shared=True)
                 # LINK-CARDINALITY-CONCURRENCY：端点 DB 锁 → 基数校验 → 写入
                 # **同一事务**。校验绝不能另开连接（TOCTOU：两个连接各数到 0 条后
                 # 都写入成功，基数约束形同虚设）。
@@ -4942,8 +4945,8 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 cur.execute(
                     """SELECT class_rid,
-                              SUM(count) FILTER (WHERE op='read') AS reads,
-                              SUM(count) FILTER (WHERE op='write') AS writes,
+                              COALESCE(SUM(count) FILTER (WHERE op='read'), 0) AS reads,
+                              COALESCE(SUM(count) FILTER (WHERE op='write'), 0) AS writes,
                               COUNT(DISTINCT day) AS active_days,
                               COUNT(DISTINCT NULLIF(actor, '')) AS actors
                        FROM ont_usage_metric
@@ -4951,7 +4954,11 @@ class PgOntologyRepository(OntologyRepository):
                        GROUP BY class_rid ORDER BY SUM(count) DESC""",
                     (days,),
                 )
-                return [dict(r) for r in cur.fetchall()]
+                # SUM(bigint) is PostgreSQL numeric/Decimal; expose JSON integers.
+                return [
+                    {**dict(row), "reads": int(row["reads"]), "writes": int(row["writes"])}
+                    for row in cur.fetchall()
+                ]
         finally:
             conn.close()
 

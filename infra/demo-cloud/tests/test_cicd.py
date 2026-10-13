@@ -97,6 +97,182 @@ class GateTests(unittest.TestCase):
         self.assertEqual(load("ci_gate").evaluate(fixture, SHA, REPO)[0], "failed")
 
 
+class AppHubAcceptanceTests(unittest.TestCase):
+    def test_empty_known_catalog_and_binding_usage_are_accepted(self):
+        verify = load("verify")
+        calls, checks = [], []
+        rid = "ont.tenant-default.obj.synthetic.v1"
+
+        def call(method, path):
+            calls.append((method, path))
+            return {"items": [], "total": 0}
+
+        verify.verify_apphub_catalog(call, rid, checks)
+        self.assertEqual(
+            calls,
+            [
+                ("GET", "/api/v1/apphub/modules"),
+                ("GET", "/api/v1/apphub/bindings/usage?class_rid=" + rid),
+            ],
+        )
+        self.assertEqual(len(checks), 1)
+
+    def test_failed_catalog_or_binding_usage_blocks_release(self):
+        verify = load("verify")
+        for failed in ("/modules", "/bindings/usage"):
+            checks = []
+
+            def call(method, path, failed=failed):
+                if failed in path:
+                    raise RuntimeError("HTTP 500")
+                return {"items": [], "total": 0}
+
+            with self.subTest(failed=failed), self.assertRaisesRegex(RuntimeError, "HTTP 500"):
+                verify.verify_apphub_catalog(call, "ont.tenant-default.obj.synthetic.v1", checks)
+            self.assertEqual(checks, [])
+
+    def test_unknown_catalog_result_blocks_release(self):
+        verify = load("verify")
+        for result in (
+            None,
+            {},
+            {"items": []},
+            {"items": [], "total": True},
+            {"items": [], "total": -1},
+            {"items": "unknown", "total": 0},
+            {"items": [None], "total": 1},
+            {"items": [], "total": 1},
+        ):
+            checks = []
+            with (
+                self.subTest(result=result),
+                self.assertRaisesRegex(RuntimeError, "unknown result"),
+            ):
+                verify.verify_apphub_catalog(
+                    lambda method, path, result=result: result,
+                    "ont.tenant-default.obj.synthetic.v1",
+                    checks,
+                )
+            self.assertEqual(checks, [])
+
+    def module(self):
+        return {
+            "id": "module-orders",
+            "tenant_id": "tenant-default",
+            "name": "Orders",
+            "code": "orders",
+            "app_code": "orders",
+            "description": "",
+            "entry_path": "",
+        }
+
+    def binding(self):
+        return {
+            "app_id": "app-orders",
+            "app_name": "Orders",
+            "page_id": "page-orders",
+            "status": "DRAFT",
+            "version_id": None,
+            "model_version": "ont.tenant-default.obj.synthetic.v1",
+            "model_checksum": None,
+            "action_rid": None,
+        }
+
+    def check_results(self, modules, bindings, checks):
+        load("verify").verify_apphub_catalog(
+            lambda method, path: modules if path.endswith("/modules") else bindings,
+            "ont.tenant-default.obj.synthetic.v1",
+            checks,
+        )
+
+    def test_truthful_bound_usage_keeps_nullable_fields_and_all_app_states(self):
+        for status in ("DRAFT", "DESIGNING", "PUBLISHED", "ACTIVE", "OFFLINE"):
+            item = dict(self.binding(), status=status)
+            if status != "DRAFT":
+                item["version_id"] = "v1"
+                item["action_rid"] = "ont.tenant-default.action.approve.v1"
+            checks = []
+            with self.subTest(status=status):
+                self.check_results(
+                    {"items": [self.module()], "total": 1}, {"items": [item], "total": 1}, checks
+                )
+            self.assertEqual(len(checks), 1)
+        item = dict(self.binding(), tenant_id="tenant-default")
+        del item["model_checksum"]
+        del item["action_rid"]
+        self.check_results(
+            {"items": [self.module()], "total": 1}, {"items": [item], "total": 1}, []
+        )
+
+    def test_null_items_and_inconsistent_totals_fail_for_each_endpoint(self):
+        good = {"items": [], "total": 0}
+        for endpoint in ("modules", "bindings"):
+            for bad in (
+                {"items": [None], "total": 1},
+                {"items": [], "total": 1},
+                {"items": [self.module() if endpoint == "modules" else self.binding()], "total": 0},
+            ):
+                checks = []
+                with self.subTest(endpoint=endpoint, bad=bad), self.assertRaises(RuntimeError):
+                    self.check_results(
+                        bad if endpoint == "modules" else good,
+                        bad if endpoint == "bindings" else good,
+                        checks,
+                    )
+                self.assertEqual(checks, [])
+
+    def test_module_required_fields_and_tenant_fail_closed(self):
+        for field in self.module():
+            for wrong in (None, 1, []):
+                item = dict(self.module(), **{field: wrong})
+                checks = []
+                with self.subTest(field=field, wrong=wrong), self.assertRaises(RuntimeError):
+                    self.check_results(
+                        {"items": [item], "total": 1}, {"items": [], "total": 0}, checks
+                    )
+                self.assertEqual(checks, [])
+            item = self.module()
+            del item[field]
+            with self.subTest(missing=field), self.assertRaises(RuntimeError):
+                self.check_results({"items": [item], "total": 1}, {"items": [], "total": 0}, [])
+        item = dict(self.module(), tenant_id="other-tenant")
+        with self.assertRaises(RuntimeError):
+            self.check_results({"items": [item], "total": 1}, {"items": [], "total": 0}, [])
+
+    def test_binding_required_fields_and_optional_types_fail_closed(self):
+        required = ("app_id", "app_name", "page_id", "status", "version_id", "model_version")
+        for field in required:
+            item = self.binding()
+            del item[field]
+            with self.subTest(missing=field), self.assertRaises(RuntimeError):
+                self.check_results({"items": [], "total": 0}, {"items": [item], "total": 1}, [])
+            wrong_values = (1, []) if field == "version_id" else (None, 1, [])
+            for wrong in wrong_values:
+                item = dict(self.binding(), **{field: wrong})
+                with self.subTest(field=field, wrong=wrong), self.assertRaises(RuntimeError):
+                    self.check_results({"items": [], "total": 0}, {"items": [item], "total": 1}, [])
+        for field in ("model_checksum", "action_rid", "tenant_id"):
+            with self.subTest(field=field), self.assertRaises(RuntimeError):
+                item = dict(self.binding(), **{field: 1})
+                self.check_results({"items": [], "total": 0}, {"items": [item], "total": 1}, [])
+
+    def test_binding_model_and_present_tenant_or_action_ownership_fail_closed(self):
+        for changes in (
+            {"model_version": "ont.tenant-default.obj.other.v1"},
+            {"model_version": "ont.other-tenant.obj.synthetic.v1"},
+            {"tenant_id": "other-tenant"},
+            {"action_rid": "ont.other-tenant.action.approve.v1"},
+        ):
+            checks = []
+            with self.subTest(changes=changes), self.assertRaises(RuntimeError):
+                self.check_results(
+                    {"items": [], "total": 0},
+                    {"items": [dict(self.binding(), **changes)], "total": 1},
+                    checks,
+                )
+            self.assertEqual(checks, [])
+
+
 class TransferTests(unittest.TestCase):
     def test_slow_source_upload_has_a_separate_budget_from_status_queries(self):
         client = load("ci_client")

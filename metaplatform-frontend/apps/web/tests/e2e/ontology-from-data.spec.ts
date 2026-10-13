@@ -397,7 +397,7 @@ test('三级设备分类经表单继承与父标识重命名 → 原生父查询
   await page.getByRole('button', { name: '校验并预览', exact: true }).click();
   await expect(page.getByRole('heading', { name: '本体结构校验与接入预览', exact: true })).toBeVisible();
   const graph = page.getByLabel('候选本体图谱', { exact: true });
-  await expect(graph.locator('.ms-schema-edge.is-inheritance')).toHaveCount(2);
+  await expect(graph.getByRole('button', { name: /^查看关系 继承/ })).toHaveCount(2);
   await graph.getByRole('button', { name: `查看本体类 ${leafName}` }).dblclick();
   await expect(graph.getByLabel('候选模型详情')).toContainText(`父类：${machineName}`);
   await page.getByText('可选：实例样本', { exact: true }).click();
