@@ -1,6 +1,46 @@
 import type { ModelingClass, ModelingDraft, ModelingRelationship } from '@/api/ont/modeling';
 
 export type ReviewKind = 'classes' | 'relationships';
+export type SemanticOwner = ReviewKind | 'mappings';
+export function semanticOwner(draft: ModelingDraft, target: string): { kind: SemanticOwner; id: string } | undefined {
+  const [type, id, propertyId] = target.split(':');
+  if (type === 'class' || type === 'property') {
+    const cls = draft.classes.find(c => c.id === id && included(c));
+    if (cls && (type === 'class' || cls.properties.some(p => p.id === propertyId && included(p)))) return { kind: 'classes', id };
+  }
+  if (type === 'relationship' && draft.relationships.some(r => r.id === id && included(r) && draft.classes.some(c => c.id === r.source && included(c)) && draft.classes.some(c => c.id === r.target && included(c)))) return { kind: 'relationships', id };
+  if (type === 'mapping' && draft.mappings.some(m => m.id === id && draft.classes.some(c => c.id === m.classId && included(c)))) return { kind: 'mappings', id };
+}
+export const scopedDefinitions = (draft: ModelingDraft) => draft.semantics.definitions.filter(d => semanticOwner(draft, d.target));
+export const relatedDefinitions = (draft: ModelingDraft, kind: SemanticOwner, id: string) => scopedDefinitions(draft).filter(d => { const owner = semanticOwner(draft, d.target)!; return owner.kind === kind && owner.id === id; });
+export const semanticsReviewed = (draft: ModelingDraft, kind: SemanticOwner, id: string) => relatedDefinitions(draft, kind, id).every(d => d.confirmed);
+export function setSemanticConfirmation(draft: ModelingDraft, kind: SemanticOwner, ids: string[], confirmed: boolean) {
+  for (const id of ids) for (const definition of relatedDefinitions(draft, kind, id)) definition.confirmed = confirmed;
+}
+
+/** Keep approvals scoped to the exact candidate and semantic content the user reviewed. */
+export function invalidateSemanticChanges(previous: ModelingDraft, next: ModelingDraft): ModelingDraft {
+  const content = (item: object) => JSON.stringify(Object.fromEntries(Object.entries(item).filter(([key]) => !['accepted', 'identityStatus', 'cardinalityStatus'].includes(key))));
+  for (const kind of ['classes', 'relationships', 'mappings'] as const) for (const item of next[kind]) {
+    const old = previous[kind].find(c => c.id === item.id);
+    if (old && (content(old) !== content(item) || (old.accepted && !item.accepted))) {
+      item.accepted = false;
+      setSemanticConfirmation(next, kind, [item.id], false);
+    }
+  }
+  for (const definition of next.semantics.definitions) {
+    const old = previous.semantics.definitions.find(d => d.target === definition.target);
+    if (!old) continue;
+    const changed = JSON.stringify({ ...old, confirmed: false }) !== JSON.stringify({ ...definition, confirmed: false });
+    if (changed || (old.confirmed && !definition.confirmed)) {
+      definition.confirmed = false;
+      const owner = semanticOwner(next, definition.target);
+      const item = owner && next[owner.kind].find(c => c.id === owner.id);
+      if (item) item.accepted = false;
+    }
+  }
+  return next;
+}
 export const included = (item: { included?: boolean }) => item.included !== false;
 export const classReviewed = (cls: ModelingClass) => cls.accepted && ['confirmed', 'unresolved', 'source-record'].includes(cls.identityStatus ?? 'legacy');
 export const relationshipReviewed = (rel: ModelingRelationship) => rel.accepted && rel.cardinalityStatus === 'confirmed';
@@ -48,10 +88,12 @@ export function confirmCandidates(draft: ModelingDraft, kind: ReviewKind, ids: s
     if (!ids.includes(cls.id) || classReviewProblem(cls, next)) return;
     if (cls.identity.length) cls.identityStatus = 'confirmed';
     cls.accepted = true;
+    setSemanticConfirmation(next, kind, [cls.id], true);
   });
   else next.relationships.forEach(rel => {
     if (!ids.includes(rel.id) || relationshipReviewProblem(rel, next)) return;
     rel.cardinalityStatus = 'confirmed'; rel.accepted = true;
+    setSemanticConfirmation(next, kind, [rel.id], true);
   });
   return next;
 }

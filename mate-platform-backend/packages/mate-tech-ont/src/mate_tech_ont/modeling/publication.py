@@ -108,6 +108,29 @@ def hierarchy_order(classes):
     return ordered
 
 
+async def native_type_catalog(request):
+    types = []
+    offset = 0
+    while True:
+        batch = await native.list_object_types(request, limit=100, offset=offset)
+        types.extend(item.model_dump() for item in batch)
+        if len(batch) < 100:
+            return types
+        offset += 100
+
+
+def exact_name_matches(name, types):
+    normalized = name.strip().lower()
+    return [
+        t for t in types if normalized and t.get("display_name", "").strip().lower() == normalized
+    ]
+
+
+def same_name_notice(name, matches):
+    targets = "、".join(f"{item['display_name']}（{item['rid']}）" for item in matches)
+    return f"{name} 存在精确同名本体：{targets}；请核对业务含义并显式选择复用、扩展属性或新增。同名不代表业务同义。"
+
+
 async def new_type_conflicts(request, source):
     """Return all occupied new-type IDs so review does not stop at one conflict per retry."""
     tenant = str(native._ctx(request).tenant_id)
@@ -115,6 +138,13 @@ async def new_type_conflicts(request, source):
     input_hash = digest(
         {k: source.get(k) for k in ("draft", "context", "questions", "resolutions")}
     )
+    plan = source.get("plan") or {}
+    own_rids = set()
+    if previous.get("inputHash") == input_hash == plan.get("inputHash") and previous.get(
+        "configHash"
+    ) == plan.get("configHash"):
+        progress = set(previous.get("completed", [])) | {previous.get("inFlight")}
+        own_rids = {item["rid"] for item in plan.get("types", []) if item["rid"] in progress}
     issues = []
     native_types = None
     for cls in publication_scope(source["draft"])["classes"]:
@@ -138,14 +168,7 @@ async def new_type_conflicts(request, source):
             continue
         if not existing:
             if native_types is None:
-                native_types = []
-                offset = 0
-                while True:
-                    batch = await native.list_object_types(request, limit=100, offset=offset)
-                    native_types.extend(item.model_dump() for item in batch)
-                    if len(batch) < 100:
-                        break
-                    offset += 100
+                native_types = await native_type_catalog(request)
             existing = next(
                 (item for item in native_types if item["rid"].split(".")[-2] == slug(cls["id"])),
                 None,
@@ -159,6 +182,18 @@ async def new_type_conflicts(request, source):
                     "message": f"{cls['name']} 的稳定标识已存在（{occupied_rid}），请在本行选择复用或增加属性；不同业务概念须修改稳定标识后新建。",
                 }
             )
+        elif cls["id"] not in source.get("resolutions", {}):
+            matches = exact_name_matches(
+                cls["name"], [item for item in native_types if item["rid"] not in own_rids]
+            )
+            if matches:
+                issues.append(
+                    {
+                        "severity": "error",
+                        "item": cls["id"],
+                        "message": same_name_notice(cls["name"], matches),
+                    }
+                )
     return issues
 
 
@@ -204,6 +239,7 @@ async def prepare(request, source):
         for cls in ordered_classes
     }
     types, warnings = [], []
+    native_types = None
     candidate_classes = {cls["id"]: cls for cls in ordered_classes}
     prepared_by_class = {}
     seen_rids = set()
@@ -337,6 +373,15 @@ async def prepare(request, source):
                 native.ObjectTypePrecheckDTO(name=cls["name"], slug=class_slug), request
             )
         ).model_dump()
+        if mode == "new" and not own_completed:
+            if native_types is None:
+                native_types = await native_type_catalog(request)
+            matches = exact_name_matches(cls["name"], native_types)
+            if matches:
+                notice = same_name_notice(cls["name"], matches)
+                if cid not in resolutions:
+                    raise ValueError(notice)
+                warnings.append(notice)
         if mode == "new" and not own_completed and cid not in resolutions:
             strong_matches = [
                 item

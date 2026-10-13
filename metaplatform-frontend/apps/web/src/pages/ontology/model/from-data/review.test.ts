@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelingDraft } from '@/api/ont/modeling';
-import { classReviewProblem, confirmCandidates, relationshipReviewProblem, selectedDraft, setIncluded } from './review';
+import { classReviewProblem, confirmCandidates, invalidateSemanticChanges, relationshipReviewProblem, selectedDraft, setIncluded } from './review';
 
 const draft = (): ModelingDraft => ({ schemaVersion: 2, name: '模型', classes: [{ id: 'order', name: '订单', description: '', properties: [{ id: 'code', name: '订单号', dataType: 'text' }], identity: ['code'], identityStatus: 'proposed', identityReason: '订单号在业务中唯一', labelProperty: 'code', accepted: false }], relationships: [{ id: 'r', name: '关联', source: 'order', target: 'order', joins: [{ sourceProperty: 'code', targetProperty: 'code' }], reason: '', cardinality: 'N:1', cardinalityStatus: 'proposed', cardinalityReason: '每个订单对应一个目标订单', targetSelection: 'entity', accepted: false }], mappings: [], instances: [], instanceEdits: [], links: [], notes: [], semantics: { context: '', questions: [], definitions: [] } });
 
@@ -31,4 +31,32 @@ describe('完整审核与发布范围', () => {
     expect(restored.classes[1].included).toBe(false);
     expect(value.classes[0].included).toBeUndefined();
   });
+});
+
+
+it('确认对象时一并确认纳入的对象与属性语义，保留其他项和暂缓属性', () => {
+  const value = draft();
+  value.classes[0].properties.push({ id: 'deferred', name: '暂缓', dataType: 'text', included: false });
+  value.semantics.definitions = ['class:order', 'property:order:code', 'property:order:deferred', 'relationship:r'].map(target => ({ target, definition: '业务定义', aliases: [], scope: '', grain: '', unit: '', constraints: '', basis: '业务依据', confirmed: false }));
+  const next = confirmCandidates(value, 'classes', ['order']);
+  expect(next.semantics.definitions.map(d => d.confirmed)).toEqual([true, true, false, false]);
+  expect(value.semantics.definitions.every(d => !d.confirmed)).toBe(true);
+  expect(confirmCandidates(next, 'relationships', ['r']).semantics.definitions[3].confirmed).toBe(true);
+  value.classes[0].identityReason = '';
+  expect(confirmCandidates(value, 'classes', ['order']).semantics.definitions[0].confirmed).toBe(false);
+});
+
+
+it('修改对象内容撤销所属语义，不影响关系语义；单独改语义撤销所属对象', () => {
+  let previous = draft();
+  previous.semantics.definitions = ['class:order', 'relationship:r'].map(target => ({ target, definition: '定义', aliases: [], scope: '', grain: '', unit: '', constraints: '', basis: '', confirmed: true }));
+  previous = confirmCandidates(previous, 'classes', ['order']);
+  const next = structuredClone(previous); next.classes[0].description = '新定义';
+  invalidateSemanticChanges(previous, next);
+  expect(next.classes[0].accepted).toBe(false);
+  expect(next.semantics.definitions.map(d => d.confirmed)).toEqual([false, true]);
+  const semanticEdit = structuredClone(previous); semanticEdit.semantics.definitions[0].definition = '新语义';
+  invalidateSemanticChanges(previous, semanticEdit);
+  expect(semanticEdit.classes[0].accepted).toBe(false);
+  expect(semanticEdit.semantics.definitions.map(d => d.confirmed)).toEqual([false, true]);
 });

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import SemanticSummary from './SemanticSummary';
 import { Banner, Button, Modal, Spin, Tag } from '@douyinfe/semi-ui';
 import { confirmModelingCompletion, prepareModelingCompletion, type ModelingCompletionPlan, type ModelingSource } from '@/api/ont/modeling';
 import { hasPublicationStarted } from './publicationState';
@@ -62,6 +63,7 @@ export default function CompletionReview({ source, disabled, onPrepare, onApplie
         <p className="mp-onto-muted">补全只采用已有定义和明确字段对应；依据不足时保持暂缓，不编造身份、基数或数据。</p>
         <details open={plan.changes.some(c => c.action === '暂缓')}><summary>全部修复与暂缓明细（{plan.changes.length}）</summary><ul>{plan.changes.map((change,i) => <li key={i}><strong>{change.name} · {change.action}</strong>：{change.reason}</li>)}</ul></details>
         <details><summary>关系规则与依据（{plan.relationships.filter(r => r.included).length} 条纳入发布）</summary><ul>{plan.relationships.filter(r => r.included).map(rel => <li key={rel.id}><strong>{rel.name} · {rel.cardinality}</strong>：{rel.reason || '沿用已有关系规则'}<p>{rel.joins.map(j => `${j.sourceProperty} → ${j.targetProperty}`).join('；')}</p></li>)}</ul></details>
+        {!!plan.semantics?.length && <section className="fd-card"><h3>一并确认的业务语义（{plan.semantics.length} 项）</h3><p>确认方案同时确认以下定义、口径与依据；暂缓项不在本次确认范围内。</p><SemanticSummary definitions={plan.semantics} /></section>}
         <p>预计合格数据：{plan.data.nodes.toLocaleString()} 个实例、{plan.data.edges.toLocaleString()} 条关系；另有 {plan.data.rows.toLocaleString()} 行因数据问题暂缓。未发布的类不生成实例。</p>
         {!plan.data.canSync && <Banner type="warning" description="本体可独立发布；当前数据仍需按第五步检查结果处理。此方案不会自动发布或写入实例。" closeIcon={null} />}
         {!!plan.remaining.length && <Banner type="danger" description={plan.remaining.map(i => i.message).join('；')} closeIcon={null} />}

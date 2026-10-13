@@ -26,7 +26,14 @@ export function suggestResolution(cls: ModelingClass, target: KernelObjectType):
   return { mode: Object.keys(propertyMap).length === properties.length ? 'reuse' : 'extend', targetRid: target.rid, propertyMap };
 }
 
+export function exactNameMatches(cls: ModelingClass, types: KernelObjectType[]) {
+  const name = cls.name.trim().toLowerCase();
+  return name ? types.filter(t => t.display_name.trim().toLowerCase() === name) : [];
+}
+
 export function localMatches(cls: ModelingClass, types: KernelObjectType[]) {
-  return types.filter(t => normalize(t.display_name) === normalize(cls.name) ||
-    t.rid.split('.').some(part => normalize(part) === normalize(cls.id)));
+  const exact = exactNameMatches(cls, types);
+  const id = normalize(cls.id);
+  return types.filter(t => exact.includes(t) ||
+    Boolean(id && normalize(t.rid.split('.').at(-2) || '') === id));
 }

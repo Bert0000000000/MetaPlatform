@@ -66,6 +66,50 @@ async function syncReviewedData(page: Page, repeat = false) {
   await expect(page.getByRole('heading', { name: '同步结果 · 已完成', exact: true })).toBeVisible({ timeout: 60_000 });
 }
 
+test('父类业务关系覆盖三个子类标本 → 36条关联 → 重复同步身份稳定', async ({ page, context, request }) => {
+  const token = await injectAuth(context, page);
+  const headers = { Authorization: `Bearer ${token}` };
+  const fs = await import('node:fs/promises');
+  const fixtures = path.resolve(import.meta.dirname, '../fixtures');
+  const draft = JSON.parse(await fs.readFile(path.join(fixtures, 'modeling-inherited-plant.json'), 'utf8'));
+  const upload = await request.post(`${gateway}/ont/v2/modeling/sources`, {
+    headers, multipart: { file: { name: 'plants.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      buffer: await fs.readFile(path.join(fixtures, 'modeling-inherited-plant.xlsx')) } },
+  });
+  expect(upload.status()).toBe(201);
+  const source = await upload.json();
+  const endpoint = `${gateway}/ont/v2/modeling/sources/${source.id}`;
+  expect((await request.put(endpoint, { headers, data: { revision: source.revision, draft } })).ok()).toBeTruthy();
+  await page.goto(`/ontology/model/from-data?source=${source.id}`);
+  await page.getByRole('button', { name: '校验并预览', exact: true }).click();
+  await page.getByRole('button', { name: '查看发布方案', exact: true }).click();
+  await confirmPublication(page);
+  await expect(page.getByText('本次所选本体已发布', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '同步本次数据', exact: true }).click();
+  let previous: string[] | undefined;
+  for (const repeat of [false, true]) {
+    await syncReviewedData(page, repeat);
+    const latest = await (await request.get(endpoint, { headers })).json();
+    expect(latest.sync.links).toBe(36);
+    const types = Object.fromEntries(latest.plan.types.map((t: { classId: string; rid: string }) => [t.classId, t.rid]));
+    const parent = await (await request.get(`${gateway}/ont/v2/individuals`, { headers, params: { class_rid: types.specimen } })).json();
+    expect(parent).toHaveLength(18);
+    expect(new Set(parent.map((i: { class_rid: string }) => i.class_rid))).toEqual(new Set([types.tree, types.shrub, types.herb]));
+    const links: { rid: string; src: string; dst: string }[] = [];
+    for (const relation of latest.plan.relationships) {
+      const result = await request.get(`${gateway}/ont/v2/link-instances`, { headers, params: { link_type_rid: relation.rid } });
+      expect(result.ok()).toBeTruthy();
+      const rows = await result.json();
+      expect(rows).toHaveLength(18);
+      links.push(...rows);
+    }
+    const identities = [...parent.map((i: { rid: string }) => i.rid), ...links.map(l => `${l.rid}:${l.src}:${l.dst}`)].sort();
+    if (previous) expect(identities).toEqual(previous);
+    previous = identities;
+  }
+});
+
 test('普通用户令牌不包含管理员角色且不能上传建模来源', async ({ request }) => {
   const token = await fetchAccessToken(request, { username: 'metaplatform', password: 'metaplatform' });
   expect(decodeJwtPayload(token).realm_access?.roles).toContain('user');

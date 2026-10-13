@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { getModelingSource, listModelingSources, runModelingOperation, saveModelingSource } from '@/api/ont/modeling';
 import type { ModelingSource } from '@/api/ont/modeling';
+import { listObjectTypes } from '@/api/ont/kernel';
 import FromDataPage from './FromDataPage';
 import { renameConcept } from './renameConcept';
 import { applyParent } from './hierarchy';
@@ -12,7 +13,7 @@ vi.hoisted(() => {
   HTMLCanvasElement.prototype.getContext = (() => ({ fillRect() {}, clearRect() {}, getImageData: () => ({ data: new Uint8ClampedArray(4) }) })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
 });
 vi.mock('@/api/ont/modeling', () => ({ getModelingSource: vi.fn(), listModelingSources: vi.fn(), runModelingOperation: vi.fn(), saveModelingSource: vi.fn(), uploadModelingSource: vi.fn() }));
-vi.mock('@/api/ont/kernel', () => ({ listObjectTypes: vi.fn().mockResolvedValue([]) }));
+vi.mock('@/api/ont/kernel', () => ({ listObjectTypes: vi.fn().mockResolvedValue([]), precheckObjectTypes: vi.fn().mockResolvedValue({ candidates: [] }) }));
 vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ resolvedTheme: 'light' }) }));
 
 function fixture(): ModelingSource {
@@ -27,6 +28,7 @@ function fixture(): ModelingSource {
 beforeEach(() => {
   sessionStorage.clear();
   vi.clearAllMocks();
+  vi.mocked(listObjectTypes).mockReset().mockResolvedValue([]);
   vi.mocked(getModelingSource).mockResolvedValue(fixture());
   vi.mocked(listModelingSources).mockResolvedValue([fixture()]);
   vi.mocked(saveModelingSource).mockImplementation(async source => ({ ...source, revision: source.revision + 1, validation: null, plan: null, review: null }));
@@ -40,6 +42,29 @@ const openObject = async (name = '物料') => { fireEvent.click(await screen.fin
 const showMappings = () => fireEvent.click(screen.getByRole('tab', { name: /数据映射/ }));
 
 describe('逆向发现本体独立辅助入口', () => {
+  it('回到候选审核刷新目录，在实际详情中独立显示全部同名对象', async () => {
+    open();
+    await openObject();
+    fireEvent.click(screen.getByRole('button', { name: /资料与业务范围/ }));
+    const same = Array.from({ length: 6 }, (_, i) => ({ rid: `ont.test.obj.crm.material-${i}.v1`, display_name: '物料', description: `定义${i}`, properties: [], primary_key: [], interfaces: [] }));
+    vi.mocked(listObjectTypes).mockResolvedValue(same);
+    fireEvent.click(screen.getByRole('button', { name: /候选匹配与合并确认/ }));
+    await openObject();
+    const exact = await screen.findByRole('region', { name: '物料 精确同名对象' });
+    same.forEach(t => expect(exact).toHaveTextContent(t.rid));
+    expect(saveModelingSource).not.toHaveBeenCalled();
+  });
+
+  it('发布前重新读取完整目录，读取失败不能展示旧目录继续确认', async () => {
+    open();
+    await screen.findByRole('button', { name: '已保存' });
+    fireEvent.click(screen.getByRole('button', { name: /本体发布与验收/ }));
+    vi.mocked(listObjectTypes).mockRejectedValue(new Error('catalog offline'));
+    fireEvent.click(screen.getByRole('button', { name: '发布本体' }));
+    await screen.findByText('平台对象类型读取失败：catalog offline', { exact: true });
+    expect(screen.queryByRole('combobox', { name: '物料 发布操作' })).not.toBeInTheDocument();
+    expect(runModelingOperation).not.toHaveBeenCalled();
+  });
   it('离开后从默认入口返回，恢复当前来源、资料步骤及未保存业务背景', async () => {
     const first = open();
     await screen.findByRole('button', { name: '已保存' });
@@ -336,7 +361,7 @@ describe('逆向发现本体独立辅助入口', () => {
     fireEvent.change(await screen.findByRole('textbox', { name: '新的稳定模型标识' }), { target: { value: 'manufacturing-material' } });
     fireEvent.click(screen.getByRole('button', { name: '修改标识及引用' }));
     await waitFor(() => expect(screen.getByText('manufacturing-material')).toBeVisible());
-    expect(screen.getByRole('checkbox', { name: '已确认对象定义' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: '确认对象及业务语义' })).not.toBeChecked();
     showMappings();
     expect(screen.getByRole('checkbox', { name: /确认映射 库存 →/ })).not.toBeChecked();
     fireEvent.click(screen.getByRole('tab', { name: /业务关系/ }));
@@ -460,4 +485,45 @@ describe('逆向发现本体独立辅助入口', () => {
     expect(draft.mappings[1].accepted).toBe(false);
     expect(draft.relationships[0].accepted).toBe(false);
   });
+});
+
+
+it('对象审核展示并一并确认相关语义，定义编辑只撤销相关确认', async () => {
+  const value = fixture();
+  value.draft!.semantics.definitions = [{ target: 'class:material', definition: '按物料编码识别的采购物料', aliases: [], scope: '采购', grain: '一种物料', unit: '', constraints: '', basis: '业务规则', confirmed: false }];
+  vi.mocked(getModelingSource).mockResolvedValue(value);
+  open();
+  expect(await screen.findByText(/待审核语义 1 项/)).toBeVisible();
+  expect(screen.getByText('定义：按物料编码识别的采购物料')).toBeVisible();
+  await openObject();
+  expect(screen.getByRole('textbox', { name: 'class:material 定义' })).toHaveValue('按物料编码识别的采购物料');
+  fireEvent.click(screen.getByRole('checkbox', { name: '确认对象及业务语义' }));
+  expect(screen.getByRole('checkbox', { name: '确认对象及业务语义' })).toBeChecked();
+  expect(screen.getByText(/待审核语义 0 项/)).toBeVisible();
+  fireEvent.change(screen.getByRole('textbox', { name: 'class:material 定义' }), { target: { value: '按工厂区分的物料' } });
+  expect(screen.getByRole('checkbox', { name: '确认对象及业务语义' })).not.toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: '保存修改' }));
+  await waitFor(() => expect(saveModelingSource).toHaveBeenCalled());
+  const saved = vi.mocked(saveModelingSource).mock.calls.at(-1)![0];
+  expect(saved.draft!.classes[0].accepted).toBe(false);
+  expect(saved.draft!.semantics.definitions[0].confirmed).toBe(false);
+  expect(saved.draft!.mappings[0].accepted).toBe(true);
+});
+
+it('校验警告原地审核并先保存再校验，不返回第二步', async () => {
+  const value = fixture();
+  value.draft!.semantics.definitions = [{ target: 'class:material', definition: '采购物料', aliases: [], scope: '', grain: '', unit: '', constraints: '', basis: '业务规则', confirmed: false }];
+  value.validation!.issues = [{ severity: 'warning', item: 'class:material', message: '语义口径尚未业务确认' }];
+  vi.mocked(getModelingSource).mockResolvedValue(value);
+  open();
+  await screen.findByRole('button', { name: '已保存' });
+  fireEvent.click(screen.getByRole('button', { name: /3.*变更草稿与校验/ }));
+  fireEvent.click(await screen.findByRole('button', { name: '查看并处理' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '确认对象及业务语义' }));
+  fireEvent.click(screen.getByRole('button', { name: '保存并重新校验' }));
+  await waitFor(() => expect(runModelingOperation).toHaveBeenCalled());
+  expect(saveModelingSource).toHaveBeenCalledTimes(1);
+  expect(vi.mocked(saveModelingSource).mock.calls[0][0].draft!.semantics.definitions[0].confirmed).toBe(true);
+  expect(vi.mocked(runModelingOperation).mock.calls[0][0].revision).toBe(4);
+  expect(screen.getByRole('button', { name: /3.*变更草稿与校验/ })).toHaveAttribute('aria-current', 'step');
 });

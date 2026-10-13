@@ -1,6 +1,6 @@
 import type { KernelObjectType } from '@/api/ont/kernel';
 import type { ModelingResolution, ModelingSource } from '@/api/ont/modeling';
-import { localMatches, suggestResolution } from './candidateMatching';
+import { exactNameMatches, localMatches, suggestResolution } from './candidateMatching';
 import { included } from './review';
 import { hasPublicationStarted } from './publicationState';
 
@@ -23,6 +23,7 @@ export default function PublicationDecisions({ source, types, disabled = false, 
         const target = types.find(t => t.rid === resolution?.targetRid);
         const map = resolution?.propertyMap ?? {};
         const matches = localMatches(cls, types);
+        const sameNames = exactNameMatches(cls, types);
         const problems = issues.filter(issue => issue.item === cls.id);
         const properties = cls.properties.filter(prop => prop.included !== false);
         const unresolved = mode === 'reuse' ? properties.filter(p => !target?.properties.some(np => np.rid === map[p.id])) : [];
@@ -45,6 +46,7 @@ export default function PublicationDecisions({ source, types, disabled = false, 
             {resolution?.targetRid && <details><summary>查看对象标识</summary><code aria-label={`${cls.name} 目标 RID`}>{resolution.targetRid}</code>{target?.description && <p>{target.description}</p>}</details>}
           </>}</td>
           <td>
+            {!!sameNames.length && <div role="alert"><strong>精确同名对象（{sameNames.length}）</strong><p>请核对业务含义并明确选择复用、扩展或新增。</p>{sameNames.map(t => <p key={t.rid}>{t.display_name} · <code>{t.rid}</code> · {t.description || '未填写业务定义'}</p>)}</div>}
             {!mode && <p>请先选择本次操作。</p>}
             {(mode === 'reuse' || mode === 'extend') && !target && <p role="status">请选择已有对象类型。</p>}
             {mode === 'reuse' && target && <p>{unresolved.length ? `${unresolved.length} 个属性需要对应` : '属性已对应，沿用已有定义'}。</p>}

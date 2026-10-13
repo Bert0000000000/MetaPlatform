@@ -120,6 +120,7 @@ async def test_prepare_rejects_existing_relationship_property_schema(monkeypatch
     )
     monkeypatch.setattr(publication, "current_type", AsyncMock(return_value=None))
     monkeypatch.setattr(publication, "datasource_baseline", AsyncMock(return_value=[]))
+    monkeypatch.setattr(publication, "native_type_catalog", AsyncMock(return_value=[]))
     monkeypatch.setattr(
         publication.native, "validate_model_endpoint", AsyncMock(return_value={"valid": True})
     )
