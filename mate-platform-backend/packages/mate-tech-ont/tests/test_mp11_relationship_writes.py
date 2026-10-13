@@ -814,3 +814,182 @@ def test_inheritance_is_directional_and_does_not_accept_unrelated_types(inherite
     )
     response = client.post(BASE + "/link-instances", json={**payload, "src": leaf_i})
     assert response.status_code == 200, response.text
+
+
+def test_pg_inherited_link_write_and_child_supersession_do_not_deadlock(monkeypatch):
+    """A schema publication cannot invert child-class and endpoint row locks."""
+    dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
+    if not dsn:
+        pytest.fail("Required independent MP11_RELATIONSHIP_PG_DSN", pytrace=False)
+    target = urlparse(dsn)
+    assert target.hostname in {"127.0.0.1", "localhost"}
+    assert target.port and target.port != 5432
+    assert target.path.startswith("/codex_mp11_")
+    from mate_kernel.ontology import LinkInstance
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+    writer = PgOntologyRepository(dsn=dsn)
+    updater = PgOntologyRepository(dsn=dsn)
+    suffix = uuid4().hex
+    old = f"ont.{T}.obj.race-child-{suffix}.v1"
+    new = old[:-2] + "v2"
+    iid = f"ont.{T}.ind.race-child.{suffix}"
+    link = f"ont.{T}.link.race-parent-{suffix}"
+    with writer.tenant_scope(T):
+        _seed(writer)
+        child = replace(
+            writer.get_object_type(ClassRef(CUSTOMER)),
+            rid=ClassRef(old),
+            parent_class=ClassRef(CUSTOMER),
+        )
+        writer.upsert_object_type(child)
+        writer.create_individual(
+            replace(writer.get_individual(C1), rid=iid, class_rid=ClassRef(old), primary_key=suffix)
+        )
+        writer.upsert_link_type(
+            LinkType(
+                rid=ClassRef(link),
+                src=ClassRef(CUSTOMER),
+                dst=ClassRef(ORDER),
+                cardinality=Cardinality.ONE_TO_MANY,
+                directionality=Directionality.DIRECTED,
+            )
+        )
+    updater._ensure_schema()
+    checked, proceed, archived = threading.Event(), threading.Event(), threading.Event()
+    ancestors = writer._relationship_ancestors
+    original_cursor = updater._cursor
+
+    def pause_after_endpoint_lock(cur, class_rid, *, lock=False):
+        if class_rid == old and lock:
+            checked.set()
+            assert proceed.wait(10), "test coordinator did not release the writer"
+        return ancestors(cur, class_rid, lock=lock)
+
+    @contextmanager
+    def observe_archive(conn):
+        with original_cursor(conn) as real:
+
+            class Cursor:
+                def execute(self, statement, params=None):
+                    result = real.execute(statement, params)
+                    if statement.startswith("UPDATE ont_object_type SET archived = TRUE"):
+                        archived.set()
+                    return result
+
+                def __getattr__(self, name):
+                    return getattr(real, name)
+
+            yield Cursor()
+
+    monkeypatch.setattr(writer, "_relationship_ancestors", pause_after_endpoint_lock)
+    monkeypatch.setattr(updater, "_cursor", observe_archive)
+    instance = LinkInstance(
+        rid=f"ont.{T}.lnk.race-parent.{suffix}",
+        link_type_rid=ClassRef(link),
+        src=iid,
+        dst=O1,
+        tenant_id=T,
+        created_at=datetime.now(UTC),
+    )
+
+    def create():
+        with writer.tenant_scope(T):
+            return writer.create_link_instance(instance, require_endpoints=True)
+
+    def supersede():
+        with updater.tenant_scope(T):
+            return updater.upsert_object_type(
+                replace(child, rid=ClassRef(new)), supersede_rids=[old]
+            )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        creating = pool.submit(create)
+        try:
+            assert checked.wait(10), "writer did not reach the inherited endpoint validation"
+            publishing = pool.submit(supersede)
+            archived.wait(2)  # Old lock order reaches archive while holding the schema lock.
+        finally:
+            proceed.set()
+        assert creating.result(timeout=10).rid == instance.rid
+        publishing.result(timeout=10)
+    with updater.tenant_scope(T):
+        assert updater.get_individual(iid).class_rid == ClassRef(new)
+        assert any(item.rid == instance.rid for item in updater.list_link_instances(ClassRef(link)))
+        assert updater.create_link_instance(instance, require_endpoints=True).rid == instance.rid
+
+
+def test_pg_usage_reports_zero_then_actual_action_write_count(auth_headers):
+    dsn = os.environ.get("MP11_RELATIONSHIP_PG_DSN")
+    if not dsn:
+        pytest.fail("Required independent MP11_RELATIONSHIP_PG_DSN", pytrace=False)
+    target = urlparse(dsn)
+    assert target.hostname in {"127.0.0.1", "localhost"}
+    assert target.port and target.port != 5432
+    assert target.path.startswith("/codex_mp11_")
+    from mate_kernel.ontology import ActionType
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+    repo = PgOntologyRepository(dsn=dsn)
+    suffix = uuid4().hex
+    cls = ClassRef(f"ont.{T}.obj.usage-{suffix}")
+    iid = f"ont.{T}.ind.usage.{suffix}"
+    action = ClassRef(f"ont.{T}.act.usage-{suffix}")
+    note = Property(
+        rid=ClassRef(f"ont.{T}.prop.note-{suffix}"),
+        type_id="string",
+        nullable=True,
+        title="Note",
+        format=PropertyFormat.STRING,
+    )
+    with repo.tenant_scope(T):
+        _seed(repo)
+        definition = repo.get_object_type(ClassRef(CUSTOMER))
+        repo.upsert_object_type(
+            replace(definition, rid=cls, properties=(*definition.properties, note))
+        )
+        repo.create_individual(
+            replace(repo.get_individual(C1), rid=iid, class_rid=cls, primary_key=suffix)
+        )
+        repo.upsert_action_type(
+            ActionType(
+                rid=action,
+                parameters=(),
+                submission_criteria=(),
+                side_effects=(),
+                function_ref=None,
+                on=(cls,),
+                declarative_edits=(
+                    {
+                        "op": "set_property",
+                        "target": "$target",
+                        "property_rid": note.rid.rid,
+                        "value": "written",
+                    },
+                ),
+            )
+        )
+    app = FastAPI()
+    install_auth(app)
+    app.include_router(router)
+    app.state.kernel_repo = repo
+    with TestClient(app, headers=auth_headers, raise_server_exceptions=False) as client:
+        read = client.get(BASE + "/individuals", params={"class_rid": cls.rid})
+        assert read.status_code == 200, read.text
+        usage = client.get(BASE + "/usage/types")
+        assert usage.status_code == 200, usage.text
+        before = next(row for row in usage.json() if row["class_rid"] == cls.rid)
+        assert before["reads"] == 1
+        assert before["writes"] == 0
+        applied = client.post(
+            BASE + f"/action-types/{action.rid}/apply-edit-set",
+            json={"target_iid": iid, "impact_summary": "Dedicated synthetic usage regression"},
+        )
+        assert applied.status_code == 200, applied.text
+        after = next(
+            row for row in client.get(BASE + "/usage/types").json() if row["class_rid"] == cls.rid
+        )
+        assert after["reads"] == 1
+        assert after["writes"] == 1
+    with repo.tenant_scope(T):
+        assert repo.get_individual(iid).get(note.rid) == "written"
