@@ -1,7 +1,7 @@
 # ADR-0084：1.1 契约纠错与权限边界
 
 - 日期：2026-10-13（Asia/Shanghai）
-- 状态：Proposed，供兼容门禁逐项复核；不代表新增豁免已获批准、业务验收、GA 或上线。
+- 状态：Integration Reviewed。用户于 2026-10-13 明确批准本清单的 270 条精确 ERR（266 条旧契约纠错、4 条权限收紧）；不代表业务验收、GA 或上线。
 - 依据：[1.1 规格](../specs/2026-10-11-metaplatform-product-v1.1.md)、[1.1 实施计划](../../superpowers/plans/2026-10-11-metaplatform-product-v1.1-implementation.md)、ADR-0062、ADR-0080、ADR-0081、ADR-0082、ADR-0083。
 - 审计清单：[oasdiff-mp11-diagnostics-review.yaml](../../../mate-platform-backend/contracts/openapi/oasdiff-mp11-diagnostics-review.yaml)。该文件是复核数据，不是 err-ignore 输入。
 
@@ -63,15 +63,16 @@ AppHub GET/HEAD/OPTIONS 和显式只读 POST（包括 proposal-context）要求 
 
 ## 4. 精确门禁方案，默认拒绝
 
-新增清单所有条目当前为 `reviewDecision: pending`、`ignoreEnabled: false`。`policyCandidateFingerprints` 只有上述四项，不把 266 条合同纠错当成已批准的整体豁免。根任务逐组核对后再决定具体合同纠错与政策诊断的处置；真正意外破坏先修兼容实现或合同。
+用户明确批准后，270 条 ERR 逐项设置 `reviewDecision: approved`、`ignoreEnabled: true`，37 条 WARN 保持不忽略。`policyCandidateFingerprints` 仍只有上述四项。批准仅覆盖固定旧/新合同、50 个关联源码符号和精确诊断；真正意外破坏先修兼容实现或合同。
 
-若复核后需要接入清单，必须满足全部条件：
+两道 CI 契约门禁接入同一检查器，必须满足全部条件：
 
 1. 固定旧 main commit；校验旧/新完整 bundle 的语义 SHA-256，同时保留原文件 SHA-256 供追溯。
 2. 重新计算关联实现函数的 AST 哈希和已展开本地 schema 引用的旧/新操作语义哈希。语义规范化仅移除 description/summary/title/example/examples/externalDocs 注释，保留 properties/schemas 等名称字典中的同名业务字段，规范化纯类型分支的等价 union。
 3. 仅匹配复核通过的精确 method、原路径、ID、fingerprint、诊断全文以及这些固定哈希。不得按类别、路径前缀或全 changes 放行。
 4. 任意新 ERR、文本/路径变化、源函数变化、schema/security 语义变化或基线漂移都使匹配失败并重新审计。文档分类不替代运行时回归。
-5. 临时生成选定诊断输入并重跑 oasdiff；其他诊断仍应失败。ADR-0082 原八条文件保持独立和原样。本次未修改 workflow、旧 err-ignore 或启用新忽略输入。
+5. 临时生成选定诊断输入并重跑原始 oasdiff；只有真实工具 exit 0 才通过，37 条警告完整保留，报告同时保留原始 exit 1 / 270 ERR。ADR-0082 原八条文件保持独立和原样；未增加按类别或路径放行。
+6. 官方 oasdiff 1.33.0 的 Linux 下载包与二进制均固定 SHA-256；执行 25 条真实工具回归，新增错误、单条未批准、源码/操作/bundle 哈希变化及旧八条漂移均阻断。主干未来零 ERR 的比较正常执行一次工具，不套用旧清单。
 
 | 固定快照 | SHA-256 |
 | --- | --- |

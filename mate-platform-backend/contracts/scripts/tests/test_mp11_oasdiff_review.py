@@ -105,7 +105,12 @@ def first_error(manifest):
 
 
 def test_pending_review_cannot_suppress_the_real_270_errors(tmp_path, reviewed_pair):
-    result, report = run_checker(tmp_path, reviewed_pair, reviewed_pair["manifest"])
+    pending = copy.deepcopy(reviewed_pair["manifest"])
+    for row in pending["diagnostics"]:
+        if row["severity"] == "ERR":
+            row["reviewDecision"] = "pending"
+            row["ignoreEnabled"] = False
+    result, report = run_checker(tmp_path, reviewed_pair, pending)
     assert result.returncode == 1, result.stderr
     assert report["failure"] == "pending-review"
     assert report["rawErrors"] == 270

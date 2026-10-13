@@ -93,22 +93,60 @@ jobs:
   ga-001-openapi:
     name: ga-001 oasdiff (no unapproved breaking)
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Extract base spec
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install exact oasdiff 1.33.0
+        shell: bash
         run: |
-          mkdir -p .ci
-          git show origin/main:mate-platform-backend/contracts/openapi/generated/bundled.yaml > .ci/base.yaml 2>/dev/null || echo "{}" > .ci/base.yaml
-      - uses: oasdiff/oasdiff-action/breaking@v0.1.11
+          set -euo pipefail
+          mkdir -p .ci/oasdiff-tool
+          curl --fail --location --retry 3 --max-time 60 \
+            https://github.com/oasdiff/oasdiff/releases/download/v1.33.0/oasdiff_1.33.0_linux_amd64.tar.gz \
+            --output .ci/oasdiff-1.33.0.tar.gz
+          echo "43a4e328e2d13ba1552d760aa68d2485c75c5621f309f6ff64ae895188345247  .ci/oasdiff-1.33.0.tar.gz" | sha256sum --check --strict
+          tar --extract --gzip --file .ci/oasdiff-1.33.0.tar.gz --directory .ci/oasdiff-tool oasdiff
+          echo "fa65aae43c867e9f79da9cb121d3c1a113637883afe014c0680fd5b50696f416  .ci/oasdiff-tool/oasdiff" | sha256sum --check --strict
+          chmod 700 .ci/oasdiff-tool/oasdiff
+          python -m pip install PyYAML pytest
+      - name: Extract canonical base contract
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          git show "origin/${BASE_REF}:mate-platform-backend/contracts/openapi/generated/bundled.yaml" > .ci/base.yaml
+      - name: Verify exact approval guard against real oasdiff
+        env:
+          OASDIFF_BIN: ${{ github.workspace }}/.ci/oasdiff-tool/oasdiff
+          OASDIFF_SHA256: fa65aae43c867e9f79da9cb121d3c1a113637883afe014c0680fd5b50696f416
+        run: |
+          python -m pytest mate-platform-backend/contracts/scripts/tests/test_mp11_oasdiff_review.py \
+            -q --basetemp .ci/oasdiff-regression-temp
+      - name: Compare contracts with exact reviewed approvals
+        shell: bash
+        run: |
+          python mate-platform-backend/contracts/scripts/check_mp11_oasdiff.py \
+            --base .ci/base.yaml \
+            --revision mate-platform-backend/contracts/openapi/generated/bundled.yaml \
+            --manifest mate-platform-backend/contracts/openapi/oasdiff-mp11-diagnostics-review.yaml \
+            --repo-root . \
+            --oasdiff .ci/oasdiff-tool/oasdiff \
+            --oasdiff-sha256 fa65aae43c867e9f79da9cb121d3c1a113637883afe014c0680fd5b50696f416 \
+            --report .ci/mp11-oasdiff-review.json
+      - name: Upload bounded contract review report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          base: .ci/base.yaml
-          revision: mate-platform-backend/contracts/openapi/generated/bundled.yaml
-          fail-on: "ERR"
-          # ADR-0082 §2.7: only eight exact required-plan diagnostics are approved.
-          err-ignore: mate-platform-backend/contracts/openapi/oasdiff-r1-approved-errors.txt
+          name: mp11-oasdiff-ga-${{ github.run_id }}
+          path: .ci/mp11-oasdiff-review.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
 
   # rule 8: helm template + kubeconform
   ga-008-helm:
