@@ -24,7 +24,7 @@
 .ms-schema-edge:focus-visible polyline:not(.ms-schema-edge-hit) { stroke: var(--ms-accent); opacity: 1; stroke-width: 2.5; }
 .ms-schema-expanded { position: fixed; inset: 25px; z-index: 1000; display: flex; flex-direction: column; padding: 20px; border: 1px solid var(--ms-border); box-shadow: 0 0 0 30px #0007; }
 .ms-schema-expanded .ms-schema-svg { height: auto; flex: 1; min-height: 0; }
-.ms-concept-diagram { --concept-grid: #d9dee5; --concept-line: #a6b1bf; }
+.ms-concept-diagram { --concept-grid: #e4e8ee; --concept-line: #a6b1bf; }
 [theme-mode=dark] .ms-concept-diagram { --concept-grid: #30373e; --concept-line: #61707e; }
 .ms-concept-diagram .ms-schema-toolbar { padding: 12px 0; gap: 10px; border-bottom: 1px solid var(--ms-border); }
 .ms-concept-heading { margin-right: auto; }
@@ -45,7 +45,7 @@
 [theme-mode=dark] .ms-concept-kind-1 { --concept-color: #85c6b1; --concept-tint: #192b25; --concept-border: #345349; }
 [theme-mode=dark] .ms-concept-kind-2 { --concept-color: #d5b577; --concept-tint: #2c271c; --concept-border: #5a4b2e; }
 [theme-mode=dark] .ms-concept-kind-3 { --concept-color: #b5a6d6; --concept-tint: #272332; --concept-border: #4b405f; }
-.ms-concept-diagram .ms-schema-node rect { fill: var(--concept-tint); stroke: var(--concept-border); stroke-width: 1; }
+.ms-concept-diagram .ms-schema-node rect { fill: var(--concept-tint); stroke: var(--concept-border); stroke-width: 1; rx: 7px; }
 .ms-concept-diagram .ms-schema-node:hover rect, .ms-concept-diagram .ms-schema-node.is-selected rect, .ms-concept-diagram .ms-schema-node:focus-visible rect { stroke: var(--concept-color); stroke-width: 2; }
 .ms-concept-diagram .ms-schema-node { outline: none; transition: opacity .12s; }
 .ms-concept-diagram .ms-schema-node { cursor: grab; }
@@ -64,7 +64,7 @@
 .ms-concept-diagram .ms-schema-edge.is-connected { color: var(--ms-accent); }
 .ms-concept-diagram .ms-schema-edge.is-selected, .ms-concept-diagram .ms-schema-edge:focus-visible { color: var(--ms-accent); }
 .ms-concept-diagram .ms-schema-edge.is-selected polyline:not(.ms-schema-edge-hit), .ms-concept-diagram .ms-schema-edge:focus-visible polyline:not(.ms-schema-edge-hit) { stroke-width: 2; }
-.ms-concept-diagram .ms-schema-edge text { font-size: 11px; stroke: var(--ms-bg); stroke-width: 5px; }
+.ms-concept-diagram .ms-schema-edge text { font-size: 12px; stroke: var(--ms-bg); stroke-width: 7px; stroke-linejoin: round; }
 .ms-concept-diagram .ms-schema-node.is-dimmed { opacity: .35; }
 .ms-concept-diagram .ms-schema-edge.is-dimmed { opacity: .18; }
 .ms-concept-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 12px 0; border-top: 1px solid var(--ms-border); font-size: 11px; color: var(--ms-muted); }
@@ -72,8 +72,8 @@
 .mp-schema-graph .ms-concept-footer label { display: inline-flex; flex-direction: row; align-items: center; gap: 5px; margin: 0; cursor: pointer; }
 .ms-concept-footer input { width: 12px; height: 12px; accent-color: var(--ms-accent); }
 .ms-concept-legend i { width: 7px; height: 7px; border-radius: 2px; background: var(--concept-color); }
-.ms-concept-selected-relation { border-top: 1px solid var(--ms-border); padding-top: 10px; }
-.mp-schema-graph .ms-concept-selected-relation button { padding: 0; border: 0; background: transparent; text-align: left; flex-wrap: wrap; }
+.ms-concept-selected-relation { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--ms-border); border-radius: 8px; background: var(--ms-fill); }
+.mp-schema-graph .ms-concept-selected-relation button { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: transparent; text-align: left; flex-wrap: wrap; font-size: 12px; }
 .ms-concept-selected-relation span { font-size: 11px; color: var(--ms-muted); }
 .ms-concept-empty { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-size: 13px; color: var(--ms-muted); }
 .ms-concept-diagram.ms-schema-expanded .ms-concept-canvas { flex: 1; }
