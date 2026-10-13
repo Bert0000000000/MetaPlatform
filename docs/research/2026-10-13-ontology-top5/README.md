@@ -1,28 +1,29 @@
-# Ontology TOP5 调研与18项工单交付
+# Ontology TOP5：分文件交付
 
-日期：2026-10-13。MetaPlatform源码基线dc8980d3e129e94f0bc55190705ede7cbe304ba0。状态：研究与待实施需求；未实现、合并或部署本批功能。
+日期：2026-10-13。MetaPlatform源码调研基线dc8980d3e129e94f0bc55190705ede7cbe304ba0。状态：研究与待实施需求；本次文件交付调整没有实现、合并或部署本批功能。
 
-## 当前入口
+## 18张Issue，36份独立需求文件
 
-- [代码、功能、UI交互交叉审校与18项差距](AUDIT.md)
-- [18项Issue实际编号、当前附件版本与调度建议](AUDIT-ISSUES.md)
-- [一小时粒度、独立验证与部署/回滚边界](AUDIT-DELIVERY.md)
-- [G03 v2 PRD](gaps/g03/PRD.md) / [Prompt](gaps/g03/PROMPT.md)：#120，标题与技术身份分离。
-- [G17 PRD](gaps/g17/PRD.md) / [Prompt](gaps/g17/PROMPT.md)：#136，lint加载期间不提前显示通过。
-- [G18 PRD](gaps/g18/PRD.md) / [Prompt](gaps/g18/PROMPT.md)：#137，未知导出格式明确拒绝。
+每个差距保持一张独立Issue，分别附PRD.md和PROMPT.md两个独立文件的固定版本原文件下载链接与在线阅读入口。不把两种文档合成一个文件，不以压缩包交付，也不要求先下载整套报告。
 
-原16项保留，新增2项，合计18份PRD与18份Prompt。每票自己的功能、测试、候选发布和回滚同票交付；开发需从领取时最新main建独立实施分支。研究分支不是应用实施分支。
+**[逐项打开18张Issue及各自PRD、Prompt](AUDIT-ISSUES.md)**
 
-## 五个项目专篇与历史研究
+Issue编号：G01–G16对应#118–#133，G17对应#136，G18对应#137。#118–#133的正文已调整为独立文件入口；#136、#137原本已是独立文件，无重复建票。G03使用v2，不再按旧版标题处理细节实施。每张Issue保留原范围、优先级、独立测试、发布和回滚要求。
 
-[Semantica](projects/01-semantica.md) · [Utopia](projects/02-utopia.md) · [TrustGraph](projects/03-trustgraph.md) · [Protégé](projects/04-protege.md) · [TIS](projects/05-tis.md)。
+本目录的AUDIT-ISSUES.md只提供文件索引，不代替36份独立正文。研究文档PR只是存档容器，不是把18张功能Issue合成一张；实施仍从领取时最新main建单项小分支。
 
-[原完整报告](REPORT.md)、[原16项矩阵](GAP-MATRIX.md)、[原16项发布索引](ISSUES.md)、[原交付规范](DELIVERY-STANDARD.md)保留历史。部分结论以AUDIT.md审校补充为准；G03原ZIP中的旧版实施细节已被v2替代，勿单独执行。
+## 五个项目分别阅读
 
-[候选池](evidence/candidate-pool.json) · [仓库SHA快照](evidence/repository-snapshots.json) · [源码清单](evidence/source-manifest.json)。TOP5是topic:ontology候选范围内相关软件按Stars筛选，不是整个GitHub穷尽质量榜。
+- [Semantica：代码、功能、UI调研](projects/01-semantica.md)
+- [Utopia：代码、功能、UI调研](projects/02-utopia.md)
+- [TrustGraph：代码、功能、UI调研](projects/03-trustgraph.md)
+- [Protégé：代码、功能、UI调研](projects/04-protege.md)
+- [TIS：代码、功能、UI调研](projects/05-tis.md)
 
-## 附件及验证边界
+## 参考与验收边界
 
-旧票附仓库ZIP；G03-v2/G17/G18的Issue附已提交真实Markdown原文件固定SHA下载链接及在线阅读入口，不是GitHub原生user-attachments上传。以各Issue当前正文的有效版本为实施单源。
+[交叉审校报告](AUDIT.md) · [一小时粒度、测试与发布/回滚边界](AUDIT-DELIVERY.md) · [原完整研究](REPORT.md)。旧版研究与历史打包文件仅保留存档，不作为当前需求下载入口；当前附件以各Issue正文和AUDIT-ISSUES.md为准。
 
-本轮UI分析依据源码/官方文档，未实机运行五产品；代码SHA不等于部署SHA。候选独立发布环境尚未本轮验证，云端仍需受信main/审核/required CI；一小时不是CI排队到正式云端上线的时钟保证。完整OWL2或任意本体无损迁移不属于18票完成后的自动成果。
+[候选池](evidence/candidate-pool.json) · [仓库SHA快照](evidence/repository-snapshots.json) · [源码清单](evidence/source-manifest.json)。TOP5为topic:ontology候选范围内相关软件按Stars筛选，不是整个GitHub穷尽质量榜。
+
+文件链接指向已提交的仓库Markdown，不是GitHub原生user-attachments上传。UI分析依据源码/官方文档，未实机运行五产品，代码SHA不等于部署SHA。候选独立发布环境未由本研究验证；云端仍需受信main、审核和required CI。一小时不是CI排队到正式上线的时钟保证。完整OWL2与任意本体无损迁移不属于18票完成后的自动成果。
