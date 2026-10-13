@@ -31,6 +31,7 @@ from .core import (
     validate_ontology,
 )
 from .store import ModelingStore, RevisionConflict, now
+from .upload import workbook_filename
 
 router = APIRouter(prefix="/api/v1/ont/v2/modeling", tags=["data-modeling"])
 
@@ -177,8 +178,10 @@ async def list_sources(request: Request):
 @router.post("/sources", status_code=201, operation_id="ontCreateModelingSource")
 async def upload_source(request: Request, file: UploadFile = File(...)):
     store = store_for(request, True)
-    if not (file.filename or "").lower().endswith(".xlsx"):
-        raise HTTPException(422, "请上传 .xlsx 工作簿")
+    try:
+        name = workbook_filename(file.filename)
+    except ValueError as exc:
+        failure(exc)
     content = await file.read(12 * 1024 * 1024 + 1)
     if len(content) > 12 * 1024 * 1024:
         raise HTTPException(413, "文件不能超过 12 MB")
@@ -186,7 +189,7 @@ async def upload_source(request: Request, file: UploadFile = File(...)):
         rows, headers = await asyncio.to_thread(read_workbook, content)
         profile = await asyncio.to_thread(profile_rows, rows, headers)
         return store.create(
-            file.filename, context(request).user_id, profile, rows, headers, content
+            name, context(request).user_id, profile, rows, headers, content
         )
     except ValueError as exc:
         failure(exc)
