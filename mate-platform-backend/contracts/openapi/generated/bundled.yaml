@@ -16607,6 +16607,7 @@ paths:
         - ont
       summary: Validate model definition without mutation
       operationId: ontValidateV2Model
+      description: Property slug validation uses the final business identifier before an optional .vN suffix. Both ont.<tenant>.prop.<slug>.vN and ont.<tenant>.prop.<domain>.<slug>.vN are supported. Distinct properties in the same domain are allowed; repeated slugs across versions are rejected.
       x-mate-owner: ontology-platform
       x-mate-permission: ont.write
       x-mate-required-tenant: true

@@ -12,6 +12,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from mate_kernel.ontology.identity.class_ref import property_slug
+
 __all__ = [
     "LIFECYCLE_ACTIONS",
     "lint_anti_patterns",
@@ -62,11 +64,7 @@ def lint_anti_patterns(
                 }
             )
         for p in ot.properties:
-            slug = (
-                p.rid.rid.split(".")[3]
-                if len(p.rid.rid.split(".")) >= 5
-                else p.rid.rid.split(".")[-1]
-            )
+            slug = property_slug(p.rid.rid)
             # Kitchen Sink
             if _TECH_COLUMN_RE.match(slug):
                 findings.append(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+from dataclasses import replace
 
 _K = os.path.join(os.path.dirname(__file__), "..", "src")
 if _K not in sys.path:
@@ -53,9 +54,30 @@ def _ot():
     )
 
 
+def _namespaced_ot():
+    ot = _ot()
+    properties = tuple(
+        replace(p, rid=ClassRef(p.rid.rid.replace(".prop.", ".prop.crm."))) for p in ot.properties
+    )
+    return replace(ot, properties=properties, primary_key=(properties[0].rid,))
+
+
 class TestModel:
     def test_valid(self):
         assert validate_model(_ot())["valid"] is True
+
+    def test_distinct_properties_in_same_domain_are_valid(self):
+        report = validate_model(_namespaced_ot())
+        assert report["valid"] is True, report
+
+    def test_namespaced_duplicate_slug_across_versions_is_rejected(self):
+        ot = _namespaced_ot()
+        duplicate = replace(
+            ot.properties[0], rid=ClassRef("ont.t.prop.crm.g-id.v2"), primary_key=False
+        )
+        report = validate_model(replace(ot, properties=(*ot.properties, duplicate)))
+        assert report["valid"] is False
+        assert report["errors"] == ["slug 重复(2 次): g-id"]
 
     def test_pk_missing_from_properties(self):
         ot = _ot()
@@ -116,3 +138,17 @@ class TestData:
     def test_rid_key_accepted(self):
         d = validate_instance(_ot(), {ID: "x1", NAME: "n"})
         assert d["valid"] is True
+
+    def test_namespaced_slug_keys_are_accepted(self):
+        report = validate_instance(_namespaced_ot(), {"g-id": "x1", "g-name": "n", "g-amt": 3})
+        assert report["valid"] is True, report
+
+    def test_namespaced_rid_keys_still_require_each_field(self):
+        ot = _namespaced_ot()
+        report = validate_instance(ot, {ot.properties[0].rid.rid: "x1"})
+        assert report["valid"] is False
+        assert report["errors"] == ["必填属性缺失: g-name"]
+
+    def test_namespaced_primary_key_missing_is_reported_by_property(self):
+        report = validate_instance(_namespaced_ot(), {"g-name": "n"})
+        assert report["errors"] == ["必填属性缺失: g-id", "PK 属性缺值: g-id"]

@@ -7,13 +7,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from .identity.class_ref import property_slug
 from .types.object_type import ObjectType
 
 
 def _props_index(ot: ObjectType) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for p in ot.properties:
-        slug = p.rid.rid.split(".")[3] if len(p.rid.rid.split(".")) >= 5 else p.rid.rid
+        slug = property_slug(p.rid.rid)
         out[slug] = {
             "rid": p.rid.rid,
             "type_id": p.type_id,

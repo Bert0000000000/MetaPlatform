@@ -42,6 +42,12 @@ _RID_RE = re.compile(
 )
 
 
+def property_slug(rid: str) -> str:
+    """Final business identifier, before an optional version; domain is not a field."""
+    parts = rid.split(".")
+    return parts[-2] if len(parts) > 1 and re.fullmatch(r"v\d+", parts[-1]) else parts[-1]
+
+
 @dataclass(frozen=True, slots=True)
 class ClassRef:
     rid: str

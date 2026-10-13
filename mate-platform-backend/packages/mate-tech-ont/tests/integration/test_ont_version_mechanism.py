@@ -363,6 +363,76 @@ class TestStaleDraftConflict:
 class TestPublishPreflight:
     """§4：发布前验证引用与兼容性 —— 坏模型不进"已发布版本"。"""
 
+    def test_namespaced_properties_draft_preflight_publish_and_readback(self, repo, client):
+        p_id, p_stage = f"ont.{T}.prop.crm.deal-id.v1", f"ont.{T}.prop.crm.deal-stage.v1"
+        payload = {
+            "rid": OBJ,
+            "display_name": "deal",
+            "primary_key": [p_id],
+            "interfaces": [],
+            "properties": [
+                {**_P_JSON, "rid": p_id},
+                {**_P_JSON, "rid": p_stage, "primary_key": False, "title": "stage"},
+            ],
+        }
+        saved = client.post(
+            "/api/v1/ont/v2/object-types/wip?create_only=true", json={"payload": payload}
+        )
+        assert saved.status_code == 200, saved.text
+        drafts = client.get("/api/v1/ont/v2/object-types/wip").json()
+        restored = next(row for row in drafts if row["rid"] == OBJ)
+        assert restored["author"] == "alice" and restored["create_only"] is True
+        assert {p["rid"] for p in restored["payload"]["properties"]} == {p_id, p_stage}
+        checked = client.post("/api/v1/ont/v2/object-types/validate", json=restored["payload"])
+        assert checked.status_code == 200, checked.text
+        assert checked.json()["valid"] is True, checked.json()
+        assert checked.json()["references"]["dependencies"] == [p_id, p_stage]
+        assert client.get(f"/api/v1/ont/v2/object-types/{OBJ}").status_code == 404
+        published = client.post(f"/api/v1/ont/v2/object-types/wip/{OBJ}/apply")
+        assert published.status_code == 200, published.text
+        live = client.get(f"/api/v1/ont/v2/object-types/{OBJ}").json()
+        assert {p["rid"] for p in live["properties"]} == {p_id, p_stage}
+        missing = client.post(
+            "/api/v1/ont/v2/object-types/validate-data",
+            json={"class_rid": OBJ, "props": {p_id: "d-1"}},
+        )
+        assert missing.status_code == 200, missing.text
+        assert missing.json()["errors"] == ["必填属性缺失: deal-stage"]
+        valid = client.post(
+            "/api/v1/ont/v2/object-types/validate-data",
+            json={"class_rid": OBJ, "props": {"deal-id": "d-1", "deal-stage": "new"}},
+        )
+        assert valid.status_code == 200 and valid.json()["valid"], valid.text
+        duplicate = client.post(
+            "/api/v1/ont/v2/object-types?create_only=true",
+            json={**payload, "display_name": "overwritten"},
+        )
+        assert duplicate.status_code == 409, duplicate.text
+        assert client.get(f"/api/v1/ont/v2/object-types/{OBJ}").json() == live
+        with repo.tenant_scope(T):
+            assert len(repo.list_versions(ClassRef(OBJ))) == 1
+
+    def test_namespaced_duplicate_versions_are_rejected_without_publication(self, repo, client):
+        p_id = f"ont.{T}.prop.crm.deal-id.v1"
+        payload = {
+            "rid": OBJ,
+            "display_name": "deal",
+            "primary_key": [p_id],
+            "interfaces": [],
+            "properties": [
+                {**_P_JSON, "rid": p_id},
+                {**_P_JSON, "rid": p_id.replace(".v1", ".v2"), "primary_key": False},
+            ],
+        }
+        checked = client.post("/api/v1/ont/v2/object-types/validate", json=payload)
+        assert checked.status_code == 200
+        assert checked.json()["errors"] == ["slug 重复(2 次): deal-id"]
+        published = client.post("/api/v1/ont/v2/object-types?create_only=true", json=payload)
+        assert published.status_code == 422, published.text
+        assert client.get(f"/api/v1/ont/v2/object-types/{OBJ}").status_code == 404
+        with repo.tenant_scope(T):
+            assert len(repo.list_versions(ClassRef(OBJ))) == 0
+
     def test_duplicate_property_slug_is_rejected_on_publish(self, repo, client) -> None:
         """静态校验：构造器管不到的属性 slug 重复必须在发布口拦下。"""
         with repo.tenant_scope(T):

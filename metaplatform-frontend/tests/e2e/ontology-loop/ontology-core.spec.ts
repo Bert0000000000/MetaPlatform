@@ -15,6 +15,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
 import { pgQuery } from '../helpers/pg';
+import { injectAuthIntoPage } from '../../../apps/web/tests/e2e/helpers/auth';
 
 // This suite holds real access/refresh tokens; never retain authentication media.
 test.use({trace:'off',video:'off',screenshot:'off'});
@@ -151,6 +152,84 @@ test('建模：ObjectType（含层级）→ LinkType → ActionType，读回一�
     },
   });
   expect(at.ok(), `action-type: ${at.status()} ${await at.text()}`).toBeTruthy();
+});
+
+test('手工新建：同领域多属性草稿 → 恢复 → 预检 → 发布 → 重复创建拒绝', async ({ page, request }) => {
+  test.setTimeout(120_000);
+  await injectAuthIntoPage(page, token);
+  // Match the public HTTP browser capability while retaining real auth/API/PG.
+  await page.addInitScript(() => Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true }));
+  const slug = `${NS}-manual-${Date.now().toString(36)}`;
+  const name = `手工新建回归 ${slug}`;
+  const rid = `ont.${T}.obj.crm.${slug}.v1`;
+  const pId = `ont.${T}.prop.crm.${slug}-id.v1`;
+  const pAmount = `ont.${T}.prop.crm.${slug}-amount.v1`;
+  await page.goto('/ontology/model/object-types?create=true');
+  const editor = page.getByRole('dialog', { name: '模型编辑器' });
+  await expect(editor).toBeVisible();
+  const continueAfterNameScan = async () => {
+    const checkedName = page.waitForResponse(response =>
+      new URL(response.url()).pathname.endsWith('/ont/v2/object-types/precheck')
+      && response.request().method() === 'POST');
+    await editor.getByLabel('业务名称', { exact: true }).focus();
+    await editor.getByLabel('业务名称', { exact: true }).press('Tab');
+    const response = await checkedName;
+    expect(response.status(), 'real name similarity scan').toBe(200);
+    const result = await response.json();
+    if ((result.data ?? result).candidates?.length) {
+      const similar = page.getByRole('dialog', { name: '检测到相似概念' });
+      await similar.getByRole('button', { name: '继续创建', exact: true }).click();
+      await expect(similar).toHaveCount(0);
+    }
+  };
+  await editor.getByLabel('业务标识', { exact: true }).fill(slug);
+  await editor.getByLabel('业务名称', { exact: true }).fill(name);
+  await continueAfterNameScan();
+  await editor.getByRole('button', { name: '添加属性', exact: true }).click();
+  await editor.getByPlaceholder('例如 dept_name').fill('amount');
+  await editor.getByPlaceholder('例如 部门名称').fill('金额');
+  await editor.locator('.mp-onto-prop-body').getByRole('combobox').first().selectOption('double');
+  await editor.getByRole('button', { name: '保存草稿', exact: true }).click();
+  await expect(editor.getByText('草稿已保存，刷新后可恢复；尚未发布。')).toBeVisible();
+  const drafts = await request.get(`${GW}/ont/v2/object-types/wip`, { headers: h() });
+  expect(drafts.ok()).toBeTruthy();
+  const draft = (await drafts.json()).find((row: {rid: string}) => row.rid === rid);
+  expect(draft.create_only).toBe(true);
+  expect(draft.payload.properties.map((p: {rid: string}) => p.rid)).toEqual([pId, pAmount]);
+  await page.reload();
+  await expect(editor).toBeVisible();
+  await editor.getByRole('button', { name: `恢复草稿：${name}`, exact: true }).click();
+  await expect(editor.getByLabel('业务名称', { exact: true })).toHaveValue(name);
+  await continueAfterNameScan();
+  await editor.getByRole('button', { name: '预检与影响', exact: true }).click();
+  await expect(editor.getByLabel('预检结果')).toContainText('模型校验通过');
+  expect((await request.get(`${GW}/ont/v2/object-types/${rid}`, { headers: h() })).status()).toBe(404);
+  await editor.getByRole('button', { name: '发布对象类型', exact: true }).click();
+  await expect(editor).not.toBeVisible();
+  const read = await request.get(`${GW}/ont/v2/object-types/${rid}`, { headers: h() });
+  expect(read.ok()).toBeTruthy();
+  const published = await read.json();
+  expect(published.display_name).toBe(name);
+  expect(published.primary_key).toEqual([pId]);
+  expect(published.properties).toEqual(expect.arrayContaining([
+    expect.objectContaining({rid: pId, primary_key: true, nullable: false}),
+    expect.objectContaining({rid: pAmount, title: '金额', type_id: 'double', format: 'double'}),
+  ]));
+  const instance = await request.post(`${GW}/ont/v2/individuals`, { headers: h(), data: {
+    rid: `ont.${T}.ind.${slug}.sample`, class_rid: rid, primary_key: 'sample',
+    props: {[pId]: {value: 'sample', type: 'string'}, [pAmount]: {value: 12.5, type: 'double'}},
+  }});
+  expect(instance.ok()).toBeTruthy();
+  const query = await request.post(`${GW}/ont/v2/object-query`, { headers: h(), data: {source: rid} });
+  expect(query.ok()).toBeTruthy();
+  const queried = await query.json();
+  expect(queried.rows).toEqual([expect.objectContaining({[`${slug}-id`]: 'sample', [`${slug}-amount`]: 12.5})]);
+  expect(Object.keys(queried.result_schema)).toEqual(expect.arrayContaining([`${slug}-id`, `${slug}-amount`]));
+  const duplicate = await request.post(`${GW}/ont/v2/object-types?create_only=true`, {
+    headers: h(), data: {...draft.payload, display_name: '禁止覆盖'},
+  });
+  expect(duplicate.status()).toBe(409);
+  expect(await (await request.get(`${GW}/ont/v2/object-types/${rid}`, { headers: h() })).json()).toEqual(published);
 });
 
 // ───────────────────────── 2. 数据映射与同步 ─────────────────────────

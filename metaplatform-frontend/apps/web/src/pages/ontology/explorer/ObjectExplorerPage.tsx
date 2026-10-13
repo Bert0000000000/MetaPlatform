@@ -18,6 +18,7 @@ import {
 } from '@/api/ont/kernel';
 import { DataTablePro, EmptyState, FilterBar, PageHeader, SheetDetail, SplitPane } from '@/components/skeleton';
 import { setOntologySelection } from '../hooks/assistantContext';
+import { copyText } from '@/utils/clipboard';
 import ActionFormDrawer from './ActionFormDrawer';
 import ProposalConfirmDrawer from '../components/ProposalConfirmDrawer';
 import './explorer.css';
@@ -540,10 +541,14 @@ export default function ObjectExplorerPage() {
             ) : (
               <Button
                 icon={<Copy size={15} strokeWidth={1.5} />}
-                onClick={() => {
+                onClick={async () => {
                   if (!detail) return;
-                  void navigator.clipboard?.writeText(detail.rid);
-                  Toast.success('RID 已复制');
+                  try {
+                    await copyText(detail.rid);
+                    Toast.success('RID 已复制');
+                  } catch {
+                    Toast.error('复制失败，请手动选择 RID 复制');
+                  }
                 }}
               >
                 复制 RID

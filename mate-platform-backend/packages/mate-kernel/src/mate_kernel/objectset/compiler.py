@@ -25,6 +25,8 @@ from typing import Any, Protocol, runtime_checkable
 from mate_kernel.ontology.instances.individual import Individual
 from mate_kernel.ontology.query.object_set import ObjectSet
 
+from ..ontology.identity.class_ref import property_slug
+
 # ─────────────────── 表达式求值 ───────────────────
 
 
@@ -190,13 +192,11 @@ class FilterEvaluator:
 def individual_to_row(ind: Individual) -> dict[str, Any]:
     """Individual.props (tuple[(ClassRef, obj), ...]) → flat dict[str, str]。
 
-    Property rid 形如 `ont.<tenant>.prop.<slug>.<version>`，抽第 4 段作 row key。
+    使用去除可选版本后缀后的属性名，兼容领域前缀。
     """
     row: dict[str, Any] = {"__rid__": ind.rid}
     for k, v in ind.props:
-        parts = k.rid.split(".")
-        # ont.<tenant>.prop.<slug>.<version>
-        slug = parts[3] if len(parts) >= 5 else parts[-1]
+        slug = property_slug(k.rid)
         row[slug] = v
     return row
 

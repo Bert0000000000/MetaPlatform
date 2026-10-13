@@ -40,6 +40,7 @@ from mate_kernel.ontology.identity import (
     VersionConflict,
     definition_checksum,
 )
+from mate_kernel.ontology.identity.class_ref import property_slug
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.migration import LOSSLESS_FORMAT_PAIRS as _LOSSLESS_PAIRS
 from mate_kernel.ontology.query import ObjectSet
@@ -762,9 +763,8 @@ def _require_resolvable_field(field: str, known_slugs: set[str], *, kind: str) -
 
 
 def _prop_slug(rid: str) -> str:
-    """rid 第 4 段作 slug（与 kernel ``individual_to_row`` 同一规则）。"""
-    parts = rid.split(".")
-    return parts[3] if len(parts) >= 5 else parts[-1]
+    """Same field alias as kernel validation and query rows."""
+    return property_slug(rid)
 
 
 def _ir_where(
@@ -2981,8 +2981,8 @@ class PgOntologyRepository(OntologyRepository):
             except KeyError:
                 property_remap = {}
             else:
-                src_slugs = {p.rid.rid.split(".")[3]: p.rid.rid for p in src_ot.properties}
-                tgt_slugs = {p.rid.rid.split(".")[3]: p.rid.rid for p in tgt_ot.properties}
+                src_slugs = {property_slug(p.rid.rid): p.rid.rid for p in src_ot.properties}
+                tgt_slugs = {property_slug(p.rid.rid): p.rid.rid for p in tgt_ot.properties}
                 for slug, src_p_rid in src_slugs.items():
                     if slug in tgt_slugs:
                         property_remap[src_p_rid] = tgt_slugs[slug]
@@ -6862,8 +6862,7 @@ class PgOntologyRepository(OntologyRepository):
                 merged_props = dict(target_props)
                 parameter_rids: dict[str, str] = {}
                 for parameter in action_type.parameters:
-                    parts = parameter.rid.rid.split(".")
-                    slug = parts[-2] if parts[-1].startswith("v") else parts[-1]
+                    slug = property_slug(parameter.rid.rid)
                     parameter_rids[slug] = parameter.rid.rid
                 for key, value in proposal.parameters.items():
                     # F2：`provenance` 是 propose 注入的**平台元数据**（ONT-PROV-01，
@@ -7639,8 +7638,8 @@ class PgOntologyRepository(OntologyRepository):
         if p.kind == "create_instance":
             ot = self.get_object_type(ClassRef(p.action_rid))
             props_in: dict[str, Any] = dict(p.parameters.get("props") or {})
-            slug_to_ref = {q.rid.rid.split(".")[3]: q.rid for q in ot.properties}
-            pk_slug = ot.primary_key[0].rid.split(".")[3]
+            slug_to_ref = {property_slug(q.rid.rid): q.rid for q in ot.properties}
+            pk_slug = property_slug(ot.primary_key[0].rid)
             pk_value = props_in.get(pk_slug)
             if pk_value is None:
                 raise ValueError(f"primary key '{pk_slug}' required to create {p.action_rid}")
@@ -7885,8 +7884,7 @@ class PgOntologyRepository(OntologyRepository):
         if parameters or outcome.function_result is not None:
             param_rids: dict[str, ClassRef] = {}
             for p in at.parameters:
-                parts = p.rid.rid.split(".")
-                slug = parts[-2] if parts[-1].startswith("v") else parts[-1]
+                slug = property_slug(p.rid.rid)
                 param_rids[slug] = p.rid
             merged = dict(ind.props)
             for key, value in parameters.items():

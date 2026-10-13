@@ -17,6 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..ontology.identity.class_ref import property_slug
+
 __all__ = [
     "Condition",
     "RuleGroup",
@@ -40,8 +42,7 @@ _VALID_OPS = {
 
 
 def _slug(rid: str) -> str:
-    parts = rid.split(".")
-    return parts[3] if len(parts) >= 5 else parts[-1]
+    return property_slug(rid)
 
 
 def validate_parameters(

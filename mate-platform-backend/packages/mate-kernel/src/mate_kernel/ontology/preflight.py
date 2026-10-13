@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from .identity.class_ref import property_slug
 from .types.action_type import ActionType
 from .types.object_type import ObjectType
 from .validation_ops import validate_instance, validate_model
@@ -171,7 +172,7 @@ def check_action_parameters(action_type: ActionType, parameters: dict[str, Any])
     for p in action_type.parameters:
         # 别名索引：rid 全名 / slug（尾段去版本）/ title —— AI 抽取三者皆可能
         rid_str = p.rid.rid
-        slug = rid_str.split(".")[-2] if rid_str.count(".") >= 2 else rid_str
+        slug = property_slug(rid_str)
         aliases = tuple(dict.fromkeys(a for a in (rid_str, slug, p.title) if a))
         for a in aliases:
             by_key.setdefault(a, p)
@@ -287,7 +288,7 @@ def _normalize_props(ot: ObjectType, props: dict[str, Any]) -> dict[str, Any]:
     by_alias: dict[str, str] = {}
     for p in ot.properties:
         prid = p.rid.rid
-        slug = prid.split(".")[-2] if prid.count(".") >= 2 else prid
+        slug = property_slug(prid)
         by_alias[prid] = prid
         by_alias.setdefault(slug, prid)
         if p.title:

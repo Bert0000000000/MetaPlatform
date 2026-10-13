@@ -37,7 +37,7 @@ from typing import Any
 
 import structlog
 
-from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.identity.class_ref import ClassRef, property_slug
 from mate_kernel.ontology.instances.individual import Individual
 
 logger = structlog.get_logger(__name__)
@@ -788,9 +788,7 @@ def materialize_object_type(repo: Any, class_rid: str, *, limit: int = 10000) ->
     rows = [individual_to_row(i) for i in inds]
     schema = {
         p.rid.rid: {
-            "slug": p.rid.rid.split(".")[3]
-            if len(p.rid.rid.split(".")) >= 5
-            else p.rid.rid.split(".")[-1],
+            "slug": property_slug(p.rid.rid),
             "type_id": p.type_id,
             "format": p.format.value,
         }
