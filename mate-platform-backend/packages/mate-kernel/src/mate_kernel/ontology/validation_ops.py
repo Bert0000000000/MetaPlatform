@@ -9,18 +9,13 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .identity.class_ref import property_slug
 from .types.object_type import ObjectType
 
 _RID_RE = re.compile(
     r"^ont\.[a-z0-9_-]{1,64}\.(?:cls|ver|prop|obj|link|act|if|ind|lnk|ax|fn|oset)"
     r"\.[a-z0-9:\-.]{1,200}$"
 )
-
-
-def _property_slug(rid: str) -> str:
-    """Final business identifier, before an optional version; domain is not a field."""
-    parts = rid.split(".")
-    return parts[-2] if len(parts) > 1 and re.fullmatch(r"v\d+", parts[-1]) else parts[-1]
 
 
 def validate_model(ot: ObjectType) -> dict[str, Any]:
@@ -42,7 +37,7 @@ def validate_model(ot: ObjectType) -> dict[str, Any]:
         prid = p.rid.rid if hasattr(p.rid, "rid") else str(p.rid)
         if not _RID_RE.match(prid):
             errors.append(f"属性 rid 形制非法: {prid}")
-        slug = _property_slug(prid)
+        slug = property_slug(prid)
         slugs[slug] = slugs.get(slug, 0) + 1
         if prid not in pk_set and p.primary_key:
             errors.append(f"属性标记 primary_key 但不在类型 PK 列表: {prid}")
@@ -68,7 +63,7 @@ def validate_instance(
     rid_index: dict[str, dict[str, Any]] = {}
     for p in ot.properties:
         prid = p.rid.rid if hasattr(p.rid, "rid") else str(p.rid)
-        slug = _property_slug(prid)
+        slug = property_slug(prid)
         info = {
             "rid": prid,
             "type_id": p.type_id,
@@ -102,7 +97,7 @@ def validate_instance(
 
     for pk in ot.primary_key:
         pk_rid = pk.rid if hasattr(pk, "rid") else str(pk)
-        pk_slug = _property_slug(pk_rid)
+        pk_slug = property_slug(pk_rid)
         if not any(info["rid"] == pk_rid for info, _ in resolved.values()):
             errors.append(f"PK 属性缺值: {pk_slug}")
 
