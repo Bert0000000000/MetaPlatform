@@ -68,6 +68,10 @@
   `_upsert_object_type_gated` —— 与 `POST /object-types` 同一门禁。**未确认仍然 409**（不放松）。
 - **发布前静态校验**：新增 `_assert_publishable`（`validate_model`），两条发布路径都调用；
   模型错误 → **422 `invalid_model`**。补的是构造器管不到的：rid 形制、属性 slug 重复、属性 rid 形制。
+  属性 slug 使用末尾业务标识（去除可选 `.vN`），兼容
+  `ont.<tenant>.prop.<slug>.vN` 与 `ont.<tenant>.prop.<domain>.<slug>.vN`。
+  同领域的不同属性不得误判为重复；同 slug 的不同版本仍拒绝。实例必填与 PK
+  校验使用相同别名规则，并继续接受完整属性 RID。
 - **发布前预检（只读）**：`POST /object-types/validate` 在静态校验之上返回 `destructive`
   （与当前生效定义的破坏性差异）与 `references{resolved,unresolved,dependencies}`。
   未解析引用**只报告不阻断** —— 仓库语义允许"先声明后注册"（`_assert_parent_acyclic`、
