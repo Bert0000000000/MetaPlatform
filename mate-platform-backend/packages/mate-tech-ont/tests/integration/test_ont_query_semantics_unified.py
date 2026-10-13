@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from typing import Any
 
@@ -232,7 +233,7 @@ class TestSourceResolutionMatrix:
         )
         now = datetime.now(UTC)
         for backend in (repo, InMemoryOntologyRepository()):
-            with backend.tenant_scope(T):
+            with backend.tenant_scope(T) if hasattr(backend, "tenant_scope") else nullcontext():
                 backend.upsert_object_type(ot)
                 for pk, score in (("one", 3), ("two", 9)):
                     backend.create_individual(

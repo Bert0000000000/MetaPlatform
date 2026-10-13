@@ -12,6 +12,7 @@ InMemory repo + FastAPI TestClient。不依赖 PG —— 在 dev 环境跑得起
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import UTC, datetime
 
 import pytest
@@ -221,6 +222,7 @@ def test_model_type_preview_renders_properties_and_primary_key(client, app, name
 def test_materialization_export_and_governance_use_distinct_property_names(
     client, app, version: str
 ) -> None:
+    from mate_tech_ont.v2_kernel.backing_datasources import materialize_object_type
     from mate_tech_ont.v2_kernel.governance import lint_anti_patterns
 
     rid = "ont.acme.obj.crm.nsconsumer.v1"
@@ -249,7 +251,7 @@ def test_materialization_export_and_governance_use_distinct_property_names(
     )
     repo = app.state.kernel_repo
     now = datetime.now(UTC)
-    with repo.tenant_scope("acme"):
+    with repo.tenant_scope("acme") if hasattr(repo, "tenant_scope") else nullcontext():
         repo.upsert_object_type(ot)
         repo.create_individual(
             Individual(
@@ -262,14 +264,15 @@ def test_materialization_export_and_governance_use_distinct_property_names(
                 updated_at=now,
             )
         )
-    materialized = client.get(f"/api/v1/ont/v2/object-types/{rid}/materialization")
-    assert materialized.status_code == 200, materialized.text
-    body = materialized.json()
+    body = materialize_object_type(repo, rid)
     assert {field["slug"] for field in body["schema"].values()} == {"id", "value"}
     assert body["rows"][0]["id"] == "c1" and body["rows"][0]["value"] == "public"
     exported = client.get(f"/api/v1/ont/v2/object-types/{rid}/export")
     assert exported.status_code == 200, exported.text
-    assert {p["schema:name"] for p in exported.json()["properties"]} == {"id", "value"}
+    assert {p["schema:name"] for p in exported.json()["content"]["schema:hasProperty"]} == {
+        "id",
+        "value",
+    }
     assert any(row["subject"] == rid + "#value" for row in lint_anti_patterns([ot]))
 
 

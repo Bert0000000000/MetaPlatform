@@ -17,10 +17,30 @@ import pytest
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.instances import Individual
 from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat
-from mate_tech_ont.v2_kernel.object_search import HashEmbedder
+from mate_tech_ont.v2_kernel.object_search import HashEmbedder, build_card
 
 _T = "oagtest"
 _NOW = datetime.now(UTC)
+
+
+@pytest.mark.parametrize("version", ["", ".v1"])
+def test_card_retains_namespaced_attribute_sources(version: str) -> None:
+    matched = [
+        {
+            "property_rid": f"ont.{_T}.prop.crm.customer-name{version}",
+            "value_text": "Ada",
+            "score": 0.8,
+        },
+        {
+            "property_rid": f"ont.{_T}.prop.crm.customer-id{version}",
+            "value_text": "c1",
+            "score": 0.4,
+        },
+    ]
+    card = build_card(f"ont.{_T}.ind.customer.c1", f"ont.{_T}.obj.crm.customer.v1", matched)
+    assert "Ada (customer-name)" in card["card_text"]
+    assert "c1 (customer-id)" in card["card_text"]
+    assert card["matched"] == matched and card["score"] == 0.8
 
 
 def _prop(slug: str, type_id: str = "string") -> Property:
